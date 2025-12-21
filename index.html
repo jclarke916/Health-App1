@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Century Club | Optimized Master OS</title>
+    <title>The Century Club | Memory Engine OS</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -16,8 +16,15 @@
         header { text-align: center; margin-bottom: 30px; border-bottom: 1px solid #334155; padding-bottom: 20px; }
         .profile-badges { display: flex; justify-content: center; gap: 15px; margin-top: 15px; flex-wrap: wrap; }
         .badge { background: rgba(255, 255, 255, 0.05); padding: 8px 16px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.1); font-size: 0.85rem; display: flex; align-items: center; gap: 8px; }
-        .controls { text-align: center; margin-bottom: 20px; }
-        .shuffle-btn { background: rgba(56, 189, 248, 0.1); color: var(--accent-blue); border: 1px solid var(--accent-blue); padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 700; transition: 0.3s; }
+        .controls { text-align: center; margin-bottom: 20px; display: flex; gap: 10px; justify-content: center; }
+        .btn { padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 700; transition: 0.3s; border: 1px solid transparent; }
+        .shuffle-btn { background: rgba(56, 189, 248, 0.1); color: var(--accent-blue); border-color: var(--accent-blue); }
+        .shuffle-btn:hover { background: var(--accent-blue); color: var(--bg-dark); }
+        .reset-btn { background: rgba(248, 113, 113, 0.1); color: var(--alert-red); border-color: var(--alert-red); }
+        .reset-btn:hover { background: var(--alert-red); color: white; }
+        
+        .status-bar { text-align: center; color: var(--text-dim); font-size: 0.8rem; margin-bottom: 15px; }
+        
         .tabs { display: flex; justify-content: space-between; background: var(--card-bg); padding: 8px; border-radius: 12px; margin-bottom: 20px; overflow-x: auto; }
         .tab-btn { background: none; border: none; color: var(--text-dim); padding: 10px 12px; cursor: pointer; font-weight: 600; flex: 1; min-width: 80px; }
         .tab-btn.active { color: var(--accent-blue); background: rgba(56, 189, 248, 0.1); border-radius: 8px; }
@@ -47,7 +54,13 @@
         </div>
     </header>
 
-    <div class="controls"><button class="shuffle-btn" onclick="generateNewWeek()">🔄 REGENERATE WEEK (SMART BALANCED)</button></div>
+    <div class="status-bar" id="cycleStatus">Cycle Status: Ready to start.</div>
+
+    <div class="controls">
+        <button class="btn shuffle-btn" onclick="generateNextWeek()">🗓️ GENERATE NEXT WEEK</button>
+        <button class="btn reset-btn" onclick="resetCycle()">🔄 RESET CYCLE</button>
+    </div>
+
     <div class="tabs" id="dayTabs">
         <button class="tab-btn" onclick="showDay('mon')">MON</button>
         <button class="tab-btn" onclick="showDay('tue')">TUE</button>
@@ -61,102 +74,103 @@
 </div>
 
 <script>
+    // --- 1. The Master Library (30 Items per Category) ---
     const mealLibrary = {
         breakfasts: [
-            { val: "Sea Moss & Triple-Protein Smoothie", p: "45g", ing: "Sea Moss, Pea Protein, Hemp, PB2, Blackberries.", herSwap: "Same for Her" },
-            { val: "Crab & Spinach Scramble", p: "35g", ing: "Lump crab, 3 eggs, spinach, green onions.", herSwap: "Modified: Well-Done" },
-            { val: "Japanese Tamagoyaki Scramble", p: "32g", ing: "3 Eggs, dashi, coconut aminos, spinach, nori.", herSwap: "Modified: Well-Done" },
-            { val: "Salmon & Capers Sprouted Toast", p: "32g", ing: "Smoked salmon, capers, sprouted bread, avocado.", herSwap: "Same for Her" },
-            { val: "Bistro Turkey Sausage Scramble", p: "35g", ing: "Turkey sausage, parsley, chives, 3 eggs.", herSwap: "Modified: Well-Done" },
-            { val: "Mediterranean Breakfast Hash", p: "28g", ing: "Chickpeas, kale, tomatoes, olives, 2 eggs.", herSwap: "Modified: Well-Done" },
-            { val: "Southwest Bison Scramble", p: "38g", ing: "Bison, 3 Eggs, jalapeños, black beans.", herSwap: "Modified: Well-Done" },
-            { val: "Moroccan Chickpea 'Shakshuka'", p: "26g", ing: "Chickpeas, cumin, kale, 2 eggs.", herSwap: "Modified: Well-Done" },
-            { val: "PB & Blackberry Sprouted Toast", p: "25g", ing: "Sprouted bread, PB2, hemp, blackberries.", herSwap: "Same for Her" },
-            { val: "Smoked Salmon & Sprouted Toast", p: "32g", ing: "Smoked salmon, avocado, sprouted bread.", herSwap: "Same for Her" },
-            { val: "Sprouted Oatmeal & Walnuts", p: "20g", ing: "Oats, walnuts, hemp, cinnamon, Oat Milk.", herSwap: "Same for Her" },
-            { val: "Greek Yogurt & Hemp Power Bowl", p: "30g", ing: "Greek Yogurt, granola, hemp hearts, blueberries.", herSwap: "Same for Her" },
-            { val: "Ahi Tuna Breakfast Poke", p: "35g", ing: "Ahi tuna, avocado, cucumber, nori strips.", herSwap: "Same for Her" },
-            { val: "Turkey Bacon & Egg White Scramble", p: "32g", ing: "Turkey bacon, egg whites, peppers, spinach.", herSwap: "Same for Her" },
-            { val: "Blueberry Hemp Chia Pudding", p: "22g", ing: "Chia seeds, hemp, blueberries, almond milk.", herSwap: "Same for Her" },
-            { val: "Bison & Sweet Potato Hash", p: "35g", ing: "Ground bison, sweet potato, 2 eggs.", herSwap: "Modified: Well-Done" },
-            { val: "Lox & Everything Sprouted Bagel", p: "30g", ing: "Sprouted bagel, lox, capers, red onion.", herSwap: "Same for Her" },
-            { val: "Matcha Protein Smoothie", p: "40g", ing: "Matcha, pea protein, banana, spinach, hemp.", herSwap: "Same for Her" },
-            { val: "Protein Pancakes with Berries", p: "35g", ing: "Oat flour, egg whites, protein powder, berries.", herSwap: "Same for Her" },
-            { val: "Breakfast Scallops & Spinach", p: "30g", ing: "Bay scallops, garlic, spinach, lemon.", herSwap: "Same for Her" },
-            { val: "Kale & Feta Scramble", p: "28g", ing: "3 Eggs, kale, light feta, tomatoes.", herSwap: "Modified: Well-Done" },
-            { val: "Savory Quinoa Breakfast Bowl", p: "30g", ing: "Quinoa, 2 eggs, avocado, salsa.", herSwap: "Modified: Well-Done" },
-            { val: "Asparagus & Turkey Omelet", p: "32g", ing: "3 Eggs, turkey breast, asparagus, herbs.", herSwap: "Modified: Well-Done" },
-            { val: "Tofu Scramble (Mineral Boost)", p: "25g", ing: "Organic tofu, turmeric, nutritional yeast, kale.", herSwap: "Same for Her" },
-            { val: "Cod & Potato Breakfast Cakes", p: "30g", ing: "Steamed cod, mashed potato, parsley, 1 egg.", herSwap: "Same for Her" },
-            { val: "Hemp Heart Parfait", p: "28g", ing: "Greek yogurt, hemp hearts, pumpkin seeds, honey.", herSwap: "Same for Her" },
-            { val: "Steak & Eggs (Bistro Style)", p: "45g", ing: "Flank steak, 2 eggs, grilled tomatoes.", herSwap: "Modified: Well-Done" },
-            { val: "Almond Butter & Strawberry Toast", p: "22g", ing: "Sprouted toast, almond butter, strawberries.", herSwap: "Same for Her" },
-            { val: "Shrimp & Grits (Cauli-style)", p: "32g", ing: "Shrimp, cauliflower grits, garlic, green onion.", herSwap: "Same for Her" },
-            { val: "Miso Bone Broth & Egg", p: "25g", ing: "Bone broth, miso, 2 soft-boiled eggs, nori.", herSwap: "Modified: Well-Done" }
+            { id: "b1", val: "Sea Moss & Triple-Protein Smoothie", p: "45g", ing: "Sea Moss, Pea Protein, Hemp, PB2, Blackberries.", herSwap: "Same for Her" },
+            { id: "b2", val: "Crab & Spinach Scramble", p: "35g", ing: "Lump crab, 3 eggs, spinach, green onions.", herSwap: "Modified: Well-Done" },
+            { id: "b3", val: "Japanese Tamagoyaki Scramble", p: "32g", ing: "3 Eggs, dashi, coconut aminos, spinach, nori.", herSwap: "Modified: Well-Done" },
+            { id: "b4", val: "Salmon & Capers Sprouted Toast", p: "32g", ing: "Smoked salmon, capers, sprouted bread, avocado.", herSwap: "Same for Her" },
+            { id: "b5", val: "Bistro Turkey Sausage Scramble", p: "35g", ing: "Turkey sausage, parsley, chives, 3 eggs.", herSwap: "Modified: Well-Done" },
+            { id: "b6", val: "Mediterranean Breakfast Hash", p: "28g", ing: "Chickpeas, kale, tomatoes, olives, 2 eggs.", herSwap: "Modified: Well-Done" },
+            { id: "b7", val: "Southwest Bison Scramble", p: "38g", ing: "Bison, 3 Eggs, jalapeños, black beans.", herSwap: "Modified: Well-Done" },
+            { id: "b8", val: "Moroccan Chickpea 'Shakshuka'", p: "26g", ing: "Chickpeas, cumin, kale, 2 eggs.", herSwap: "Modified: Well-Done" },
+            { id: "b9", val: "PB & Blackberry Sprouted Toast", p: "25g", ing: "Sprouted bread, PB2, hemp, blackberries.", herSwap: "Same for Her" },
+            { id: "b10", val: "Smoked Salmon & Sprouted Toast", p: "32g", ing: "Smoked salmon, avocado, sprouted bread.", herSwap: "Same for Her" },
+            { id: "b11", val: "Sprouted Oatmeal & Walnuts", p: "20g", ing: "Oats, walnuts, hemp, cinnamon, Oat Milk.", herSwap: "Same for Her" },
+            { id: "b12", val: "Greek Yogurt & Hemp Power Bowl", p: "30g", ing: "Greek Yogurt, granola, hemp hearts, blueberries.", herSwap: "Same for Her" },
+            { id: "b13", val: "Ahi Tuna Breakfast Poke", p: "35g", ing: "Ahi tuna, avocado, cucumber, nori strips.", herSwap: "Same for Her" },
+            { id: "b14", val: "Turkey Bacon & Egg White Scramble", p: "32g", ing: "Turkey bacon, egg whites, peppers, spinach.", herSwap: "Same for Her" },
+            { id: "b15", val: "Blueberry Hemp Chia Pudding", p: "22g", ing: "Chia seeds, hemp, blueberries, almond milk.", herSwap: "Same for Her" },
+            { id: "b16", val: "Bison & Sweet Potato Hash", p: "35g", ing: "Ground bison, sweet potato, 2 eggs.", herSwap: "Modified: Well-Done" },
+            { id: "b17", val: "Lox & Everything Sprouted Bagel", p: "30g", ing: "Sprouted bagel, lox, capers, red onion.", herSwap: "Same for Her" },
+            { id: "b18", val: "Matcha Protein Smoothie", p: "40g", ing: "Matcha, pea protein, banana, spinach, hemp.", herSwap: "Same for Her" },
+            { id: "b19", val: "Protein Pancakes with Berries", p: "35g", ing: "Oat flour, egg whites, protein powder, berries.", herSwap: "Same for Her" },
+            { id: "b20", val: "Breakfast Scallops & Spinach", p: "30g", ing: "Bay scallops, garlic, spinach, lemon.", herSwap: "Same for Her" },
+            { id: "b21", val: "Kale & Feta Scramble", p: "28g", ing: "3 Eggs, kale, light feta, tomatoes.", herSwap: "Modified: Well-Done" },
+            { id: "b22", val: "Savory Quinoa Breakfast Bowl", p: "30g", ing: "Quinoa, 2 eggs, avocado, salsa.", herSwap: "Modified: Well-Done" },
+            { id: "b23", val: "Asparagus & Turkey Omelet", p: "32g", ing: "3 Eggs, turkey breast, asparagus, herbs.", herSwap: "Modified: Well-Done" },
+            { id: "b24", val: "Tofu Scramble (Mineral Boost)", p: "25g", ing: "Organic tofu, turmeric, nutritional yeast, kale.", herSwap: "Same for Her" },
+            { id: "b25", val: "Cod & Potato Breakfast Cakes", p: "30g", ing: "Steamed cod, mashed potato, parsley, 1 egg.", herSwap: "Same for Her" },
+            { id: "b26", val: "Hemp Heart Parfait", p: "28g", ing: "Greek yogurt, hemp hearts, pumpkin seeds, honey.", herSwap: "Same for Her" },
+            { id: "b27", val: "Steak & Eggs (Bistro Style)", p: "45g", ing: "Flank steak, 2 eggs, grilled tomatoes.", herSwap: "Modified: Well-Done" },
+            { id: "b28", val: "Almond Butter & Strawberry Toast", p: "22g", ing: "Sprouted toast, almond butter, strawberries.", herSwap: "Same for Her" },
+            { id: "b29", val: "Shrimp & Grits (Cauli-style)", p: "32g", ing: "Shrimp, cauliflower grits, garlic, green onion.", herSwap: "Same for Her" },
+            { id: "b30", val: "Miso Bone Broth & Egg", p: "25g", ing: "Bone broth, miso, 2 soft-boiled eggs, nori.", herSwap: "Modified: Well-Done" }
         ],
         lunches: [
-            { val: "Roasted Purple Yam Power Bowl", p: "35g", type: "white", ing: "Purple yams, quinoa, spinach, pepitas." },
-            { val: "Bison Laab (Thai Meat Salad)", p: "40g", type: "red", ing: "Bison, lime, mint, cilantro, daikon." },
-            { val: "Protein Style Turkey Burger", p: "40g", type: "white", ing: "Turkey patty, avocado, tomato, lettuce wrap." },
-            { val: "Cucumber-Wrapped 'Naruto' Sushi", p: "42g", type: "white", ing: "Ahi tuna, salmon, avocado, cucumber wrap." },
-            { val: "Ginger-Turkey Cabbage 'Potstickers'", p: "38g", type: "white", ing: "Turkey, ginger, garlic, cabbage leaves." },
-            { val: "Mendo-Style 'Sophisticated' Cobb", p: "42g", type: "white", ing: "Turkey, kale, avocado, pickled onions." },
-            { val: "Ahi Tuna & Power Greens Bowl", p: "45g", type: "white", ing: "Ahi tuna, edamame, cucumber, radish." },
-            { val: "Miso Steak & Sweet Potato Salad", p: "42g", type: "red", ing: "Flank steak, miso, sweet potato, napa cabbage." },
-            { val: "Clean Beef Pho", p: "35g", type: "red", ing: "Bone broth, rice noodles, basil, lean beef." },
-            { val: "Lobster & Avocado Lettuce Wraps", p: "38g", type: "white", ing: "Lobster, avocado, lime, butter lettuce." },
-            { val: "Tomato Soup & Sprouted Turkey Sandwich", p: "38g", type: "white", ing: "Tomato soup, sprouted bread, turkey." },
-            { val: "Zesty Shrimp & Mango Salad", p: "35g", type: "white", ing: "Shrimp, mango, jicama, lime, cilantro." },
-            { val: "Bison Bulgogi Bowl", p: "45g", type: "red", ing: "Bison, cauliflower rice, ginger, kimchi." },
-            { val: "Grilled Salmon over Mixed Greens", p: "42g", type: "white", ing: "Salmon, mixed greens, balsamic, walnuts." },
-            { val: "Lentil & Kale Longevity Soup", p: "25g", type: "white", ing: "Red lentils, kale, bone broth, carrots." },
-            { val: "Chicken Salad (Greek Yogurt)", p: "35g", type: "white", ing: "Chicken, Greek yogurt, celery, grapes." },
-            { val: "Blackened Cod over Cauliflower", p: "38g", type: "white", ing: "Cod, cajun spices, cauliflower, garlic." },
-            { val: "Steak Tataki & Radish Salad", p: "42g", type: "red", ing: "Seared steak, daikon, soy-ginger dressing." },
-            { val: "Warm Quinoa & Shaved Brussels", p: "32g", type: "white", ing: "Quinoa, Brussels sprouts, almonds, lemon." },
-            { val: "Turkey Meatballs & Zoodles", p: "38g", type: "white", ing: "Turkey, zucchini noodles, marinara." },
-            { val: "Tuna Tartare & Avocado Bowl", p: "45g", type: "white", ing: "Ahi tuna, avocado, cucumber, sesame oil." },
-            { val: "Moroccan Lamb & Chickpea Bowl", p: "40g", type: "red", ing: "Lamb, chickpeas, turmeric, spinach." },
-            { val: "Ceviche with Sprouted Chips", p: "35g", type: "white", ing: "White fish, lime, cilantro, sprouted chips." },
-            { val: "Sesame Chicken & Napa Slaw", p: "38g", type: "white", ing: "Chicken, cabbage, sesame seeds, ginger." },
-            { val: "Beet & Goat Cheese Salad", p: "25g", type: "white", ing: "Beets, greens, goat cheese, pepitas." },
-            { val: "Roast Beef & Horseradish Sandwich", p: "42g", type: "red", ing: "Lean roast beef, sprouted bread, arugula." },
-            { val: "Shrimp Scampi over Spaghetti Squash", p: "35g", type: "white", ing: "Shrimp, garlic, ghee, spaghetti squash." },
-            { val: "Bison Chili (No Bean)", p: "45g", type: "red", ing: "Bison, tomatoes, peppers, onions, spices." },
-            { val: "Harvest Bowl (Squash & Chicken)", p: "38g", type: "white", ing: "Chicken, butternut squash, kale, pepitas." },
-            { val: "Teriyaki Salmon Bowl", p: "42g", type: "white", ing: "Salmon, coconut aminos, cauli-rice." }
+            { id: "l1", val: "Roasted Purple Yam Power Bowl", p: "35g", type: "white", ing: "Purple yams, quinoa, spinach, pepitas." },
+            { id: "l2", val: "Bison Laab (Thai Meat Salad)", p: "40g", type: "red", ing: "Bison, lime, mint, cilantro, daikon." },
+            { id: "l3", val: "Protein Style Turkey Burger", p: "40g", type: "white", ing: "Turkey patty, avocado, tomato, lettuce wrap." },
+            { id: "l4", val: "Cucumber-Wrapped 'Naruto' Sushi", p: "42g", type: "white", ing: "Ahi tuna, salmon, avocado, cucumber wrap." },
+            { id: "l5", val: "Ginger-Turkey Cabbage 'Potstickers'", p: "38g", type: "white", ing: "Turkey, ginger, garlic, cabbage leaves." },
+            { id: "l6", val: "Mendo-Style 'Sophisticated' Cobb", p: "42g", type: "white", ing: "Turkey, kale, avocado, pickled onions." },
+            { id: "l7", val: "Ahi Tuna & Power Greens Bowl", p: "45g", type: "white", ing: "Ahi tuna, edamame, cucumber, radish." },
+            { id: "l8", val: "Miso Steak & Sweet Potato Salad", p: "42g", type: "red", ing: "Flank steak, miso, sweet potato, napa cabbage." },
+            { id: "l9", val: "Clean Beef Pho", p: "35g", type: "red", ing: "Bone broth, rice noodles, basil, lean beef." },
+            { id: "l10", val: "Lobster & Avocado Lettuce Wraps", p: "38g", type: "white", ing: "Lobster, avocado, lime, butter lettuce." },
+            { id: "l11", val: "Tomato Soup & Sprouted Turkey Sandwich", p: "38g", type: "white", ing: "Tomato soup, sprouted bread, turkey." },
+            { id: "l12", val: "Zesty Shrimp & Mango Salad", p: "35g", type: "white", ing: "Shrimp, mango, jicama, lime, cilantro." },
+            { id: "l13", val: "Bison Bulgogi Bowl", p: "45g", type: "red", ing: "Bison, cauliflower rice, ginger, kimchi." },
+            { id: "l14", val: "Grilled Salmon over Mixed Greens", p: "42g", type: "white", ing: "Salmon, mixed greens, balsamic, walnuts." },
+            { id: "l15", val: "Lentil & Kale Longevity Soup", p: "25g", type: "white", ing: "Red lentils, kale, bone broth, carrots." },
+            { id: "l16", val: "Chicken Salad (Greek Yogurt)", p: "35g", type: "white", ing: "Chicken, Greek yogurt, celery, grapes." },
+            { id: "l17", val: "Blackened Cod over Cauliflower", p: "38g", type: "white", ing: "Cod, cajun spices, cauliflower, garlic." },
+            { id: "l18", val: "Steak Tataki & Radish Salad", p: "42g", type: "red", ing: "Seared steak, daikon, soy-ginger dressing." },
+            { id: "l19", val: "Warm Quinoa & Shaved Brussels", p: "32g", type: "white", ing: "Quinoa, Brussels sprouts, almonds, lemon." },
+            { id: "l20", val: "Turkey Meatballs & Zoodles", p: "38g", type: "white", ing: "Turkey, zucchini noodles, marinara." },
+            { id: "l21", val: "Tuna Tartare & Avocado Bowl", p: "45g", type: "white", ing: "Ahi tuna, avocado, cucumber, sesame oil." },
+            { id: "l22", val: "Moroccan Lamb & Chickpea Bowl", p: "40g", type: "red", ing: "Lamb, chickpeas, turmeric, spinach." },
+            { id: "l23", val: "Ceviche with Sprouted Chips", p: "35g", type: "white", ing: "White fish, lime, cilantro, sprouted chips." },
+            { id: "l24", val: "Sesame Chicken & Napa Slaw", p: "38g", type: "white", ing: "Chicken, cabbage, sesame seeds, ginger." },
+            { id: "l25", val: "Beet & Goat Cheese Salad", p: "25g", type: "white", ing: "Beets, greens, goat cheese, pepitas." },
+            { id: "l26", val: "Roast Beef & Horseradish Sandwich", p: "42g", type: "red", ing: "Lean roast beef, sprouted bread, arugula." },
+            { id: "l27", val: "Shrimp Scampi over Spaghetti Squash", p: "35g", type: "white", ing: "Shrimp, garlic, ghee, spaghetti squash." },
+            { id: "l28", val: "Bison Chili (No Bean)", p: "45g", type: "red", ing: "Bison, tomatoes, peppers, onions, spices." },
+            { id: "l29", val: "Harvest Bowl (Squash & Chicken)", p: "38g", type: "white", ing: "Chicken, butternut squash, kale, pepitas." },
+            { id: "l30", val: "Teriyaki Salmon Bowl", p: "42g", type: "white", ing: "Salmon, coconut aminos, cauli-rice." }
         ],
         dinners: [
-            { val: "Chilean Sea Bass & Ginger Glaze", p: "40g", type: "white", ing: "Sea bass, ginger, coconut aminos, bok choy." },
-            { val: "Bistro Pan-Seared Steak", p: "45g", type: "red", ing: "Steak, herb ghee, asparagus, mushrooms." },
-            { val: "Pan-Seared Jumbo Sea Scallops", p: "35g", type: "white", ing: "Scallops, cauliflower mash, lemon, parsley." },
-            { val: "Whole Roasted Branzino", p: "38g", type: "white", ing: "Branzino, lemon, rosemary, asparagus." },
-            { val: "Bison & Mushroom Stroganoff", p: "45g", type: "red", ing: "Bison, mushrooms, yogurt, chickpea pasta." },
-            { val: "One-Bowl Deconstructed Lasagna", p: "42g", type: "red", ing: "Chickpea pasta, bison, marinara, ricotta." },
-            { val: "Guilt-Free Protein Pizza", p: "30g", type: "white", ing: "Cauliflower crust, turkey pepperoni." },
-            { val: "Red Curry Bison & Veggies", p: "38g", type: "red", ing: "Bison, curry paste, coconut milk, peppers." },
-            { val: "Steamed Crab Legs & Asparagus", p: "32g", type: "white", ing: "Crab legs, ghee, lemon, asparagus." },
-            { val: "Walnut-Crusted Salmon", p: "42g", type: "white", ing: "Salmon, walnuts, broccoli, EVOO." },
-            { val: "Zucchini Wrapper 'Dumplings'", p: "35g", type: "white", ing: "Shrimp/turkey, ginger, zucchini wrappers." },
-            { val: "Bison Stuffed Bell Peppers", p: "42g", type: "red", ing: "Bison, quinoa, tomatoes, peppers." },
-            { val: "Baked Cod with Zoodles", p: "38g", type: "white", ing: "Cod, zucchini noodles, olives, tomatoes." },
-            { val: "Thai Coconut Shrimp Soup", p: "35g", type: "white", ing: "Shrimp, coconut milk, broth, ginger." },
-            { val: "Slow-Cooked Beef Stew", p: "45g", type: "red", ing: "Lean beef, bone broth, rosemary, carrots." },
-            { val: "Herb Roast Chicken & Yams", p: "40g", type: "white", ing: "Chicken, purple yams, roasted carrots." },
-            { val: "Ahi Tuna Steaks & Bok Choy", p: "45g", type: "white", ing: "Ahi tuna, sesame, bok choy, garlic." },
-            { val: "Lamb Chops with Mint Pesto", p: "42g", type: "red", ing: "Lamb, mint, parsley, walnuts, spinach." },
-            { val: "Wild Mushroom & Quinoa Risotto", p: "28g", type: "white", ing: "Quinoa, mushrooms, garlic, yeast." },
-            { val: "Turkey Loaf with Mashed Cauli", p: "38g", type: "white", ing: "Turkey, peppers, cauliflower mash." },
-            { val: "Halibut with Mango Salsa", p: "40g", type: "white", ing: "Halibut, mango, cilantro, lime." },
-            { val: "Bison Bolognese over Zoodles", p: "42g", type: "red", ing: "Bison, marinara, zucchini noodles." },
-            { val: "Duck Breast with Cherry Glaze", p: "38g", type: "white", ing: "Duck breast, cherries, balsamic, spinach." },
-            { val: "Mussels in Garlic Bone Broth", p: "32g", type: "white", ing: "Mussels, bone broth, garlic, parsley." },
-            { val: "Venison Steaks & Sprouts", p: "45g", type: "red", ing: "Venison, Brussels sprouts, balsamic." },
-            { val: "Swordfish Kabobs", p: "40g", type: "white", ing: "Swordfish, peppers, onions, zucchini." },
-            { val: "Crispy Salmon Skin & Arugula", p: "35g", type: "white", ing: "Salmon skin, arugula, lemon, hemp." },
-            { val: "Beef Short Ribs (Bone-in)", p: "48g", type: "red", ing: "Short ribs, bone broth, garlic, kale." },
-            { val: "Pesto Shrimp & Chickpea Pasta", p: "38g", type: "white", ing: "Shrimp, pesto, chickpea pasta." },
-            { val: "Sashimi Platter & Seaweed", p: "45g", type: "white", ing: "Mixed raw fish, seaweed salad, radish." }
+            { id: "d1", val: "Chilean Sea Bass & Ginger Glaze", p: "40g", type: "white", ing: "Sea bass, ginger, coconut aminos, bok choy." },
+            { id: "d2", val: "Bistro Pan-Seared Steak", p: "45g", type: "red", ing: "Steak, herb ghee, asparagus, mushrooms." },
+            { id: "d3", val: "Pan-Seared Jumbo Sea Scallops", p: "35g", type: "white", ing: "Scallops, cauliflower mash, lemon, parsley." },
+            { id: "d4", val: "Whole Roasted Branzino", p: "38g", type: "white", ing: "Branzino, lemon, rosemary, asparagus." },
+            { id: "d5", val: "Bison & Mushroom Stroganoff", p: "45g", type: "red", ing: "Bison, mushrooms, yogurt, chickpea pasta." },
+            { id: "d6", val: "One-Bowl Deconstructed Lasagna", p: "42g", type: "red", ing: "Chickpea pasta, bison, marinara, ricotta." },
+            { id: "d7", val: "Guilt-Free Protein Pizza", p: "30g", type: "white", ing: "Cauliflower crust, turkey pepperoni." },
+            { id: "d8", val: "Red Curry Bison & Veggies", p: "38g", type: "red", ing: "Bison, curry paste, coconut milk, peppers." },
+            { id: "d9", val: "Steamed Crab Legs & Asparagus", p: "32g", type: "white", ing: "Crab legs, ghee, lemon, asparagus." },
+            { id: "d10", val: "Walnut-Crusted Salmon", p: "42g", type: "white", ing: "Salmon, walnuts, broccoli, EVOO." },
+            { id: "d11", val: "Zucchini Wrapper 'Dumplings'", p: "35g", type: "white", ing: "Shrimp/turkey, ginger, zucchini wrappers." },
+            { id: "d12", val: "Bison Stuffed Bell Peppers", p: "42g", type: "red", ing: "Bison, quinoa, tomatoes, peppers." },
+            { id: "d13", val: "Baked Cod with Zoodles", p: "38g", type: "white", ing: "Cod, zucchini noodles, olives, tomatoes." },
+            { id: "d14", val: "Thai Coconut Shrimp Soup", p: "35g", type: "white", ing: "Shrimp, coconut milk, broth, ginger." },
+            { id: "d15", val: "Slow-Cooked Beef Stew", p: "45g", type: "red", ing: "Lean beef, bone broth, rosemary, carrots." },
+            { id: "d16", val: "Herb Roast Chicken & Yams", p: "40g", type: "white", ing: "Chicken, purple yams, roasted carrots." },
+            { id: "d17", val: "Ahi Tuna Steaks & Bok Choy", p: "45g", type: "white", ing: "Ahi tuna, sesame, bok choy, garlic." },
+            { id: "d18", val: "Lamb Chops with Mint Pesto", p: "42g", type: "red", ing: "Lamb, mint, parsley, walnuts, spinach." },
+            { id: "d19", val: "Wild Mushroom & Quinoa Risotto", p: "28g", type: "white", ing: "Quinoa, mushrooms, garlic, yeast." },
+            { id: "d20", val: "Turkey Loaf with Mashed Cauli", p: "38g", type: "white", ing: "Turkey, peppers, cauliflower mash." },
+            { id: "d21", val: "Halibut with Mango Salsa", p: "40g", type: "white", ing: "Halibut, mango, cilantro, lime." },
+            { id: "d22", val: "Bison Bolognese over Zoodles", p: "42g", type: "red", ing: "Bison, marinara, zucchini noodles." },
+            { id: "d23", val: "Duck Breast with Cherry Glaze", p: "38g", type: "white", ing: "Duck breast, cherries, balsamic, spinach." },
+            { id: "d24", val: "Mussels in Garlic Bone Broth", p: "32g", type: "white", ing: "Mussels, bone broth, garlic, parsley." },
+            { id: "d25", val: "Venison Steaks & Sprouts", p: "45g", type: "red", ing: "Venison, Brussels sprouts, balsamic." },
+            { id: "d26", val: "Swordfish Kabobs", p: "40g", type: "white", ing: "Swordfish, peppers, onions, zucchini." },
+            { id: "d27", val: "Crispy Salmon Skin & Arugula", p: "35g", type: "white", ing: "Salmon skin, arugula, lemon, hemp." },
+            { id: "d28", val: "Beef Short Ribs (Bone-in)", p: "48g", type: "red", ing: "Short ribs, bone broth, garlic, kale." },
+            { id: "d29", val: "Pesto Shrimp & Chickpea Pasta", p: "38g", type: "white", ing: "Shrimp, pesto, chickpea pasta." },
+            { id: "d30", val: "Sashimi Platter & Seaweed", p: "45g", type: "white", ing: "Mixed raw fish, seaweed salad, radish." }
         ],
         juices: [
             { name: "The Detox", oz: "16oz", ing: "Celery, Cucumber, Apple, Lemon, Ginger" },
@@ -169,42 +183,129 @@
         ]
     };
 
-    let weeklySchedule = {};
-    function shuffle(array) { let cur = array.length, rand; while (cur != 0) { rand = Math.floor(Math.random() * cur); cur--; [array[cur], array[rand]] = [array[rand], array[cur]]; } return array; }
+    // --- 2. Memory Logic (Local Storage) ---
+    const STORAGE_KEY = 'centuryClubUsage';
+    
+    function getUsageHistory() {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        return stored ? JSON.parse(stored) : { b: [], l: [], d: [] };
+    }
 
-    function generateNewWeek() {
-        const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-        const workouts = ["Foundation", "Boxing Day", "Strength / Studio", "Boxing Day", "Yoga / Recovery", "Zone 2 Cardio", "Rest / Mobility"];
+    function saveUsageHistory(history) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+    }
+
+    function resetCycle() {
+        if(confirm("Start a fresh 30-day cycle? This clears your memory history.")) {
+            localStorage.removeItem(STORAGE_KEY);
+            generateNextWeek();
+        }
+    }
+
+    function shuffle(array) {
+        let cur = array.length, rand;
+        while (cur != 0) { rand = Math.floor(Math.random() * cur); cur--; [array[cur], array[rand]] = [array[rand], array[cur]]; } 
+        return array;
+    }
+
+    function getAvailableMeals(library, usedIds) {
+        // Return items whose ID is NOT in usedIds
+        return library.filter(item => !usedIds.includes(item.id));
+    }
+
+    function generateNextWeek() {
+        let history = getUsageHistory();
         
-        let sB = shuffle([...mealLibrary.breakfasts]);
-        let sL = shuffle([...mealLibrary.lunches]);
-        let sD = shuffle([...mealLibrary.dinners]);
-        let sJ = shuffle([...mealLibrary.juices]);
+        // Helper to pick 7 unique items from a specific library based on history
+        function pickSeven(libArray, typeKey) {
+            let available = getAvailableMeals(libArray, history[typeKey]);
+            
+            // If less than 7 available, we must reset the cycle for this category (or the whole thing)
+            // Strategy: Recycle just this category if it runs out
+            if (available.length < 7) {
+                history[typeKey] = []; // Reset this category
+                available = getAvailableMeals(libArray, history[typeKey]); // Should be full now
+            }
+            
+            // Shuffle available and take 7
+            const shuffled = shuffle([...available]);
+            const selected = shuffled.slice(0, 7);
+            
+            // Mark as used
+            selected.forEach(item => history[typeKey].push(item.id));
+            
+            return selected;
+        }
 
-        // Smart Balancer: Ensure no double Red Meat days
+        let sB = pickSeven(mealLibrary.breakfasts, 'b');
+        let sL = pickSeven(mealLibrary.lunches, 'l');
+        let sD = pickSeven(mealLibrary.dinners, 'd');
+        
+        // Save the updated history immediately
+        saveUsageHistory(history);
+
+        // --- 3. Red Meat Balancer (Swap within the selected 7) ---
+        // We only swap dinners within the *current* week to avoid messing up history syncing
         for (let i = 0; i < 7; i++) {
-            // While both lunch and dinner are red, swap the dinner with a random future dinner
             let attempts = 0;
-            while (sL[i].type === 'red' && sD[i].type === 'red' && attempts < 10) {
-                let swapIdx = (i + 1 + Math.floor(Math.random() * (sD.length - 1))) % sD.length;
-                [sD[i], sD[swapIdx]] = [sD[swapIdx], sD[i]];
+            // While we have a collision (Red Lunch + Red Dinner)
+            while (sL[i].type === 'red' && sD[i].type === 'red' && attempts < 20) {
+                // Find a day (j) where sD[j] is NOT red, or at least resolves the conflict
+                let j = Math.floor(Math.random() * 7);
+                // Swap dinners
+                [sD[i], sD[j]] = [sD[j], sD[i]];
                 attempts++;
             }
         }
 
+        // Juices just rotate randomly (or sequentially if you prefer, currently random)
+        let sJ = shuffle([...mealLibrary.juices]);
+
+        // --- 4. Render ---
+        const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+        const workouts = ["Foundation", "Boxing Day", "Strength / Studio", "Boxing Day", "Yoga / Recovery", "Zone 2 Cardio", "Rest / Mobility"];
+        
+        let weeklySchedule = {};
         days.forEach((day, i) => {
-            weeklySchedule[day] = { workout: workouts[i], b: sB[i], l: sL[i], d: sD[i], j: sJ[i % 7], bedtime: (day === 'wed' || day === 'thu') ? "12:30 AM" : "12:00 AM" };
+            weeklySchedule[day] = { 
+                workout: workouts[i], 
+                b: sB[i], 
+                l: sL[i], 
+                d: sD[i], 
+                j: sJ[i % 7], // Ensure we cycle 7 juices
+                bedtime: (day === 'wed' || day === 'thu') ? "12:30 AM" : "12:00 AM" 
+            };
         });
-        showDay(days[(new Date().getDay() + 6) % 7]);
+
+        // Update Status Bar
+        const statusDiv = document.getElementById('cycleStatus');
+        const totalMeals = 30;
+        const usedCount = history.d.length;
+        statusDiv.innerText = `Cycle Status: ${usedCount}/${totalMeals} meals used. (No repeats until cycle resets)`;
+
+        // Show today
+        const todayKey = days[(new Date().getDay() + 6) % 7]; // Adjustment for Mon start
+        renderDay(todayKey, weeklySchedule);
+        
+        // Attach click handlers to tabs to use *this* specific schedule
+        document.querySelectorAll('.tab-btn').forEach((btn, index) => {
+            btn.onclick = () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                renderDay(days[index], weeklySchedule);
+            };
+        });
+        
+        // Auto-select today tab
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        const todayIndex = (new Date().getDay() + 6) % 7;
+        document.querySelectorAll('.tab-btn')[todayIndex].classList.add('active');
     }
 
-    function showDay(day) {
-        document.querySelectorAll('.tab-btn').forEach(btn => { btn.classList.remove('active'); if(btn.innerText.toLowerCase() === day) btn.classList.add('active'); });
-        const data = weeklySchedule[day];
-        
-        // Helper to render red meat badge
+    function renderDay(day, schedule) {
+        const data = schedule[day];
         const redTag = (type) => type === 'red' ? '<span class="red-meat-tag">RED</span>' : '';
-
+        
         document.getElementById('dayContent').innerHTML = `
             <div class="main-layout">
                 <div class="card">
@@ -221,7 +322,7 @@
                 </div>
                 <div class="juice-box">
                     <div class="juice-header">🧃 KUVINGS AUTO 10: ${data.j.name.toUpperCase()} <span class="oz-tag">${data.j.oz}</span></div>
-                    <div class="label">Ingredients (Per Person)</div><div style="font-size:0.9rem;">${data.j.ing}</div>
+                    <div class="label">Ingredients</div><div style="font-size:0.9rem;">${data.j.ing}</div>
                     <div class="nightly-obj">
                         <div class="label">🗓️ Protocol Checklist</div>
                         <div style="font-size: 0.85rem; line-height: 1.4;">
@@ -231,7 +332,8 @@
                 </div>
             </div>`;
     }
-    window.onload = generateNewWeek;
+
+    window.onload = generateNextWeek;
 </script>
 </body>
 </html>
