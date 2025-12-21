@@ -49,6 +49,19 @@
             gap: 8px;
         }
 
+        .controls { text-align: center; margin-bottom: 20px; }
+        .shuffle-btn {
+            background: rgba(56, 189, 248, 0.1);
+            color: var(--accent-blue);
+            border: 1px solid var(--accent-blue);
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: 0.3s;
+        }
+        .shuffle-btn:hover { background: var(--accent-blue); color: var(--bg-dark); }
+
         .tabs {
             display: flex; justify-content: space-between;
             background: var(--card-bg); padding: 8px;
@@ -130,6 +143,16 @@
             letter-spacing: 0.5px;
         }
 
+        .oz-tag {
+            background: var(--accent-green);
+            color: var(--bg-dark);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            float: right;
+        }
+
         .nightly-obj {
             background: rgba(56, 189, 248, 0.1);
             padding: 15px;
@@ -153,8 +176,12 @@
         </div>
     </header>
 
+    <div class="controls">
+        <button class="shuffle-btn" onclick="generateNewWeek()">🔄 REGENERATE WEEKLY MEALS</button>
+    </div>
+
     <div class="tabs" id="dayTabs">
-        <button class="tab-btn active" onclick="showDay('mon')">MON</button>
+        <button class="tab-btn" onclick="showDay('mon')">MON</button>
         <button class="tab-btn" onclick="showDay('tue')">TUE</button>
         <button class="tab-btn" onclick="showDay('wed')">WED</button>
         <button class="tab-btn" onclick="showDay('thu')">THU</button>
@@ -169,105 +196,102 @@
 </div>
 
 <script>
-    const schedule = {
-        mon: {
-            workout: "Foundation",
-            bVal: "Sprouted Oatmeal with Walnuts & Hemp", bP: "20g", bIng: "🛒 Rolled oats, walnuts, hemp hearts, cinnamon, water.", bBen: "Soluble fiber and ALA omega-3s for early-week heart health.",
-            lVal: "Power Bowl (Chipotle Style)", lP: "42g", lIng: "🛒 Bison, black beans, fajita peppers, onions, avocado, brown rice.", lBen: "High protein & resistant starch to stabilize metabolism.",
-            dVal: "Pepper Fin Ahi Tuna + Spicy Edamame", dP: "48g", dIng: "🛒 Ahi tuna, jalapeños, EVOO, edamame, garlic, sriracha.", dBen: "Omega-3s for brain focus; isoflavones support bone density.",
-            juice: "The Detox", jIng: "3 stalks Celery, 1 Cucumber, 1 Green Apple, 1/2 Lemon, 1 inch Ginger", jBen: "Flushes toxins and hydrates at a cellular level.",
-            bedtime: "12:00 AM"
-        },
-        tue: {
-            workout: "Boxing Day",
-            bVal: "Boxing Scramble", bP: "35g", bIng: "🛒 3 Eggs, zucchini, Brussels sprouts, onions, jalapeños.", bBen: "Capsaicin & choline for metabolism and boxing focus.",
-            lVal: "Fresh Ceviche with Hard Shells", lP: "35g", lIng: "🛒 White fish, lime, cilantro, red onion, corn tortillas.", lBen: "Enzyme-rich lean protein to fuel boxing intensity.",
-            dVal: "Shrimp Tacos + Sriracha Sauce", dP: "38g", dIng: "🛒 Shrimp, sriracha-yogurt sauce, cabbage, lime, corn tortillas.", dBen: "Astaxanthin for recovery; yogurt provides probiotics.",
-            juice: "Red Power", jIng: "2 Beets, 2 Carrots, 1 Orange, 1/2 inch Ginger", jBen: "Boosts Nitric Oxide for better blood flow during Boxing.",
-            bedtime: "12:00 AM"
-        },
-        wed: {
-            workout: "Strength / Studio",
-            bVal: "Hard Boiled Eggs & Sprouted Toast", bP: "32g", bIng: "🛒 3 Eggs, 2 slices sprouted grain bread, avocado.", bBen: "Leucine triggers muscle synthesis post-lifting.",
-            lVal: "Ahi Tuna Sashimi Bowl", lP: "45g", lIng: "🛒 Ahi tuna, edamame, cucumber, radish, brown rice.", lBen: "High protein repair with lean fats for post-strength recovery.",
-            dVal: "Protein Pasta with Ground Turkey", dP: "45g", dIng: "🛒 Chickpea pasta, ground turkey, marinara, fresh basil.", dBen: "High-protein recovery; tryptophan aids tonight's sleep.",
-            juice: "The Alkaline", jIng: "Kale, Spinach, Pear, Lime", jBen: "Neutralizes lactic acid & supports muscle repair.",
-            bedtime: "12:30 AM"
-        },
-        thu: {
-            workout: "Boxing Day",
-            bVal: "Hemp Heart & Berry Yogurt Bowl", bP: "30g", bIng: "🛒 Greek yogurt, hemp hearts, blueberries, banana.", bBen: "Smooth probiotics and potassium for muscle firing.",
-            lVal: "Power Bowl (Chicken & Greens)", lP: "40g", lIng: "🛒 Chicken thighs, brown rice, kale, black beans, salsa.", lBen: "Glycogen replenishment after high-intensity intervals.",
-            dVal: "Beef Stew (Cold Weather Focus)", dP: "45g", dIng: "🛒 Lean beef, carrots, celery, onions, garlic, rosemary.", dBen: "Slow-cooked collagen supports joint and skin health.",
-            juice: "Joint Guard", jIng: "3 Carrots, 1 Pear, 2 Celery, 1 inch Turmeric, Black Pepper", jBen: "Turmeric + Pepper combo reduces inflammation after training.",
-            bedtime: "12:30 AM"
-        },
-        fri: {
-            workout: "Yoga / Recovery",
-            bVal: "Smoked Salmon & Sprouted Toast", bP: "32g", bIng: "🛒 Smoked salmon, cucumber, arugula, sprouted bread.", bBen: "High Omega-3s for joint lubrication and mobility.",
-            lVal: "Ceviche Bowl with Extra Herbs", lP: "32g", lIng: "🛒 Shrimp/Fish, lime, mint, cilantro, cucumber, bell pepper.", lBen: "Vitamin C and enzymes for tissue and collagen restoration.",
-            dVal: "Pepper Fin Tuna + Zoodle Pasta", dP: "40g", dIng: "🛒 Ahi tuna, zucchini noodles, garlic, olive oil, lemon.", dBen: "Lean recovery with low glycemic load for deep sleep.",
-            juice: "The Flush", jIng: "1/4 head Red Cabbage, 1 Green Apple, Mint, 1/2 Lemon", jBen: "Anthocyanins protect DNA from damage.",
-            bedtime: "12:15 AM"
-        },
-        sat: {
-            workout: "Zone 2 Cardio",
-            bVal: "Spicy Scramble", bP: "32g", bIng: "🛒 3 Eggs, jalapeños, onions, zucchini, mushrooms.", bBen: "Metabolic kick-start for long-duration endurance.",
-            lVal: "Chipotle-Style Power Bowl", lP: "45g", lIng: "🛒 Double chicken, black beans, brown rice, pico de gallo.", lBen: "Consistent fuel for cardiovascular system efficiency.",
-            dVal: "Shrimp Pasta with Zoodles", dP: "42g", dIng: "🛒 Shrimp, zucchini noodles, garlic, EVOO, red pepper flakes.", dBen: "Polyphenols and lean protein for heart-healthy repair.",
-            juice: "The Endurance", jIng: "Watermelon, Lime, Mint", jBen: "Natural electrolytes and citrulline for vascular health.",
-            bedtime: "Flexible"
-        },
-        sun: {
-            workout: "Rest / Mobility",
-            bVal: "Poached Eggs & Asparagus", bP: "28g", bIng: "🛒 2 Eggs, asparagus, tomato, hemp hearts.", bBen: "Nutrient density for total body restoration.",
-            lVal: "Leftover Beef Stew", lP: "42g", lIng: "🛒 Beef, root vegetables, bone broth, herbs.", lBen: "Bioavailable minerals for easy digestion and recovery.",
-            dVal: "Pepper Fin Tuna over Zoodles", dP: "35g", dIng: "🛒 Ahi tuna, zucchini, garlic, olive oil, jalapeños.", dBen: "Light finish to ensure deep, uninterrupted sleep.",
-            juice: "The Rainbow", jIng: "Carrots, Beets, Celery, Ginger", jBen: "Full-spectrum vitamin support for the coming week.",
-            bedtime: "12:00 AM"
-        }
+    const mealLibrary = {
+        breakfasts: [
+            { val: "Boxing Scramble", p: "35g", ing: "🛒 3 Eggs, zucchini, Brussels sprouts, onions, jalapeños.", ben: "Capsaicin & choline for metabolism and boxing focus.", swap: "Egg White Scramble (No Asparagus/Yolks)" },
+            { val: "Triple-Protein Power Smoothie", p: "42g", ing: "🛒 Pea Protein, Hemp Hearts, PB2 Strawberry, Frozen Banana, Homemade Oat Milk.", ben: "Complete plant amino profile + heart-healthy beta-glucans.", swap: "Sophia's Favorite Smoothie" },
+            { val: "Sprouted Oatmeal with Walnuts & Hemp", p: "20g", ing: "🛒 Rolled oats, walnuts, hemp hearts, cinnamon, water.", ben: "Soluble fiber and ALA omega-3s for early-week heart health.", swap: "Same (Sophia Approved)" },
+            { val: "Poached Eggs & Asparagus", p: "28g", ing: "🛒 2 Eggs, asparagus, tomato, hemp hearts.", ben: "Nutrient density for total body restoration.", swap: "Triple-Protein Power Smoothie" },
+            { val: "Smoked Salmon & Sprouted Toast", p: "32g", ing: "🛒 Smoked salmon, avocado, sprouted grain bread, hemp hearts.", ben: "High DHA/EPA for joint lubrication and neuroprotection.", swap: "Same (Sophia Approved)" }
+        ],
+        lunches: [
+            { val: "Power Bowl (Chipotle Style)", p: "42g", ing: "🛒 Bison/Chicken, black beans, fajita peppers, onions, avocado.", ben: "High protein & resistant starch to stabilize metabolism." },
+            { val: "Fresh Ceviche with Hard Shells", p: "35g", ing: "🛒 White fish, lime, cilantro, red onion, corn tortillas.", ben: "Enzyme-rich lean protein to fuel boxing intensity." },
+            { val: "Ahi Tuna Sashimi Bowl", p: "45g", ing: "🛒 Ahi tuna, edamame, cucumber, radish, brown rice.", ben: "High protein repair with lean fats for recovery." },
+            { val: "Grilled Chicken & Kale Caesar", p: "40g", ing: "🛒 Chicken thighs, massaged kale, hemp heart 'parmesan', lemon-tahini dressing.", ben: "Vitamin K for bone health and massive protein hit." }
+        ],
+        dinners: [
+            { val: "Pepper Fin Ahi Tuna + Spicy Edamame", p: "48g", ing: "🛒 Ahi tuna, jalapeños, EVOO, edamame, garlic, sriracha.", ben: "Omega-3s for brain focus; isoflavones support bone density." },
+            { val: "Shrimp Tacos + Sriracha Sauce", p: "38g", ing: "🛒 Shrimp, sriracha-yogurt, cabbage, lime, corn tortillas.", ben: "Astaxanthin for recovery; yogurt provides probiotics." },
+            { val: "Protein Pasta with Ground Turkey", p: "45g", ing: "🛒 Chickpea pasta, ground turkey, marinara, fresh basil.", ben: "High-protein recovery; tryptophan aids tonight's sleep." },
+            { val: "Beef Stew (Cold Weather Focus)", p: "45g", ing: "🛒 Lean beef, carrots, celery, onions, garlic, rosemary.", ben: "Slow-cooked collagen supports joint and skin health." },
+            { val: "Lemon Garlic Salmon & Zoodles", p: "40g", ing: "🛒 Wild caught salmon, zucchini noodles, garlic, parsley, EVOO.", ben: "Low glycemic load to maximize growth hormone during sleep." }
+        ]
     };
+
+    let weeklySchedule = {};
+
+    function generateNewWeek() {
+        const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+        const workouts = ["Foundation", "Boxing Day", "Strength / Studio", "Boxing Day", "Yoga / Recovery", "Zone 2 Cardio", "Rest / Mobility"];
+        const juices = [
+            { name: "The Detox", oz: "16oz", ing: "3 stalks Celery, 1 Cucumber, 1 Green Apple, 1/2 Lemon, 1 inch Ginger", ben: "Flushes toxins and hydrates at a cellular level." },
+            { name: "Red Power", oz: "20oz", ing: "2 Beets, 2 Carrots, 1 Orange, 1/2 inch Ginger", ben: "Boosts Nitric Oxide for better blood flow during Boxing." },
+            { name: "The Alkaline", oz: "16oz", ing: "Kale, Spinach, Pear, Lime", ben: "Neutralizes lactic acid & supports muscle repair." },
+            { name: "Joint Guard", oz: "18oz", ing: "3 Carrots, 1 Pear, 2 Celery, 1 inch Turmeric, Black Pepper", ben: "Turmeric + Pepper combo reduces inflammation after training." },
+            { name: "The Flush", oz: "16oz", ing: "1/4 head Red Cabbage, 1 Green Apple, Mint, 1/2 Lemon", ben: "Anthocyanins protect DNA from damage." },
+            { name: "The Endurance", oz: "24oz", ing: "Watermelon, Lime, Mint", ben: "Natural electrolytes and citrulline for vascular health." },
+            { name: "The Rainbow", oz: "18oz", ing: "Carrots, Beets, Celery, Ginger", ben: "Full-spectrum vitamin support for the coming week." }
+        ];
+
+        days.forEach((day, i) => {
+            weeklySchedule[day] = {
+                workout: workouts[i],
+                b: mealLibrary.breakfasts[Math.floor(Math.random() * mealLibrary.breakfasts.length)],
+                l: mealLibrary.lunches[Math.floor(Math.random() * mealLibrary.lunches.length)],
+                d: mealLibrary.dinners[Math.floor(Math.random() * mealLibrary.dinners.length)],
+                j: juices[i],
+                bedtime: (day === 'wed' || day === 'thu') ? "12:30 AM" : "12:00 AM"
+            };
+        });
+        const today = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][new Date().getDay()];
+        showDay(today);
+    }
 
     function showDay(day) {
         const buttons = document.querySelectorAll('.tab-btn');
-        buttons.forEach(btn => btn.classList.remove('active'));
-        if(event && event.currentTarget) event.currentTarget.classList.add('active');
+        buttons.forEach(btn => {
+            btn.classList.remove('active');
+            if(btn.innerText.toLowerCase() === day) btn.classList.add('active');
+        });
 
-        const data = schedule[day];
+        const data = weeklySchedule[day];
         const content = `
             <div class="main-layout">
                 <div class="card">
                     <div class="workout-tag">${data.workout}</div>
                     
-                    <div class="label">🍳 Breakfast <span class="protein-tag">(${data.bP})</span></div>
-                    <div class="value">${data.bVal}</div>
-                    <div class="ingredients-list">${data.bIng}</div>
-                    <div class="benefit-box">${data.bBen}</div>
+                    <div class="label">🍳 Breakfast <span class="protein-tag">(${data.b.p})</span></div>
+                    <div class="value">🧔🏾‍♂️ Him: ${data.b.val}</div>
+                    <div class="value" style="color: var(--accent-pink);">👩🏾‍🦱 Her: ${data.b.swap}</div>
+                    <div class="ingredients-list">${data.b.ing}</div>
+                    <div class="benefit-box">${data.b.ben}</div>
                     
-                    <div class="label">🥗 Lunch <span class="protein-tag">(${data.lP})</span></div>
-                    <div class="value">${data.lVal}</div>
-                    <div class="ingredients-list">${data.lIng}</div>
-                    <div class="benefit-box">${data.lBen}</div>
+                    <div class="label">🥗 Lunch <span class="protein-tag">(${data.l.p})</span></div>
+                    <div class="value">${data.l.val}</div>
+                    <div class="ingredients-list">${data.l.ing}</div>
+                    <div class="benefit-box">${data.l.ben}</div>
                     
-                    <div class="label">🍽️ Dinner <span class="protein-tag">(${data.dP})</span></div>
-                    <div class="value">${data.dVal}</div>
-                    <div class="ingredients-list">${data.dIng}</div>
-                    <div class="benefit-box">${data.dBen}</div>
+                    <div class="label">🍽️ Dinner <span class="protein-tag">(${data.d.p})</span></div>
+                    <div class="value">${data.d.val}</div>
+                    <div class="ingredients-list">${data.d.ing}</div>
+                    <div class="benefit-box">${data.d.ben}</div>
                 </div>
 
                 <div class="juice-box">
-                    <div class="juice-header">🧃 KUVINGS JUICE: ${data.juice.toUpperCase()}</div>
-                    
-                    <div class="label">Kuvings Ingredients</div>
-                    <div style="font-size:0.95rem; line-height:1.4;">${data.jIng}</div>
-                    
+                    <div class="juice-header">
+                        🧃 KUVINGS JUICE: ${data.j.name.toUpperCase()}
+                        <span class="oz-tag">${data.j.oz}</span>
+                    </div>
+                    <div class="label">Ingredients</div>
+                    <div style="font-size:0.95rem; line-height:1.4;">${data.j.ing}</div>
                     <div class="label" style="margin-top:10px;">Longevity Logic</div>
-                    <div style="font-size:0.85rem; color: var(--accent-green); line-height: 1.4; border-left: 1px solid #334155; padding-left: 10px;">${data.jBen}</div>
+                    <div style="font-size:0.85rem; color: var(--accent-green); line-height: 1.4; border-left: 1px solid #334155; padding-left: 10px;">${data.j.ben}</div>
                     
                     <div class="nightly-obj">
                         <div class="label">🗓️ Nightly Objective</div>
                         <div style="font-size: 0.9rem; line-height: 1.4;">
-                            Focus on deep nasal breathing during stretching to lower cortisol. <br><br>
+                            Target sleep depth with early hydration cut-off. <br><br>
                             <strong>Bedtime:</strong> ${data.bedtime}
                         </div>
                     </div>
@@ -277,7 +301,7 @@
         document.getElementById('dayContent').innerHTML = content;
     }
 
-    window.onload = () => showDay('mon');
+    window.onload = generateNewWeek;
 </script>
 </body>
 </html>
