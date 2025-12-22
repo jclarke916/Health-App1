@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Century Club | Calendar Edition</title>
+    <title>The Century Club | v10 Master</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -34,8 +34,12 @@
         .tab-btn span { display: block; font-size: 0.7rem; opacity: 0.7; margin-top: 2px; }
         .tab-btn.active { color: var(--accent-blue); background: rgba(56, 189, 248, 0.1); border-radius: 8px; }
         
+        /* RESTORED LAYOUT: SIDE-BY-SIDE */
         .main-layout { display: grid; grid-template-columns: 1.4fr 1fr; gap: 24px; align-items: start; transition: opacity 0.3s ease; opacity: 1; }
         .main-layout.fade { opacity: 0.4; }
+        
+        /* MOBILE RESPONSIVE: Stack them on phones */
+        @media (max-width: 768px) { .main-layout { grid-template-columns: 1fr; } }
         
         .card { background: var(--card-bg); border-radius: 16px; padding: 25px; border-left: 4px solid var(--accent-blue); }
         .label { color: var(--accent-blue); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
@@ -214,7 +218,6 @@
         return result;
     }
 
-    // Helper: Get Monday of the week including Offset
     function getMondayDate(offset) {
         let d = new Date();
         let day = d.getDay();
@@ -234,42 +237,39 @@
         }, 150);
     }
 
+    // UPDATED: Now accepts 'force' to reset everything to TRUE current day
     function resetToCurrent() {
         const layout = document.getElementById('dayContent');
         layout.classList.add('fade');
         setTimeout(() => {
-            weekOffset = 0;
-            generateSyncedWeek(true); // pass true to force tab switch
+            weekOffset = 0; // Reset to current week
+            generateSyncedWeek(true); // TRUE = Force jump to Today's tab
             layout.classList.remove('fade');
         }, 150);
     }
 
-    // Main Engine
-    function generateSyncedWeek(forceCurrentDay = false) {
+    function generateSyncedWeek(forceToday = false) {
         const today = new Date();
         const year = today.getFullYear();
         const rng = mulberry32(year); 
 
-        // Shuffle once per year
+        // Shuffle logic
         const shuffledB = seededShuffle(mealLibrary.breakfasts, rng);
         const shuffledL = seededShuffle(mealLibrary.lunches, rng);
         const shuffledD = seededShuffle(mealLibrary.dinners, rng);
         const shuffledJ = seededShuffle(mealLibrary.juices, rng);
 
-        // Calculate Infinite Index
         const d = new Date();
         d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
         const weekNo = Math.ceil((((d - new Date(Date.UTC(d.getUTCFullYear(),0,1))) / 86400000) + 1)/7);
         const effectiveWeek = weekNo + weekOffset;
         const startIndex = (Math.abs(effectiveWeek) * 7) % 30;
 
-        // Slice Items
         const sB = getWrappedSlice(shuffledB, startIndex, 7);
         const sL = getWrappedSlice(shuffledL, startIndex, 7);
         const sD = getWrappedSlice(shuffledD, startIndex, 7);
         const sJ = getWrappedSlice(shuffledJ, startIndex, 7);
 
-        // Red Meat Balancer
         for (let i = 0; i < 7; i++) {
             if (sL[i].type === 'red' && sD[i].type === 'red') {
                 let swapIdx = (i + 2) % 7; 
@@ -277,16 +277,13 @@
             }
         }
 
-        // --- Render UI ---
-        
-        // 1. Status Bar Date Range
+        // Render Status Bar
         let monday = getMondayDate(weekOffset);
         let sunday = new Date(monday);
         sunday.setDate(monday.getDate() + 6);
         const opts = { month: 'short', day: 'numeric' };
         document.getElementById('syncStatus').innerText = `📅 WEEK OF: ${monday.toLocaleDateString('en-US', opts)} - ${sunday.toLocaleDateString('en-US', opts)}`;
 
-        // 2. Build Schedule Data
         const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
         const workouts = ["Foundation", "Boxing Day", "Strength / Studio", "Boxing Day", "Yoga / Recovery", "Zone 2 Cardio", "Rest / Mobility"];
         let weeklySchedule = {};
@@ -299,9 +296,9 @@
             };
         });
 
-        // 3. Render Tabs with DATES
+        // Tabs Rendering
         const tabsContainer = document.getElementById('dayTabs');
-        tabsContainer.innerHTML = ''; // clear old tabs
+        tabsContainer.innerHTML = '';
         
         days.forEach((dayKey, i) => {
             let tabDate = new Date(monday);
@@ -310,7 +307,7 @@
             
             let btn = document.createElement('button');
             btn.className = 'tab-btn';
-            btn.innerHTML = `${dayKey.toUpperCase()}<span>${dateNum}</span>`; // e.g. MON 23
+            btn.innerHTML = `${dayKey.toUpperCase()}<span>${dateNum}</span>`;
             
             btn.onclick = () => {
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -320,25 +317,28 @@
             tabsContainer.appendChild(btn);
         });
 
-        // 4. Select Active Tab
-        // If forceCurrentDay is true (from "Today" button), or if no tab is active, select today.
-        // Otherwise, try to keep the currently selected day index.
+        // Smart Active Tab Logic
         let activeIdx = 0;
         const currentActive = document.querySelector('.tab-btn.active');
         
-        if (forceCurrentDay) {
-            activeIdx = (new Date().getDay() + 6) % 7;
+        // Calculate true current day index (0=Mon, 6=Sun)
+        let todayDay = new Date().getDay();
+        let trueTodayIdx = (todayDay + 6) % 7;
+
+        if (forceToday) {
+            // Force jump to today
+            activeIdx = trueTodayIdx;
         } else if (currentActive) {
-             // Try to find the index of the previously active tab
-             // Since we rebuilt the DOM, we can't check class, so we use logic or default to 0
-             // Simpler: Just default to Today if week changed, or keep index if we track it.
-             // Let's default to Today if we moved weeks, or today's index.
-             activeIdx = (new Date().getDay() + 6) % 7;
+            // If just changing weeks, try to keep the same day selected (e.g. stay on Wed)
+            // We find the index based on the previous button's text, or default to 0
+            // Since we just wiped the HTML, we can't check 'currentActive' easily. 
+            // Simplification: If not forced, default to Monday (0) or Today? 
+            // Let's default to Today's index to be safe/useful.
+             activeIdx = trueTodayIdx;
         } else {
-             activeIdx = (new Date().getDay() + 6) % 7;
+             activeIdx = trueTodayIdx;
         }
 
-        // Trigger the click on the determined tab
         const allTabs = document.querySelectorAll('.tab-btn');
         if(allTabs[activeIdx]) {
             allTabs[activeIdx].classList.add('active');
@@ -363,7 +363,7 @@
                 <div class="label">🍽️ Dinner <span class="protein-tag">(${data.d.p})</span> ${redTag(data.d.type)}</div>
                 <div class="value">${data.d.val}</div><div class="ingredients-list">🛒 ${data.d.ing}</div>
             </div>
-            <br>
+            
             <div class="juice-box">
                 <div class="juice-header">🧃 KUVINGS AUTO 10: ${data.j.name.toUpperCase()} <span class="oz-tag">${data.j.oz}</span></div>
                 <div class="label">Ingredients</div><div style="font-size:0.9rem;">${data.j.ing}</div>
