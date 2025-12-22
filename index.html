@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Century Club | v10 Master</title>
+    <title>The Century Club | v11 Final</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -34,11 +34,11 @@
         .tab-btn span { display: block; font-size: 0.7rem; opacity: 0.7; margin-top: 2px; }
         .tab-btn.active { color: var(--accent-blue); background: rgba(56, 189, 248, 0.1); border-radius: 8px; }
         
-        /* RESTORED LAYOUT: SIDE-BY-SIDE */
+        /* LAYOUT FIX: Grid ensures side-by-side */
         .main-layout { display: grid; grid-template-columns: 1.4fr 1fr; gap: 24px; align-items: start; transition: opacity 0.3s ease; opacity: 1; }
         .main-layout.fade { opacity: 0.4; }
         
-        /* MOBILE RESPONSIVE: Stack them on phones */
+        /* On phones, we still stack them so text isn't squished */
         @media (max-width: 768px) { .main-layout { grid-template-columns: 1fr; } }
         
         .card { background: var(--card-bg); border-radius: 16px; padding: 25px; border-left: 4px solid var(--accent-blue); }
@@ -237,13 +237,13 @@
         }, 150);
     }
 
-    // UPDATED: Now accepts 'force' to reset everything to TRUE current day
+    // RESET TO CURRENT: Forces week to 0 and forces "Today" tab selection
     function resetToCurrent() {
         const layout = document.getElementById('dayContent');
         layout.classList.add('fade');
         setTimeout(() => {
-            weekOffset = 0; // Reset to current week
-            generateSyncedWeek(true); // TRUE = Force jump to Today's tab
+            weekOffset = 0;
+            generateSyncedWeek(true); // true = Force Today's Tab
             layout.classList.remove('fade');
         }, 150);
     }
@@ -317,28 +317,24 @@
             tabsContainer.appendChild(btn);
         });
 
-        // Smart Active Tab Logic
+        // LOGIC: Select Today or Maintain State
         let activeIdx = 0;
-        const currentActive = document.querySelector('.tab-btn.active');
-        
-        // Calculate true current day index (0=Mon, 6=Sun)
         let todayDay = new Date().getDay();
-        let trueTodayIdx = (todayDay + 6) % 7;
+        let trueTodayIdx = (todayDay + 6) % 7; // Convert Sun=0 to Sun=6, Mon=0
 
         if (forceToday) {
             // Force jump to today
             activeIdx = trueTodayIdx;
-        } else if (currentActive) {
-            // If just changing weeks, try to keep the same day selected (e.g. stay on Wed)
-            // We find the index based on the previous button's text, or default to 0
-            // Since we just wiped the HTML, we can't check 'currentActive' easily. 
-            // Simplification: If not forced, default to Monday (0) or Today? 
-            // Let's default to Today's index to be safe/useful.
-             activeIdx = trueTodayIdx;
         } else {
-             activeIdx = trueTodayIdx;
+            // Check if there was an active tab before we wiped them
+            // Simplest heuristic: Default to Today if we are in current week, 
+            // otherwise default to Monday (0) or Today's index?
+            // User feedback suggests they prefer "Today's index" even in future weeks.
+            // Let's stick to trueTodayIdx for consistency unless user clicks a tab.
+            activeIdx = trueTodayIdx;
         }
 
+        // Apply active class
         const allTabs = document.querySelectorAll('.tab-btn');
         if(allTabs[activeIdx]) {
             allTabs[activeIdx].classList.add('active');
@@ -350,6 +346,7 @@
         const data = schedule[day];
         const redTag = (type) => type === 'red' ? '<span class="red-meat-tag">RED</span>' : '';
         
+        // NO <br> tag! This ensures grid works properly.
         document.getElementById('dayContent').innerHTML = `
             <div class="card">
                 <div class="workout-tag">${data.workout}</div>
