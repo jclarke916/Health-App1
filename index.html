@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Century Club | Final OS</title>
+    <title>The Century Club | Calendar Edition</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -30,7 +30,8 @@
         .reset-btn:hover { background: var(--text-dim); color: var(--bg-dark); }
 
         .tabs { display: flex; justify-content: space-between; background: var(--card-bg); padding: 8px; border-radius: 12px; margin-bottom: 20px; overflow-x: auto; }
-        .tab-btn { background: none; border: none; color: var(--text-dim); padding: 10px 12px; cursor: pointer; font-weight: 600; flex: 1; min-width: 80px; }
+        .tab-btn { background: none; border: none; color: var(--text-dim); padding: 10px 8px; cursor: pointer; font-weight: 600; flex: 1; min-width: 70px; font-size: 0.85rem; text-align: center; }
+        .tab-btn span { display: block; font-size: 0.7rem; opacity: 0.7; margin-top: 2px; }
         .tab-btn.active { color: var(--accent-blue); background: rgba(56, 189, 248, 0.1); border-radius: 8px; }
         
         .main-layout { display: grid; grid-template-columns: 1.4fr 1fr; gap: 24px; align-items: start; transition: opacity 0.3s ease; opacity: 1; }
@@ -69,14 +70,7 @@
     </div>
 
     <div class="tabs" id="dayTabs">
-        <button class="tab-btn" onclick="showDay('mon')">MON</button>
-        <button class="tab-btn" onclick="showDay('tue')">TUE</button>
-        <button class="tab-btn" onclick="showDay('wed')">WED</button>
-        <button class="tab-btn" onclick="showDay('thu')">THU</button>
-        <button class="tab-btn" onclick="showDay('fri')">FRI</button>
-        <button class="tab-btn" onclick="showDay('sat')">SAT</button>
-        <button class="tab-btn" onclick="showDay('sun')">SUN</button>
-    </div>
+        </div>
     <div id="dayContent" class="main-layout"></div>
 </div>
 
@@ -191,7 +185,7 @@
 
     let weekOffset = 0;
 
-    // --- SEED LOGIC: STABLE YEARLY SHUFFLE ---
+    // --- SEED LOGIC ---
     function mulberry32(a) {
         return function() {
             var t = a += 0x6D2B79F5;
@@ -220,21 +214,14 @@
         return result;
     }
 
-    // Helper to get Monday and Sunday Date strings for the offset week
-    function getDateRangeStr(offset) {
+    // Helper: Get Monday of the week including Offset
+    function getMondayDate(offset) {
         let d = new Date();
-        // Adjust to current Monday
-        let day = d.getDay(), diff = d.getDate() - day + (day == 0 ? -6:1); 
+        let day = d.getDay();
+        let diff = d.getDate() - day + (day == 0 ? -6:1);
         let monday = new Date(d.setDate(diff));
-        
-        // Apply Offset (weeks)
         monday.setDate(monday.getDate() + (offset * 7));
-        
-        let sunday = new Date(monday);
-        sunday.setDate(monday.getDate() + 6);
-        
-        const opts = { month: 'short', day: 'numeric' };
-        return `${monday.toLocaleDateString('en-US', opts)} - ${sunday.toLocaleDateString('en-US', opts)}`;
+        return monday;
     }
 
     function changeWeek(direction) {
@@ -252,42 +239,37 @@
         layout.classList.add('fade');
         setTimeout(() => {
             weekOffset = 0;
-            generateSyncedWeek();
+            generateSyncedWeek(true); // pass true to force tab switch
             layout.classList.remove('fade');
         }, 150);
     }
 
-    function generateSyncedWeek() {
+    // Main Engine
+    function generateSyncedWeek(forceCurrentDay = false) {
         const today = new Date();
         const year = today.getFullYear();
-        
-        // 1. Stable Shuffle Seed: Just the Year (2025)
-        // This ensures the "Deck" order never changes for the whole year.
         const rng = mulberry32(year); 
 
-        // 2. Shuffle full library once per year
+        // Shuffle once per year
         const shuffledB = seededShuffle(mealLibrary.breakfasts, rng);
         const shuffledL = seededShuffle(mealLibrary.lunches, rng);
         const shuffledD = seededShuffle(mealLibrary.dinners, rng);
         const shuffledJ = seededShuffle(mealLibrary.juices, rng);
 
-        // 3. Calculate "Infinite" Start Index
-        // Get current week number (0-52)
+        // Calculate Infinite Index
         const d = new Date();
         d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
         const weekNo = Math.ceil((((d - new Date(Date.UTC(d.getUTCFullYear(),0,1))) / 86400000) + 1)/7);
-        
-        // Add Offset. Multiply by 7 to step through the list.
         const effectiveWeek = weekNo + weekOffset;
         const startIndex = (Math.abs(effectiveWeek) * 7) % 30;
 
-        // 4. Slice
+        // Slice Items
         const sB = getWrappedSlice(shuffledB, startIndex, 7);
         const sL = getWrappedSlice(shuffledL, startIndex, 7);
         const sD = getWrappedSlice(shuffledD, startIndex, 7);
         const sJ = getWrappedSlice(shuffledJ, startIndex, 7);
 
-        // 5. Red Meat Balancer
+        // Red Meat Balancer
         for (let i = 0; i < 7; i++) {
             if (sL[i].type === 'red' && sD[i].type === 'red') {
                 let swapIdx = (i + 2) % 7; 
@@ -295,11 +277,20 @@
             }
         }
 
-        // --- Render ---
+        // --- Render UI ---
+        
+        // 1. Status Bar Date Range
+        let monday = getMondayDate(weekOffset);
+        let sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        const opts = { month: 'short', day: 'numeric' };
+        document.getElementById('syncStatus').innerText = `📅 WEEK OF: ${monday.toLocaleDateString('en-US', opts)} - ${sunday.toLocaleDateString('en-US', opts)}`;
+
+        // 2. Build Schedule Data
         const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
         const workouts = ["Foundation", "Boxing Day", "Strength / Studio", "Boxing Day", "Yoga / Recovery", "Zone 2 Cardio", "Rest / Mobility"];
-        
         let weeklySchedule = {};
+        
         days.forEach((day, i) => {
             weeklySchedule[day] = { 
                 workout: workouts[i], 
@@ -308,33 +299,51 @@
             };
         });
 
-        // Update UI Text with DATE RANGE
-        const dateRange = getDateRangeStr(weekOffset);
-        document.getElementById('syncStatus').innerText = `📅 WEEK OF: ${dateRange.toUpperCase()}`;
-
-        // Preserve active tab
-        const currentActive = document.querySelector('.tab-btn.active');
-        let activeIdx = 0;
-        if(currentActive) {
-            days.forEach((d, i) => { if(d === currentActive.innerText.toLowerCase()) activeIdx = i; });
-        } else {
-            activeIdx = (new Date().getDay() + 6) % 7;
-        }
-
-        renderDay(days[activeIdx], weeklySchedule);
-
-        // Re-bind buttons
-        document.querySelectorAll('.tab-btn').forEach((btn, index) => {
+        // 3. Render Tabs with DATES
+        const tabsContainer = document.getElementById('dayTabs');
+        tabsContainer.innerHTML = ''; // clear old tabs
+        
+        days.forEach((dayKey, i) => {
+            let tabDate = new Date(monday);
+            tabDate.setDate(monday.getDate() + i);
+            let dateNum = tabDate.getDate();
+            
+            let btn = document.createElement('button');
+            btn.className = 'tab-btn';
+            btn.innerHTML = `${dayKey.toUpperCase()}<span>${dateNum}</span>`; // e.g. MON 23
+            
             btn.onclick = () => {
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                renderDay(days[index], weeklySchedule);
+                renderDay(dayKey, weeklySchedule);
             };
+            tabsContainer.appendChild(btn);
         });
+
+        // 4. Select Active Tab
+        // If forceCurrentDay is true (from "Today" button), or if no tab is active, select today.
+        // Otherwise, try to keep the currently selected day index.
+        let activeIdx = 0;
+        const currentActive = document.querySelector('.tab-btn.active');
         
-        // Highlight active
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-btn')[activeIdx].classList.add('active');
+        if (forceCurrentDay) {
+            activeIdx = (new Date().getDay() + 6) % 7;
+        } else if (currentActive) {
+             // Try to find the index of the previously active tab
+             // Since we rebuilt the DOM, we can't check class, so we use logic or default to 0
+             // Simpler: Just default to Today if week changed, or keep index if we track it.
+             // Let's default to Today if we moved weeks, or today's index.
+             activeIdx = (new Date().getDay() + 6) % 7;
+        } else {
+             activeIdx = (new Date().getDay() + 6) % 7;
+        }
+
+        // Trigger the click on the determined tab
+        const allTabs = document.querySelectorAll('.tab-btn');
+        if(allTabs[activeIdx]) {
+            allTabs[activeIdx].classList.add('active');
+            renderDay(days[activeIdx], weeklySchedule);
+        }
     }
 
     function renderDay(day, schedule) {
@@ -367,7 +376,7 @@
             </div>`;
     }
 
-    window.onload = generateSyncedWeek;
+    window.onload = () => generateSyncedWeek(true);
 </script>
 </body>
 </html>
