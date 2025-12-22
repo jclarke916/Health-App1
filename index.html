@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Centurion | v33 Recipe Mode</title>
+    <title>The Centurion | v33.1 Dynamic Badges</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -14,8 +14,10 @@
             --text-dim: #888888;
             --accent-gold: #D4AF37;
             --accent-silver: #C0C0C0;
+            /* BADGE COLORS */
+            --badge-green: #2a9d48;
+            --badge-orange: #c47f00;
             --alert-red: #993333; 
-            --success-green: #3D5C3A; 
         }
         
         body { font-family: 'Inter', sans-serif; background-color: var(--bg-dark); color: var(--text-main); margin: 0; display: flex; flex-direction: column; align-items: center; padding: 20px; }
@@ -81,8 +83,17 @@
         .guide-title { font-size: 1.3rem; font-weight: 300; color: var(--accent-gold); margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #333; padding-bottom: 10px; }
         
         /* RECIPE MODAL SPECIFIC */
-        .recipe-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .recipe-time-badge { background: #222; color: var(--accent-silver); padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; border: 1px solid #444; }
+        #recipeTitle { margin-bottom: 10px; border-bottom: none; padding-bottom: 0;}
+        .recipe-badge-container { margin-bottom: 20px; }
+
+        .recipe-time-badge { 
+            display: inline-block; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.5px; color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        /* Dynamic Colors */
+        .green-badge { background-color: var(--badge-green); }
+        .orange-badge { background-color: var(--badge-orange); }
+        .red-badge { background-color: var(--alert-red); }
+
         .recipe-section-title { color: var(--accent-gold); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; margin-top: 20px; margin-bottom: 10px; font-weight: 700; }
         .recipe-list { list-style: none; padding: 0; margin: 0; }
         .recipe-list li { margin-bottom: 8px; color: #ccc; font-size: 0.9rem; line-height: 1.5; padding-left: 15px; position: relative; }
@@ -144,10 +155,11 @@
 <div id="recipeModal" class="modal">
     <div class="modal-content">
         <span class="close-btn" onclick="closeModal('recipeModal')">&times;</span>
-        <div class="recipe-header-row">
-            <div class="guide-title" id="recipeTitle" style="margin:0; border:none;">Dish Title</div>
-            <div class="recipe-time-badge" id="recipeTime">30 mins</div>
+        <div class="guide-title" id="recipeTitle">Dish Title</div>
+        <div class="recipe-badge-container">
+             <div class="recipe-time-badge" id="recipeTime">30 mins</div>
         </div>
+        
         <div class="recipe-section-title">Ingredients</div>
         <ul class="recipe-list" id="recipeIngredients"></ul>
         <div class="recipe-section-title">Preparation</div>
@@ -527,10 +539,8 @@
         const ingList = document.getElementById('recipeIngredients');
         const stepList = document.getElementById('recipeInstructions');
 
-        // Look up recipe or use smart fallback
         let recipe = recipeDatabase[dishName];
         
-        // Smart Fallback Logic if recipe isn't hardcoded
         if (!recipe) {
             recipe = { ...recipeDatabase["default"] };
             if (dishName.includes("Salmon")) {
@@ -545,12 +555,28 @@
                 recipe.time = "10 mins";
                 recipe.ingredients = ["Protein of choice", "Mixed Greens", "Olive Oil", "Lemon/Vinegar", "Seeds/Nuts"];
                 recipe.steps = ["Chopped all veggies.", "Whisk oil and vinegar.", "Toss greens with dressing.", "Top with warm or cold protein."];
+            } else if (dishName.includes("Bison") || dishName.includes("Steak")) {
+                 recipe.time = "20 mins";
             }
         }
 
+        // --- DYNAMIC COLOR LOGIC ---
+        const minutes = parseInt(recipe.time);
+        timeEl.className = 'recipe-time-badge'; // Reset classes
+
+        if (minutes <= 15) {
+            timeEl.classList.add('green-badge');
+            timeEl.innerText = `⚡ ${recipe.time}`;
+        } else if (minutes > 15 && minutes <= 30) {
+            timeEl.classList.add('orange-badge');
+             timeEl.innerText = `⏱️ ${recipe.time}`;
+        } else {
+            timeEl.classList.add('red-badge');
+             timeEl.innerText = `⏳ ${recipe.time}`;
+        }
+        // ---------------------------
+
         titleEl.innerText = dishName;
-        timeEl.innerText = recipe.time;
-        
         ingList.innerHTML = recipe.ingredients.map(i => `<li>${i}</li>`).join('');
         stepList.innerHTML = recipe.steps.map(s => `<p>${s}</p>`).join('');
 
