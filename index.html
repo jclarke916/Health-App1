@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Century Club | Synced OS</title>
+    <title>The Century Club | Infinite Sync</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -20,8 +20,15 @@
         .status-bar { 
             text-align: center; color: var(--accent-blue); font-size: 0.9rem; margin-bottom: 20px; 
             background: rgba(56, 189, 248, 0.1); padding: 10px; border-radius: 8px; border: 1px solid rgba(56, 189, 248, 0.2);
+            font-weight: bold; letter-spacing: 0.5px;
         }
         
+        .controls { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 20px; width: 100%; }
+        .nav-btn { flex: 1; padding: 12px; background: var(--card-bg); border: 1px solid var(--accent-blue); color: var(--accent-blue); border-radius: 8px; cursor: pointer; font-weight: 700; transition: 0.2s; }
+        .nav-btn:hover { background: var(--accent-blue); color: var(--bg-dark); }
+        .reset-btn { flex: 0.5; border-color: var(--text-dim); color: var(--text-dim); }
+        .reset-btn:hover { background: var(--text-dim); color: var(--bg-dark); }
+
         .tabs { display: flex; justify-content: space-between; background: var(--card-bg); padding: 8px; border-radius: 12px; margin-bottom: 20px; overflow-x: auto; }
         .tab-btn { background: none; border: none; color: var(--text-dim); padding: 10px 12px; cursor: pointer; font-weight: 600; flex: 1; min-width: 80px; }
         .tab-btn.active { color: var(--accent-blue); background: rgba(56, 189, 248, 0.1); border-radius: 8px; }
@@ -50,7 +57,13 @@
         </div>
     </header>
 
-    <div class="status-bar" id="syncStatus">🔄 SYNCED MODE: Week X - Menu Set Y</div>
+    <div class="status-bar" id="syncStatus">🔄 Loading...</div>
+
+    <div class="controls">
+        <button class="nav-btn" onclick="changeWeek(-1)">⬅️ PREV WEEK</button>
+        <button class="nav-btn reset-btn" onclick="resetToCurrent()">TODAY</button>
+        <button class="nav-btn" onclick="changeWeek(1)">NEXT WEEK ➡️</button>
+    </div>
 
     <div class="tabs" id="dayTabs">
         <button class="tab-btn" onclick="showDay('mon')">MON</button>
@@ -174,9 +187,10 @@
         ]
     };
 
-    // --- 2. Synced Logic (Seed Based on Date) ---
-    // This PRNG allows us to get the SAME random numbers on different devices
-    // if we provide the same seed (Year + Week Number).
+    // --- 2. Global State ---
+    let weekOffset = 0; // The magic variable that allows "time travel"
+
+    // --- 3. PRNG & Date Logic ---
     function mulberry32(a) {
         return function() {
             var t = a += 0x6D2B79F5;
@@ -194,11 +208,9 @@
         return { year: d.getUTCFullYear(), week: weekNo };
     }
 
-    // A deterministic shuffle using the seeded PRNG
     function seededShuffle(array, rng) {
-        let cur = array.length, rand;
-        // copy array to avoid mutating original logic
         let newArray = [...array];
+        let cur = newArray.length, rand;
         while (cur != 0) {
             rand = Math.floor(rng() * cur);
             cur--;
@@ -207,47 +219,60 @@
         return newArray;
     }
 
+    // Helper: Wraps array slice (e.g. if we need indices 28, 29, 0, 1, 2, 3, 4)
+    function getWrappedSlice(array, start, length) {
+        let result = [];
+        for (let i = 0; i < length; i++) {
+            result.push(array[(start + i) % array.length]);
+        }
+        return result;
+    }
+
+    function changeWeek(direction) {
+        weekOffset += direction;
+        generateSyncedWeek();
+    }
+
+    function resetToCurrent() {
+        weekOffset = 0;
+        generateSyncedWeek();
+    }
+
     function generateSyncedWeek() {
         const today = new Date();
         const weekData = getWeekNumber(today);
         const currentYear = weekData.year;
-        const currentWeek = weekData.week;
-
-        // SEED: Unique per 4-week cycle.
-        // We divide week by 4 to get a "Month Block" seed.
-        const cycleSeed = currentYear * 100 + Math.floor(currentWeek / 4);
         
-        // This RNG determines the SHUFFLE of the 30 items.
-        // It stays the same for 4 weeks, ensuring we work through the deck.
+        // The effective week determines "where" in the cycle we are
+        const currentWeek = weekData.week + weekOffset;
+
+        // Seed: Changes every 4 weeks to re-shuffle the deck
+        // Math.floor(currentWeek / 4) ensures the shuffle stays consistent for a month
+        const cycleSeed = currentYear * 100 + Math.floor(currentWeek / 4);
         const rng = mulberry32(cycleSeed);
 
-        // Shuffle the FULL decks using the cycle seed
+        // 1. Shuffle FULL decks using the cycle seed
         const shuffledB = seededShuffle(mealLibrary.breakfasts, rng);
         const shuffledL = seededShuffle(mealLibrary.lunches, rng);
         const shuffledD = seededShuffle(mealLibrary.dinners, rng);
         const shuffledJ = seededShuffle(mealLibrary.juices, rng);
 
-        // DETERMINE OFFSET: Which set of 7 do we show this week?
-        // Week % 4 gives us 0, 1, 2, or 3.
-        const weekIndex = currentWeek % 4;
-        const startIndex = weekIndex * 7;
-        
-        // If we are in the 5th week of a cycle (rare logic edge case), wrap around or use index 0
-        // Since we have 30 items, we can support 4 weeks (28 items).
-        // If weekIndex is > 3 (unlikely with %4), we default to 0.
-        
-        const sB = shuffledB.slice(startIndex, startIndex + 7);
-        const sL = shuffledL.slice(startIndex, startIndex + 7);
-        const sD = shuffledD.slice(startIndex, startIndex + 7);
-        
-        // Juices: just rotate them based on week + day to keep simple
-        const sJ = shuffledJ; // Use full list
+        // 2. Determine Offset in the shuffled deck (0 to 29)
+        // We use % 30 to wrap infinitely around the 30 recipes
+        // Multiply by 7 because we consume 7 recipes per week
+        const startIndex = (Math.abs(currentWeek) * 7) % 30;
 
-        // --- Red Meat Balancer (Deterministic) ---
-        // We must perform the "Swap" deterministically too.
+        // 3. Slice 7 items (wrapping handled by helper)
+        const sB = getWrappedSlice(shuffledB, startIndex, 7);
+        const sL = getWrappedSlice(shuffledL, startIndex, 7);
+        const sD = getWrappedSlice(shuffledD, startIndex, 7);
+        const sJ = getWrappedSlice(shuffledJ, startIndex, 7); // Rotates through 7 juices infinitely
+
+        // 4. Deterministic Red Meat Balancer
+        // We must perform the "Swap" deterministically so it's synced across devices
         for (let i = 0; i < 7; i++) {
             if (sL[i].type === 'red' && sD[i].type === 'red') {
-                // Deterministic swap index based on day index and seed
+                // Swap logic based on day index
                 let swapIdx = (i + 2) % 7; 
                 [sD[i], sD[swapIdx]] = [sD[swapIdx], sD[i]];
             }
@@ -261,31 +286,41 @@
         days.forEach((day, i) => {
             weeklySchedule[day] = { 
                 workout: workouts[i], 
-                b: sB[i] || sB[0], // fallback logic
-                l: sL[i] || sL[0], 
-                d: sD[i] || sD[0], 
-                j: sJ[(i + weekIndex) % 7], // Rotate juices weekly
+                b: sB[i], l: sL[i], d: sD[i], j: sJ[i],
                 bedtime: (day === 'wed' || day === 'thu') ? "12:30 AM" : "12:00 AM" 
             };
         });
 
-        // Update UI Text
-        document.getElementById('syncStatus').innerText = `🔄 SYNCED MODE: Year ${currentYear} Week ${currentWeek} (Menu Set ${weekIndex + 1}/4)`;
+        // Update Status Bar
+        let displayWeek = (weekOffset === 0) ? "CURRENT WEEK" : (weekOffset > 0 ? `FUTURE WEEK (+${weekOffset})` : `PAST WEEK (${weekOffset})`);
+        document.getElementById('syncStatus').innerText = `🔄 SYNCED MODE: ${displayWeek}`;
 
-        const todayKey = days[(new Date().getDay() + 6) % 7];
-        renderDay(todayKey, weeklySchedule);
+        // Keep current tab active or default to today
+        let activeIndex = 0;
+        const currentActive = document.querySelector('.tab-btn.active');
+        if (currentActive) {
+            // Find which index matches the active text
+            days.forEach((d, idx) => { if(d === currentActive.innerText.toLowerCase()) activeIndex = idx; });
+        } else {
+            activeIndex = (new Date().getDay() + 6) % 7;
+        }
 
+        // Render functions
+        const render = (idx) => renderDay(days[idx], weeklySchedule);
+        
+        // Re-bind buttons
         document.querySelectorAll('.tab-btn').forEach((btn, index) => {
             btn.onclick = () => {
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                renderDay(days[index], weeklySchedule);
+                render(index);
             };
         });
-        
+
+        // Initial Render
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        const todayIndex = (new Date().getDay() + 6) % 7;
-        document.querySelectorAll('.tab-btn')[todayIndex].classList.add('active');
+        document.querySelectorAll('.tab-btn')[activeIndex].classList.add('active');
+        render(activeIndex);
     }
 
     function renderDay(day, schedule) {
