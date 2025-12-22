@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Century Club | v11 Final</title>
+    <title>The Century Club | v12 Portions</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -12,7 +12,7 @@
             --alert-red: #f87171;
         }
         body { font-family: 'Inter', sans-serif; background-color: var(--bg-dark); color: var(--text-main); margin: 0; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .container { max-width: 1000px; width: 100%; }
+        .container { max-width: 1000px; width: 100%; position: relative; }
         header { text-align: center; margin-bottom: 20px; border-bottom: 1px solid #334155; padding-bottom: 20px; }
         .profile-badges { display: flex; justify-content: center; gap: 15px; margin-top: 15px; flex-wrap: wrap; }
         .badge { background: rgba(255, 255, 255, 0.05); padding: 8px 16px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.1); font-size: 0.85rem; display: flex; align-items: center; gap: 8px; }
@@ -23,22 +23,22 @@
             font-weight: 700; letter-spacing: 0.5px;
         }
         
-        .controls { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 20px; width: 100%; }
-        .nav-btn { flex: 1; padding: 14px; background: var(--card-bg); border: 1px solid var(--accent-blue); color: var(--accent-blue); border-radius: 8px; cursor: pointer; font-weight: 700; transition: 0.2s; font-size: 0.9rem; }
+        .controls { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 20px; width: 100%; flex-wrap: wrap;}
+        .nav-btn { flex: 1; padding: 14px; background: var(--card-bg); border: 1px solid var(--accent-blue); color: var(--accent-blue); border-radius: 8px; cursor: pointer; font-weight: 700; transition: 0.2s; font-size: 0.9rem; min-width: 120px; }
         .nav-btn:hover { background: var(--accent-blue); color: var(--bg-dark); }
         .reset-btn { flex: 0.5; border-color: var(--text-dim); color: var(--text-dim); }
         .reset-btn:hover { background: var(--text-dim); color: var(--bg-dark); }
+        .portion-btn { flex: 0.5; background: rgba(74, 222, 128, 0.1); color: var(--accent-green); border-color: var(--accent-green); }
+        .portion-btn:hover { background: var(--accent-green); color: var(--bg-dark); }
 
         .tabs { display: flex; justify-content: space-between; background: var(--card-bg); padding: 8px; border-radius: 12px; margin-bottom: 20px; overflow-x: auto; }
         .tab-btn { background: none; border: none; color: var(--text-dim); padding: 10px 8px; cursor: pointer; font-weight: 600; flex: 1; min-width: 70px; font-size: 0.85rem; text-align: center; }
         .tab-btn span { display: block; font-size: 0.7rem; opacity: 0.7; margin-top: 2px; }
         .tab-btn.active { color: var(--accent-blue); background: rgba(56, 189, 248, 0.1); border-radius: 8px; }
         
-        /* LAYOUT FIX: Grid ensures side-by-side */
         .main-layout { display: grid; grid-template-columns: 1.4fr 1fr; gap: 24px; align-items: start; transition: opacity 0.3s ease; opacity: 1; }
         .main-layout.fade { opacity: 0.4; }
         
-        /* On phones, we still stack them so text isn't squished */
         @media (max-width: 768px) { .main-layout { grid-template-columns: 1fr; } }
         
         .card { background: var(--card-bg); border-radius: 16px; padding: 25px; border-left: 4px solid var(--accent-blue); }
@@ -50,6 +50,18 @@
         .juice-box { background: rgba(30, 41, 59, 0.8); border-radius: 16px; padding: 25px; border: 1px solid var(--accent-green); display: flex; flex-direction: column; gap: 12px; }
         .juice-header { font-weight: 700; color: var(--accent-green); font-size: 1rem; letter-spacing: 0.5px; }
         .oz-tag { background: var(--accent-green); color: var(--bg-dark); padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 800; float: right; }
+
+        /* MODAL STYLES */
+        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.8); backdrop-filter: blur(5px); }
+        .modal-content { background-color: var(--card-bg); margin: 10% auto; padding: 25px; border: 1px solid var(--accent-blue); width: 90%; max-width: 600px; border-radius: 16px; box-shadow: 0 4px 30px rgba(0,0,0,0.5); }
+        .close-btn { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .close-btn:hover { color: #fff; }
+        .portion-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .portion-table th { text-align: left; border-bottom: 1px solid #334155; padding: 10px; color: var(--accent-blue); font-size: 0.85rem; }
+        .portion-table td { padding: 10px; border-bottom: 1px solid #334155; font-size: 0.9rem; }
+        .portion-row-him { color: var(--text-main); }
+        .portion-row-her { color: var(--accent-pink); }
+        .guide-title { font-size: 1.2rem; font-weight: 700; color: var(--text-main); margin-bottom: 5px; }
     </style>
 </head>
 <body>
@@ -68,14 +80,67 @@
     <div class="status-bar" id="syncStatus">Loading Calendar...</div>
 
     <div class="controls">
-        <button class="nav-btn" onclick="changeWeek(-1)">⬅️ PREV WEEK</button>
+        <button class="nav-btn" onclick="changeWeek(-1)">⬅️ PREV</button>
         <button class="nav-btn reset-btn" onclick="resetToCurrent()">TODAY</button>
-        <button class="nav-btn" onclick="changeWeek(1)">NEXT WEEK ➡️</button>
+        <button class="nav-btn portion-btn" onclick="openModal()">📏 PORTIONS</button>
+        <button class="nav-btn" onclick="changeWeek(1)">NEXT ➡️</button>
     </div>
 
-    <div class="tabs" id="dayTabs">
-        </div>
+    <div class="tabs" id="dayTabs"></div>
     <div id="dayContent" class="main-layout"></div>
+</div>
+
+<div id="portionModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal()">&times;</span>
+        <div class="guide-title">📏 Hand Portion Guide</div>
+        <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 20px;">Use your own hand to measure. No scales required.</p>
+        
+        <table class="portion-table">
+            <thead>
+                <tr>
+                    <th>COMPONENT</th>
+                    <th>🧔🏾‍♂️ HIM (BUILDER)</th>
+                    <th>👩🏾‍🦱 HER (OPTIMIZER)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="portion-row-him">
+                    <td><strong>PROTEIN</strong><br><span style="font-size:0.75rem; color:#94a3b8">Meat, Fish, Eggs</span></td>
+                    <td><strong>2 Palms</strong><br>(~6-8 oz)</td>
+                    <td class="portion-row-her"><strong>1 Palm</strong><br>(~4-6 oz)</td>
+                </tr>
+                <tr class="portion-row-him">
+                    <td><strong>VEGGIES</strong><br><span style="font-size:0.75rem; color:#94a3b8">Greens, Broccoli</span></td>
+                    <td><strong>2+ Fists</strong><br>(Unlimited)</td>
+                    <td class="portion-row-her"><strong>2+ Fists</strong><br>(Unlimited)</td>
+                </tr>
+                <tr class="portion-row-him">
+                    <td><strong>CARBS</strong><br><span style="font-size:0.75rem; color:#94a3b8">Yams, Quinoa, Rice</span></td>
+                    <td><strong>2 Cupped Hands</strong><br>(~1.5 Cups)</td>
+                    <td class="portion-row-her"><strong>1 Cupped Hand</strong><br>(~0.5 Cup)</td>
+                </tr>
+                <tr class="portion-row-him">
+                    <td><strong>FATS</strong><br><span style="font-size:0.75rem; color:#94a3b8">Avocado, Oil, Nuts</span></td>
+                    <td><strong>2 Thumbs</strong></td>
+                    <td class="portion-row-her"><strong>1 Thumb</strong></td>
+                </tr>
+                 <tr class="portion-row-him" style="background: rgba(74, 222, 128, 0.05);">
+                    <td><strong>JUICE</strong><br><span style="font-size:0.75rem; color:#94a3b8">Daily Intake</span></td>
+                    <td><strong>20-24 oz</strong></td>
+                    <td class="portion-row-her"><strong>16 oz</strong></td>
+                </tr>
+            </tbody>
+        </table>
+        <div style="margin-top: 20px; padding: 15px; background: rgba(56, 189, 248, 0.1); border-radius: 8px; font-size: 0.85rem;">
+            <strong>⚖️ The Equalizers (Same for Both):</strong>
+            <ul style="margin: 5px 0 0 20px; padding: 0;">
+                <li>Sea Moss Gel: <strong>2 tbsp</strong></li>
+                <li>Leafy Greens: <strong>Unlimited</strong></li>
+                <li>Water: <strong>~1 Gallon/day</strong></li>
+            </ul>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -248,6 +313,11 @@
         }, 150);
     }
 
+    // Modal Logic
+    function openModal() { document.getElementById('portionModal').style.display = 'block'; }
+    function closeModal() { document.getElementById('portionModal').style.display = 'none'; }
+    window.onclick = function(event) { if (event.target == document.getElementById('portionModal')) closeModal(); }
+
     function generateSyncedWeek(forceToday = false) {
         const today = new Date();
         const year = today.getFullYear();
@@ -326,11 +396,7 @@
             // Force jump to today
             activeIdx = trueTodayIdx;
         } else {
-            // Check if there was an active tab before we wiped them
-            // Simplest heuristic: Default to Today if we are in current week, 
-            // otherwise default to Monday (0) or Today's index?
-            // User feedback suggests they prefer "Today's index" even in future weeks.
-            // Let's stick to trueTodayIdx for consistency unless user clicks a tab.
+            // Default to Today's index to maintain day position during week-switching
             activeIdx = trueTodayIdx;
         }
 
