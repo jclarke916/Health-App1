@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Centurion | v74 Master Restored</title>
+    <title>The Centurion | v75 Master Restored</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -24,10 +24,10 @@
         .nav-btn:hover { border-color: var(--accent-silver); background: #1a1a1a; }
         .action-btn { border-color: var(--accent-gold); color: var(--accent-gold); }
         .tabs { display: flex; justify-content: space-between; background: var(--card-bg); padding: 5px; border-radius: 8px; margin-bottom: 25px; border: 1px solid #222; overflow-x: auto; }
-        .tab-btn { background: none; border: none; color: #555; padding: 10px 8px; cursor: pointer; font-weight: 600; flex: 1; font-size: 0.8rem; text-align: center; min-width: 60px; transition: 0.3s; }
+        .tab-btn { background: none; border: none; color: #555; padding: 10px 8px; cursor: pointer; font-weight: 600; flex: 1; font-size: 0.8rem; text-align: center; min-width: 60px; }
         .tab-btn span { display: block; font-size: 0.65rem; opacity: 0.7; margin-top: 4px; }
         .tab-btn.active { color: var(--accent-gold); background: rgba(255,255,255,0.03); border-radius: 4px; }
-        .card { background: var(--card-bg); border-radius: 12px; padding: 30px; border: 1px solid #222; position: relative; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .card { background: var(--card-bg); border-radius: 12px; padding: 30px; border: 1px solid #222; position: relative; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); overflow: hidden; }
         .card::before { content: ""; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--accent-gold); }
         .label { color: var(--accent-silver); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 2px; font-weight: 700; margin-bottom: 5px; opacity: 0.8; }
         .value { font-size: 1.1rem; margin-bottom: 8px; font-weight: 500; color: #fff; cursor: pointer; border-bottom: 1px solid transparent; display: inline-block; transition: 0.3s; }
@@ -37,7 +37,7 @@
         .juice-box { background: #0a0a0a; border-radius: 12px; padding: 30px; border: 1px solid #222; margin-top: 10px; }
         .juice-header { font-weight: 700; color: var(--accent-gold); font-size: 1rem; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px; }
         .oz-tag { background: var(--accent-gold); color: #000; padding: 2px 6px; border-radius: 2px; font-size: 0.7rem; font-weight: 800; float: right; }
-        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.9); backdrop-filter: blur(8px); }
+        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.9); backdrop-filter: blur(8px); }
         .modal-content { background-color: #050505; margin: 5% auto; padding: 30px; border: 1px solid #333; width: 90%; max-width: 650px; border-radius: 12px; position: relative; }
         .close-btn { color: #555; float: right; font-size: 28px; cursor: pointer; }
         .macro-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 20px 0; background: #0a0a0a; padding: 15px; border-radius: 8px; border: 1px solid #222; }
@@ -49,9 +49,11 @@
         .recipe-list { list-style: none; padding: 0; margin-bottom: 20px; }
         .recipe-list li { margin-bottom: 8px; color: #ccc; font-size: 0.9rem; padding-left: 15px; position: relative; }
         .recipe-list li::before { content: "•"; color: var(--accent-gold); position: absolute; left: 0; }
+        .recipe-steps p { margin-bottom: 15px; color: #ccc; font-size: 0.95rem; line-height: 1.6; position: relative; padding-left: 25px; }
         .portion-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         .portion-table th { text-align: left; border-bottom: 1px solid #333; padding: 12px 5px; color: var(--accent-silver); font-size: 0.7rem; text-transform: uppercase; }
         .portion-table td { padding: 15px 5px; border-bottom: 1px solid #222; font-size: 0.9rem; color: #ccc; }
+        .superfood-highlight { color: var(--superfood); font-weight: 700; }
     </style>
 </head>
 <body>
@@ -72,8 +74,7 @@
         <button class="nav-btn" onclick="changeWeek(-1)">PREV</button>
         <button class="nav-btn" onclick="resetToCurrent()">TODAY</button>
         <button class="nav-btn" onclick="changeWeek(1)">NEXT</button>
-        <button class="nav-btn action-btn" onclick="openWorkoutModal()">🏋️ WORKOUTS</button>
-        <button class="nav-btn action-btn" onclick="openPortionModal()">📏 PORTIONS</button>
+        <button class="nav-btn action-btn" onclick="openModal('portionModal')">📏 PORTIONS</button>
     </div>
 
     <div class="tabs" id="dayTabs"></div>
@@ -107,7 +108,7 @@
         <span class="close-btn" onclick="closeModal('portionModal')">&times;</span>
         <h2 style="color:var(--accent-gold);">Portion Protocol</h2>
         <table class="portion-table">
-            <thead><tr><th>Macro</th><th>🧔🏾‍♂️ Jermaine</th><th>👩🏾‍🦱 Sophia</th></tr></thead>
+            <thead><tr><th>MACRO</th><th>🧔🏾‍♂️ Jermaine</th><th>👩🏾‍🦱 Sophia</th></tr></thead>
             <tbody>
                 <tr><td>Protein</td><td>2 Palms</td><td>1.5 Palms</td></tr>
                 <tr><td>Veggies</td><td>2 Fists</td><td>2 Fists</td></tr>
@@ -121,34 +122,39 @@
 <script>
     const recipeDB = {
         "Pan-Seared Sea Bass w/ Fennel": {
-            t: "25 mins", p: "40g", c: "12g", f: "18g", why: "Omega-3 powerhouse. Fennel prevents post-meal digestive bloat.",
-            ing: ["6oz Sea Bass", "1/2 Shaved Fennel", "Grapefruit Segments", "Ghee"],
-            steps: "1. Pat bass dry. 2. Sear skin-side down in hot ghee for 5 mins side A. 3. Flip for 3 mins side B. 4. Serve over fennel.", mod: "Skip added oils for Sophia."
+            t: "25 mins", p: "40g", c: "12g", f: "18g", why: "High Omega-3s. Fennel prevents post-meal digestive bloat.",
+            ing: ["6oz Sea Bass", "1/2 Shaved Fennel", "Grapefruit Segments", "1 tsp Ghee"],
+            steps: "1. Pat the bass perfectly dry. Score the skin. 2. Sear skin-side down in hot ghee for 5 mins side A. 3. Flip for 3 mins side B. 4. Serve over fennel.", mod: "Skip added oils."
         },
         "Tofu & Brussels Scramble": {
             t: "15 mins", p: "35g", c: "12g", f: "10g", why: "High volume, high fiber to sustain energy through Boxing.",
             ing: ["Firm Tofu", "Brussels Sprouts", "Bell Peppers", "Jalapeno", "Eggs"],
-            steps: "1. Sauté brussels and peppers 5 mins. 2. Crumble tofu into pan with turmeric. 3. Scramble eggs 3 mins until set.", mod: "Use whites only."
+            steps: "1. Sauté brussels and peppers in 1 tsp olive oil until charred (5 mins). 2. Add crumbled tofu and turmeric. 3. Pour eggs, scramble 3 mins until set.", mod: "Use whites only."
         },
         "Classic Peruvian Ceviche": {
             t: "20 mins", p: "40g", c: "15g", f: "2g", why: "Zero-oil enzymes for total gut health and longevity.",
-            ing: ["8oz White Fish", "Lime Juice", "Red Onion", "Sweet Potato", "Cilantro"],
-            steps: "1. Cube fish 1/2 inch. 2. Submerge in lime juice 15 mins. 3. Toss with onions and cilantro. 4. Add 1 slice sweet potato.", mod: "1 slice potato max."
+            ing: ["8oz White Fish", "1 cup Fresh Lime Juice", "Red Onion", "Sweet Potato", "Cilantro"],
+            steps: "1. Cube fish 1/2 inch. 2. Submerge in lime juice and chill for 15 mins to cure. 3. Rinse sliced onion. 4. Toss fish with onion, chili, and cilantro. 5. Plate with 1 slice sweet potato.", mod: "Limit sweet potato to 1 slice."
         },
         "Sriracha Yogurt Bison Tacos": {
-            t: "20 mins", p: "42g", c: "15g", f: "12g", why: "Probiotic yogurt sauce replaces fatty cream. Lean bison for iron.",
+            t: "20 mins", p: "42g", c: "15g", f: "12g", why: "Probiotic yogurt sauce replaces fatty cream. Lean bison for high iron.",
             ing: ["6oz Bison", "Siete Tortilla", "Greek Yogurt", "Sriracha", "Lime"],
-            steps: "1. Brown bison in pan 8 mins. 2. Mix yogurt and sriracha. 3. Char tortillas 30s per side. Assemble.", mod: "Use lettuce cups."
+            steps: "1. Brown bison in pan on high heat 8 mins total. 2. Whisk yogurt, sriracha, lime. 3. Warm tortillas. 4. Assemble with meat, sauce, and cilantro.", mod: "Use lettuce cups on low carb days."
         },
         "Lean Beef Pho (Konjac Noodles)": {
-            t: "30 mins", p: "42g", c: "5g", f: "8g", why: "Pure collagen broth with zero-calorie fiber noodles for recovery.",
-            ing: ["Beef Broth", "Thin Eye of Round", "Konjac Noodles", "Basil", "Sprouts"],
-            steps: "1. Simmer broth with star anise 20m. 2. Rinse Konjac noodles. 3. Pour boiling broth over raw beef and noodles to cook.", mod: "Konjac is carb-free."
+            t: "30 mins", p: "42g", c: "5g", f: "8g", why: "Pure collagen broth with zero-calorie fiber noodles.",
+            ing: ["Beef Broth", "Eye of Round", "Konjac Noodles", "Basil", "Sprouts"],
+            steps: "1. Toast star anise and simmer broth 20m. 2. Rinse Konjac noodles under hot water. 3. Place raw beef slices over noodles. 4. Pour boiling broth over to cook beef instantly.", mod: "Konjac is carb-free."
         },
         "Centurion Bone Broth Beef Stew": {
             t: "3 hours", p: "45g", c: "15g", f: "15g", why: "Slow cooked collagen for joint health and gut repair.",
             ing: ["Beef Chuck", "Bone Broth", "Turnips", "Carrots", "Celery"],
-            steps: "1. Sear beef 5 mins per side. 2. Add broth and veg. 3. Simmer low for 2.5 hours. 4. Add turnips last 45 mins.", mod: "Turnips replace potatoes."
+            steps: "1. Sear beef 5 mins per side until deep brown. 2. Remove meat, sauté mirepoix. 3. Add broth/herbs. 4. Simmer low 2.5 hours. 5. Add turnips last 45 mins.", mod: "Turnips replace potatoes."
+        },
+        "Sea Moss & Triple-Protein Smoothie": {
+            t: "5 mins", p: "45g", c: "25g", f: "10g", why: "Mineral density focus.",
+            ing: ["Sea Moss Gel", "Pea Protein", "Hemp Seeds", "Blackberries"],
+            steps: "1. Blend all ingredients on high until creamy. 2. No cooking required.", mod: "Standard portion."
         }
     };
 
@@ -157,19 +163,19 @@
         lunches: ["Classic Peruvian Ceviche", "Sriracha Yogurt Bison Tacos"],
         dinners: ["Pan-Seared Sea Bass w/ Fennel", "Lean Beef Pho (Konjac Noodles)", "Centurion Bone Broth Beef Stew"],
         juices: [
-            { name: "The Detox", oz: "16oz", ing: "Celery, Cucumber, Ginger", b: "Water retention reduction" },
-            { name: "Red Power", oz: "20oz", ing: "Beets, Carrots, Ginger", b: "Stamina boost" }
+            { n: "THE DETOX", oz: "16oz", i: "Celery, Cucumber, Apple, Ginger", b: "Water retention reduction" },
+            { n: "RED POWER", oz: "20oz", i: "Beets, Carrots, Orange, Ginger", b: "Stamina boost" }
         ]
     };
 
     const dayLogic = [
-        { day: "MON", work: "LIFT + Massage", carb: "high", h: "1 Gal", b: "Tofu & Brussels Scramble", l: "Classic Peruvian Ceviche", dn: "Pan-Seared Sea Bass w/ Fennel" },
-        { day: "TUE", work: "BOXING", carb: "high", h: "1.2 Gal", b: "Tofu & Brussels Scramble", l: "Sriracha Yogurt Bison Tacos", dn: "Lean Beef Pho (Konjac Noodles)" },
-        { day: "WED", work: "REFORM", carb: "low", h: "3L", b: "Tofu & Brussels Scramble", l: "Classic Peruvian Ceviche", dn: "Centurion Bone Broth Beef Stew" },
-        { day: "THU", work: "BOXING", carb: "high", h: "1.2 Gal", b: "Tofu & Brussels Scramble", l: "Sriracha Yogurt Bison Tacos", dn: "Pan-Seared Sea Bass w/ Fennel" },
-        { day: "FRI", work: "YOGA + REFORM", carb: "low", h: "3.5L", b: "Tofu & Brussels Scramble", l: "Classic Peruvian Ceviche", dn: "Lean Beef Pho (Konjac Noodles)" },
-        { day: "SAT", work: "CS4 HIIT", carb: "high", h: "1 Gal", b: "Tofu & Brussels Scramble", l: "Sriracha Yogurt Bison Tacos", dn: "Centurion Bone Broth Beef Stew" },
-        { day: "SUN", work: "RECOVERY", carb: "low", h: "3L", b: "Tofu & Brussels Scramble", l: "Classic Peruvian Ceviche", dn: "Pan-Seared Sea Bass w/ Fennel" }
+        { d: "MON", w: "LIFT + Massage", c: "high", h: "1 Gal" },
+        { d: "TUE", w: "BOXING", c: "high", h: "1.2 Gal" },
+        { d: "WED", w: "REFORM", c: "low", h: "3L" },
+        { d: "THU", w: "BOXING", c: "high", h: "1.2 Gal" },
+        { d: "FRI", w: "YOGA + REFORM", c: "low", h: "3.5L" },
+        { d: "SAT", w: "CS4 HIIT", c: "high", h: "1 Gal" },
+        { d: "SUN", w: "RECOVERY", c: "low", h: "3L" }
     ];
 
     let weekOffset = 0;
@@ -178,20 +184,19 @@
         const r = recipeDB[name];
         if(!r) return;
         document.getElementById('modalTitle').innerText = name;
-        document.getElementById('modalTime').innerText = "⏱️ COOK TIME: " + r.t;
+        document.getElementById('modalTime').innerText = "⏱️ " + r.t;
         document.getElementById('modalWhy').innerText = r.why;
         document.getElementById('modalP').innerText = r.p;
         document.getElementById('modalC').innerText = r.c;
         document.getElementById('modalF').innerText = r.f;
-        document.getElementById('modalIng').innerHTML = r.ing.map(i => `<li>${i}</li>`).join('');
+        document.getElementById('modalIng').innerHTML = r.ing.map(x => `<li>${x}</li>`).join('');
         document.getElementById('modalSteps').innerHTML = r.steps.split('. ').map(s => `<p>▶ ${s}</p>`).join('');
         document.getElementById('modalMod').innerText = r.mod;
         document.getElementById('recipeModal').style.display = 'block';
     }
 
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-    function openPortionModal() { document.getElementById('portionModal').style.display = 'block'; }
-    function openWorkoutModal() { alert("Lift compounds: 4 sets of 8. Boxing: High Intensity."); }
+    function openModal(id) { document.getElementById(id).style.display = 'block'; }
 
     function getMonday(offset) {
         let d = new Date();
@@ -210,7 +215,7 @@
             tabDate.setDate(monday.getDate() + i);
             const btn = document.createElement('button');
             btn.className = 'tab-btn' + (i === 0 ? ' active' : '');
-            btn.innerHTML = `${day.day}<span>${tabDate.getDate()}</span>`;
+            btn.innerHTML = `${day.d}<span>${tabDate.getDate()}</span>`;
             btn.onclick = () => {
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
@@ -219,30 +224,37 @@
             tabs.appendChild(btn);
         });
         const opts = { month: 'short', day: 'numeric' };
-        document.getElementById('syncStatus').innerText = `${monday.toLocaleDateString('en-US', opts)} - v74 ACTIVE`;
+        document.getElementById('syncStatus').innerText = `${monday.toLocaleDateString('en-US', opts)} — RESTORED v75`;
         showDay(0);
     }
 
     function showDay(idx) {
         const d = dayLogic[idx];
+        const b = mealLibrary.breakfasts[idx % mealLibrary.breakfasts.length];
+        const l = mealLibrary.lunches[idx % mealLibrary.lunches.length];
+        const dn = mealLibrary.dinners[idx % mealLibrary.dinners.length];
         const j = mealLibrary.juices[idx % mealLibrary.juices.length];
+
         document.getElementById('dayContent').innerHTML = `
             <div class="card">
-                <div class="workout-tag"><span>${d.work}</span><span class="carb-tag ${d.carb==='high'?'carb-high':'carb-low'}">${d.carb.toUpperCase()} CARB</span></div>
-                <div class="label">🍳 Breakfast</div><div class="value" onclick="openRecipe('${d.b}')">🧔🏾‍♂️ J: ${d.b}</div>
-                <div class="label" style="margin-top:15px;">🥗 Lunch</div><div class="value" onclick="openRecipe('${d.l}')">🧔🏾‍♂️ J: ${d.l}</div>
-                <div class="label" style="margin-top:15px;">🍽️ Dinner</div><div class="value" onclick="openRecipe('${d.dn}')">🧔🏾‍♂️ J: ${d.dn}</div>
-                <div class="label" style="margin-top:15px; color:var(--glute-pink);">👩🏾‍🦱 Sophia Preview</div>
-                <div style="font-size:0.85rem; color:#aaa; font-style:italic;">Mod: ${recipeDB[d.dn]?.mod || "Standard Portion"}</div>
+                <div class="workout-tag"><span>${d.work}</span><span class="carb-tag" style="color:${d.c==='high'?'var(--carb-high)':'var(--carb-low)'}">${d.c.toUpperCase()} CARB</span></div>
+                <div class="label">🍳 Breakfast</div><div class="value" onclick="openRecipe('${b}')">🧔🏾‍♂️ J: ${b}</div>
+                <div style="font-size:0.8rem; color:var(--text-dim); margin-bottom:15px;">👩🏾‍🦱 S: ${recipeDB[b]?.mod || "Standard"}</div>
+                
+                <div class="label">🥗 Lunch</div><div class="value" onclick="openRecipe('${l}')">🧔🏾‍♂️ J: ${l}</div>
+                <div style="font-size:0.8rem; color:var(--text-dim); margin-bottom:15px;">👩🏾‍🦱 S: ${recipeDB[l]?.mod || "Standard"}</div>
+                
+                <div class="label">🍽️ Dinner</div><div class="value" onclick="openRecipe('${dn}')">🧔🏾‍♂️ J: ${dn}</div>
+                <div style="font-size:0.8rem; color:var(--text-dim); margin-bottom:15px;">👩🏾‍🦱 S: ${recipeDB[dn]?.mod || "Standard"}</div>
             </div>
             <div class="juice-box">
-                <div class="juice-header">${j.name.toUpperCase()} <span class="oz-tag">${j.oz}</span></div>
-                <div class="label">Cold Pressed Ingredients</div><div style="font-size:0.85rem; color:#666;">${j.ing}</div>
+                <div class="juice-header">${j.n} <span class="oz-tag">${j.oz}</span></div>
+                <div class="label">Ingredients</div><div style="font-size:0.85rem; color:#666;">${j.i}</div>
                 <div style="margin-top:10px; font-size:0.8rem; color:var(--accent-gold);">⚡ Benefit: ${j.b}</div>
             </div>
             <div class="card" style="margin-top:10px; border-top:1px solid #333;">
-                <div class="label">Daily Protocol</div>
-                <div style="font-size:0.8rem; color:#555;">✅ 2tbsp Sea Moss | ✅ ${d.h} Hydration | ✅ 10:30PM Sleep</div>
+                <div class="label">Centurion Protocol</div>
+                <div style="font-size:0.8rem; color:#666;">💧 Hydration: ${d.h} | 🌙 Bedtime: 10:30 PM</div>
             </div>`;
     }
 
