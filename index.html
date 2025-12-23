@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Centurion | v133 Anchor Build</title>
+    <title>The Centurion | v134 Final Anchor</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -17,6 +17,7 @@
         h1 { font-weight: 300; letter-spacing: 2px; text-transform: uppercase; background: linear-gradient(to right, #E5E4E2, #888888); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; }
         .profile-badges { display: flex; justify-content: center; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
         .badge { background: #1a1a1a; padding: 8px 16px; border-radius: 4px; border: 1px solid #333; font-size: 0.7rem; color: var(--accent-silver); text-transform: uppercase; letter-spacing: 1px; cursor: pointer; transition: 0.3s; }
+        .badge:hover { border-color: var(--accent-gold); }
         .status-bar { text-align: center; color: var(--accent-gold); font-size: 0.85rem; margin: 15px 0; text-transform: uppercase; letter-spacing: 2px; font-weight: 600; min-height: 20px; }
         .controls { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
         .nav-btn { background: var(--card-bg); border: 1px solid #333; color: var(--text-main); padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
@@ -28,12 +29,14 @@
         .card::before { content: ""; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--accent-gold); }
         .label { color: var(--accent-silver); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 2px; font-weight: 700; margin-bottom: 5px; }
         .value { font-size: 1.1rem; margin-bottom: 15px; color: #fff; cursor: pointer; border-bottom: 1px solid transparent; display: inline-block; }
+        .value:hover { color: var(--accent-gold); border-bottom-color: var(--accent-gold); }
         .workout-tag { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: var(--accent-gold); border-bottom: 1px solid #333; padding-bottom: 12px; margin-bottom: 20px; font-weight: 700; text-transform: uppercase; }
+        .carb-pill { padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; letter-spacing: 1px; color: #fff; font-weight: 800; }
+        .pb-mini { font-size: 0.6rem; padding: 4px 8px; border-radius: 3px; background: #222; border: 1px solid #444; color: #aaa; text-transform: uppercase; font-weight: 800; margin-right: 5px; display: inline-block; margin-top: 5px; cursor: pointer; }
         .juice-card { background: linear-gradient(145deg, #0a0a0a, #111111); border: 1px solid #2a2a00; border-radius: 12px; padding: 30px; position: relative; margin-bottom: 20px; }
         .juice-card::before { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: var(--accent-gold); }
         .juice-name { font-size: 1.4rem; font-weight: 300; letter-spacing: 3px; color: var(--accent-gold); text-transform: uppercase; margin-bottom: 10px; }
         .juice-benefit { font-size: 0.8rem; color: var(--accent-silver); font-style: italic; margin-bottom: 10px; display: block; border-left: 2px solid var(--accent-gold); padding-left: 10px; }
-        .pb-mini { font-size: 0.6rem; padding: 4px 8px; border-radius: 3px; background: #222; border: 1px solid #444; color: #aaa; text-transform: uppercase; font-weight: 800; margin-right: 5px; display: inline-block; margin-top: 5px; cursor: pointer; }
         .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); backdrop-filter: blur(8px); overflow-y: auto; }
         .modal-content { background: #050505; margin: 5% auto; padding: 30px; border: 1px solid #333; width: 90%; max-width: 650px; border-radius: 12px; }
         .macro-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 20px 0; background: #0a0a0a; padding: 15px; border-radius: 8px; border: 1px solid #222; }
@@ -99,21 +102,42 @@
 
 <script>
     const protocolData = {
-        "Sea Moss": "<strong>92 Essential Minerals:</strong> Provides iodine for thyroid support and potassium for recovery. Take 2tbsp daily.",
-        "Kombucha": "<strong>Probiotic Density:</strong> Strengthens gut lining and reduces systemic inflammation. Dose: 4-8oz.",
-        "Mg Electrolytes": "<strong>Magnesium-Heavy Recovery:</strong> Specifically for boxing sparring days. Prevents muscle cramping.",
-        "Hydration": "<strong>Fluid Dynamics:</strong> Jermaine 1.2 Gal on boxing days; Sophia 3L-3.5L on reform days."
+        "Sea Moss": "<strong>92 Essential Minerals:</strong> Provides iodine for thyroid support and potassium for nervous system recovery. Dose: 2tbsp.",
+        "Kombucha": "<strong>Probiotic Density:</strong> Unpasteurized kombucha strengthens gut lining and reduces training inflammation. Dose: 4-8oz.",
+        "Mg Electrolytes": "<strong>Magnesium-Heavy Recovery:</strong> Specifically for boxing/HIIT days. Prevents muscle cramping and calms the CNS.",
+        "Hydration": "<strong>Fluid Dynamics:</strong> Jermaine 1.2 Gal on training days; Sophia 3L-3.5L on reform days to maintain metabolic speed."
     };
 
     const recipeDB = {
+        // BREAKFASTS
         "Bison Steak & Eggs": { t: "15 mins", p: "55g", c: "5g", f: "15g", ing: ["6oz Bison Sirloin Steak", "2 Whole Eggs", "1 Large Tomato", "1 tsp Ghee", "Sea Salt"], steps: ["Thoroughly pat bison steak dry.", "Sear in a hot pan with ghee for exactly 3 minutes per side for medium-rare.", "Fry eggs in remaining bison juices.", "Serve with grilled tomato slice."], mod: "Sophia: 3oz steak + 1 egg (1.5 palms)." },
-        "Ostrich Steaks": { t: "20 mins", p: "50g", c: "5g", f: "5g", ing: ["6oz Ostrich Fillet", "1/2 cup Fresh Blackberries", "2 tbsp Balsamic Vinegar", "Ghee"], steps: ["Sear ostrich fillets in hot ghee for exactly 3 minutes per side (Rare/Med-Rare only).", "Remove steaks to rest for 5 mins.", "Simmer blackberries and balsamic in pan juices until thick.", "Glaze steaks before slicing."], mod: "Sophia: 1.5 palms protein. Highest iron density." },
-        "Stealth Liver Bison Sliders": { t: "20 mins", p: "45g", c: "8g", f: "18g", ing: ["5oz Ground Bison", "1oz Mince Calf Liver", "Smoked Paprika", "Bell Pepper Buns"], steps: ["Mince liver finely and fold into ground bison (1:4 ratio).", "Season heavily to mask organ flavor.", "Grill 4 mins per side.", "Serve with bell pepper bun."], mod: "Sophia: 1.5 palms protein total." },
-        "Mediterranean Sardine Bowl": { t: "10 mins", p: "35g", c: "12g", f: "18g", ing: ["Wild Sardines", "Avocado", "Lemon", "Kale", "Cucumber"], steps: ["Rinse sardines and pat dry.", "Squeeze heavy lemon over fish to catalyze iron absorption.", "Arrange over massaged kale and cucumber slices."], mod: "High Omega-3 enzymatic recovery lunch." },
-        "SF Style Cioppino": { t: "45 mins", p: "40g", c: "12g", f: "8g", ing: ["1lb Mussels", "White Fish", "Fennel bulb", "Tomato broth", "Garlic"], steps: ["Sauté fennel and garlic in ghee.", "Simmer tomato broth for 20 mins.", "Add mussels and white fish; cover for 5 mins until mussels open."], mod: "Sophia: 1.5 palms; thyroid support." },
         "Japanese Tamagoyaki (No Nori)": { t: "15 mins", p: "32g", c: "2g", f: "15g", ing: ["4 Whole Eggs", "Dashi stock", "Coconut aminos", "Wild Sardines"], steps: ["Whisk eggs with dashi stock.", "Pour thin layers and roll slowly to layer.", "Serve alongside sardines for mineral boost."], mod: "Sophia: 3 eggs; 1.5 palms protein." },
-        "Grilled Branzino (Whole)": { t: "25 mins", p: "45g", c: "0g", f: "15g", ing: ["Whole Branzino", "Lemon", "Parsley", "Garlic", "Ghee"], steps: ["Clean fish; stuff cavity with lemon and parsley.", "Brush skin with ghee.", "Roast at 400°F for exactly 15 mins.", "Broil final 2 mins to crisp skin."], mod: "Sophia: 1.5 palms protein." },
-        "Southwest Bison Scramble": { t: "12 mins", p: "41g", c: "11g", f: "10g", ing: ["4oz Ground Bison", "1/2 cup Bell Peppers", "Egg whites", "Greek Yogurt"], steps: ["Brown bison with diced peppers (iron synergy).", "Pour in whites; scramble 3 mins until set.", "Top with Greek Yogurt dollop."], mod: "Sophia: 1.5 palms; cook eggs well-done." }
+        "Southwest Bison Scramble": { t: "12 mins", p: "41g", c: "11g", f: "10g", ing: ["4oz Ground Bison", "1/2 cup Bell Peppers", "Egg whites", "Greek Yogurt"], steps: ["Brown bison with diced peppers.", "Pour in whites; scramble 3 mins until set.", "Top with Greek Yogurt dollop (probiotic synergy)."], mod: "Sophia: 1.5 palms; cook eggs well-done." },
+        "Crab Scramble": { t: "10 mins", p: "35g", c: "2g", f: "8g", ing: ["4oz Lump crab", "Fresh spinach", "Egg whites", "Ghee"], steps: ["Sauté spinach in ghee until wilted.", "Pour in whites; fold in lump crab at end to warm.", "Finish with fresh chives."], mod: "Sophia: 1.5 palms protein." },
+        "Sea Moss Smoothie": { t: "5 mins", p: "45g", c: "25g", f: "10g", ing: ["2tbsp Sea Moss", "Protein Powder", "Blackberries", "Water base"], steps: ["Add all to high-speed blender.", "Blend for 60 seconds until smooth."], mod: "Sophia: water base to keep fats low." },
+        "Shakshuka w/ Bison": { t: "20 mins", p: "42g", c: "10g", f: "12g", ing: ["6oz Ground Bison", "Bell Peppers", "Tomato sauce", "Eggs"], steps: ["Brown bison with peppers.", "Add sauce and crack eggs directly in.", "Cook covered 4 mins.", "Top with Greek Yogurt."], mod: "Sophia: 2 eggs." },
+        "Savory Bone Broth Oats": { t: "10 mins", p: "20g", c: "30g", f: "8g", ing: ["Steel-cut oats", "Beef bone broth", "Soft egg", "Scallions"], steps: ["Simmer oats in bone broth until creamy.", "Top with soft egg and scallions."], mod: "Sophia: half portion oats." },
+        "Lump Crab Eggs": { t: "12 mins", p: "38g", c: "3g", f: "10g", ing: ["6oz Lump crab", "Eggs", "Lemon zest", "Parsley"], steps: ["Whisk eggs with parsley.", "Soft scramble and gently fold in crab meat."], mod: "Sophia: 1.5 palms protein." },
+
+        // LUNCHES
+        "Mediterranean Sardine Bowl": { t: "10 mins", p: "35g", c: "12g", f: "18g", ing: ["Wild Sardines", "Avocado", "Lemon", "Kale", "Cucumber"], steps: ["Rinse sardines and pat dry.", "Squeeze heavy lemon over fish to catalyze iron absorption.", "Arrange over massaged kale and cucumber slices."], mod: "Sophia: High Omega-3 enzymatic recovery." },
+        "Dungeness Crab Tower": { t: "15 mins", p: "35g", c: "15g", f: "12g", ing: ["6oz Lump crab", "Avocado", "Mango", "Lime", "Microgreens"], steps: ["Mix crab with lime and cilantro.", "Layer avocado, mango, and crab in ring mold.", "Serve cold."], mod: "Sophia: 1.5 palms protein." },
+        "Sriracha Yogurt Bison Tacos": { t: "20 mins", p: "42g", c: "15g", f: "12g", ing: ["6oz Bison", "Bell Peppers", "Greek Yogurt", "Sriracha", "Siete tortillas"], steps: ["Brown bison with peppers.", "Whisk yogurt and sriracha for crema.", "Assemble on tortillas."], mod: "Sophia: Use lettuce wraps." },
+        "Cilantro-Lime Shrimp Tacos": { t: "15 mins", p: "35g", c: "15g", f: "10g", ing: ["8oz Shrimp", "Bell Peppers", "Greek Yogurt", "Lime", "Siete tortillas"], steps: ["Pat shrimp dry; sear 2 mins per side.", "Mix yogurt and lime for crema.", "Assemble with cabbage slaw."], mod: "Sophia: Use lettuce wraps." },
+        "Bison Laab": { t: "20 mins", p: "40g", c: "8g", f: "10g", ing: ["6oz Bison", "Bell peppers", "Lime juice", "Fish sauce", "Mint"], steps: ["Brown bison with peppers.", "Toss with lime and mint.", "Serve in romaine lettuce cups."], mod: "Standard portion." },
+        "Turkey Potstickers": { t: "25 mins", p: "38g", c: "8g", f: "12g", ing: ["Turkey", "Cabbage leaves", "Ginger", "Garlic"], steps: ["Blanch cabbage leaves.", "Wrap turkey mix in leaves and sear.", "Steam 5 mins."], mod: "Zero flour wrapper logic." },
+        "Mendo Cobb": { t: "15 mins", p: "42g", c: "15g", f: "20g", ing: ["Turkey", "Beets", "Avocado", "Broccoli sprouts"], steps: ["Chop greens finely.", "Top with all ingredients.", "Dress with lemon and oil."], mod: "Sophia: Light dressing." },
+        "Stealth Liver Bison Sliders": { t: "20 mins", p: "45g", c: "8g", f: "18g", ing: ["5oz Bison", "1oz Calf Liver", "Smoked Paprika", "Bell Peppers"], steps: ["Mince liver finely into ground bison.", "Season heavily to mask organ flavor.", "Grill 4 mins per side.", "Serve in bell pepper bun."], mod: "Sophia: 1.5 palms protein." },
+
+        // DINNERS
+        "SF Style Cioppino": { t: "45 mins", p: "40g", c: "12g", f: "8g", ing: ["1lb Mussels", "White Fish", "Fennel bulb", "Tomato broth", "Garlic"], steps: ["Sauté fennel and garlic in ghee.", "Simmer tomato broth for 20 mins.", "Add seafood and cover for 5 mins."], mod: "Sophia: 1.5 palms; thyroid iodine support." },
+        "Wild Elk Medallions": { t: "15 mins", p: "48g", c: "0g", f: "4g", ing: ["6oz Elk medallions", "Juniper berries", "Ghee", "Beef bone broth"], steps: ["Crush berries into elk.", "Sear in ghee 3 mins per side (Rare).", "Deglaze pan with bone broth."], mod: "Sophia: 1.5 palms protein; lean iron." },
+        "Garlic Ghee Lobster Tails": { t: "20 mins", p: "40g", c: "2g", f: "15g", ing: ["2 Lobster Tails", "Ghee", "Garlic", "Asparagus"], steps: ["Split shells lengthwise.", "Brush meat with garlic ghee.", "Grill flesh-side down for 5 mins.", "Flip and finish 3 mins."], mod: "Sophia: 1 tail." },
+        "Grilled Branzino (Whole)": { t: "25 mins", p: "45g", c: "0g", f: "15g", ing: ["Whole Branzino", "Lemon", "Parsley", "Garlic", "Ghee"], steps: ["Stuff cavity with lemon/parsley.", "Roast at 400°F for exactly 15 mins.", "Broil 2 mins to crisp skin."], mod: "Sophia: 1.5 palms protein." },
+        "Ostrich Steaks": { t: "20 mins", p: "50g", c: "5g", f: "5g", ing: ["6oz Ostrich Fillet", "Blackberries", "Balsamic", "Ghee"], steps: ["Sear fillets in ghee 3 mins per side.", "Simmer blackberries/balsamic in pan to glaze.", "Rest 5 mins before slicing."], mod: "Highest iron density." },
+        "Miso Black Cod": { t: "20 mins", p: "38g", c: "8g", f: "15g", ing: ["6oz Cod", "White miso", "Ginger", "Bok choy"], steps: ["Glaze cod and bake at 400°F for 12 mins.", "Steam bok choy with lemon."], mod: "Sophia: limit glaze." },
+        "Sea Bass w/ Fennel": { t: "25 mins", p: "40g", c: "8g", f: "18g", ing: ["6oz Sea bass", "Shaved fennel", "Ghee", "Lemon"], steps: ["Sear bass skin-side down 5 mins.", "Flip and finish 3 mins.", "Serve over raw fennel tossed in lemon."], mod: "Sophia: Skip added butter." },
+        "Wild Boar Tenderloin": { t: "25 mins", p: "45g", c: "0g", f: "8g", ing: ["6oz Boar", "Rosemary", "Garlic", "Ghee"], steps: ["Sear all sides for 8 mins total.", "Roast at 400°F for 10 mins.", "Rest before slicing."], mod: "Sophia: 1.5 palms protein." }
     };
 
     const mealLibrary = {
@@ -127,9 +151,9 @@
         1: {w:"LIFT", c:"high", h:"1 Gal", jName:"TITAN RED", jBadge:"⚡ NITRIC BOOST", jBen:"Max Blood Flow (Beet + Pomegranate)", jIng:"Beet, Pomegranate Arils, Carrot", protocol:["Sea Moss", "Kombucha"]}, 
         2: {w:"BOXING", c:"high", h:"1.2 Gal", jName:"TITAN RED", jBadge:"⚡ NITRIC BOOST", jBen:"Sparring Endurance (Beet + Pom)", jIng:"Beet, Pomegranate Arils, Ginger", protocol:["Sea Moss", "Kombucha", "Mg Electrolytes"]}, 
         3: {w:"REFORM", c:"low", h:"3L", jName:"ZENITH GREEN", jBadge:"🌿 ALKALIZER", jBen:"Metabolic Speed (Kale + Wheatgrass)", jIng:"Kale, Wheatgrass, Cucumber", protocol:["Sea Moss", "Kombucha"]}, 
-        4: {w:"BOXING", c:"high", h:"1.2 Gal", jName:"TITAN RED", jBadge:"⚡ NITRIC BOOST", jBen:"Nitric Oxide Suite (Beet + Pom)", jIng:"Beet, Pomegranate Arils, Orange", protocol:["Sea Moss", "Kombucha", "Mg Electrolytes"]}, 
+        4: {w:"BOXING", c:"high", h:"1.2 Gal", jName:"TITAN RED", jBadge:"⚡ NITRIC BOOST", jBen:"Performance Nitric Suite", jIng:"Beet, Pomegranate Arils, Orange", protocol:["Sea Moss", "Kombucha", "Mg Electrolytes"]}, 
         5: {w:"YOGA", c:"low", h:"3.5L", jName:"ZENITH GREEN", jBadge:"🌿 ALKALIZER", jIng:"Spinach, Wheatgrass, Cucumber", jBen:"Systemic Flush & Repair", protocol:["Sea Moss", "Kombucha"]}, 
-        6: {w:"CS4 HIIT", c:"high", h:"1 Gal", jName:"TITAN RED", jBadge:"⚡ NITRIC BOOST", jIng:"Beet, Pomegranate Arils, Ginger", jBen:"Glycogen Load", protocol:["Sea Moss", "Kombucha"]} 
+        6: {w:"CS4 HIIT", c:"high", h:"1 Gal", jName:"TITAN RED", jBadge:"⚡ NITRIC BOOST", jIng:"Beet, Pomegranate Arils, Ginger", jBen:"Glycogen Recovery", protocol:["Sea Moss", "Kombucha"]} 
     };
 
     let weekOffset = 0;
@@ -142,7 +166,7 @@
     }
 
     function openRecipe(name) {
-        const r = recipeDB[name] || { t: "20 mins", p: "40g", c: "10g", f: "10g", ing: ["Ingredients Hard-Coding in Progress..."], steps: ["Follow standard Centurion prep protocol."], mod: "Sophia: 1.5 palms protein." };
+        const r = recipeDB[name];
         document.getElementById('modalTitle').innerText = name;
         document.getElementById('modalTime').innerText = "⏱️ COOK TIME: " + r.t;
         document.getElementById('modalP').innerText = r.p; document.getElementById('modalC').innerText = r.c; document.getElementById('modalF').innerText = r.f;
@@ -165,8 +189,7 @@
         const monday = getMonday(weekOffset);
         const sunday = new Date(monday);
         sunday.setDate(monday.getDate() + 6);
-        const dateOptions = { month: 'short', day: 'numeric' };
-        document.getElementById('dateRangeDisplay').innerText = `${monday.toLocaleDateString('en-US', dateOptions)} — ${sunday.toLocaleDateString('en-US', dateOptions)}`;
+        document.getElementById('dateRangeDisplay').innerText = `${monday.toLocaleDateString('en-US', {month:'short', day:'numeric'})} — ${sunday.toLocaleDateString('en-US', {month:'short', day:'numeric'})}`;
 
         const tabs = document.getElementById('dayTabs');
         tabs.innerHTML = '';
@@ -176,7 +199,6 @@
             const btn = document.createElement('button');
             const isToday = tabDate.toDateString() === new Date().toDateString();
             btn.className = 'tab-btn' + (isToday ? ' active' : '');
-            btn.id = `tab-${i}`;
             btn.innerHTML = `${day}<span>${tabDate.getDate()}</span>`;
             btn.onclick = () => {
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -192,7 +214,6 @@
         const start = new Date(2025, 0, 1);
         const dayId = Math.floor((dateObj - start) / 86400000);
         const d = dayLogicMap[dateObj.getDay()];
-        
         const idx = dayId % 8;
         const b = mealLibrary.breakfasts[idx];
         const dn = mealLibrary.dinners[idx];
@@ -201,13 +222,16 @@
 
         document.getElementById('dayContent').innerHTML = `
             <div class="card">
-                <div class="workout-tag"><span>${d.w}</span><span>${d.c.toUpperCase()} CARB</span></div>
+                <div class="workout-tag">
+                    <span>${d.w}</span>
+                    <span class="carb-pill" style="background:${d.c==='high'?'var(--carb-high)':'var(--carb-low)'}">${d.c.toUpperCase()} CARB</span>
+                </div>
                 <div class="label">🍳 Breakfast</div><div class="value" onclick="openRecipe('${b}')">🧔🏾‍♂️ J: ${b}</div>
-                <div style="font-size:0.75rem; color:var(--text-dim); margin-bottom:15px; font-style:italic;">👩🏾‍🦱 S: ${recipeDB[b]?.mod || "Standard Portion"}</div>
+                <div style="font-size:0.75rem; color:var(--text-dim); margin-bottom:15px; font-style:italic;">👩🏾‍🦱 S: ${recipeDB[b].mod}</div>
                 <div class="label">🥗 Lunch</div><div class="value" onclick="openRecipe('${l}')">🧔🏾‍♂️ J: ${l}</div>
-                <div style="font-size:0.75rem; color:var(--text-dim); margin-bottom:15px; font-style:italic;">👩🏾‍🦱 S: ${recipeDB[l]?.mod || "Standard Portion"}</div>
+                <div style="font-size:0.75rem; color:var(--text-dim); margin-bottom:15px; font-style:italic;">👩🏾‍🦱 S: ${recipeDB[l].mod}</div>
                 <div class="label">🍽️ Dinner</div><div class="value" onclick="openRecipe('${dn}')">🧔🏾‍♂️ J: ${dn}</div>
-                <div style="font-size:0.75rem; color:var(--text-dim); margin-bottom:15px; font-style:italic;">👩🏾‍🦱 S: ${recipeDB[dn]?.mod || "Standard Portion"}</div>
+                <div style="font-size:0.75rem; color:var(--text-dim); margin-bottom:15px; font-style:italic;">👩🏾‍🦱 S: ${recipeDB[dn].mod}</div>
             </div>
             <div class="juice-card">
                 <span class="badge" style="float:right; border-color:var(--accent-gold); color:var(--accent-gold);">${d.jBadge}</span>
@@ -225,8 +249,6 @@
             </div>`;
     }
 
-    function changeWeek(dir) { weekOffset += dir; renderTabs(); }
-    function resetToCurrent() { weekOffset = 0; renderTabs(); }
     window.onload = renderTabs;
 </script>
 </body>
