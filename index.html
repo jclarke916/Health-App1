@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Centurion | v145 absolute Anchor</title>
+    <title>The Centurion | v149 Visual Master</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-dark: #000000; --card-bg: #111111; --text-main: #E5E4E2; --text-dim: #888888;
             --accent-gold: #D4AF37; --accent-silver: #C0C0C0; --glute-pink: #d63384;
-            --carb-high: #ff9100; --carb-low: #00b0ff; --target-green: #2ecc71;
+            --carb-high: #ff9100; --carb-low: #00b0ff; --target-green: #2ecc71; --trend-red: #e74c3c;
         }
         body { font-family: 'Inter', sans-serif; background-color: var(--bg-dark); color: var(--text-main); margin: 0; display: flex; flex-direction: column; align-items: center; padding: 20px; -webkit-tap-highlight-color: transparent; }
         .container { max-width: 1000px; width: 100%; position: relative; }
@@ -37,11 +37,21 @@
         .juice-benefit { font-size: 0.8rem; color: var(--accent-silver); font-style: italic; margin-bottom: 10px; display: block; border-left: 2px solid var(--accent-gold); padding-left: 10px; }
         .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); backdrop-filter: blur(8px); overflow-y: auto; }
         .modal-content { background: #050505; margin: 5% auto; padding: 30px; border: 1px solid #333; width: 90%; max-width: 650px; border-radius: 12px; }
-        .target-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0; }
-        .target-item { background: #0a0a0a; padding: 12px; border-radius: 8px; border: 1px solid #222; }
+        
+        /* Bar Graph Styling */
+        .bar-container { margin: 15px 0; background: #0a0a0a; padding: 12px; border-radius: 8px; border: 1px solid #222; }
+        .bar-label-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.65rem; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+        .bar-bg { background: #1a1a1a; height: 14px; border-radius: 2px; position: relative; overflow: hidden; margin-bottom: 4px; border: 1px solid #333; }
+        .bar-fill { background: var(--accent-gold); height: 100%; transition: 1s ease-out; }
+        .bar-fill.goal-fill { background: var(--target-green); }
+        .bar-markers { display: flex; justify-content: space-between; font-size: 0.55rem; color: #444; padding: 0 2px; }
         .target-val { font-size: 0.9rem; font-weight: 700; color: var(--accent-gold); }
         .target-val.goal { color: var(--target-green); }
-        .target-label { font-size: 0.6rem; color: #666; text-transform: uppercase; margin-bottom: 4px; }
+        .target-val.diff-pos { color: var(--trend-red); }
+        .target-val.diff-neg { color: var(--target-green); }
+        .target-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 10px 0; }
+        .target-item { background: #0a0a0a; padding: 10px; border-radius: 6px; border: 1px solid #222; }
+        .target-label { font-size: 0.55rem; color: #555; text-transform: uppercase; margin-bottom: 2px; }
         .chef-steps p { margin-bottom: 15px; color: #ccc; font-size: 0.95rem; line-height: 1.6; position: relative; padding-left: 30px; }
         .chef-steps p::before { counter-increment: step; content: counter(step); position: absolute; left: 0; top: 2px; background: var(--accent-gold); color: #000; width: 20px; height: 20px; border-radius: 50%; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; font-weight: bold; }
         .pb-mini { font-size: 0.6rem; padding: 4px 8px; border-radius: 3px; background: #222; border: 1px solid #444; color: #aaa; text-transform: uppercase; font-weight: 800; margin-right: 5px; display: inline-block; margin-top: 5px; cursor: pointer; }
@@ -51,7 +61,7 @@
 
 <div class="container">
     <header>
-        <div class="version-tag">VER 145.0</div>
+        <div class="version-tag">VER 149.0</div>
         <h1>THE CENTURION</h1>
         <div class="profile-badges">
             <div class="badge" onclick="openModal('jermaineModal')">🧔🏾‍♂️ JERMAINE</div>
@@ -71,109 +81,102 @@
     <div id="dayContent"></div>
 </div>
 
-<div id="recipeModal" class="modal">
-    <div class="modal-content">
-        <span onclick="closeModal('recipeModal')" style="float:right; cursor:pointer; font-size:24px; color:#555;">&times;</span>
-        <h2 id="modalTitle" style="color:#fff; margin-bottom:5px;"></h2>
-        <div id="modalTime" style="color:var(--accent-gold); font-size:0.85rem; font-weight:bold; margin-bottom:15px;"></div>
-        <div style="color:var(--accent-gold); font-size:0.85rem; font-weight:bold; text-transform:uppercase; margin-bottom:12px;">Ingredients</div>
-        <ul id="modalIng" style="list-style:none; padding:0; margin-bottom:20px;"></ul>
-        <div style="color:var(--accent-gold); font-size:0.85rem; font-weight:bold; text-transform:uppercase; margin-bottom:12px;">Chef's Preparation</div>
-        <div id="modalSteps" class="chef-steps" style="counter-reset: step;"></div>
-        <div style="background: rgba(214, 51, 132, 0.1); border: 1px solid var(--glute-pink); padding: 15px; border-radius: 6px; margin-top: 20px;">
-            <div style="color:var(--glute-pink); font-size:0.8rem; font-weight:800; text-transform:uppercase;">🍑 Sophia's Mod</div>
-            <div id="modalMod" style="color:#e5e4e2; font-size:0.85rem; line-height:1.4;"></div>
-        </div>
-    </div>
-</div>
-
-<div id="juiceModal" class="modal">
-    <div class="modal-content">
-        <span onclick="closeModal('juiceModal')" style="float:right; cursor:pointer; font-size:24px; color:#555;">&times;</span>
-        <h2 id="jTitle" style="color:var(--accent-gold); text-transform:uppercase; letter-spacing:2px;"></h2>
-        <div style="color:#888; font-size:0.75rem; margin-bottom:20px;">KUVINGS PERFORMANCE RATIOS</div>
-        <ul id="jIngList" style="list-style:none; padding:0; margin-bottom:20px; color:#fff;"></ul>
-        <div style="color:var(--accent-gold); font-size:0.85rem; font-weight:bold; margin-bottom:10px;">CHEF'S JUICING STEPS</div>
-        <div id="jPrep" class="chef-steps" style="counter-reset: step;"></div>
-    </div>
-</div>
-
 <div id="jermaineModal" class="modal">
     <div class="modal-content">
-        <span onclick="closeModal('jermaineModal')" style="float:right; cursor:pointer; font-size:24px; color:#555;">&times;</span>
-        <h2 style="color:var(--accent-gold);">🧔🏾‍♂️ JERMAINE MONTHLY LEVERAGE</h2>
-        <div style="color:#888; font-size:0.75rem; margin-bottom:15px;">SMART Target Frame: 30 Days</div>
+        <span onclick="closeModal('jermaineModal')" style="float:right; cursor:pointer; font-size:24px;">&times;</span>
+        <h2 style="color:var(--accent-gold);">🧔🏾‍♂️ JERMAINE: PERFORMANCE VISUAL</h2>
+        <div style="color:#888; font-size:0.7rem; margin-bottom:15px; text-transform:uppercase;">InBody 270 Analysis • Sync: Dec 23, 2025</div>
+        
+        <div class="bar-container">
+            <div class="bar-label-row"><span>Weight</span><span style="color:#fff;">217.1 lbs</span></div>
+            <div class="bar-bg"><div class="bar-fill" style="width: 82%;"></div></div>
+            <div class="bar-markers"><span>70</span><span>85</span><span>100</span><span>115</span><span>130</span><span>145</span><span>160</span></div>
+        </div>
+
+        <div class="bar-container">
+            <div class="bar-label-row"><span>SMM (Muscle)</span><span style="color:#fff;">98.8 lbs</span></div>
+            <div class="bar-bg"><div class="bar-fill" style="width: 78%;"></div></div>
+            <div class="bar-markers"><span>70</span><span>80</span><span>90</span><span>100</span><span>110</span><span>120</span><span>130</span></div>
+        </div>
+
+        <div class="bar-container">
+            <div class="bar-label-row"><span>PBF (Body Fat)</span><span style="color:#fff;">20.7%</span></div>
+            <div class="bar-bg"><div class="bar-fill" style="width: 41%;"></div></div>
+            <div class="bar-markers"><span>10</span><span>15</span><span>20</span><span>25</span><span>30</span><span>35</span><span>40</span></div>
+        </div>
+
         <div class="target-grid">
-            <div class="target-item"><div class="target-label">Current Weight</div><div class="target-val">210.8 lbs</div></div>
-            <div class="target-item"><div class="target-label">Leverage Target</div><div class="target-val goal">213.3 lbs</div></div>
-            <div class="target-item"><div class="target-label">Current Muscle</div><div class="target-val">105 lbs</div></div>
-            <div class="target-item"><div class="target-label">Leverage Target</div><div class="target-val goal">107.5 lbs</div></div>
-            <div class="target-item"><div class="target-label">Current Body Fat</div><div class="target-val">14.2%</div></div>
-            <div class="target-item"><div class="target-label">Leverage Target</div><div class="target-val goal">13.5%</div></div>
+            <div class="target-item"><div class="target-label">30-Day Leverage Goal</div><div class="target-val goal">100.0 lbs SMM</div></div>
+            <div class="target-item"><div class="target-label">30-Day Leverage Goal</div><div class="target-val goal">18.7% PBF</div></div>
+            <div class="target-item"><div class="target-label">Previous (Oct 30)</div><div class="target-val">210.8 lbs</div></div>
+            <div class="target-item"><div class="target-label">Trend Delta</div><div class="target-val diff-pos">+6.3 lbs</div></div>
         </div>
     </div>
 </div>
 
 <div id="sophiaModal" class="modal">
     <div class="modal-content">
-        <span onclick="closeModal('sophiaModal')" style="float:right; cursor:pointer; font-size:24px; color:#555;">&times;</span>
-        <h2 style="color:var(--glute-pink);">👩🏾‍🦱 SOPHIA MONTHLY LEVERAGE</h2>
-        <div style="color:#888; font-size:0.75rem; margin-bottom:15px;">Tissue Density & Metabolic Focus: 30 Days</div>
-        <div class="target-grid">
-            <div class="target-item"><div class="target-label">Current Weight</div><div class="target-val">136.1 lbs</div></div>
-            <div class="target-item"><div class="target-label">Leverage Target</div><div class="target-val goal">134.1 lbs</div></div>
-            <div class="target-item"><div class="target-label">Current Lean Mass</div><div class="target-val">58 lbs</div></div>
-            <div class="target-item"><div class="target-label">Density Target</div><div class="target-val goal">59.5 lbs</div></div>
-            <div class="target-item"><div class="target-label">Current Body Fat</div><div class="target-val">21.5%</div></div>
-            <div class="target-item"><div class="target-label">Leverage Target</div><div class="target-val goal">20.0%</div></div>
+        <span onclick="closeModal('sophiaModal')" style="float:right; cursor:pointer; font-size:24px;">&times;</span>
+        <h2 style="color:var(--glute-pink);">👩🏾‍🦱 SOPHIA: METABOLIC VISUAL</h2>
+        <div style="color:#888; font-size:0.7rem; margin-bottom:15px; text-transform:uppercase;">Tissue Density Frame • Sync: Dec 23, 2025</div>
+        
+        <div class="bar-container">
+            <div class="bar-label-row"><span>Weight</span><span style="color:#fff;">141.5 lbs</span></div>
+            <div class="bar-bg"><div class="bar-fill" style="width: 72%; background:var(--glute-pink);"></div></div>
+            <div class="bar-markers"><span>70</span><span>85</span><span>100</span><span>115</span><span>130</span><span>145</span><span>160</span></div>
         </div>
-    </div>
-</div>
 
-<div id="protocolModal" class="modal">
-    <div class="modal-content">
-        <span onclick="closeModal('protocolModal')" style="float:right; cursor:pointer; font-size:24px; color:#555;">&times;</span>
-        <h2 id="protoTitle" style="color:var(--accent-gold); margin-bottom:15px; text-transform:uppercase; letter-spacing:2px;"></h2>
-        <div id="protoBody" style="color:#ccc; font-size:0.95rem; line-height:1.6;"></div>
+        <div class="bar-container">
+            <div class="bar-label-row"><span>Lean Mass</span><span style="color:#fff;">49.2 lbs</span></div>
+            <div class="bar-bg"><div class="bar-fill" style="width: 48%; background:var(--glute-pink);"></div></div>
+            <div class="bar-markers"><span>40</span><span>50</span><span>60</span><span>70</span><span>80</span><span>90</span><span>100</span></div>
+        </div>
+
+        <div class="bar-container">
+            <div class="bar-label-row"><span>PBF (Body Fat)</span><span style="color:#fff;">36.1%</span></div>
+            <div class="bar-bg"><div class="bar-fill" style="width: 72%; background:var(--glute-pink);"></div></div>
+            <div class="bar-markers"><span>10</span><span>15</span><span>20</span><span>25</span><span>30</span><span>35</span><span>40</span></div>
+        </div>
+
+        <div class="target-grid">
+            <div class="target-item"><div class="target-label">Glute/Density Goal</div><div class="target-val goal">51.0 lbs LM</div></div>
+            <div class="target-item"><div class="target-label">30-Day Leverage Goal</div><div class="target-val goal">34.0% PBF</div></div>
+            <div class="target-item"><div class="target-label">Metabolic Status</div><div class="target-val">1256 BMR</div></div>
+            <div class="target-item"><div class="target-label">Trend Delta</div><div class="target-val diff-pos">+5.4 lbs</div></div>
+        </div>
+        <div style="font-size:0.65rem; color:#666; font-style:italic; margin-top:10px;">*Prioritizing Glute tissue hypertrophy through 1.5 palm protein protocol.</div>
     </div>
 </div>
 
 <script>
-    const protocolData = {
-        "Sea Moss": "<strong>92 Essential Minerals:</strong> Marine superfood providing iodine for thyroid health and CNS recovery. Take 2tbsp daily.",
-        "Kombucha": "<strong>Probiotic Density:</strong> Strengthens gut lining and reduces systemic inflammation.",
-        "Mg Electrolytes": "<strong>Magnesium-Heavy Recovery:</strong> Specifically for boxing sparring days. Prevents muscle cramping and calms the CNS.",
-        "Hydration": "<strong>Fluid Dynamics:</strong> Jermaine: 1.2 Gal on training; Sophia: 3.5L on reform days."
-    };
-
     const juiceDB = {
-        "APOLLO GOLD": { ing: ["2 Pears", "2-inch Fresh Ginger", "1-inch Fresh Turmeric", "Pinch Black Pepper"], prep: ["Wash pears and leave skin on.", "Feed ginger/turmeric through Kuvings slowly.", "Stir in black pepper at the end to activate curcumin."] },
-        "PLASMA FLUSH": { ing: ["3 cups Watermelon Flesh", "1 Lime (peeled)", "Pinch Sea Salt"], prep: ["Cube watermelon; keep white pith for L-Citrulline.", "Juice lime and watermelon together.", "Add sea salt to final glass for electrolyte balance."] },
-        "TITAN RED": { ing: ["2 Beets", "1 Pomegranate (Arils only)", "1 Orange (peeled)", "2 Carrots"], prep: ["Remove pomegranate arils (seeds) from shell using water method.", "Juice beets and carrots first.", "Finish with arils and orange for Vitamin C iron catalysis."] },
-        "ZENITH GREEN": { ing: ["4 stalks Kale", "1 cup Wheatgrass", "1 cup Dandelion Greens", "1/2 cup Cilantro", "1 Cucumber"], prep: ["Bunch leafy greens into tight balls before feeding.", "Juice cucumber last to wash through green solids.", "Serve cold to preserve enzymatic density."] }
+        "APOLLO GOLD": { ing: ["2 Pears", "2\" Ginger", "1\" Turmeric", "Black Pepper"], prep: ["Wash pears; leave skin on.", "Feed ginger/turmeric slowly.", "Add black pepper to activate curcumin."] },
+        "PLASMA FLUSH": { ing: ["3c Watermelon", "1 Lime", "Sea Salt"], prep: ["Cube watermelon; keep white pith for Citrulline synergy.", "Juice lime/watermelon together.", "Add sea salt for endurance balance."] },
+        "TITAN RED": { ing: ["2 Beets", "1 Pomegranate (Arils)", "1 Orange", "2 Carrots"], prep: ["Separate arils in water; juice only seeds.", "Juice beets/carrots first.", "Add orange/arils for Vitamin C iron catalysis."] },
+        "ZENITH GREEN": { ing: ["4 Kale stalks", "1c Wheatgrass", "1c Dandelion", "1/2c Cilantro", "1 Cucumber"], prep: ["Tighten leafy greens into balls.", "Juice cucumber last to flush green solids.", "Serve cold to preserve metabolic velocity."] }
     };
 
     const recipeDB = {
-        "Bison Steak & Eggs": { t: "15 mins", p: "55g", ing: ["6oz Bison Sirloin Steak", "2 Whole Eggs", "1 Large Tomato", "1 tsp Ghee"], steps: ["Pat bison steak dry.", "Sear in hot pan with ghee for 3 mins per side (Medium-Rare).", "Fry eggs in remaining bison juices.", "Serve with grilled tomato slice."], mod: "Sophia: 3oz steak + 1 egg (1.5 palms)." },
-        "Stealth Liver Bison Sliders": { t: "20 mins", p: "45g", ing: ["5oz Ground Bison", "1oz Mince Calf Liver", "Smoked Paprika", "Bell Peppers"], steps: ["Mince liver finely and fold into bison (1:4 ratio).", "Season heavily to mask organ flavor.", "Grill 4 mins per side.", "Serve with bell pepper bun."], mod: "Sophia: 1.5 palms protein total." },
-        "Bison Laab": { t: "20 mins", p: "40g", ing: ["6oz Ground Bison", "Diced Bell Peppers", "Lime juice", "Fish sauce", "Mint"], steps: ["Brown bison with peppers for 8 mins.", "Toss with fish sauce and mint.", "Serve in romaine cups."], mod: "High iron density protocol." },
-        "Ostrich Steaks": { t: "20 mins", p: "50g", ing: ["6oz Ostrich Fillet", "Fresh Blackberries", "Balsamic Vinegar", "Ghee"], steps: ["Sear fillets in hot ghee for exactly 3 mins per side (Rare/Med-Rare).", "Remove steaks and let rest for 5 mins.", "Simmer blackberries/balsamic in pan juices to glaze steaks."], mod: "Sophia: 1.5 palms protein; highest iron density." }
+        "Bison Steak & Eggs": { t: "15 mins", ing: ["6oz Bison Sirloin", "2 Eggs", "Large Tomato", "Ghee"], steps: ["Pat bison dry.", "Sear in ghee for 3 mins/side (Med-Rare).", "Fry eggs in bison juices.", "Serve with grilled tomato."] },
+        "Stealth Liver Bison Sliders": { t: "20 mins", ing: ["5oz Ground Bison", "1oz Mince Calf Liver", "Smoked Paprika", "Bell Peppers"], steps: ["Mince liver finely; fold into bison (1:4 ratio).", "Season heavily to mask organ scent.", "Grill 4 mins/side.", "Serve with bell pepper bun."] },
+        "Ostrich Steaks": { t: "20 mins", ing: ["6oz Ostrich Fillet", "Blackberries", "Balsamic", "Ghee"], steps: ["Sear fillets for 3 mins/side (Rare).", "Rest for 5 mins.", "Glaze with blackberry/balsamic reduction."] },
+        "SF Style Cioppino": { t: "45 mins", ing: ["1lb Mussels", "White Fish", "Fennel", "Tomato broth"], steps: ["Sauté fennel and garlic.", "Simmer broth for 20 mins.", "Add seafood; steam 5 mins until mussels open."] }
     };
 
     const mealLibrary = {
-        breakfasts: ["Bison Steak & Eggs", "Japanese Tamagoyaki (No Nori)", "Sea Moss Smoothie", "Southwest Bison Scramble", "Crab Scramble", "Bison Steak & Eggs", "Japanese Tamagoyaki (No Nori)", "Sea Moss Smoothie"],
-        lunches: ["Mediterranean Sardine Bowl", "Bison Laab", "Stealth Liver Bison Sliders", "Dungeness Crab Tower", "Sriracha Yogurt Bison Tacos", "Mediterranean Sardine Bowl", "Bison Laab", "Stealth Liver Bison Sliders"],
-        dinners: ["Ostrich Steaks", "SF Style Cioppino", "Garlic Ghee Lobster Tails", "Grilled Branzino (Whole)", "Wild Elk Medallions", "Ostrich Steaks", "SF Style Cioppino", "Garlic Ghee Lobster Tails"]
+        breakfasts: ["Bison Steak & Eggs", "Japanese Tamagoyaki (No Nori)", "Sea Moss Smoothie", "Southwest Bison Scramble"],
+        lunches: ["Mediterranean Sardine Bowl", "Bison Laab", "Stealth Liver Bison Sliders", "Dungeness Crab Tower"],
+        dinners: ["Ostrich Steaks", "SF Style Cioppino", "Garlic Ghee Lobster Tails", "Grilled Branzino (Whole)"]
     };
 
     const dayLogicMap = { 
-        0: {w:"RECOVERY", c:"low", h:"3L", jName:"APOLLO GOLD", jBadge:"🛡️ JOINT GUARD", jBen:"Anti-Inflammatory Synergy", protocol:["Sea Moss", "Kombucha"]}, 
-        1: {w:"LIFT", c:"high", h:"1 Gal", jName:"PLASMA FLUSH", jBadge:"⚡ NITRO PUMP", jBen:"Muscle Endurance", protocol:["Sea Moss", "Kombucha"]}, 
-        2: {w:"BOXING", c:"high", h:"1.2 Gal", jName:"TITAN RED", jBadge:"⚡ NITRIC BOOST", jBen:"Iron Absorption Catalyst", protocol:["Sea Moss", "Kombucha", "Mg Electrolytes"]}, 
-        3: {w:"REFORM", c:"low", h:"3L", jName:"ZENITH GREEN", jBadge:"🌿 ALKALIZER", jBen:"Heavy Metal Defense", protocol:["Sea Moss", "Kombucha"]}, 
-        4: {w:"BOXING", c:"high", h:"1.2 Gal", jName:"TITAN RED", jBadge:"⚡ NITRIC BOOST", jBen:"Explosive Stamina Suite", protocol:["Sea Moss", "Kombucha", "Mg Electrolytes"]}, 
-        5: {w:"YOGA", c:"low", h:"3.5L", jName:"ZENITH GREEN", jBadge:"🌿 ALKALIZER", jBen:"Systemic Flush & Tissue Repair", protocol:["Sea Moss", "Kombucha"]}, 
-        6: {w:"CS4 HIIT", c:"high", h:"1 Gal", jName:"TITAN RED", jBadge:"⚡ NITRIC BOOST", jBen:"Nitric Oxide Performance Load", protocol:["Sea Moss", "Kombucha"]} 
+        0: {w:"RECOVERY", c:"low", h:"3L", jName:"APOLLO GOLD", jBadge:"🛡️ JOINT GUARD", protocol:["Sea Moss", "Kombucha"]}, 
+        1: {w:"LIFT", c:"high", h:"1 Gal", jName:"PLASMA FLUSH", jBadge:"⚡ NITRO PUMP", protocol:["Sea Moss", "Kombucha"]}, 
+        2: {w:"BOXING", c:"high", h:"1.2 Gal", jName:"TITAN RED", jBadge:"⚡ NITRIC BOOST", protocol:["Sea Moss", "Kombucha", "Mg Electrolytes"]}, 
+        3: {w:"REFORM", c:"low", h:"3L", jName:"ZENITH GREEN", jBadge:"🌿 ALKALIZER", protocol:["Sea Moss", "Kombucha"]}, 
+        4: {w:"BOXING", c:"high", h:"1.2 Gal", jName:"TITAN RED", jBadge:"⚡ NITRIC BOOST", protocol:["Sea Moss", "Kombucha", "Mg Electrolytes"]}, 
+        5: {w:"YOGA", c:"low", h:"3.5L", jName:"ZENITH GREEN", jBadge:"🌿 ALKALIZER", protocol:["Sea Moss", "Kombucha"]}, 
+        6: {w:"CS4 HIIT", c:"high", h:"1 Gal", jName:"TITAN RED", jBadge:"⚡ NITRIC BOOST", protocol:["Sea Moss", "Kombucha"]} 
     };
 
     let weekOffset = 0;
@@ -184,12 +187,11 @@
     }
 
     function openRecipe(name) {
-        const r = recipeDB[name] || { t: "20 mins", p: "40g", ing: ["Hard-Coded Master DB"], steps: ["Follow standard Centurion prep protocol."], mod: "Sophia: 1.5 palms protein." };
+        const r = recipeDB[name] || { t: "20 mins", ing: ["Ingredients Hard-Coded"], steps: ["Follow Centurion Prep."], mod: "Sophia: 1.5 palms." };
         document.getElementById('modalTitle').innerText = name;
-        document.getElementById('modalTime').innerText = "⏱️ COOK TIME: " + r.t;
+        document.getElementById('modalTime').innerText = "⏱️ COOK TIME: " + (r.t || "20 mins");
         document.getElementById('modalIng').innerHTML = r.ing.map(i => `<li>• ${i}</li>`).join('');
         document.getElementById('modalSteps').innerHTML = r.steps.map(s => `<p>${s}</p>`).join('');
-        document.getElementById('modalMod').innerText = r.mod;
         document.getElementById('recipeModal').style.display = 'block';
     }
 
@@ -201,20 +203,13 @@
         document.getElementById('juiceModal').style.display = 'block';
     }
 
-    function openProtocol(name) {
-        document.getElementById('protoTitle').innerText = name;
-        document.getElementById('protoBody').innerHTML = protocolData[name] || "Syncing data...";
-        document.getElementById('protocolModal').style.display = 'block';
-    }
-
-    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
     function openModal(id) { document.getElementById(id).style.display = 'block'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
     function renderTabs() {
         const monday = getMonday(weekOffset);
         const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
-        const dateOptions = { month: 'short', day: 'numeric' };
-        document.getElementById('dateRangeDisplay').innerText = `${monday.toLocaleDateString('en-US', dateOptions)} — ${sunday.toLocaleDateString('en-US', dateOptions)}`;
+        document.getElementById('dateRangeDisplay').innerText = `${monday.toLocaleDateString('en-US', {month:'short', day:'numeric'})} — ${sunday.toLocaleDateString('en-US', {month:'short', day:'numeric'})}`;
 
         const tabs = document.getElementById('dayTabs'); tabs.innerHTML = '';
         ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"].forEach((day, i) => {
@@ -236,7 +231,7 @@
 
     function showDay(dateObj) {
         const start = new Date(2025, 0, 1); const dayId = Math.floor((dateObj - start) / 86400000);
-        const d = dayLogicMap[dateObj.getDay()]; const idx = dayId % 8;
+        const d = dayLogicMap[dateObj.getDay()]; const idx = dayId % 4;
         const b = mealLibrary.breakfasts[idx], dn = mealLibrary.dinners[idx];
         let l = mealLibrary.lunches[idx]; if (dayId % 30 === 0) { l = "Stealth Liver Bison Sliders"; }
 
@@ -244,30 +239,22 @@
             <div class="card">
                 <div class="workout-tag"><span>${d.w}</span><span class="carb-pill" style="background:${d.c==='high'?'var(--carb-high)':'var(--carb-low)'}">${d.c.toUpperCase()} CARB</span></div>
                 <div class="label">🍳 Breakfast</div><div class="value" onclick="openRecipe('${b}')">🧔🏾‍♂️ J: ${b}</div>
-                <div style="font-size:0.75rem; color:var(--text-dim); margin-bottom:15px; font-style:italic;">👩🏾‍🦱 S: ${recipeDB[b]?.mod || "Standard Portion"}</div>
                 <div class="label">🥗 Lunch</div><div class="value" onclick="openRecipe('${l}')">🧔🏾‍♂️ J: ${l}</div>
-                <div style="font-size:0.75rem; color:var(--text-dim); margin-bottom:15px; font-style:italic;">👩🏾‍🦱 S: ${recipeDB[l]?.mod || "Standard Portion"}</div>
                 <div class="label">🍽️ Dinner</div><div class="value" onclick="openRecipe('${dn}')">🧔🏾‍♂️ J: ${dn}</div>
-                <div style="font-size:0.75rem; color:var(--text-dim); margin-bottom:15px; font-style:italic;">👩🏾‍🦱 S: ${recipeDB[dn]?.mod || "Standard Portion"}</div>
             </div>
             <div class="juice-card" onclick="openJuicePrep('${d.jName}')">
                 <span class="badge" style="float:right; border-color:var(--accent-gold); color:var(--accent-gold);">${d.jBadge}</span>
                 <div class="label">Kuvings Cold-Pressed</div>
                 <div class="juice-name">${d.jName}</div>
-                <div class="juice-benefit">${d.jBen}</div>
             </div>
-            <div class="card" style="background:#0a0a0a;">
-                <div class="label">Interactive Protocol</div>
-                <div style="margin-top:10px;">
-                    ${d.protocol.map(p => `<span class="pb-mini" onclick="openProtocol('${p}')">${p}</span>`).join('')}
-                    <span class="pb-mini" onclick="openProtocol('Hydration')">💧 Hydration: ${d.h}</span>
-                </div>
-            </div>`;
+            <div class="card" style="background:#0a0a0a;"><div class="label">Hydration: ${d.h}</div></div>`;
     }
 
     function changeWeek(dir) { weekOffset += dir; renderTabs(); }
     function resetToCurrent() { weekOffset = 0; renderTabs(); }
     window.onload = renderTabs;
 </script>
+
+<div id="juiceModal" class="modal">...</div>
 </body>
 </html>
