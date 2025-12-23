@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Centurion | v46 Saturday CS4</title>
+    <title>The Centurion | v46.1 CSS Fix</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -45,7 +45,8 @@
         .tab-btn span { display: block; font-size: 0.65rem; opacity: 0.7; margin-top: 4px; }
         .tab-btn.active { color: var(--accent-gold); background: rgba(255,255,255,0.03); border-radius: 4px; }
         
-        /* CARD STYLES */
+        .main-layout { display: grid; grid-template-columns: 1.4fr 1fr; gap: 24px; align-items: start; transition: opacity 0.3s ease; opacity: 1; }
+        
         .card { background: var(--card-bg); border-radius: 12px; padding: 30px; border: 1px solid #222; position: relative; overflow: hidden; margin-bottom: 20px; }
         .card::before { content: ""; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--accent-gold); }
         
@@ -55,8 +56,18 @@
         
         .workout-tag { font-size: 0.9rem; color: var(--accent-gold); border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
         
-        /* CARB CYCLING TAGS */
-        .carb-tag { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; margin-left: 10px; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px; vertical-align: middle; }
+        /* CARB CYCLING TAGS - MODIFIED */
+        .carb-tag { 
+            font-size: 0.7rem; 
+            padding: 2px 6px; 
+            border-radius: 4px; 
+            margin-left: 10px; 
+            text-transform: uppercase; 
+            font-weight: 800; 
+            letter-spacing: 0.5px; 
+            vertical-align: middle; 
+            white-space: nowrap; /* This is the fix */
+        }
         .carb-high { background: rgba(255, 145, 0, 0.15); color: var(--carb-high); border: 1px solid var(--carb-high); }
         .carb-low { background: rgba(0, 176, 255, 0.15); color: var(--carb-low); border: 1px solid var(--carb-low); }
 
@@ -474,13 +485,23 @@
     }
 
     function changeWeek(direction) {
-        weekOffset += direction;
-        generateSyncedWeek();
+        const layout = document.getElementById('dayContent');
+        layout.classList.add('fade');
+        setTimeout(() => {
+            weekOffset += direction;
+            generateSyncedWeek();
+            layout.classList.remove('fade');
+        }, 150);
     }
 
     function resetToCurrent() {
-        weekOffset = 0;
-        generateSyncedWeek(true);
+        const layout = document.getElementById('dayContent');
+        layout.classList.add('fade');
+        setTimeout(() => {
+            weekOffset = 0;
+            generateSyncedWeek(true);
+            layout.classList.remove('fade');
+        }, 150);
     }
 
     function openModal(id) { document.getElementById(id).style.display = 'block'; }
@@ -491,6 +512,10 @@
         openModal('workoutModal'); 
     }
     function openProfileModal() { openModal('profileModal'); }
+
+    window.onclick = function(event) { 
+        if (event.target.classList.contains('modal')) event.target.style.display = 'none';
+    }
 
     function openRecipeModal(dishName, ingredientsString) {
         const modal = document.getElementById('recipeModal');
@@ -507,6 +532,7 @@
 
         let recipe = recipeDatabase[dishName];
         if (!recipe) {
+            // Pass the ingredients string from the card to the generator
             recipe = generateSmartRecipe(dishName, ingredientsString);
         }
 
