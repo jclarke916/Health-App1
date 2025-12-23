@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Centurion | v73 Master Restoration</title>
+    <title>The Centurion | v74 Master Restored</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -24,7 +24,8 @@
         .nav-btn:hover { border-color: var(--accent-silver); background: #1a1a1a; }
         .action-btn { border-color: var(--accent-gold); color: var(--accent-gold); }
         .tabs { display: flex; justify-content: space-between; background: var(--card-bg); padding: 5px; border-radius: 8px; margin-bottom: 25px; border: 1px solid #222; overflow-x: auto; }
-        .tab-btn { background: none; border: none; color: #555; padding: 10px 8px; cursor: pointer; font-weight: 600; flex: 1; font-size: 0.8rem; text-align: center; min-width: 60px; }
+        .tab-btn { background: none; border: none; color: #555; padding: 10px 8px; cursor: pointer; font-weight: 600; flex: 1; font-size: 0.8rem; text-align: center; min-width: 60px; transition: 0.3s; }
+        .tab-btn span { display: block; font-size: 0.65rem; opacity: 0.7; margin-top: 4px; }
         .tab-btn.active { color: var(--accent-gold); background: rgba(255,255,255,0.03); border-radius: 4px; }
         .card { background: var(--card-bg); border-radius: 12px; padding: 30px; border: 1px solid #222; position: relative; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .card::before { content: ""; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--accent-gold); }
@@ -48,6 +49,9 @@
         .recipe-list { list-style: none; padding: 0; margin-bottom: 20px; }
         .recipe-list li { margin-bottom: 8px; color: #ccc; font-size: 0.9rem; padding-left: 15px; position: relative; }
         .recipe-list li::before { content: "•"; color: var(--accent-gold); position: absolute; left: 0; }
+        .portion-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .portion-table th { text-align: left; border-bottom: 1px solid #333; padding: 12px 5px; color: var(--accent-silver); font-size: 0.7rem; text-transform: uppercase; }
+        .portion-table td { padding: 15px 5px; border-bottom: 1px solid #222; font-size: 0.9rem; color: #ccc; }
     </style>
 </head>
 <body>
@@ -62,12 +66,14 @@
         </div>
     </header>
 
-    <div class="status-bar" id="syncStatus">SYSTEM READY</div>
+    <div class="status-bar" id="syncStatus">initializing...</div>
 
     <div class="controls">
+        <button class="nav-btn" onclick="changeWeek(-1)">PREV</button>
         <button class="nav-btn" onclick="resetToCurrent()">TODAY</button>
-        <button class="nav-btn action-btn">🏋️ WORKOUTS</button>
-        <button class="nav-btn action-btn">📏 PORTIONS</button>
+        <button class="nav-btn" onclick="changeWeek(1)">NEXT</button>
+        <button class="nav-btn action-btn" onclick="openWorkoutModal()">🏋️ WORKOUTS</button>
+        <button class="nav-btn action-btn" onclick="openPortionModal()">📏 PORTIONS</button>
     </div>
 
     <div class="tabs" id="dayTabs"></div>
@@ -76,24 +82,19 @@
 
 <div id="recipeModal" class="modal">
     <div class="modal-content">
-        <span class="close-btn" onclick="closeModal()">&times;</span>
+        <span class="close-btn" onclick="closeModal('recipeModal')">&times;</span>
         <h2 id="modalTitle" style="color:var(--text-main); margin-bottom:5px;"></h2>
         <div id="modalTime" style="color:var(--accent-gold); font-size:0.85rem; font-weight:bold; margin-bottom:15px;"></div>
-        
         <div class="lifestyle-box" id="modalWhy"></div>
-
         <div class="macro-grid">
             <div class="macro-item"><div class="macro-label">Protein</div><div class="macro-val" id="modalP"></div></div>
             <div class="macro-item"><div class="macro-label">Carbs</div><div class="macro-val" id="modalC"></div></div>
             <div class="macro-item"><div class="macro-label">Fats</div><div class="macro-val" id="modalF"></div></div>
         </div>
-
         <div style="color:var(--accent-gold); font-size:0.9rem; font-weight:bold; text-transform:uppercase; margin-bottom:10px;">Ingredients</div>
         <ul id="modalIng" class="recipe-list"></ul>
-
         <div style="color:var(--accent-gold); font-size:0.9rem; font-weight:bold; text-transform:uppercase; margin-bottom:10px;">Preparation</div>
         <div id="modalSteps" style="color:#ccc; line-height:1.6; font-size:0.95rem;"></div>
-
         <div class="sophia-mod-box">
             <div style="color: var(--glute-pink); font-size: 0.85rem; font-weight: 800; text-transform: uppercase; margin-bottom: 5px;">🍑 Sophia's Mod</div>
             <div id="modalMod" style="color:#e5e4e2; font-size:0.9rem;"></div>
@@ -101,75 +102,80 @@
     </div>
 </div>
 
+<div id="portionModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal('portionModal')">&times;</span>
+        <h2 style="color:var(--accent-gold);">Portion Protocol</h2>
+        <table class="portion-table">
+            <thead><tr><th>Macro</th><th>🧔🏾‍♂️ Jermaine</th><th>👩🏾‍🦱 Sophia</th></tr></thead>
+            <tbody>
+                <tr><td>Protein</td><td>2 Palms</td><td>1.5 Palms</td></tr>
+                <tr><td>Veggies</td><td>2 Fists</td><td>2 Fists</td></tr>
+                <tr><td>Fats</td><td>2 Thumbs</td><td>1 Thumb</td></tr>
+                <tr><td>Carbs</td><td>2 Cupped Hands</td><td>1 Hand (Low Day)</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
 <script>
-    const recipeDatabase = {
+    const recipeDB = {
         "Pan-Seared Sea Bass w/ Fennel": {
-            t: "25 mins", p: "40g", c: "12g", f: "18g",
-            why: "High Omega-3s. Fennel bulb prevents post-meal digestive bloat.",
-            ing: ["6oz Chilean Sea Bass Fillet", "1/2 Shaved Fennel Bulb", "Grapefruit Segments", "1 tsp Ghee", "Fresh Dill"],
-            steps: "1. Pat the bass perfectly dry (essential for crust). 2. Score skin slightly. 3. Heat ghee until smoking. 4. Sear skin-side down for 5 mins Side A, flip for 3 mins Side B. 5. Serve over fennel.",
-            mod: "Add extra citrus segments for Vitamin C."
+            t: "25 mins", p: "40g", c: "12g", f: "18g", why: "Omega-3 powerhouse. Fennel prevents post-meal digestive bloat.",
+            ing: ["6oz Sea Bass", "1/2 Shaved Fennel", "Grapefruit Segments", "Ghee"],
+            steps: "1. Pat bass dry. 2. Sear skin-side down in hot ghee for 5 mins side A. 3. Flip for 3 mins side B. 4. Serve over fennel.", mod: "Skip added oils for Sophia."
         },
         "Tofu & Brussels Scramble": {
-            t: "15 mins", p: "35g", c: "12g", f: "10g",
-            why: "Crucial fiber-protein mix to blunt insulin spikes.",
-            ing: ["1 Whole Egg + 3 Whites", "1/4 block Firm Tofu", "1 cup Shaved Brussels", "Bell Peppers", "Jalapeno"],
-            steps: "1. Sauté brussels and peppers in pan for 5 mins until charred. 2. Crumble tofu into pan. 3. Whisk eggs and pour over mixture. 4. Scramble on high heat for 3 mins until set.",
-            mod: "Use extra egg whites to increase protein volume."
+            t: "15 mins", p: "35g", c: "12g", f: "10g", why: "High volume, high fiber to sustain energy through Boxing.",
+            ing: ["Firm Tofu", "Brussels Sprouts", "Bell Peppers", "Jalapeno", "Eggs"],
+            steps: "1. Sauté brussels and peppers 5 mins. 2. Crumble tofu into pan with turmeric. 3. Scramble eggs 3 mins until set.", mod: "Use whites only."
         },
         "Classic Peruvian Ceviche": {
-            t: "20 mins", p: "40g", c: "15g", f: "2g",
-            why: "Zero-oil preparation. High enzymatic activity for total longevity.",
-            ing: ["8oz White Fish (Snapper/Bass)", "1 cup Fresh Lime Juice", "Red Onion Slices", "1 slice Sweet Potato", "Cilantro"],
-            steps: "1. Cube fish into 1/2 inch pieces. 2. Submerge in lime juice and chill for 15 mins (the acid 'cooks' the protein). 3. Toss with rinsed onions and cilantro. 4. Plate with one slice of sweet potato.",
-            mod: "Limit to exactly 1 small slice of sweet potato."
+            t: "20 mins", p: "40g", c: "15g", f: "2g", why: "Zero-oil enzymes for total gut health and longevity.",
+            ing: ["8oz White Fish", "Lime Juice", "Red Onion", "Sweet Potato", "Cilantro"],
+            steps: "1. Cube fish 1/2 inch. 2. Submerge in lime juice 15 mins. 3. Toss with onions and cilantro. 4. Add 1 slice sweet potato.", mod: "1 slice potato max."
         },
         "Sriracha Yogurt Bison Tacos": {
-            t: "20 mins", p: "42g", c: "15g", f: "12g",
-            why: "Probiotic yogurt sauce replaces fatty cream. Lean bison for high iron.",
-            ing: ["6oz Ground Bison", "3 Siete Almond Tortillas", "2 tbsp Greek Yogurt", "Sriracha", "Lime", "Cilantro"],
-            steps: "1. Brown bison in pan for 8 mins total. 2. Mix yogurt, sriracha, and lime in a bowl. 3. Warm tortillas for 30s per side. 4. Assemble with bison, sauce, and cilantro.",
-            mod: "Use lettuce wraps instead of almond tortillas on low carb days."
-        },
-        "Centurion Bone Broth Beef Stew": {
-            t: "3 hours", p: "45g", c: "15g", f: "15g",
-            why: "Bone broth heals the gut lining; collagen for joint health.",
-            ing: ["Grass-Fed Beef Chuck", "4 cups Beef Bone Broth", "Turnips", "Carrots", "Celery", "Thyme"],
-            steps: "1. Sear beef chunks in ghee for 5 mins per side. 2. Remove beef, sauté mirepoix. 3. Add broth and herbs. 4. Simmer low for 2.5 hours. 5. Add turnips in the last 45 mins.",
-            mod: "Turnips replace white potatoes for a lower glycemic index."
+            t: "20 mins", p: "42g", c: "15g", f: "12g", why: "Probiotic yogurt sauce replaces fatty cream. Lean bison for iron.",
+            ing: ["6oz Bison", "Siete Tortilla", "Greek Yogurt", "Sriracha", "Lime"],
+            steps: "1. Brown bison in pan 8 mins. 2. Mix yogurt and sriracha. 3. Char tortillas 30s per side. Assemble.", mod: "Use lettuce cups."
         },
         "Lean Beef Pho (Konjac Noodles)": {
-            t: "30 mins", p: "42g", c: "5g", f: "8g",
-            why: "Pure collagen broth with zero-calorie fiber noodles.",
-            ing: ["Beef Bone Broth", "Thinly Sliced Eye of Round", "Konjac Noodles", "Basil", "Bean Sprouts", "Star Anise"],
-            steps: "1. Toast star anise in pot, add broth and simmer 20 mins. 2. Rinse Konjac noodles thoroughly. 3. Place raw beef and noodles in bowl. 4. Pour boiling broth over meat to cook instantly.",
-            mod: "Konjac noodles are pure zero-carb fiber."
+            t: "30 mins", p: "42g", c: "5g", f: "8g", why: "Pure collagen broth with zero-calorie fiber noodles for recovery.",
+            ing: ["Beef Broth", "Thin Eye of Round", "Konjac Noodles", "Basil", "Sprouts"],
+            steps: "1. Simmer broth with star anise 20m. 2. Rinse Konjac noodles. 3. Pour boiling broth over raw beef and noodles to cook.", mod: "Konjac is carb-free."
+        },
+        "Centurion Bone Broth Beef Stew": {
+            t: "3 hours", p: "45g", c: "15g", f: "15g", why: "Slow cooked collagen for joint health and gut repair.",
+            ing: ["Beef Chuck", "Bone Broth", "Turnips", "Carrots", "Celery"],
+            steps: "1. Sear beef 5 mins per side. 2. Add broth and veg. 3. Simmer low for 2.5 hours. 4. Add turnips last 45 mins.", mod: "Turnips replace potatoes."
         }
     };
 
     const mealLibrary = {
-        breakfasts: ["Tofu & Brussels Scramble", "Sea Moss & Triple-Protein Smoothie", "Crab & Spinach Scramble", "Japanese Tamagoyaki Scramble", "Salmon & Capers Sprouted Toast"],
-        lunches: ["Classic Peruvian Ceviche", "Sriracha Yogurt Bison Tacos", "Mendo-Style Sophisticated Cobb", "Roasted Purple Yam Power Bowl", "Ahi Tuna & Power Greens Bowl"],
-        dinners: ["Pan-Seared Sea Bass w/ Fennel", "Centurion Bone Broth Beef Stew", "Lean Beef Pho (Konjac Noodles)", "Centurion Stealth Chili", "Spartan Bolognese"],
+        breakfasts: ["Tofu & Brussels Scramble", "Sea Moss & Triple-Protein Smoothie"],
+        lunches: ["Classic Peruvian Ceviche", "Sriracha Yogurt Bison Tacos"],
+        dinners: ["Pan-Seared Sea Bass w/ Fennel", "Lean Beef Pho (Konjac Noodles)", "Centurion Bone Broth Beef Stew"],
         juices: [
-            { name: "The Detox", oz: "16oz", ing: "Celery, Cucumber, Apple, Ginger", b: "Reduces water retention" },
-            { name: "Red Power", oz: "20oz", ing: "Beets, Carrots, Orange, Ginger", b: "Nitric Oxide boost for stamina" },
-            { name: "The Alkaline", oz: "16oz", ing: "Kale, Spinach, Pear, Lime", b: "Balances pH & lowers inflammation" }
+            { name: "The Detox", oz: "16oz", ing: "Celery, Cucumber, Ginger", b: "Water retention reduction" },
+            { name: "Red Power", oz: "20oz", ing: "Beets, Carrots, Ginger", b: "Stamina boost" }
         ]
     };
 
     const dayLogic = [
-        { d: "MON", w: "LIFT + Massage", c: "high", h: "1 Gal" },
-        { d: "TUE", w: "BOXING", c: "high", h: "1.2 Gal" },
-        { d: "WED", w: "REFORM", c: "low", h: "3L" },
-        { d: "THU", w: "BOXING", c: "high", h: "1.2 Gal" },
-        { d: "FRI", w: "YOGA + REFORM", c: "low", h: "3.5L" },
-        { d: "SAT", w: "CS4 HIIT", c: "high", h: "1 Gal" },
-        { d: "SUN", w: "RECOVERY", c: "low", h: "3L" }
+        { day: "MON", work: "LIFT + Massage", carb: "high", h: "1 Gal", b: "Tofu & Brussels Scramble", l: "Classic Peruvian Ceviche", dn: "Pan-Seared Sea Bass w/ Fennel" },
+        { day: "TUE", work: "BOXING", carb: "high", h: "1.2 Gal", b: "Tofu & Brussels Scramble", l: "Sriracha Yogurt Bison Tacos", dn: "Lean Beef Pho (Konjac Noodles)" },
+        { day: "WED", work: "REFORM", carb: "low", h: "3L", b: "Tofu & Brussels Scramble", l: "Classic Peruvian Ceviche", dn: "Centurion Bone Broth Beef Stew" },
+        { day: "THU", work: "BOXING", carb: "high", h: "1.2 Gal", b: "Tofu & Brussels Scramble", l: "Sriracha Yogurt Bison Tacos", dn: "Pan-Seared Sea Bass w/ Fennel" },
+        { day: "FRI", work: "YOGA + REFORM", carb: "low", h: "3.5L", b: "Tofu & Brussels Scramble", l: "Classic Peruvian Ceviche", dn: "Lean Beef Pho (Konjac Noodles)" },
+        { day: "SAT", work: "CS4 HIIT", carb: "high", h: "1 Gal", b: "Tofu & Brussels Scramble", l: "Sriracha Yogurt Bison Tacos", dn: "Centurion Bone Broth Beef Stew" },
+        { day: "SUN", work: "RECOVERY", carb: "low", h: "3L", b: "Tofu & Brussels Scramble", l: "Classic Peruvian Ceviche", dn: "Pan-Seared Sea Bass w/ Fennel" }
     ];
 
+    let weekOffset = 0;
+
     function openRecipe(name) {
-        const r = recipeDatabase[name];
+        const r = recipeDB[name];
         if(!r) return;
         document.getElementById('modalTitle').innerText = name;
         document.getElementById('modalTime').innerText = "⏱️ COOK TIME: " + r.t;
@@ -183,63 +189,66 @@
         document.getElementById('recipeModal').style.display = 'block';
     }
 
-    function closeModal() { document.getElementById('recipeModal').style.display = 'none'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+    function openPortionModal() { document.getElementById('portionModal').style.display = 'block'; }
+    function openWorkoutModal() { alert("Lift compounds: 4 sets of 8. Boxing: High Intensity."); }
 
-    function showDay(idx) {
-        const d = dayLogic[idx];
-        const b = mealLibrary.breakfasts[idx % mealLibrary.breakfasts.length];
-        const l = mealLibrary.lunches[idx % mealLibrary.lunches.length];
-        const dn = mealLibrary.dinners[idx % mealLibrary.dinners.length];
-        const j = mealLibrary.juices[idx % mealLibrary.juices.length];
-
-        document.getElementById('dayContent').innerHTML = `
-            <div class="card">
-                <div class="workout-tag">
-                    <span>${d.w}</span>
-                    <span class="carb-tag" style="color:${d.carb === 'high' ? 'var(--carb-high)' : 'var(--carb-low)'}">${d.carb.toUpperCase()} CARB</span>
-                </div>
-                <div class="label">🍳 Breakfast</div>
-                <div class="value" onclick="openRecipe('${b}')">🧔🏾‍♂️ J: ${b}</div>
-                <div style="font-size:0.85rem; color:var(--text-dim); margin-bottom:15px;">👩🏾‍🦱 S: ${recipeDatabase[b]?.mod || "Check portions"}</div>
-
-                <div class="label">🥗 Lunch</div>
-                <div class="value" onclick="openRecipe('${l}')">🧔🏾‍♂️ J: ${l}</div>
-                <div style="font-size:0.85rem; color:var(--text-dim); margin-bottom:15px;">👩🏾‍🦱 S: ${recipeDatabase[l]?.mod || "Check portions"}</div>
-
-                <div class="label">🍽️ Dinner</div>
-                <div class="value" onclick="openRecipe('${dn}')">🧔🏾‍♂️ J: ${dn}</div>
-                <div style="font-size:0.85rem; color:var(--text-dim); margin-bottom:15px;">👩🏾‍🦱 S: ${recipeDatabase[dn]?.mod || "Check portions"}</div>
-            </div>
-
-            <div class="juice-box">
-                <div class="juice-header">${j.name.toUpperCase()} <span class="oz-tag">${j.oz}</span></div>
-                <div class="label">Ingredients</div><div style="font-size:0.9rem; color:#888; margin-bottom:10px;">${j.ing}</div>
-                <div style="border-left: 2px solid var(--accent-gold); padding-left:10px; font-style:italic; font-size:0.85rem; color:var(--accent-silver);">⚡ ${j.b}</div>
-            </div>
-
-            <div class="card" style="margin-top:10px; border-top: 1px solid #333;">
-                <div class="label">🗓️ DAILY PROTOCOL</div>
-                <div style="font-size: 0.85rem; line-height: 1.6; color:#666;">
-                    ✅ 2 tbsp Sea Moss Gel <br>✅ 7:30 PM Liquid Cut-off <br>✅ Bedtime: 10:30 PM <br>✅ Hydration: ${d.h}
-                </div>
-            </div>
-        `;
+    function getMonday(offset) {
+        let d = new Date();
+        let day = d.getDay(), diff = d.getDate() - day + (day == 0 ? -6:1);
+        let mon = new Date(d.setDate(diff));
+        mon.setDate(mon.getDate() + (offset * 7));
+        return mon;
     }
 
     function renderTabs() {
+        const monday = getMonday(weekOffset);
         const tabs = document.getElementById('dayTabs');
-        tabs.innerHTML = dayLogic.map((day, i) => `<button class="tab-btn ${i===0?'active':''}" onclick="setActive(${i}, this)">${day.day}</button>`).join('');
+        tabs.innerHTML = '';
+        dayLogic.forEach((day, i) => {
+            let tabDate = new Date(monday);
+            tabDate.setDate(monday.getDate() + i);
+            const btn = document.createElement('button');
+            btn.className = 'tab-btn' + (i === 0 ? ' active' : '');
+            btn.innerHTML = `${day.day}<span>${tabDate.getDate()}</span>`;
+            btn.onclick = () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                showDay(i);
+            };
+            tabs.appendChild(btn);
+        });
+        const opts = { month: 'short', day: 'numeric' };
+        document.getElementById('syncStatus').innerText = `${monday.toLocaleDateString('en-US', opts)} - v74 ACTIVE`;
         showDay(0);
     }
 
-    function setActive(i, btn) {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        showDay(i);
+    function showDay(idx) {
+        const d = dayLogic[idx];
+        const j = mealLibrary.juices[idx % mealLibrary.juices.length];
+        document.getElementById('dayContent').innerHTML = `
+            <div class="card">
+                <div class="workout-tag"><span>${d.work}</span><span class="carb-tag ${d.carb==='high'?'carb-high':'carb-low'}">${d.carb.toUpperCase()} CARB</span></div>
+                <div class="label">🍳 Breakfast</div><div class="value" onclick="openRecipe('${d.b}')">🧔🏾‍♂️ J: ${d.b}</div>
+                <div class="label" style="margin-top:15px;">🥗 Lunch</div><div class="value" onclick="openRecipe('${d.l}')">🧔🏾‍♂️ J: ${d.l}</div>
+                <div class="label" style="margin-top:15px;">🍽️ Dinner</div><div class="value" onclick="openRecipe('${d.dn}')">🧔🏾‍♂️ J: ${d.dn}</div>
+                <div class="label" style="margin-top:15px; color:var(--glute-pink);">👩🏾‍🦱 Sophia Preview</div>
+                <div style="font-size:0.85rem; color:#aaa; font-style:italic;">Mod: ${recipeDB[d.dn]?.mod || "Standard Portion"}</div>
+            </div>
+            <div class="juice-box">
+                <div class="juice-header">${j.name.toUpperCase()} <span class="oz-tag">${j.oz}</span></div>
+                <div class="label">Cold Pressed Ingredients</div><div style="font-size:0.85rem; color:#666;">${j.ing}</div>
+                <div style="margin-top:10px; font-size:0.8rem; color:var(--accent-gold);">⚡ Benefit: ${j.b}</div>
+            </div>
+            <div class="card" style="margin-top:10px; border-top:1px solid #333;">
+                <div class="label">Daily Protocol</div>
+                <div style="font-size:0.8rem; color:#555;">✅ 2tbsp Sea Moss | ✅ ${d.h} Hydration | ✅ 10:30PM Sleep</div>
+            </div>`;
     }
 
+    function changeWeek(dir) { weekOffset += dir; renderTabs(); }
+    function resetToCurrent() { weekOffset = 0; renderTabs(); }
     window.onload = renderTabs;
-    window.onclick = function(e) { if(e.target.className === 'modal') closeModal(); }
 </script>
 </body>
 </html>
