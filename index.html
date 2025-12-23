@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Centurion | v39 Glute & Ab Focus</title>
+    <title>The Centurion | v40 Smart Carb Cycling</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -16,7 +16,9 @@
             --badge-green: #00c853;
             --badge-orange: #ffab00;
             --alert-red: #ff3d00;
-            --glute-pink: #d63384; /* New accent for Sophia's Goal */
+            --glute-pink: #d63384;
+            --carb-high: #ff9100;
+            --carb-low: #00b0ff;
         }
         
         body { font-family: 'Inter', sans-serif; background-color: var(--bg-dark); color: var(--text-main); margin: 0; display: flex; flex-direction: column; align-items: center; padding: 20px; }
@@ -55,7 +57,12 @@
         
         .workout-tag { font-size: 0.9rem; color: var(--accent-gold); border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
         .protein-tag { color: var(--accent-gold); font-size: 0.75rem; font-weight: 700; margin-left: 8px; }
-        .red-meat-tag { color: #ff6b6b; font-size: 0.6rem; border: 1px solid #ff6b6b; padding: 1px 4px; border-radius: 2px; margin-left: 6px; vertical-align: middle; text-transform: uppercase; }
+        
+        /* NEW CARB CYCLING TAGS */
+        .carb-tag { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; margin-left: 10px; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px; vertical-align: middle; }
+        .carb-high { background: rgba(255, 145, 0, 0.15); color: var(--carb-high); border: 1px solid var(--carb-high); }
+        .carb-low { background: rgba(0, 176, 255, 0.15); color: var(--carb-low); border: 1px solid var(--carb-low); }
+
         .ingredients-list { font-size: 0.85rem; color: var(--text-dim); margin-bottom: 15px; font-style: italic; }
         
         .juice-box { background: #0a0a0a; border-radius: 12px; padding: 30px; border: 1px solid #222; display: flex; flex-direction: column; gap: 15px; }
@@ -70,6 +77,7 @@
         
         .guide-title { font-size: 1.3rem; font-weight: 300; color: var(--accent-gold); margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #333; padding-bottom: 10px; }
         
+        /* RECIPE MODAL SPECIFIC */
         #recipeTitle { margin-bottom: 15px; border-bottom: none; padding-bottom: 0; font-size: 1.5rem; color: #fff;}
         .recipe-badge-container { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #333; display: flex; gap: 10px; flex-wrap: wrap;}
         .recipe-time-badge { display: inline-block; padding: 8px 16px; border-radius: 4px; font-size: 0.9rem; font-weight: 800; letter-spacing: 1px; color: #000; text-transform: uppercase; }
@@ -81,11 +89,9 @@
         .macro-item { text-align: center; }
         .macro-label { font-size: 0.7rem; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
         .macro-val { font-size: 1.1rem; color: #fff; font-weight: 700; }
-        
         .lifestyle-box { background: rgba(212, 175, 55, 0.05); border: 1px solid rgba(212, 175, 55, 0.3); padding: 15px; border-radius: 8px; margin-bottom: 20px; }
         .lifestyle-text { font-size: 0.9rem; color: #ddd; font-style: italic; line-height: 1.5; }
         
-        /* NEW: Sophia Goal Box */
         .sophia-mod-box { background: rgba(214, 51, 132, 0.1); border: 1px solid var(--glute-pink); padding: 15px; border-radius: 6px; margin-top: 20px; }
         .sophia-mod-title { color: var(--glute-pink); font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
         .sophia-mod-text { color: #e0e0e0; font-size: 0.9rem; line-height: 1.5; }
@@ -200,7 +206,7 @@
             <tbody>
                 <tr><td><strong>PROTEIN</strong></td><td>2 Palms</td><td>1.5 Palms</td></tr>
                 <tr><td><strong>VEGGIES</strong></td><td>2+ Fists</td><td>2+ Fists</td></tr>
-                <tr><td><strong>CARBS</strong></td><td>2 Cupped Hands</td><td>1 Hand (2 on Leg Day)</td></tr>
+                <tr><td><strong>CARBS</strong></td><td>2 Cupped Hands</td><td><span style="color:var(--carb-high)">2 Hands (High Day)</span><br><span style="color:var(--carb-low)">1 Hand (Low Day)</span></td></tr>
                 <tr><td><strong>FATS</strong></td><td>2 Thumbs</td><td>1 Thumb</td></tr>
                 <tr><td style="color:var(--accent-gold)"><strong>JUICE</strong></td><td style="color:var(--accent-gold)">20-24 oz</td><td style="color:var(--accent-gold)">16 oz</td></tr>
             </tbody>
@@ -248,15 +254,16 @@
 </div>
 
 <script>
-    // --- WORKOUT SCHEDULE LOGIC ---
-    const weeklyWorkouts = [
-        "🏋️ LIFT (In-Shape)", 
-        "🥊 BOXING (UFC Marcus)", 
-        "🧘 REFORM + CS4 (Club Studio)", 
-        "🥊 BOXING (UFC Marcus)", 
-        "🧘 YOGA + REFORM (Club Studio)", 
-        "💧 RECOVERY LAB (In-Shape)", 
-        "🔋 HOME RECOVERY (Normatec)"
+    // --- WORKOUT & CARB CYCLE LOGIC ---
+    // 0=Mon (High), 1=Tue (High), 2=Wed (Low), 3=Thu (High), 4=Fri (Low), 5=Sat (Low), 6=Sun (Low)
+    const dayLogic = [
+        { work: "🏋️ LIFT (In-Shape)", carb: "high" }, // Mon
+        { work: "🥊 BOXING (UFC Marcus)", carb: "high" }, // Tue
+        { work: "🧘 REFORM + CS4 (Club Studio)", carb: "low" }, // Wed
+        { work: "🥊 BOXING (UFC Marcus)", carb: "high" }, // Thu
+        { work: "🧘 YOGA + REFORM (Club Studio)", carb: "low" }, // Fri
+        { work: "💧 RECOVERY LAB (In-Shape)", carb: "low" }, // Sat
+        { work: "🔋 HOME RECOVERY (Normatec)", carb: "low" }  // Sun
     ];
 
     // MEAL DATA 
@@ -392,7 +399,7 @@
             recipe.time = "15 mins";
             recipe.steps = [`Chop **${secondIngredient}** and other veggies.`, `Prepare the dressing.`, `Toss greens with dressing first.`, `Top with **${mainIngredient}**.`];
             recipe.macros = {p: "35g", c: "15g", f: "20g"};
-            recipe.why = "High volume, low calorie density. Perfect for fat loss.";
+            recipe.why = "High volume, low calorie density. Perfect for Sophia's fat loss target.";
             recipe.sophiaMod = "Use half the dressing and skip cheese toppings if not training legs.";
         } else if (dishName.includes("Soup") || dishName.includes("Chili")) {
             recipe.time = "45 mins";
@@ -619,15 +626,9 @@
 
         const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
         
-        let weeklySchedule = {};
-        days.forEach((day, i) => {
-            weeklySchedule[day] = { 
-                workout: weeklyWorkouts[i],
-                b: sB[i], l: sL[i], d: sD[i], j: sJ[i],
-                bedtime: (day === 'wed' || day === 'thu') ? "12:30 AM" : "12:00 AM" 
-            };
-        });
-
+        // --- CARB CYCLING LOGIC ---
+        // Match day to dayLogic array based on index 0-6
+        
         const tabsContainer = document.getElementById('dayTabs');
         tabsContainer.innerHTML = '';
         
@@ -643,7 +644,7 @@
             btn.onclick = () => {
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                renderDay(dayKey, weeklySchedule);
+                renderDay(dayKey, i, sB, sL, sD, sJ); // Pass data directly
             };
             tabsContainer.appendChild(btn);
         });
@@ -661,40 +662,57 @@
         const allTabs = document.querySelectorAll('.tab-btn');
         if(allTabs[activeIdx]) {
             allTabs[activeIdx].classList.add('active');
-            renderDay(days[activeIdx], weeklySchedule);
+            renderDay(days[activeIdx], activeIdx, sB, sL, sD, sJ);
         }
     }
 
-    function renderDay(day, schedule) {
-        const data = schedule[day];
+    function renderDay(dayKey, index, sB, sL, sD, sJ) {
+        // Retrieve daily data based on index
+        const b = sB[index];
+        const l = sL[index];
+        const d = sD[index];
+        const j = sJ[index];
+        const workoutData = dayLogic[index]; // Get workout & carb info
+        
         const redTag = (type) => type === 'red' ? '<span class="red-meat-tag">RED</span>' : '';
         
-        // PASS INGREDIENTS TO MODAL FUNCTION
+        // Determine Carb Badge
+        let carbBadge = "";
+        let carbInstruction = "";
+        
+        if (workoutData.carb === "high") {
+            carbBadge = '<span class="carb-tag carb-high">🔥 HIGH CARB</span>';
+            carbInstruction = "Use the higher carb portion (2 Hands) for Sophia.";
+        } else {
+            carbBadge = '<span class="carb-tag carb-low">🧘 LOW CARB</span>';
+            carbInstruction = "Stick to the lower carb portion (1 Hand) for Sophia.";
+        }
+
         document.getElementById('dayContent').innerHTML = `
             <div class="card">
-                <div class="workout-tag">${data.workout}</div>
-                <div class="label">🍳 Breakfast <span class="protein-tag">(${data.b.p})</span></div>
-                <div class="value" onclick="openRecipeModal('${data.b.val}', '${data.b.ing}')">🧔🏾‍♂️ J: ${data.b.val}</div>
-                <div class="value" style="color: var(--text-dim); font-size:0.9rem;" onclick="openRecipeModal('${data.b.val}', '${data.b.ing}')">👩🏾‍🦱 S: ${data.b.herSwap}</div>
-                <div class="ingredients-list">🛒 ${data.b.ing}</div>
+                <div class="workout-tag">${workoutData.work} ${carbBadge}</div>
+                <div class="label">🍳 Breakfast <span class="protein-tag">(${b.p})</span></div>
+                <div class="value" onclick="openRecipeModal('${b.val}', '${b.ing}')">🧔🏾‍♂️ J: ${b.val}</div>
+                <div class="value" style="color: var(--text-dim); font-size:0.9rem;" onclick="openRecipeModal('${b.val}', '${b.ing}')">👩🏾‍🦱 S: ${b.herSwap}</div>
+                <div class="ingredients-list">🛒 ${b.ing}</div>
                 
-                <div class="label" style="margin-top:20px;">🥗 Lunch <span class="protein-tag">(${data.l.p})</span> ${redTag(data.l.type)}</div>
-                <div class="value" onclick="openRecipeModal('${data.l.val}', '${data.l.ing}')">${data.l.val}</div>
-                <div class="ingredients-list">🛒 ${data.l.ing}</div>
+                <div class="label" style="margin-top:20px;">🥗 Lunch <span class="protein-tag">(${l.p})</span> ${redTag(l.type)}</div>
+                <div class="value" onclick="openRecipeModal('${l.val}', '${l.ing}')">${l.val}</div>
+                <div class="ingredients-list">🛒 ${l.ing}</div>
                 
-                <div class="label" style="margin-top:20px;">🍽️ Dinner <span class="protein-tag">(${data.d.p})</span> ${redTag(data.d.type)}</div>
-                <div class="value" onclick="openRecipeModal('${data.d.val}', '${data.d.ing}')">${data.d.val}</div>
-                <div class="ingredients-list">🛒 ${data.d.ing}</div>
+                <div class="label" style="margin-top:20px;">🍽️ Dinner <span class="protein-tag">(${d.p})</span> ${redTag(d.type)}</div>
+                <div class="value" onclick="openRecipeModal('${d.val}', '${d.ing}')">${d.val}</div>
+                <div class="ingredients-list">🛒 ${d.ing}</div>
             </div>
             
             <div class="juice-box">
-                <div class="juice-header">🧃 KUVINGS: ${data.j.name.toUpperCase()} <span class="oz-tag">${data.j.oz}</span> - <span style="color:#aaa; font-size:0.8rem;">COLD PRESSED</span></div>
-                <div class="label">Ingredients</div><div style="font-size:0.9rem; color:#888;">${data.j.ing}</div>
-                <div class="juice-benefit">⚡ ${data.j.benefit}</div>
+                <div class="juice-header">🧃 KUVINGS: ${j.name.toUpperCase()} <span class="oz-tag">${j.oz}</span> - <span style="color:#aaa; font-size:0.8rem;">COLD PRESSED</span></div>
+                <div class="label">Ingredients</div><div style="font-size:0.9rem; color:#888;">${j.ing}</div>
+                <div class="juice-benefit">⚡ ${j.benefit}</div>
                 <div style="margin-top:15px; border-top:1px solid #222; padding-top:10px;">
                     <div class="label">🗓️ DAILY PROTOCOL</div>
                     <div style="font-size: 0.8rem; line-height: 1.6; color:#666;">
-                        ✅ 2 tbsp Sea Moss Gel <br>✅ 4-8oz Kombucha <br>✅ 7:30 PM Liquid Cut-off <br>✅ Bedtime: ${data.bedtime}
+                        ✅ 2 tbsp Sea Moss Gel <br>✅ 4-8oz Kombucha <br>✅ 7:30 PM Liquid Cut-off <br>✅ Bedtime: 12:00 AM
                     </div>
                 </div>
             </div>`;
