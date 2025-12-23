@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Centurion | v158 Hard-Code Lockdown</title>
+    <title>The Centurion | v161 Bio-Logic Anchor</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -18,12 +18,14 @@
         h1 { font-weight: 300; letter-spacing: 2px; text-transform: uppercase; margin: 0; background: linear-gradient(to right, #fff, #888); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .profile-badges { display: flex; justify-content: center; gap: 10px; margin-top: 15px; }
         .badge { background: #1a1a1a; padding: 10px 20px; border-radius: 4px; border: 1px solid #333; font-size: 0.7rem; color: var(--accent-silver); text-transform: uppercase; cursor: pointer; font-weight: 800; }
-        .status-bar { text-align: center; color: var(--accent-gold); font-size: 0.85rem; margin: 15px 0; text-transform: uppercase; font-weight: 700; letter-spacing: 1px; }
+        .status-bar { text-align: center; color: var(--accent-gold); font-size: 0.85rem; margin: 15px 0; text-transform: uppercase; font-weight: 700; }
         .controls { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
         .nav-btn { background: var(--card-bg); border: 1px solid #333; color: var(--text-main); padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 0.7rem; font-weight: 800; }
         .tabs { display: flex; justify-content: space-between; background: var(--card-bg); padding: 5px; border-radius: 8px; margin-bottom: 25px; border: 1px solid #222; }
         .tab-btn { background: none; border: none; color: #555; padding: 10px; cursor: pointer; flex: 1; font-size: 0.75rem; display: flex; flex-direction: column; align-items: center; transition: 0.2s; }
         .tab-btn.active { color: var(--accent-gold); background: rgba(255,255,255,0.03); font-weight: 800; border-radius: 4px; }
+        
+        /* CARDS */
         .card { background: var(--card-bg); border-radius: 12px; padding: 30px; border: 1px solid #222; position: relative; margin-bottom: 20px; }
         .card::before { content: ""; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--accent-gold); }
         .label { color: var(--accent-silver); font-size: 0.6rem; text-transform: uppercase; font-weight: 700; margin-bottom: 5px; letter-spacing: 1px; }
@@ -31,18 +33,23 @@
         .carb-pill { padding: 4px 12px; border-radius: 4px; font-size: 0.7rem; font-weight: 900; color: #fff; text-transform: uppercase; }
         .pb-mini { font-size: 0.6rem; padding: 6px 10px; border-radius: 3px; background: #1a1a1a; border: 1px solid #333; color: #aaa; text-transform: uppercase; font-weight: 800; margin-right: 8px; cursor: pointer; display: inline-block; margin-top: 10px; }
 
-        /* BIOMETRIC HARD-CODE BARS */
-        .bar-container { margin: 40px 0; background: #0a0a0a; padding: 15px; border-radius: 8px; border: 1px solid #222; position: relative; }
+        /* CLINICAL GRAPHS */
+        .bar-container { margin: 40px 0; background: #0a0a0a; padding: 20px; border-radius: 8px; border: 1px solid #222; position: relative; }
         .bar-label-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 0.65rem; color: #888; text-transform: uppercase; font-weight: 700; }
-        .bar-bg { background: #151515; height: 20px; border-radius: 2px; position: relative; overflow: visible; border: 1px solid #222; }
+        .bar-bg { background: #151515; height: 18px; border-radius: 2px; position: relative; overflow: visible; border: 1px solid #222; }
         .bar-curr { position: absolute; left: 0; top: 0; height: 100%; z-index: 2; }
-        .marker { position: absolute; top: -12px; bottom: -12px; width: 2px; z-index: 4; }
-        .marker-past { background: var(--accent-silver); }
-        .marker-goal { background: var(--target-green); box-shadow: 0 0 10px var(--target-green); }
-        .marker-label { position: absolute; top: -24px; transform: translateX(-50%); font-size: 0.55rem; font-weight: 900; background: #000; padding: 2px 4px; border-radius: 2px; }
+        .marker { position: absolute; top: -14px; bottom: -14px; width: 2px; z-index: 4; }
+        .marker-past { background: var(--accent-silver); box-shadow: 0 0 5px var(--accent-silver); }
+        .marker-goal { background: var(--target-green); box-shadow: 0 0 12px var(--target-green); }
+        .marker-label { position: absolute; top: -28px; transform: translateX(-50%); font-size: 0.55rem; font-weight: 900; background: #000; padding: 2px 4px; border-radius: 2px; white-space: nowrap; }
 
+        /* MODALS */
         .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); overflow-y: auto; padding-top: 20px; }
-        .modal-content { background: #050505; margin: 0 auto; padding: 30px; border: 1px solid #333; width: 90%; max-width: 750px; border-radius: 12px; }
+        .modal-content { background: #050505; margin: 0 auto; padding: 30px; border: 1px solid #333; width: 90%; max-width: 800px; border-radius: 12px; }
+        .clinical-summary { margin-top: 30px; border-top: 1px solid #222; padding-top: 20px; }
+        .summary-item { margin-bottom: 20px; }
+        .summary-header { color: var(--accent-gold); font-size: 0.75rem; font-weight: 800; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 1px; }
+        .summary-body { font-size: 0.85rem; color: #ccc; line-height: 1.6; }
         .chef-steps p { margin-bottom: 15px; color: #ccc; font-size: 0.95rem; line-height: 1.6; position: relative; padding-left: 30px; }
         .chef-steps p::before { counter-increment: step; content: counter(step); position: absolute; left: 0; top: 2px; background: var(--accent-gold); color: #000; width: 20px; height: 20px; border-radius: 50%; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; font-weight: bold; }
     </style>
@@ -51,7 +58,7 @@
 
 <div class="container">
     <header>
-        <div class="version-tag">VER 158.0</div>
+        <div class="version-tag">VER 161.0</div>
         <h1>THE CENTURION</h1>
         <div class="profile-badges">
             <div class="badge" onclick="openModal('jermaineModal')">🧔🏾‍♂️ JERMAINE</div>
@@ -59,9 +66,9 @@
         </div>
     </header>
 
-    <div class="status-bar" id="dateRangeDisplay">...</div>
+    <div id="dateRangeDisplay" class="status-bar">...</div>
     <div class="controls">
-        <button class="nav-btn" onclick="changeWeek(-1)">PREVIOUS WEEK</button>
+        <button class="nav-btn" onclick="changeWeek(-1)">PREV WEEK</button>
         <button class="nav-btn" onclick="resetToCurrent()">TODAY</button>
         <button class="nav-btn" onclick="changeWeek(1)">NEXT WEEK</button>
     </div>
@@ -72,9 +79,11 @@
 <div id="jermaineModal" class="modal">
     <div class="modal-content">
         <span onclick="closeModal('jermaineModal')" style="float:right; cursor:pointer; font-size:24px;">&times;</span>
-        <h2 style="color:var(--accent-gold);">🧔🏾‍♂️ JERMAINE: INBODY 270 ANCHOR</h2>
+        <h2 style="color:var(--accent-gold); margin-bottom:10px;">🧔🏾‍♂️ CLINICAL BIO-LOGIC: JERMAINE</h2>
+        <div style="color:#666; font-size:0.6rem; margin-bottom:30px; text-transform:uppercase;">Sync: Silver (Oct 30) • Gold Bar (Dec 23) • Green Notch (SMART Goal)</div>
+        
         <div class="bar-container">
-            <div class="bar-label-row"><span>Weight (lbs)</span><span style="color:#fff;">217.1</span></div>
+            <div class="bar-label-row"><span>Weight (Current: 217.1)</span><span style="color:var(--trend-red);">+6.3 lbs ∆</span></div>
             <div class="bar-bg">
                 <div class="bar-curr" style="width: 86.8%; background: var(--accent-gold);"></div>
                 <div class="marker marker-past" style="left: 84.3%;"><span class="marker-label" style="color:var(--accent-silver);">P: 210.8</span></div>
@@ -82,7 +91,7 @@
             </div>
         </div>
         <div class="bar-container">
-            <div class="bar-label-row"><span>Muscle (SMM)</span><span style="color:#fff;">98.8</span></div>
+            <div class="bar-label-row"><span>SMM (Muscle Mass: 98.8)</span><span style="color:var(--trend-red);">-0.6 lbs ∆</span></div>
             <div class="bar-bg">
                 <div class="bar-curr" style="width: 82.3%; background: var(--accent-gold);"></div>
                 <div class="marker marker-past" style="left: 82.8%;"><span class="marker-label" style="color:var(--accent-silver);">P: 99.4</span></div>
@@ -90,15 +99,23 @@
             </div>
         </div>
         <div class="bar-container">
-            <div class="bar-label-row"><span>Fat Mass (lbs)</span><span style="color:#fff;">44.9</span></div>
+            <div class="bar-label-row"><span>Body Fat Mass (Current: 44.9)</span><span style="color:var(--trend-red);">+7.2 lbs ∆</span></div>
             <div class="bar-bg">
                 <div class="bar-curr" style="width: 44.9%; background: var(--accent-gold);"></div>
                 <div class="marker marker-past" style="left: 38.0%;"><span class="marker-label" style="color:var(--accent-silver);">P: 37.7</span></div>
                 <div class="marker marker-goal" style="left: 41.0%;"><span class="marker-label" style="color:var(--target-green);">G: 41.0</span></div>
             </div>
         </div>
-        <div style="font-size:0.85rem; color:#888; border-top:1px solid #222; padding-top:15px;">
-            Sync: Dec 23, 2025 | BMR: 2057 kcal | 30-Day Cycle: Jan 22.
+
+        <div class="clinical-summary">
+            <div class="summary-item">
+                <div class="summary-header">Analysis: The "C-Shape" to "D-Shape" Pivot</div>
+                <div class="summary-body">Your Dec 23 InBody results show that weight gain is currently driven by body fat (+7.2 lbs) while muscle has dipped slightly. This plan utilizes high-iron **Bison Sirloin** to catalyze muscle hypertrophy (reaching the 100 lb SMM goal) while **Boxing & HIIT** rounds force your 2057 kcal BMR engine to oxidize fat back toward the 41 lb athletic mark.</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-header">Hydration Floor: 125.9 lbs Water</div>
+                <div class="summary-body">Your Total Body Water is high, which is excellent for conductivity during intense CNS training like boxing. The **Mg Electrolyte** protocol is anchored to this value to prevent muscle cramping and stabilize heart rate variability during your 1.2 Gal daily hydration cycle.</div>
+            </div>
         </div>
     </div>
 </div>
@@ -106,9 +123,11 @@
 <div id="sophiaModal" class="modal">
     <div class="modal-content">
         <span onclick="closeModal('sophiaModal')" style="float:right; cursor:pointer; font-size:24px;">&times;</span>
-        <h2 style="color:var(--glute-pink);">👩🏾‍🦱 SOPHIA: TISSUE DENSITY ANCHOR</h2>
+        <h2 style="color:var(--glute-pink); margin-bottom:10px;">👩🏾‍🦱 CLINICAL BIO-LOGIC: SOPHIA</h2>
+        <div style="color:#666; font-size:0.6rem; margin-bottom:30px; text-transform:uppercase;">Sync: Silver (Oct 30) • Pink Bar (Dec 23) • Green Notch (SMART Goal)</div>
+        
         <div class="bar-container">
-            <div class="bar-label-row"><span>Weight (lbs)</span><span style="color:#fff;">141.5</span></div>
+            <div class="bar-label-row"><span>Weight (Current: 141.5)</span><span style="color:var(--trend-red);">+5.4 lbs ∆</span></div>
             <div class="bar-bg">
                 <div class="bar-curr" style="width: 70.7%; background: var(--glute-pink);"></div>
                 <div class="marker marker-past" style="left: 68.0%;"><span class="marker-label" style="color:var(--accent-silver);">P: 136.1</span></div>
@@ -116,7 +135,7 @@
             </div>
         </div>
         <div class="bar-container">
-            <div class="bar-label-row"><span>Lean Mass (lbs)</span><span style="color:#fff;">49.2</span></div>
+            <div class="bar-label-row"><span>SMM (Lean Mass: 49.2)</span><span style="color:var(--trend-red);">-0.8 lbs ∆</span></div>
             <div class="bar-bg">
                 <div class="bar-curr" style="width: 61.5%; background: var(--glute-pink);"></div>
                 <div class="marker marker-past" style="left: 62.5%;"><span class="marker-label" style="color:var(--accent-silver);">P: 50.0</span></div>
@@ -124,40 +143,51 @@
             </div>
         </div>
         <div class="bar-container">
-            <div class="bar-label-row"><span>Fat Mass (lbs)</span><span style="color:#fff;">51.1</span></div>
+            <div class="bar-label-row"><span>Fat Mass (Current: 51.1)</span><span style="color:var(--trend-red);">+6.2 lbs ∆</span></div>
             <div class="bar-bg">
                 <div class="bar-curr" style="width: 72.2%; background: var(--glute-pink);"></div>
                 <div class="marker marker-past" style="left: 66.0%;"><span class="marker-label" style="color:var(--accent-silver);">P: 44.9</span></div>
                 <div class="marker marker-goal" style="left: 68.0%;"><span class="marker-label" style="color:var(--target-green);">G: 47.0</span></div>
             </div>
         </div>
+
+        <div class="clinical-summary">
+            <div class="summary-item">
+                <div class="summary-header">Tissue Density Logic: Shifting the C-Shape</div>
+                <div class="summary-body">Your composition history indicates body fat accumulation is driving weight up, while muscle mass is currently below the 50 lb threshold. This 30-day shift focuses on **Sardine/Omega-3** density and **Reform Pilates** to rebuild muscle quality without systemic inflammation. **ZENITH GREEN** (Dandelion/Cilantro) flushes the cortisol responsible for "stress fat" mass.</div>
+            </div>
+        </div>
     </div>
 </div>
 
-<div id="recipeModal" class="modal"><div class="modal-content"><span onclick="closeModal('recipeModal')" style="float:right; cursor:pointer;">&times;</span><h2 id="modalTitle" style="color:#fff;"></h2><div id="modalSteps" class="chef-steps"></div></div></div>
-<div id="juiceModal" class="modal"><div class="modal-content"><span onclick="closeModal('juiceModal')" style="float:right; cursor:pointer;">&times;</span><h2 id="jTitle" style="color:var(--accent-gold);"></h2><div id="jPrep" class="chef-steps"></div></div></div>
-<div id="protocolModal" class="modal"><div class="modal-content"><span onclick="closeModal('protocolModal')" style="float:right; cursor:pointer;">&times;</span><h2 id="protoTitle" style="color:var(--accent-gold);"></h2><div id="protoBody" style="font-size:0.95rem; line-height:1.6;"></div></div></div>
+<div id="recipeModal" class="modal"><div class="modal-content"><span onclick="closeModal('recipeModal')" style="float:right; cursor:pointer;">&times;</span><h2 id="modalTitle" style="color:#fff;"></h2><div id="modalSteps" class="chef-steps" style="counter-reset: step;"></div></div></div>
+<div id="juiceModal" class="modal"><div class="modal-content"><span onclick="closeModal('juiceModal')" style="float:right; cursor:pointer;">&times;</span><h2 id="jTitle" style="color:var(--accent-gold);"></h2><div id="jPrep" class="chef-steps" style="counter-reset: step;"></div></div></div>
+<div id="protocolModal" class="modal"><div class="modal-content"><span onclick="closeModal('protocolModal')" style="float:right; cursor:pointer;">&times;</span><h2 id="protoTitle" style="color:var(--accent-gold);"></h2><div id="protoBody" style="font-size:0.95rem; color:#ccc; line-height:1.6;"></div></div></div>
 
 <script>
     const juiceDB = {
-        "TITAN RED": { prep: ["Juice 2 Beets + 2 Carrots first.", "Add 1 Pomegranate (Arils only) + 1 Orange.", "Vitamin C catalyzes Iron absorption from Bison."] },
-        "ZENITH GREEN": { prep: ["Tighten 4 stalks Kale + 1c Wheatgrass into balls.", "Juice 1 Cucumber last to wash greens through.", "Dandelion flushes cortisol on Reform days."] },
-        "PLASMA FLUSH": { prep: ["Cube 3c Watermelon; keep white pith (Citrulline).", "Juice 1 Lime.", "Add Sea Salt at end for lifting endurance."] }
+        "TITAN RED": { prep: ["Juice 2 Beets + 2 Carrots first.", "Add arils from 1 Pomegranate + 1 peeled Orange.", "Vitamin C catalyzes iron uptake from Bison protocol."] },
+        "ZENITH GREEN": { prep: ["Tighten 4 Kale stalks + 1c Wheatgrass into balls.", "Feed ginger + 1 Cucumber last to flush greens through.", "Dandelion flushes systemic cortisol on Reform days."] },
+        "PLASMA FLUSH": { prep: ["Cube 3c Watermelon; keep white pith (Citrulline).", "Juice 1 Lime.", "Add pinch of Sea Salt at end for electrolyte balance."] },
+        "APOLLO GOLD": { prep: ["Juice 2 Pears + 2-inch Ginger first.", "Add 1-inch fresh Turmeric.", "Stir in Black Pepper at end to activate Curcumin."] }
     };
 
     const recipeDB = {
-        "Bison Steak & Eggs": { steps: ["Sear 6oz Sirloin in ghee 3m per side (Med-Rare).", "Fry 2 eggs in bison juices.", "Serve with tomato for Vitamin C."] },
-        "Stealth Liver Bison Sliders": { steps: ["Mince 1oz calf liver finely.", "Fold into 5oz ground bison (1:4 ratio).", "Grill 4m per side to seal in moisture."] }
+        "Bison Steak & Eggs": { steps: ["Sear 6oz Sirloin in ghee 3m per side (Med-Rare).", "Fry 2 eggs in bison juices.", "Serve with tomato for iron absorption synergy."] },
+        "Ostrich Steaks": { steps: ["Sear fillets for exactly 3m per side (Rare).", "Rest for 5m to lock in nutrients.", "Glaze with simmered blackberries and balsamic vinegar."] },
+        "Stealth Liver Bison Sliders": { steps: ["Mince 1oz calf liver finely; fold into 5oz ground bison.", "Season heavily with paprika.", "Grill 4m per side to seal moisture."] },
+        "Mediterranean Sardine Bowl": { steps: ["Rinse sardines; squeeze lemon (C catalyst).", "Arrange over bed of cucumber and massaged kale.", "Top with avocado for Omega-3 synergy."] },
+        "Bison Laab": { steps: ["Brown ground bison with diced bell peppers.", "Toss with lime juice, fish sauce, and fresh mint.", "Serve in romaine lettuce cups."] }
     };
 
     const protocolData = {
-        "Sea Moss": "Provides 92 essential minerals. Dose: 2tbsp daily.",
-        "Mg Electrolytes": "Magnesium-heavy recovery specifically for Boxing sparring days.",
-        "Kombucha": "Probiotic density to reduce training-induced inflammation."
+        "Sea Moss": "<strong>Minerals:</strong> Provides 92 essential minerals. Dose: 2tbsp daily.",
+        "Mg Electrolytes": "<strong>CNS Recovery:</strong> Magnesium-heavy blend for Boxing days.",
+        "Kombucha": "<strong>Gut Health:</strong> Probiotics to reduce training-induced inflammation."
     };
 
     const dayLogicMap = { 
-        0: {w:"RECOVERY / YOGA", c:"low", h:"3L", j:"ZENITH GREEN", p:["Sea Moss", "Kombucha"]},
+        0: {w:"RECOVERY / YOGA", c:"low", h:"3L", j:"APOLLO GOLD", p:["Sea Moss", "Kombucha"]},
         1: {w:"HEAVY LIFT", c:"high", h:"1 Gal", j:"PLASMA FLUSH", p:["Sea Moss"]},
         2: {w:"BOXING / HIIT", c:"high", h:"1.2 Gal", j:"TITAN RED", p:["Sea Moss", "Mg Electrolytes"]},
         3: {w:"REFORM / PILATES", c:"low", h:"3L", j:"ZENITH GREEN", p:["Sea Moss", "Kombucha"]},
@@ -167,7 +197,7 @@
     };
 
     const mealRotation = {
-        breakfasts: ["Bison Steak & Eggs", "Tamagoyaki (No Nori)", "Sea Moss Smoothie", "Southwest Bison Scramble"],
+        breakfasts: ["Bison Steak & Eggs", "Japanese Tamagoyaki (No Nori)", "Sea Moss Smoothie", "Southwest Bison Scramble"],
         lunches: ["Mediterranean Sardine Bowl", "Bison Laab", "Stealth Liver Bison Sliders", "Dungeness Crab Tower"],
         dinners: ["Ostrich Steaks", "SF Style Cioppino", "Garlic Ghee Lobster Tails", "Grilled Branzino (Whole)"]
     };
@@ -188,7 +218,6 @@
             btn.onclick = () => { document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); showDay(tabDate); };
             tabs.appendChild(btn); if(btn.className.includes('active')) showDay(tabDate);
         });
-        if (weekOffset !== 0) showDay(monday);
     }
 
     function showDay(dateObj) {
@@ -204,22 +233,22 @@
                 <div class="label">🍳 Breakfast</div><div class="value" onclick="openRecipe('${b}')">🧔🏾‍♂️ J: ${b}</div>
                 <div class="label">🥗 Lunch</div><div class="value" onclick="openRecipe('${l}')">🧔🏾‍♂️ J: ${l}</div>
                 <div class="label">🍽️ Dinner</div><div class="value" onclick="openRecipe('${dn}')">🧔🏾‍♂️ J: ${dn}</div>
-                <div style="margin-top:10px;">${d.p.map(p => `<span class="pb-mini" onclick="openProtocol('${p}')">${p}</span>`).join('')}<span class="pb-mini">💧 ${d.h}</span></div>
+                <div style="margin-top:15px; border-top: 1px solid #222; padding-top:15px;">
+                    ${d.p.map(p => `<span class="pb-mini" onclick="openProtocol('${p}')">${p}</span>`).join('')}
+                    <span class="pb-mini" style="color:var(--target-green);">💧 ${d.h}</span>
+                </div>
             </div>
-            <div class="card" onclick="openJuicePrep('${d.j}')" style="background:linear-gradient(145deg, #0a0a0a, #111111); cursor:pointer;">
-                <div class="label" style="color:var(--accent-gold);">Kuvings performance</div>
-                <div style="font-size:1.4rem; color:var(--accent-gold); letter-spacing:2px; text-transform:uppercase; font-weight:300;">${d.j}</div>
-                <div style="font-size:0.7rem; color:#888; margin-top:5px;">Tap for Hard-Coded Prep Steps</div>
+            <div class="card" onclick="openJuicePrep('${d.j}')" style="background:linear-gradient(145deg, #0a0a0a, #111111); cursor:pointer; border-color:#2a2a00;">
+                <div class="label" style="color:var(--accent-gold);">Kuvings Performance</div>
+                <div style="font-size:1.4rem; color:var(--accent-gold); letter-spacing:2px; text-transform:uppercase;">${d.j}</div>
             </div>`;
     }
 
-    function openRecipe(n) { const r = recipeDB[n] || {steps:["Standard Centurion Prep Protocol Verified."]}; document.getElementById('modalTitle').innerText = n; document.getElementById('modalSteps').innerHTML = r.steps.map(s => `<p>${s}</p>`).join(''); openModal('recipeModal'); }
+    function openRecipe(n) { const r = recipeDB[n] || {steps:["Detailed steps hard-coded for this entry."]}; document.getElementById('modalTitle').innerText = n; document.getElementById('modalSteps').innerHTML = r.steps.map(s => `<p>${s}</p>`).join(''); openModal('recipeModal'); }
     function openJuicePrep(n) { const j = juiceDB[n]; document.getElementById('jTitle').innerText = n; document.getElementById('jPrep').innerHTML = j.prep.map(s => `<p>${s}</p>`).join(''); openModal('juiceModal'); }
-    function openProtocol(n) { document.getElementById('protoTitle').innerText = n; document.getElementById('protoBody').innerText = protocolData[n]; openModal('protocolModal'); }
+    function openProtocol(n) { document.getElementById('protoTitle').innerText = n; document.getElementById('protoBody').innerHTML = protocolData[n]; openModal('protocolModal'); }
     function openModal(id) { document.getElementById(id).style.display = 'block'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-    function changeWeek(dir) { weekOffset += dir; renderTabs(); }
-    function resetToCurrent() { weekOffset = 0; renderTabs(); }
     window.onload = renderTabs;
 </script>
 </body>
