@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Centurion | v40 Smart Carb Cycling</title>
+    <title>The Centurion | v41 Final Schedule</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -56,13 +56,14 @@
         .value:hover { color: var(--accent-gold); border-bottom: 1px solid var(--accent-gold); }
         
         .workout-tag { font-size: 0.9rem; color: var(--accent-gold); border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
-        .protein-tag { color: var(--accent-gold); font-size: 0.75rem; font-weight: 700; margin-left: 8px; }
         
         /* NEW CARB CYCLING TAGS */
         .carb-tag { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; margin-left: 10px; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px; vertical-align: middle; }
         .carb-high { background: rgba(255, 145, 0, 0.15); color: var(--carb-high); border: 1px solid var(--carb-high); }
         .carb-low { background: rgba(0, 176, 255, 0.15); color: var(--carb-low); border: 1px solid var(--carb-low); }
 
+        .protein-tag { color: var(--accent-gold); font-size: 0.75rem; font-weight: 700; margin-left: 8px; }
+        .red-meat-tag { color: #ff6b6b; font-size: 0.6rem; border: 1px solid #ff6b6b; padding: 1px 4px; border-radius: 2px; margin-left: 6px; vertical-align: middle; text-transform: uppercase; }
         .ingredients-list { font-size: 0.85rem; color: var(--text-dim); margin-bottom: 15px; font-style: italic; }
         
         .juice-box { background: #0a0a0a; border-radius: 12px; padding: 30px; border: 1px solid #222; display: flex; flex-direction: column; gap: 15px; }
@@ -89,9 +90,11 @@
         .macro-item { text-align: center; }
         .macro-label { font-size: 0.7rem; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
         .macro-val { font-size: 1.1rem; color: #fff; font-weight: 700; }
+        
         .lifestyle-box { background: rgba(212, 175, 55, 0.05); border: 1px solid rgba(212, 175, 55, 0.3); padding: 15px; border-radius: 8px; margin-bottom: 20px; }
         .lifestyle-text { font-size: 0.9rem; color: #ddd; font-style: italic; line-height: 1.5; }
         
+        /* NEW: Sophia Goal Box */
         .sophia-mod-box { background: rgba(214, 51, 132, 0.1); border: 1px solid var(--glute-pink); padding: 15px; border-radius: 6px; margin-top: 20px; }
         .sophia-mod-title { color: var(--glute-pink); font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
         .sophia-mod-text { color: #e0e0e0; font-size: 0.9rem; line-height: 1.5; }
@@ -218,15 +221,8 @@
     <div class="modal-content">
         <span class="close-btn" onclick="closeModal('workoutModal')">&times;</span>
         <div class="guide-title">Training & Recovery</div>
-        <ul class="workout-list">
-            <li><span class="workout-day">MON</span> <strong>LIFT (Together) @ In-Shape</strong>Focus: Heavy Compounds. <br><span class="recovery-badge tech">Recovery: Aqua Massage + Sauna</span></li>
-            <li><span class="workout-day">TUE</span> <strong>BOXING W/ MARCUS @ UFC</strong>Focus: High Intensity Conditioning.<br><span class="recovery-badge cold">Recovery: Thera Knee Ice + Heat Packs</span></li>
-            <li><span class="workout-day">WED</span> <strong>REFORM + CS4 @ Club Studio</strong>Focus: Pilates Stability + Strength Circuit.<br><span class="recovery-badge tech">Recovery: Normatec Hips (Home)</span></li>
-            <li><span class="workout-day">THU</span> <strong>BOXING W/ MARCUS @ UFC</strong>Focus: Technique & Sparring drills.<br><span class="recovery-badge cold">Recovery: Thera Cold/Heat Contrast</span></li>
-            <li><span class="workout-day">FRI</span> <strong>YOGA + REFORM @ Club Studio</strong>Focus: Mobility, Core & Decompression.<br><span class="recovery-badge heat">Recovery: Club Studio Sauna (20m)</span></li>
-            <li><span class="workout-day">SAT</span> <strong>RECOVERY LAB @ In-Shape</strong><strong>Task:</strong> Zone 2 Cardio (30m) + Amenities.<br><span class="recovery-badge tech">Protocol: Water Massage + Sauna</span></li>
-            <li><span class="workout-day">SUN</span> <strong>HOME BASE RECOVERY</strong><strong>Task:</strong> Total Rest.<br><span class="recovery-badge tech">Protocol: Normatec Legs (30m) + Thera</span></li>
-        </ul>
+        <ul class="workout-list" id="workoutListContainer">
+            </ul>
     </div>
 </div>
 
@@ -257,14 +253,26 @@
     // --- WORKOUT & CARB CYCLE LOGIC ---
     // 0=Mon (High), 1=Tue (High), 2=Wed (Low), 3=Thu (High), 4=Fri (Low), 5=Sat (Low), 6=Sun (Low)
     const dayLogic = [
-        { work: "🏋️ LIFT (In-Shape)", carb: "high" }, // Mon
-        { work: "🥊 BOXING (UFC Marcus)", carb: "high" }, // Tue
-        { work: "🧘 REFORM + CS4 (Club Studio)", carb: "low" }, // Wed
-        { work: "🥊 BOXING (UFC Marcus)", carb: "high" }, // Thu
-        { work: "🧘 YOGA + REFORM (Club Studio)", carb: "low" }, // Fri
-        { work: "💧 RECOVERY LAB (In-Shape)", carb: "low" }, // Sat
-        { work: "🔋 HOME RECOVERY (Normatec)", carb: "low" }  // Sun
+        { day: "MON", work: "LIFT (In-Shape) + Massage", carb: "high", desc: "Heavy Compounds.", rec: "Aqua Massage + Sauna", badge: "tech" },
+        { day: "TUE", work: "BOXING (UFC Marcus)", carb: "high", desc: "High Intensity Conditioning.", rec: "Thera Knee Ice + Heat Packs", badge: "cold" },
+        { day: "WED", work: "CS4 + REFORM (Club Studio)", carb: "low", desc: "Functional Strength + Core.", rec: "Normatec Hips (Home)", badge: "tech" },
+        { day: "THU", work: "BOXING (UFC Marcus)", carb: "high", desc: "Technique & Sparring drills.", rec: "Thera Cold/Heat Contrast", badge: "cold" },
+        { day: "FRI", work: "YOGA + REFORM (Club Studio)", carb: "low", desc: "Mobility & Decompression.", rec: "Club Studio Sauna (20m)", badge: "heat" },
+        { day: "SAT", work: "RIDE / ACTIVE RECOVERY", carb: "low", desc: "Low Impact Cardio Zone 2.", rec: "Water Massage + Sauna", badge: "tech" },
+        { day: "SUN", work: "HOME BASE RECOVERY", carb: "low", desc: "Total Rest.", rec: "Normatec Legs (30m)", badge: "tech" }
     ];
+
+    function renderWorkoutList() {
+        const list = document.getElementById('workoutListContainer');
+        list.innerHTML = dayLogic.map(d => `
+            <li>
+                <span class="workout-day">${d.day}</span> 
+                <strong>${d.work}</strong>
+                ${d.desc}<br>
+                <span class="recovery-badge ${d.badge}">Recovery: ${d.rec}</span>
+            </li>
+        `).join('');
+    }
 
     // MEAL DATA 
     const mealLibrary = {
@@ -498,7 +506,10 @@
     function openModal(id) { document.getElementById(id).style.display = 'block'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
     function openPortionModal() { openModal('portionModal'); }
-    function openWorkoutModal() { openModal('workoutModal'); }
+    function openWorkoutModal() { 
+        renderWorkoutList(); // RE-RENDER WORKOUTS HERE TO ENSURE DATA IS FRESH
+        openModal('workoutModal'); 
+    }
     function openProfileModal() { openModal('profileModal'); }
 
     window.onclick = function(event) { 
@@ -520,7 +531,6 @@
 
         let recipe = recipeDatabase[dishName];
         if (!recipe) {
-            // Pass the ingredients string from the card to the generator
             recipe = generateSmartRecipe(dishName, ingredientsString);
         }
 
@@ -551,7 +561,6 @@
         mC.innerText = recipe.macros.c;
         mF.innerText = recipe.macros.f;
 
-        // Sophia Modification Display
         if (recipe.sophiaMod) {
             modContainer.style.display = "block";
             modText.innerText = recipe.sophiaMod;
@@ -626,9 +635,6 @@
 
         const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
         
-        // --- CARB CYCLING LOGIC ---
-        // Match day to dayLogic array based on index 0-6
-        
         const tabsContainer = document.getElementById('dayTabs');
         tabsContainer.innerHTML = '';
         
@@ -644,7 +650,7 @@
             btn.onclick = () => {
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                renderDay(dayKey, i, sB, sL, sD, sJ); // Pass data directly
+                renderDay(dayKey, i, sB, sL, sD, sJ); 
             };
             tabsContainer.appendChild(btn);
         });
@@ -667,25 +673,20 @@
     }
 
     function renderDay(dayKey, index, sB, sL, sD, sJ) {
-        // Retrieve daily data based on index
         const b = sB[index];
         const l = sL[index];
         const d = sD[index];
         const j = sJ[index];
-        const workoutData = dayLogic[index]; // Get workout & carb info
+        const workoutData = dayLogic[index]; 
         
         const redTag = (type) => type === 'red' ? '<span class="red-meat-tag">RED</span>' : '';
         
-        // Determine Carb Badge
         let carbBadge = "";
-        let carbInstruction = "";
         
         if (workoutData.carb === "high") {
             carbBadge = '<span class="carb-tag carb-high">🔥 HIGH CARB</span>';
-            carbInstruction = "Use the higher carb portion (2 Hands) for Sophia.";
         } else {
             carbBadge = '<span class="carb-tag carb-low">🧘 LOW CARB</span>';
-            carbInstruction = "Stick to the lower carb portion (1 Hand) for Sophia.";
         }
 
         document.getElementById('dayContent').innerHTML = `
@@ -712,7 +713,7 @@
                 <div style="margin-top:15px; border-top:1px solid #222; padding-top:10px;">
                     <div class="label">🗓️ DAILY PROTOCOL</div>
                     <div style="font-size: 0.8rem; line-height: 1.6; color:#666;">
-                        ✅ 2 tbsp Sea Moss Gel <br>✅ 4-8oz Kombucha <br>✅ 7:30 PM Liquid Cut-off <br>✅ Bedtime: 12:00 AM
+                        ✅ 2 tbsp Sea Moss Gel <br>✅ 4-8oz Kombucha <br>✅ 7:30 PM Liquid Cut-off <br>✅ Bedtime: ${data.bedtime}
                     </div>
                 </div>
             </div>`;
