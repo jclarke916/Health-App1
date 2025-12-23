@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Centurion | v46.1 CSS Fix</title>
+    <title>The Centurion | v46.2 Aligned UI</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -45,8 +45,7 @@
         .tab-btn span { display: block; font-size: 0.65rem; opacity: 0.7; margin-top: 4px; }
         .tab-btn.active { color: var(--accent-gold); background: rgba(255,255,255,0.03); border-radius: 4px; }
         
-        .main-layout { display: grid; grid-template-columns: 1.4fr 1fr; gap: 24px; align-items: start; transition: opacity 0.3s ease; opacity: 1; }
-        
+        /* CARD STYLES */
         .card { background: var(--card-bg); border-radius: 12px; padding: 30px; border: 1px solid #222; position: relative; overflow: hidden; margin-bottom: 20px; }
         .card::before { content: ""; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--accent-gold); }
         
@@ -54,19 +53,36 @@
         .value { font-size: 1.1rem; margin-bottom: 8px; font-weight: 500; color: #fff; cursor: pointer; transition: 0.2s; border-bottom: 1px solid transparent; display: inline-block;}
         .value:hover { color: var(--accent-gold); border-bottom: 1px solid var(--accent-gold); }
         
-        .workout-tag { font-size: 0.9rem; color: var(--accent-gold); border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+        /* WORKOUT TAG - FLEXBOX FIX */
+        .workout-tag { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            gap: 15px;
+            font-size: 0.9rem; 
+            color: var(--accent-gold); 
+            border-bottom: 1px solid #333; 
+            padding-bottom: 15px; 
+            margin-bottom: 20px; 
+            font-weight: 700; 
+            text-transform: uppercase; 
+            letter-spacing: 1px; 
+        }
         
-        /* CARB CYCLING TAGS - MODIFIED */
+        .workout-title {
+            flex: 1;
+        }
+        
+        /* CARB CYCLING TAGS */
         .carb-tag { 
             font-size: 0.7rem; 
-            padding: 2px 6px; 
+            padding: 4px 8px; 
             border-radius: 4px; 
-            margin-left: 10px; 
             text-transform: uppercase; 
             font-weight: 800; 
             letter-spacing: 0.5px; 
-            vertical-align: middle; 
-            white-space: nowrap; /* This is the fix */
+            white-space: nowrap; /* Prevents wrapping inside badge */
+            flex-shrink: 0; /* Prevents badge from squishing */
         }
         .carb-high { background: rgba(255, 145, 0, 0.15); color: var(--carb-high); border: 1px solid var(--carb-high); }
         .carb-low { background: rgba(0, 176, 255, 0.15); color: var(--carb-low); border: 1px solid var(--carb-low); }
@@ -281,12 +297,12 @@
     const mealLibrary = {
         breakfasts: [
             { val: "Sea Moss & Triple-Protein Smoothie", p: "45g", ing: "Sea Moss, Pea Protein, Hemp, PB2, Blackberries.", herSwap: "Same for Sophia" },
-            { val: "Crab & Spinach Scramble", p: "35g", ing: "Lump crab, 3 eggs, spinach, green onions.", herSwap: "Modified: Well-Done Eggs Only" },
-            { val: "Japanese Tamagoyaki Scramble", p: "32g", ing: "3 Eggs, dashi, coconut aminos, spinach, nori.", herSwap: "Modified: Well-Done Eggs Only" },
+            { val: "Crab & Spinach Scramble", p: "35g", ing: "Lump crab, 1 Whole Egg + 3 Egg Whites, spinach, green onions.", herSwap: "Modified: Well-Done Eggs Only" },
+            { val: "Japanese Tamagoyaki Scramble", p: "32g", ing: "1 Whole Egg + 3 Egg Whites, dashi, coconut aminos, spinach, nori.", herSwap: "Modified: Well-Done Eggs Only" },
             { val: "Salmon & Capers Sprouted Toast", p: "32g", ing: "Smoked salmon, capers, sprouted bread, avocado.", herSwap: "Same for Sophia" },
             { val: "Turkey & Apple Hash", p: "35g", ing: "Ground turkey, apple, sage, walnuts.", herSwap: "Modified: Well-Done Eggs Only" },
-            { val: "Mediterranean Breakfast Hash", p: "28g", ing: "Chickpeas, kale, tomatoes, olives, 2 eggs.", herSwap: "Modified: Well-Done Eggs Only" },
-            { val: "Southwest Bison Scramble", p: "38g", ing: "Bison, 3 Eggs, jalapeños, black beans.", herSwap: "Modified: Well-Done Eggs Only" }
+            { val: "Mediterranean Breakfast Hash", p: "28g", ing: "Chickpeas, kale, tomatoes, olives, 1 Whole Egg + 3 Egg Whites.", herSwap: "Modified: Well-Done Eggs Only" },
+            { val: "Southwest Bison Scramble", p: "38g", ing: "Bison, 1 Whole Egg + 3 Egg Whites, jalapeños, black beans.", herSwap: "Modified: Well-Done Eggs Only" }
         ],
         lunches: [
             { val: "Mendo-Style Sophisticated Cobb", p: "42g", type: "white", ing: "Pasture turkey, kale, avocado, pickled onions, beets." },
@@ -485,23 +501,13 @@
     }
 
     function changeWeek(direction) {
-        const layout = document.getElementById('dayContent');
-        layout.classList.add('fade');
-        setTimeout(() => {
-            weekOffset += direction;
-            generateSyncedWeek();
-            layout.classList.remove('fade');
-        }, 150);
+        weekOffset += direction;
+        generateSyncedWeek();
     }
 
     function resetToCurrent() {
-        const layout = document.getElementById('dayContent');
-        layout.classList.add('fade');
-        setTimeout(() => {
-            weekOffset = 0;
-            generateSyncedWeek(true);
-            layout.classList.remove('fade');
-        }, 150);
+        weekOffset = 0;
+        generateSyncedWeek(true);
     }
 
     function openModal(id) { document.getElementById(id).style.display = 'block'; }
@@ -512,10 +518,6 @@
         openModal('workoutModal'); 
     }
     function openProfileModal() { openModal('profileModal'); }
-
-    window.onclick = function(event) { 
-        if (event.target.classList.contains('modal')) event.target.style.display = 'none';
-    }
 
     function openRecipeModal(dishName, ingredientsString) {
         const modal = document.getElementById('recipeModal');
@@ -532,7 +534,6 @@
 
         let recipe = recipeDatabase[dishName];
         if (!recipe) {
-            // Pass the ingredients string from the card to the generator
             recipe = generateSmartRecipe(dishName, ingredientsString);
         }
 
@@ -660,7 +661,10 @@
 
         document.getElementById('dayContent').innerHTML = `
             <div class="card">
-                <div class="workout-tag">${workoutData.work} ${carbBadge}</div>
+                <div class="workout-tag">
+                    <span class="workout-title">${workoutData.work}</span>
+                    ${carbBadge}
+                </div>
                 <div class="label">🍳 Breakfast <span class="protein-tag">(${b.p})</span></div>
                 <div class="value" onclick="openRecipeModal('${b.val}', '${b.ing}')">🧔🏾‍♂️ J: ${b.val}</div>
                 <div class="value" style="color: var(--text-dim); font-size:0.9rem;" onclick="openRecipeModal('${b.val}', '${b.ing}')">👩🏾‍🦱 S: ${b.herSwap}</div>
