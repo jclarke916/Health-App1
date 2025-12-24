@@ -2,547 +2,383 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Centurion | v188 Recovery Integration</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>The Centurion | v225 Streamlined</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-dark: #000000; --card-bg: #111111; --text-main: #E5E4E2; --text-dim: #888888;
-            --accent-gold: #D4AF37; --accent-silver: #444444; --glute-pink: #d63384;
-            --carb-high: #ff9100; --carb-low: #00b0ff; --target-green: #2ecc71;
-            --recovery-purple: #9b59b6; --heat-red: #e74c3c; --ice-blue: #3498db;
+            --bg-body: #050505; --bg-card: #121212; --text-main: #FFFFFF; --text-muted: #888888;
+            --accent-gold: #D4AF37; --glute-pink: #FF4081; --target-green: #00E676;
+            --heat-red: #FF3D00; --ice-blue: #00B0FF; --recovery-purple: #D500F9;
+            --grad-pro: linear-gradient(90deg, #FF5252, #D50000);
+            --grad-carb: linear-gradient(90deg, #FFAB40, #FF6D00);
+            --grad-fat: linear-gradient(90deg, #448AFF, #2962FF);
         }
-        body { font-family: 'Inter', sans-serif; background-color: var(--bg-dark); color: var(--text-main); margin: 0; padding: 20px; -webkit-tap-highlight-color: transparent; }
-        .container { max-width: 1000px; width: 100%; margin: 0 auto; position: relative; }
-        header { text-align: center; margin-bottom: 25px; border-bottom: 1px solid #333; padding-bottom: 20px; position: relative; }
-        .version-tag { position: absolute; top: 0; right: 0; font-size: 0.6rem; color: #444; letter-spacing: 1px; font-weight: 800; }
-        h1 { font-weight: 300; letter-spacing: 2px; text-transform: uppercase; margin: 0; background: linear-gradient(to right, #fff, #888); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .profile-badges { display: flex; justify-content: center; gap: 10px; margin-top: 15px; }
-        .badge { background: #1a1a1a; padding: 10px 20px; border-radius: 4px; border: 1px solid #333; font-size: 0.7rem; color: var(--accent-silver); text-transform: uppercase; cursor: pointer; font-weight: 800; }
-        .status-bar { text-align: center; color: var(--accent-gold); font-size: 0.85rem; margin: 15px 0; text-transform: uppercase; font-weight: 700; letter-spacing: 1px; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-body); color: var(--text-main); margin: 0; padding: 30px 20px; font-size: 16px; line-height: 1.6; }
+        .container { max-width: 600px; margin: 0 auto; width: 100%; position: relative; }
         
-        .controls { display: flex; justify-content: center; gap: 8px; margin-bottom: 25px; width: 100%; }
-        .nav-btn { background: var(--card-bg); border: 1px solid #333; color: var(--text-main); padding: 12px 0; width: 24%; border-radius: 6px; cursor: pointer; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; text-align: center; }
-        .grocery-btn { background: #1a1a1a; color: var(--target-green); border-color: var(--target-green); }
-
-        .tabs { display: flex; justify-content: space-between; background: var(--card-bg); padding: 5px; border-radius: 8px; margin-bottom: 25px; border: 1px solid #222; overflow-x: auto; }
-        .tab-btn { background: none; border: none; color: #555; padding: 10px; cursor: pointer; flex: 1; font-size: 0.75rem; display: flex; flex-direction: column; align-items: center; min-width: 62px; }
-        .tab-btn.active { color: var(--accent-gold); background: rgba(255,255,255,0.03); font-weight: 800; border-radius: 4px; }
+        header { text-align: center; margin-bottom: 25px; position: relative; }
+        .version-tag { position: absolute; top: 0; right: 0; font-size: 0.6rem; color: #333; font-weight: 800; letter-spacing: 1px; }
+        h1 { font-weight: 200; letter-spacing: 4px; text-transform: uppercase; margin: 0; font-size: 1.4rem; color: #fff; }
         
-        .card { background: var(--card-bg); border-radius: 12px; padding: 30px; border: 1px solid #222; position: relative; margin-bottom: 20px; }
-        .card::before { content: ""; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--accent-gold); }
-        .label { color: var(--accent-silver); font-size: 0.6rem; text-transform: uppercase; font-weight: 700; margin-bottom: 5px; letter-spacing: 1px; }
-        .value { font-size: 1.1rem; margin-bottom: 15px; color: #fff; cursor: pointer; border-bottom: 1px solid transparent; display: flex; align-items: center; gap: 8px; }
-        .carb-pill { padding: 4px 12px; border-radius: 4px; font-size: 0.7rem; font-weight: 900; color: #fff; text-transform: uppercase; float: right; }
+        .profile-badges { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
+        .badge { background: #000; padding: 10px 20px; border-radius: 30px; border: 1px solid #222; font-size: 0.7rem; color: #666; text-transform: uppercase; cursor: pointer; font-weight: 700; transition: 0.3s; }
+        .badge.active-user { border-color: var(--accent-gold); color: var(--accent-gold); background: rgba(212, 175, 55, 0.05); }
+        .badge.active-user.sophia { border-color: var(--glute-pink); color: var(--glute-pink); background: rgba(255, 64, 129, 0.05); }
+
+        .status-bar { text-align: center; color: var(--text-muted); font-size: 0.75rem; margin: 20px 0; text-transform: uppercase; font-weight: 600; letter-spacing: 2px; }
         
-        /* Workout Title Styles */
-        .workout-header { display:flex; justify-content:space-between; margin-bottom:20px; font-weight:800; text-transform:uppercase; color:var(--accent-gold); align-items: center; }
-        .workout-title-btn { cursor: pointer; border: 1px solid transparent; padding: 5px 10px; border-radius: 6px; margin-left: -10px; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
-        .workout-title-btn:hover { border-color: var(--accent-gold); background: rgba(212, 175, 55, 0.1); }
-        .info-icon { font-size: 0.8rem; opacity: 0.6; }
+        .controls { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 25px; }
+        .nav-btn { background: var(--bg-card); border: 1px solid #222; color: var(--text-muted); padding: 14px 0; width: 24%; border-radius: 12px; cursor: pointer; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; }
+        .grocery-btn { color: var(--target-green); border-color: rgba(0, 230, 118, 0.2); background: rgba(0, 230, 118, 0.05); }
 
-        .protocol-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px; border-top: 1px solid #222; padding-top: 15px; }
-        .proto-btn { background: #151515; border: 1px solid #333; color: #aaa; padding: 8px 12px; border-radius: 4px; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: 0.2s; }
-        .proto-btn:hover { border-color: var(--accent-gold); color: #fff; transform: translateY(-2px); }
-        .rec-btn { border-color: var(--recovery-purple); color: #ccc; }
-        .rec-btn:hover { border-color: #fff; color: var(--recovery-purple); }
+        .tabs { display: flex; justify-content: space-between; background: var(--bg-card); padding: 5px; border-radius: 16px; margin-bottom: 30px; border: 1px solid #222; }
+        .tab-btn { background: none; border: none; color: #555; padding: 12px 0; cursor: pointer; flex: 1; font-size: 0.7rem; display: flex; flex-direction: column; align-items: center; border-radius: 12px; }
+        .tab-btn.active { color: #fff; background: #222; font-weight: 700; }
 
-        .juice-card { background: linear-gradient(145deg, #0a0a0a, #111111); border: 1px solid #333; border-radius: 12px; padding: 30px; position: relative; margin-bottom: 20px; cursor: pointer; transition: 0.3s; }
-        .juice-name { font-size: 1.6rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
-        .juice-benefit { font-size: 0.8rem; color: #ccc; font-style: italic; margin-bottom: 10px; display: block; border-left: 3px solid; padding-left: 12px; line-height: 1.5; }
-        .juice-badge { float: right; border: 1px solid; padding: 4px 8px; border-radius: 4px; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; margin-bottom: 10px; display: inline-block; }
-
-        .bar-container { margin: 25px 0; background: #0a0a0a; padding: 15px; border-radius: 8px; border: 1px solid #222; position: relative; }
-        .bar-label-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 0.65rem; color: #888; text-transform: uppercase; font-weight: 700; }
-        .bar-bg { background: #151515; height: 18px; border-radius: 2px; position: relative; border: 1px solid #222; }
-        .bar-curr { position: absolute; left: 0; top: 0; height: 100%; z-index: 2; border-right: 1px solid rgba(255,255,255,0.3); }
-        .marker { position: absolute; top: -12px; bottom: -12px; width: 2px; z-index: 4; }
-        .marker-goal { background: var(--target-green); box-shadow: 0 0 10px var(--target-green); }
-        .marker-label { position: absolute; top: -28px; transform: translateX(-50%); font-size: 0.55rem; font-weight: 900; background: #000; padding: 2px 5px; border-radius: 2px; white-space: nowrap; border: 1px solid #333; }
-
-        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-        .stat-box { background: #111; padding: 15px; border-radius: 6px; border: 1px solid #222; text-align: center; }
-        .stat-val { font-size: 1.1rem; color: #fff; font-weight: 800; }
-        .stat-lbl { font-size: 0.55rem; color: #666; text-transform: uppercase; margin-top: 5px; font-weight: 700; }
-        .goal-section { margin-top: 30px; border-top: 1px solid #333; padding-top: 20px; }
-        .goal-title { color: var(--target-green); font-size: 0.8rem; font-weight: 800; text-transform: uppercase; margin-bottom: 15px; text-align: center; letter-spacing: 2px; }
-
-        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); overflow-y: auto; padding-top: 20px; }
-        .modal-content { background: #050505; margin: 0 auto; padding: 35px; border: 1px solid #333; width: 92%; max-width: 750px; border-radius: 12px; }
-        .chef-steps p { margin-bottom: 18px; color: #ccc; font-size: 0.95rem; line-height: 1.6; position: relative; padding-left: 38px; }
-        .chef-steps p::before { counter-increment: step; content: counter(step); position: absolute; left: 0; top: 2px; background: var(--accent-gold); color: #000; width: 24px; height: 24px; border-radius: 50%; font-size: 0.75rem; display: flex; align-items: center; justify-content: center; font-weight: 900; }
+        /* CARDS */
+        .card { background: var(--bg-card); border-radius: 20px; padding: 25px; margin-bottom: 20px; border: 1px solid #222; box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5); }
         
-        /* Recovery Modal Specifics */
-        .rec-section { margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #222; }
-        .rec-header { font-size: 0.8rem; font-weight: 800; text-transform: uppercase; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
-        .rec-header.warmup { color: var(--heat-red); }
-        .rec-header.gym { color: var(--ice-blue); }
-        .rec-header.home { color: var(--recovery-purple); }
-        .rec-item { background: #111; padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #222; }
-        .rec-tool { color: #fff; font-weight: 700; font-size: 0.9rem; margin-bottom: 4px; }
-        .rec-detail { color: #888; font-size: 0.8rem; }
-        .rec-note { color: var(--accent-gold); font-size: 0.7rem; margin-top: 6px; font-style: italic; }
+        /* 1. WORKOUT HEADER (Clickable) */
+        .workout-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; cursor: pointer; border-bottom: 1px solid #1a1a1a; padding-bottom: 15px; }
+        .workout-title { font-size: 1rem; font-weight: 800; text-transform: uppercase; color: #fff; display: flex; flex-direction: column; }
+        .workout-sub { font-size: 0.6rem; color: var(--recovery-purple); font-weight: 600; margin-top: 4px; letter-spacing: 1px; }
+        .carb-pill { font-size: 0.6rem; font-weight: 900; padding: 5px 10px; border-radius: 6px; color: #fff; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* 2. THREE BAR GOAL SYSTEM */
+        .goal-system { margin-bottom: 25px; }
+        .goal-row { display: flex; align-items: center; margin-bottom: 12px; }
+        .goal-label { width: 50px; font-size: 0.65rem; color: #666; font-weight: 800; text-transform: uppercase; }
+        .goal-track { flex: 1; height: 6px; background: #1a1a1a; border-radius: 10px; margin: 0 12px; overflow: hidden; }
+        .goal-fill { height: 100%; border-radius: 10px; }
+        .goal-val { width: 50px; text-align: right; font-size: 0.7rem; color: #fff; font-weight: 700; }
+        
+        /* 3. CLICKABLE PROTOCOLS */
+        .protocol-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .proto-btn { 
+            background: #0a0a0a; border: 1px solid #222; color: #666; 
+            padding: 15px 0; border-radius: 12px; text-align: center; cursor: pointer; transition: 0.2s;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+        }
+        .proto-icon { font-size: 1.2rem; margin-bottom: 2px; }
+        .proto-name { font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+        .proto-btn.active { border-color: var(--target-green); color: var(--target-green); background: rgba(0, 230, 118, 0.05); }
+
+        /* MEALS */
+        .meal-row { margin-bottom: 20px; border-left: 2px solid #222; padding-left: 15px; cursor: pointer; transition: 0.2s; }
+        .meal-row:hover { border-left-color: var(--accent-gold); }
+        .meal-lbl { font-size: 0.6rem; color: #555; font-weight: 800; text-transform: uppercase; margin-bottom: 4px; }
+        .meal-val { font-size: 1rem; color: #fff; font-weight: 500; }
+
+        /* MODALS */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); backdrop-filter: blur(5px); overflow-y: auto; padding: 20px; }
+        .modal-content { background: #121212; margin: 40px auto; padding: 30px; border: 1px solid #333; width: 100%; max-width: 600px; border-radius: 20px; }
+        .close-btn { float: right; font-size: 1.5rem; cursor: pointer; color: #666; }
+        
+        /* RECOVERY STREAMLINE */
+        .rec-timeline { position: relative; padding-left: 20px; border-left: 2px solid #222; margin-top: 20px; }
+        .rec-node { margin-bottom: 30px; position: relative; }
+        .rec-node::before { content: ''; position: absolute; left: -26px; top: 5px; width: 10px; height: 10px; border-radius: 50%; background: #333; }
+        .rec-node.warmup::before { background: var(--heat-red); }
+        .rec-node.gym::before { background: var(--ice-blue); }
+        .rec-node.home::before { background: var(--recovery-purple); }
+        
+        .rec-cat { font-size: 0.7rem; font-weight: 900; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 1px; }
+        .rec-item { font-size: 0.95rem; color: #fff; margin-bottom: 4px; }
+        .rec-desc { font-size: 0.8rem; color: #777; font-style: italic; }
+
+        .chef-steps { counter-reset: step; color: #ccc; font-size: 0.9rem; line-height: 1.6; margin-top: 20px; }
+        .chef-steps p { margin-bottom: 20px; position: relative; padding-left: 30px; }
+        .chef-steps p::before { counter-increment: step; content: counter(step); position: absolute; left: 0; top: 2px; color: var(--accent-gold); font-weight: 800; font-size: 0.8rem; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <header>
-        <div class="version-tag">VER 188.0</div>
-        <h1>THE CENTURION</h1>
+        <div class="version-tag">v225</div>
+        <h1>CENTURION</h1>
         <div class="profile-badges">
-            <div class="badge" onclick="openModal('jermaineModal')">🧔🏾‍♂️ JERMAINE</div>
-            <div class="badge" onclick="openModal('sophiaModal')">👩🏾‍🦱 SOPHIA</div>
+            <div id="badgeJ" class="badge active-user" onclick="switchUser('J')">Jermaine</div>
+            <div id="badgeS" class="badge" onclick="switchUser('S')">Sophia</div>
         </div>
     </header>
+    
     <div id="dateRangeDisplay" class="status-bar">...</div>
+    
     <div class="controls">
-        <button class="nav-btn" onclick="changeWeek(-1)">PREV WEEK</button>
+        <button class="nav-btn" onclick="changeWeek(-1)">PREV</button>
         <button class="nav-btn" onclick="resetToCurrent()">TODAY</button>
-        <button class="nav-btn" onclick="changeWeek(1)">NEXT WEEK</button>
-        <button class="nav-btn grocery-btn" onclick="generateGroceryList()">GROCERIES</button>
+        <button class="nav-btn" onclick="changeWeek(1)">NEXT</button>
+        <button class="nav-btn grocery-btn" onclick="generateGroceryList()">SHOP</button>
     </div>
+    
     <div id="dayTabs" class="tabs"></div>
     <div id="dayContent"></div>
 </div>
 
-<div id="jermaineModal" class="modal">
-    <div class="modal-content">
-        <span onclick="closeModal('jermaineModal')" style="float:right; cursor:pointer; font-size:24px;">&times;</span>
-        <h2 style="color:var(--accent-gold);">🧔🏾‍♂️ JERMAINE: CLINICAL DATA</h2>
-        <div class="stat-grid">
-            <div class="stat-box"><div class="stat-val">217.1</div><div class="stat-lbl">Weight (lbs)</div></div>
-            <div class="stat-box"><div class="stat-val">98.8</div><div class="stat-lbl">Muscle Mass (lbs)</div></div>
-            <div class="stat-box"><div class="stat-val">20.7%</div><div class="stat-lbl">Body Fat %</div></div>
-            <div class="stat-box"><div class="stat-val">10</div><div class="stat-lbl">Visceral Fat Lvl</div></div>
-            <div class="stat-box"><div class="stat-val">1996</div><div class="stat-lbl">BMR (kcal)</div></div>
-            <div class="stat-box"><div class="stat-val">28.6</div><div class="stat-lbl">BMI</div></div>
-        </div>
-        <div class="goal-section">
-            <div class="goal-title">90-DAY CENTURION TARGET</div>
-            <div class="bar-container">
-                <div class="bar-label-row"><span>Body Fat % Goal</span><span style="color:var(--target-green);">15.0%</span></div>
-                <div class="bar-bg">
-                    <div class="bar-curr" style="width: 20.7%; background: var(--accent-gold);"></div>
-                    <div class="marker marker-goal" style="left: 15.0%;"><span class="marker-label" style="color:var(--target-green);">TARGET</span></div>
-                </div>
-            </div>
-            <div class="bar-container">
-                <div class="bar-label-row"><span>Muscle Mass Goal</span><span style="color:var(--target-green);">102.0 lbs</span></div>
-                <div class="bar-bg">
-                    <div class="bar-curr" style="width: 96.8%; background: var(--accent-gold);"></div> <div class="marker marker-goal" style="left: 99%;"><span class="marker-label" style="color:var(--target-green);">TARGET</span></div>
-                </div>
-            </div>
-            <div style="font-size:0.8rem; color:#888; margin-top:15px; text-align:center;">Strategy: 20m Sauna post-lift to spike GH. High-carb days fueled by Plasma Flush.</div>
-        </div>
+<div id="recipeModal" class="modal"><div class="modal-content">
+    <span class="close-btn" onclick="closeModal('recipeModal')">&times;</span>
+    <h2 id="modalTitle" style="color:#fff; margin-top:0; margin-bottom:10px;"></h2>
+    <div id="modalTimeBadge" style="background:#222; display:inline-block; padding:5px 10px; border-radius:5px; font-size:0.7rem; color:#aaa; margin-bottom:20px;"></div>
+    <div style="color:var(--accent-gold); font-size:0.7rem; font-weight:800; margin-bottom:10px;">INGREDIENTS</div>
+    <ul id="modalIng" style="color:#ccc; padding-left:20px; margin-bottom:25px; font-size:0.9rem;"></ul>
+    <div style="color:var(--accent-gold); font-size:0.7rem; font-weight:800; margin-bottom:10px;">CHEF PREPARATION</div>
+    <div id="modalSteps" class="chef-steps"></div>
+    <div style="background:#1a050a; border:1px solid var(--glute-pink); padding:15px; border-radius:10px; margin-top:20px;">
+        <div style="color:var(--glute-pink); font-size:0.7rem; font-weight:800; text-transform:uppercase;">🍑 Sophia's Mod</div>
+        <div id="modalMod" style="color:#fff; font-size:0.85rem; margin-top:5px;"></div>
     </div>
-</div>
+</div></div>
 
-<div id="sophiaModal" class="modal">
-    <div class="modal-content">
-        <span onclick="closeModal('sophiaModal')" style="float:right; cursor:pointer; font-size:24px;">&times;</span>
-        <h2 style="color:var(--glute-pink);">👩🏾‍🦱 SOPHIA: CLINICAL DATA</h2>
-        <div class="stat-grid">
-            <div class="stat-box"><div class="stat-val">141.5</div><div class="stat-lbl">Weight (lbs)</div></div>
-            <div class="stat-box"><div class="stat-val">49.2</div><div class="stat-lbl">Muscle Mass (lbs)</div></div>
-            <div class="stat-box"><div class="stat-val">36.1%</div><div class="stat-lbl">Body Fat %</div></div>
-            <div class="stat-box"><div class="stat-val">9</div><div class="stat-lbl">Visceral Fat Lvl</div></div>
-            <div class="stat-box"><div class="stat-val">1332</div><div class="stat-lbl">BMR (kcal)</div></div>
-            <div class="stat-box"><div class="stat-val">25.1</div><div class="stat-lbl">BMI</div></div>
-        </div>
-        <div class="goal-section">
-            <div class="goal-title">90-DAY CENTURION TARGET</div>
-            <div class="bar-container">
-                <div class="bar-label-row"><span>Body Fat % Goal</span><span style="color:var(--target-green);">28.0%</span></div>
-                <div class="bar-bg">
-                    <div class="bar-curr" style="width: 36.1%; background: var(--glute-pink);"></div>
-                    <div class="marker marker-goal" style="left: 28.0%;"><span class="marker-label" style="color:var(--target-green);">TARGET</span></div>
-                </div>
-            </div>
-            <div class="bar-container">
-                <div class="bar-label-row"><span>Muscle Mass Goal</span><span style="color:var(--target-green);">52.0 lbs</span></div>
-                <div class="bar-bg">
-                    <div class="bar-curr" style="width: 94%; background: var(--glute-pink);"></div>
-                    <div class="marker marker-goal" style="left: 99%;"><span class="marker-label" style="color:var(--target-green);">TARGET</span></div>
-                </div>
-            </div>
-            <div style="font-size:0.8rem; color:#888; margin-top:15px; text-align:center;">Strategy: Heavy metal flush (Zenith Green) on rest days. High protein breakfasts.</div>
-        </div>
-    </div>
-</div>
+<div id="protocolDetailModal" class="modal"><div class="modal-content">
+    <span class="close-btn" onclick="closeModal('protocolDetailModal')">&times;</span>
+    <h2 id="pdTitle" style="color:var(--target-green); margin-top:0;"></h2>
+    <div style="font-size:1.2rem; color:#fff; font-weight:700; margin-bottom:5px;" id="pdAmount"></div>
+    <div style="font-size:0.9rem; color:var(--ice-blue); margin-bottom:20px;" id="pdTime"></div>
+    <div style="font-size:0.95rem; color:#ccc; line-height:1.6;" id="pdBenefits"></div>
+    <button id="pdCompleteBtn" style="width:100%; padding:15px; margin-top:25px; background:var(--target-green); border:none; border-radius:10px; font-weight:800; cursor:pointer;">MARK AS DONE</button>
+</div></div>
 
-<div id="recipeModal" class="modal"><div class="modal-content"><span onclick="closeModal('recipeModal')" style="float:right; cursor:pointer;">&times;</span><h2 id="modalTitle" style="color:#fff; margin-bottom:5px;"></h2><div style="color:var(--accent-gold); font-size:0.75rem; font-weight:800; margin:15px 0 5px 0;">INGREDIENTS</div><ul id="modalIng" style="list-style:none; padding:0; margin-bottom:25px; color:#ccc; font-size:0.9rem;"></ul><div style="color:var(--accent-gold); font-size:0.75rem; font-weight:800; margin-bottom:12px;">CHEF PREPARATION</div><div id="modalSteps" class="chef-steps" style="counter-reset: step;"></div><div id="modBox" style="background:rgba(214, 51, 132, 0.1); border:1px solid var(--glute-pink); padding:15px; border-radius:6px; margin-top:20px;"><div style="color:var(--glute-pink); font-size:0.8rem; font-weight:800; text-transform:uppercase;">🍑 Sophia's Mod</div><div id="modalMod" style="color:#e5e4e2; font-size:0.85rem;"></div></div></div></div>
-<div id="juiceModal" class="modal"><div class="modal-content"><span onclick="closeModal('juiceModal')" style="float:right; cursor:pointer;">&times;</span><h2 id="jTitle" style="color:var(--accent-gold);"></h2><div id="jPrep" class="chef-steps" style="counter-reset: step;"></div></div></div>
-<div id="protocolModal" class="modal"><div class="modal-content"><span onclick="closeModal('protocolModal')" style="float:right; cursor:pointer;">&times;</span><h2 id="protoTitle" style="color:var(--accent-gold);"></h2><div id="protoBody" style="font-size:0.95rem; color:#ccc; line-height:1.7;"></div></div></div>
-<div id="groceryModal" class="modal"><div class="modal-content"><span onclick="closeModal('groceryModal')" style="float:right; cursor:pointer;">&times;</span><h2 style="color:var(--target-green); margin-bottom:20px;">🛒 WEEKLY SHOPPING LIST</h2><div id="groceryList" style="color:#ccc; line-height:1.6; font-size:0.9rem;"></div></div></div>
-
-<div id="recoveryModal" class="modal">
-    <div class="modal-content">
-        <span onclick="closeModal('recoveryModal')" style="float:right; cursor:pointer;">&times;</span>
-        <h2 id="recTitle" style="color:#fff; margin-bottom:5px;"></h2>
-        <p style="color:#888; font-size:0.8rem; margin-bottom:25px; font-style:italic;">Daily Recovery Protocol</p>
-        
-        <div class="rec-section">
-            <div class="rec-header warmup">🔥 PRE-WORKOUT (HOME/CAR)</div>
+<div id="recoveryModal" class="modal"><div class="modal-content">
+    <span class="close-btn" onclick="closeModal('recoveryModal')">&times;</span>
+    <h2 id="recTitle" style="color:#fff; margin-top:0; text-transform:uppercase;"></h2>
+    <div style="color:#666; font-size:0.8rem; font-style:italic;">Daily Recovery Protocol</div>
+    
+    <div class="rec-timeline">
+        <div class="rec-node warmup">
+            <div class="rec-cat" style="color:var(--heat-red)">PRE-WORKOUT</div>
             <div id="recWarmup"></div>
         </div>
-
-        <div class="rec-section">
-            <div class="rec-header gym">💧 GYM AMENITIES (IN-SHAPE)</div>
+        <div class="rec-node gym">
+            <div class="rec-cat" style="color:var(--ice-blue)">GYM AMENITIES</div>
             <div id="recGym"></div>
         </div>
-
-        <div class="rec-section" style="border-bottom:none;">
-            <div class="rec-header home">🏠 HOME RESTORATION</div>
+        <div class="rec-node home">
+            <div class="rec-cat" style="color:var(--recovery-purple)">HOME RESTORATION</div>
             <div id="recHome"></div>
         </div>
     </div>
-</div>
+</div></div>
+
+<div id="groceryModal" class="modal"><div class="modal-content">
+    <span class="close-btn" onclick="closeModal('groceryModal')">&times;</span>
+    <h2 style="color:var(--target-green); margin-top:0;">🛒 GROCERY LIST</h2>
+    <div id="groceryList" style="color:#ccc; line-height:1.6;"></div>
+</div></div>
 
 <script>
-    const juiceData = {
-        "TITAN RED": { color: "#E74C3C", icon: "🦅", badge: "⚡ NITRIC BOOST", text: "Beet nitrates maximize oxygen delivery for explosive Boxing rounds.", prep: ["2 Beets", "2 Carrots", "1 Pomegranate", "1 Orange"] },
-        "ZENITH GREEN": { color: "#2ECC71", icon: "🦉", badge: "🌿 ALKALIZER", text: "Cilantro & Dandelion flush cortisol and trace metals from seafood.", prep: ["4 Kale", "1c Wheatgrass", "1 Cucumber", "1/2c Cilantro"] },
-        "PLASMA FLUSH": { color: "#FF6B81", icon: "🦩", badge: "⚡ NITRO PUMP", text: "L-Citrulline from watermelon pith reduces lifting fatigue.", prep: ["3c Watermelon", "1 Lime", "Pinch Salt"] },
-        "APOLLO GOLD": { color: "#F1C40F", icon: "🦁", badge: "🛡️ JOINT GUARD", text: "Turmeric & Ginger reduce systemic inflammation on recovery days.", prep: ["2 Pears", "2in Ginger", "1in Turmeric", "Black Pepper"] }
+    let currentUser = 'J'; 
+    let dayState = {}; 
+    let selectedDateStr = "";
+    
+    const protocolDetails = {
+        "sea": { title: "SEA MOSS", amount: "2 Tbsp (Gel)", time: "First thing AM", benefits: "Thyroid support & gut lining repair." },
+        "kom": { title: "KOMBUCHA", amount: "4-6 oz", time: "Before Lunch", benefits: "Probiotics & insulin blunting." },
+        "water": { title: "HYDRATION", amount: "1 Gallon", time: "All Day", benefits: "Flush toxins & muscle fullness." }
     };
-
-    const protocolData = { "Sea Moss": "92 minerals + Iodine.", "Mg Electrolytes": "CNS recovery.", "Kombucha": "Gut lining." };
-
+    
     const recipeDB = {
-        // BREAKFASTS
-        "Bison Steak & Eggs": { ing: ["6oz Bison Sirloin", "2 Eggs", "Tomato"], steps: ["Sear sirloin 3m/side."], mod: "Sophia: 3oz bison." },
-        "Crab Scramble": { ing: ["4oz Crab", "3 Egg Whites", "Chives"], steps: ["Fold crab into whisked eggs."], mod: "Sophia: 3oz crab." },
-        "Japanese Tamagoyaki": { ing: ["4 Eggs", "Dashi", "Coconut Aminos"], steps: ["Whisk eggs/dashi."], mod: "Sophia: 1.5 palms." },
-        "Sea Moss Smoothie": { ing: ["2tbsp Sea Moss", "Spinach", "Berries"], steps: ["Blend on high."], mod: "Add 1 scoop collagen." },
-        "Southwest Bison Scramble": { ing: ["4oz Bison", "3 Egg Whites", "Poblanos"], steps: ["Brown bison."], mod: "Sophia: 3oz bison." },
-        "Protein Berry Bowl": { ing: ["1 scoop Whey", "Berries", "Chia"], steps: ["Blend base."], mod: "Sophia: 1.5 palms." },
-        "Chicken Apple Sausage Scramble": { ing: ["1 Chicken Sausage", "3 Eggs", "Apple"], steps: ["Sauté sausage."], mod: "Sophia: 1/2 sausage." },
-        "Bison & Poached Eggs": { ing: ["6oz Bison Patty", "2 Poached Eggs"], steps: ["Grill patty."], mod: "Sophia: 3oz patty." },
-        "Omelet Du Fromage": { ing: ["3 Eggs", "Goat Cheese", "Chives"], steps: ["French fold omelet."], mod: "Sophia: 2 eggs." },
-        "Smoked Salmon Scramble": { ing: ["4oz Smoked Salmon", "3 Eggs", "Dill"], steps: ["Fold salmon into eggs."], mod: "Sophia: 3oz salmon." },
-        "Hard Boiled Scotch Egg": { ing: ["4oz Bison", "1 Boiled Egg"], steps: ["Wrap egg in bison."], mod: "Sophia: 1/2 portion." },
-        "Green Omelet": { ing: ["3 Eggs", "Spinach", "Kale Pesto"], steps: ["Blend greens in eggs."], mod: "Sophia: 2 eggs." },
-        "Chia Pudding": { ing: ["1/4c Chia", "Almond Milk", "Protein"], steps: ["Soak overnight."], mod: "Sophia: 1.5 palms." },
-        "Egg White Frittata": { ing: ["1c Egg Whites", "Bison Sausage"], steps: ["Bake 350F."], mod: "Sophia: 1 slice." },
-        "Sea Moss Fruit Bowl": { ing: ["2tbsp Sea Moss", "Mango", "Kiwi"], steps: ["Mix gel with fruit."], mod: "Add protein side." },
-        "Turkey Bacon & Eggs": { ing: ["4 slices Turkey Bacon", "3 Eggs"], steps: ["Crisp bacon."], mod: "Sophia: 2 slices." },
-        "Spinach Mushroom Scramble": { ing: ["3 Eggs", "Spinach", "Shiitake"], steps: ["Sauté veg."], mod: "Sophia: 2 eggs." },
-        "Greek Yogurt Parfait": { ing: ["1c Greek Yogurt", "Walnuts", "Honey"], steps: ["Layer ingredients."], mod: "Sophia: 1/2 cup." },
-        "Bison Breakfast Burrito Bowl": { ing: ["4oz Bison", "Black Beans", "Salsa"], steps: ["Brown bison."], mod: "Sophia: 2oz bison." },
-        "Cottage Cheese Bowl": { ing: ["1c Cottage Cheese", "Peaches"], steps: ["Serve chilled."], mod: "Sophia: 1/2 cup." },
-        "Avocado Toast (GF) & Egg": { ing: ["1 slice GF Bread", "1/2 Avocado", "1 Egg"], steps: ["Toast bread."], mod: "Sophia: 1/2 avocado." },
-        "Shakshuka (Bison)": { ing: ["4oz Bison", "Tomato Sauce", "2 Eggs"], steps: ["Poach eggs in sauce."], mod: "Sophia: 2oz bison." },
-        "Quinoa Breakfast Bowl": { ing: ["1/2c Quinoa", "Almond Milk", "Berries"], steps: ["Simmer quinoa."], mod: "Sophia: 1/4 cup." },
-        "Steak & Spinach (Leftover)": { ing: ["4oz Steak", "Spinach"], steps: ["Reheat steak."], mod: "Sophia: 2oz steak." },
-        "Protein Pancakes": { ing: ["1 Banana", "2 Eggs", "Protein"], steps: ["Fry like pancakes."], mod: "Sophia: 2 cakes." },
-        "Overnight Oats (GF)": { ing: ["1/2c Oats", "Chia", "Almond Milk"], steps: ["Soak overnight."], mod: "Sophia: 1/4 cup." },
-        "Acai Bowl": { ing: ["1 pk Acai", "Spinach", "Protein"], steps: ["Blend frozen."], mod: "Sophia: 1/2 bowl." },
-        "Breakfast Salad": { ing: ["Arugula", "2 Boiled Eggs", "Bacon"], steps: ["Toss greens."], mod: "Sophia: 1 egg." },
-        "Tofu Scramble": { ing: ["1 block Tofu", "Turmeric", "Peppers"], steps: ["Sauté tofu."], mod: "Sophia: 1/2 block." },
-        "Bone Broth & Egg": { ing: ["1c Bone Broth", "1 Egg"], steps: ["Drop egg in broth."], mod: "Sophia: 1 cup." },
-
-        // LUNCHES
-        "Sardine Bowl": { ing: ["1 tin Sardines", "Avocado", "Lemon"], steps: ["Rinse sardines."], mod: "Sophia: 1.5 palms." },
-        "Bison Laab": { ing: ["6oz Bison", "Lime", "Fish Sauce"], steps: ["Brown bison."], mod: "Sophia: 3oz." },
-        "Stealth Liver Sliders": { ing: ["5oz Bison", "1oz Liver", "Paprika"], steps: ["Grill 4m/side."], mod: "Sophia: 1 slider." },
-        "Crab Tower": { ing: ["4oz Crab", "Mango", "Cucumber"], steps: ["Layer ingredients."], mod: "Sophia: 3oz crab." },
-        "Sriracha Bison Tacos": { ing: ["5oz Bison", "Yogurt", "Sriracha"], steps: ["Brown meat."], mod: "Sophia: 3oz." },
-        "Chicken Satay": { ing: ["6oz Chicken Breast", "Peanut Sauce", "Cucumber"], steps: ["Grill skewers."], mod: "Sophia: 3oz." },
-        "Octopus Salad": { ing: ["6oz Boiled Octopus", "Potato", "Paprika"], steps: ["Slice octopus."], mod: "Sophia: 3oz." },
-        "Shrimp Ceviche": { ing: ["6oz Shrimp", "Lime", "Tomato"], steps: ["Cure in lime."], mod: "Sophia: 3oz." },
-        "Sardine Cucumber Boats": { ing: ["1 tin Sardines", "Cucumber", "Dill"], steps: ["Fill cucumbers."], mod: "Sophia: 1.5 palms." },
-        "Bison Lettuce Cups": { ing: ["6oz Bison", "Water Chestnuts"], steps: ["Stir fry meat."], mod: "Sophia: 3oz." },
-        "Tuna Tartare": { ing: ["6oz Sushi Tuna", "Sesame Oil"], steps: ["Dice tuna."], mod: "Sophia: 3oz." },
-        "Salmon Salad": { ing: ["6oz Canned Salmon", "Celery", "Mayo"], steps: ["Mix all."], mod: "Sophia: 3oz." },
-        "Ostrich Carpaccio": { ing: ["4oz Ostrich", "Capers", "Olive Oil"], steps: ["Slice raw."], mod: "Sophia: 2oz." },
-        "Bison Kofta": { ing: ["6oz Bison", "Cumin", "Coriander"], steps: ["Grill skewers."], mod: "Sophia: 3oz." },
-        "Crab & Avocado Salad": { ing: ["4oz Crab", "Avocado", "Grapefruit"], steps: ["Toss salad."], mod: "Sophia: 3oz." },
-        "Spicy Sardine Wrap": { ing: ["1 tin Sardines", "Collard Leaf"], steps: ["Wrap in leaf."], mod: "Sophia: 1.5 palms." },
-        "Bison Burger": { ing: ["6oz Bison", "Tomato Bun", "Mustard"], steps: ["Grill patty."], mod: "Sophia: 3oz." },
-        "Chicken Waldorf Salad": { ing: ["6oz Chicken", "Apple", "Walnuts"], steps: ["Mix salad."], mod: "Sophia: 3oz." },
-        "Shrimp Summer Rolls": { ing: ["6 Shrimp", "Rice Paper", "Herbs"], steps: ["Wrap rolls."], mod: "Sophia: 3 rolls." },
-        "Cod Fish Tacos": { ing: ["6oz Cod", "Cabbage Slaw"], steps: ["Sear cod."], mod: "Sophia: 1 taco." },
-        "Seared Ahi Salad": { ing: ["6oz Ahi", "Sesame Crust", "Greens"], steps: ["Sear rare."], mod: "Sophia: 3oz." },
-        "Turkey Meatballs": { ing: ["6oz Turkey", "Spinach", "Marinara"], steps: ["Bake meatballs."], mod: "Sophia: 3oz." },
-        "Grilled Chicken Caesar": { ing: ["6oz Chicken", "Romaine", "Parmesan"], steps: ["Grill chicken."], mod: "Sophia: 3oz." },
-        "Beef Carpaccio": { ing: ["4oz Beef Tenderloin", "Arugula", "Parmesan"], steps: ["Slice raw."], mod: "Sophia: 2oz." },
-        "Poke Bowl": { ing: ["4oz Tuna", "Cauli Rice", "Edamame"], steps: ["Assemble bowl."], mod: "Sophia: 3oz." },
-        "Lobster Roll": { ing: ["4oz Lobster", "Celery", "Mayo"], steps: ["Mix salad."], mod: "Sophia: 2oz." },
-        "Thai Beef Salad": { ing: ["4oz Steak", "Lime", "Chili"], steps: ["Toss salad."], mod: "Sophia: 2oz." },
-        "Smoked Mackerel Pate": { ing: ["4oz Mackerel", "Cream Cheese"], steps: ["Blend."], mod: "Sophia: 2oz." },
-        "Gazpacho w/ Shrimp": { ing: ["Tomato Base", "4 Shrimp"], steps: ["Blend soup."], mod: "Sophia: 3 shrimp." },
-        "Curried Chicken Salad": { ing: ["6oz Chicken", "Curry", "Grapes"], steps: ["Mix salad."], mod: "Sophia: 3oz." },
-
-        // DINNERS
-        "Ostrich Steaks": { ing: ["6oz Ostrich", "Blackberries", "Ghee"], steps: ["Sear 3m/side."], mod: "Sophia: 3oz." },
-        "Wild Elk Medallions": { ing: ["6oz Elk", "Juniper", "Bone Broth"], steps: ["Sear 3m/side."], mod: "Sophia: 3oz." },
-        "Miso Sea Bass": { ing: ["6oz Sea Bass", "Miso Glaze", "Bok Choy"], steps: ["Bake 400F."], mod: "Sophia: 3oz." },
-        "Garlic Ghee Lobster": { ing: ["2 Tails", "Garlic", "Ghee"], steps: ["Grill 5m."], mod: "Sophia: 1 tail." },
-        "Grilled Branzino": { ing: ["Whole Fish", "Lemon", "Rosemary"], steps: ["Grill 6m/side."], mod: "Sophia: 1/2 fish." },
-        "Bison Fillet": { ing: ["6oz Fillet", "Thyme", "Ghee"], steps: ["Sear 4m/side."], mod: "Sophia: 3oz." },
-        "SF Style Cioppino": { ing: ["Mussels", "White Fish", "Fennel"], steps: ["Simmer broth."], mod: "Sophia: 1.5 cups." },
-        "Bison Ribeye": { ing: ["8oz Ribeye", "Salt", "Pepper"], steps: ["Sear 3m/side."], mod: "Sophia: 3oz." },
-        "Elk Stir Fry": { ing: ["6oz Elk", "Broccoli", "Ginger"], steps: ["Wok sear."], mod: "Sophia: 3oz." },
-        "Grilled Octopus": { ing: ["6oz Octopus", "Lemon", "Oregano"], steps: ["Grill char."], mod: "Sophia: 3oz." },
-        "Scallops & Asparagus": { ing: ["6 Scallops", "Asparagus", "Lemon"], steps: ["Sear 2m/side."], mod: "Sophia: 3 scallops." },
-        "Bison Meatballs": { ing: ["6oz Bison", "Almond Flour", "Marinara"], steps: ["Bake 15m."], mod: "Sophia: 3oz." },
-        "Steamed Mussels": { ing: ["1lb Mussels", "Garlic", "White Wine"], steps: ["Steam open."], mod: "Sophia: 1/2 lb." },
-        "Surf & Turf": { ing: ["3oz Bison", "3 Shrimp", "Ghee"], steps: ["Grill both."], mod: "Sophia: 2oz/2 shrimp." },
-        "Pan Seared Cod": { ing: ["6oz Cod", "Capers", "Butter"], steps: ["Sear cod."], mod: "Sophia: 3oz." },
-        "Garlic Shrimp Skewers": { ing: ["6 Shrimp", "Garlic", "Parsley"], steps: ["Grill 2m."], mod: "Sophia: 4 shrimp." },
-        "Chicken Piccata": { ing: ["6oz Chicken", "Lemon", "Capers"], steps: ["Pan fry."], mod: "Sophia: 3oz." },
-        "Herb Crusted Branzino": { ing: ["Fillets", "Parsley", "Almond Meal"], steps: ["Pan fry."], mod: "Sophia: 1 fillet." },
-        "Salmon Plank": { ing: ["6oz Salmon", "Cedar Plank", "Lemon"], steps: ["Grill 15m."], mod: "Sophia: 3oz." },
-        "Bison Short Ribs": { ing: ["8oz Ribs", "Red Wine", "Carrots"], steps: ["Braise 3h."], mod: "Sophia: 4oz." },
-        "Dungeness Crab Legs": { ing: ["1lb Legs", "Ghee", "Lemon"], steps: ["Steam."], mod: "Sophia: 1/2 lb." },
-        "Lamb Chops": { ing: ["3 Chops", "Rosemary", "Garlic"], steps: ["Sear 3m."], mod: "Sophia: 2 chops." },
-        "Halibut w/ Mango Salsa": { ing: ["6oz Halibut", "Mango", "Jalapeno"], steps: ["Pan sear."], mod: "Sophia: 3oz." },
-        "Duck Breast": { ing: ["6oz Duck", "Orange Glaze"], steps: ["Sear skin."], mod: "Sophia: 3oz." },
-        "Venison Steak": { ing: ["6oz Venison", "Juniper", "Thyme"], steps: ["Sear rare."], mod: "Sophia: 3oz." },
-        "Rainbow Trout": { ing: ["Whole Trout", "Almonds", "Butter"], steps: ["Pan fry."], mod: "Sophia: 1/2 fish." },
-        "Clams Linguine": { ing: ["1lb Clams", "Zucchini", "Garlic"], steps: ["Steam."], mod: "Sophia: 1/2 lb." },
-        "Swordfish Steak": { ing: ["6oz Swordfish", "Lemon", "Oregano"], steps: ["Grill 4m."], mod: "Sophia: 3oz." },
-        "Squid Ink Risotto": { ing: ["Squid", "Cauli Rice", "Ink"], steps: ["Sauté."], mod: "Sophia: 1/2 cup." },
-        "Paella (Seafood Only)": { ing: ["Shrimp", "Mussels", "Saffron"], steps: ["Simmer."], mod: "Sophia: 1 cup." }
+        "Bison Steak & Eggs": { time: "35 MIN", ing: ["6oz Bison Sirloin", "2 Eggs", "Asparagus"], steps: ["Sear steak 3m/side.", "Fry eggs."], mod: "3oz bison." },
+        "Crab Scramble": { time: "15 MIN", ing: ["4oz Crab", "3 Egg Whites", "Spinach"], steps: ["Fold crab into eggs."], mod: "3oz crab." },
+        "Japanese Tamagoyaki": { time: "25 MIN", ing: ["4 Eggs", "Dashi", "Sesame Oil"], steps: ["Layered rolled omelet."], mod: "1.5 palms." },
+        "Sea Moss Smoothie": { time: "5 MIN", ing: ["2tbsp Sea Moss", "Blueberries", "Protein"], steps: ["Blend."], mod: "Add collagen." },
+        "Southwest Bison Scramble": { time: "20 MIN", ing: ["4oz Bison", "3 Egg Whites", "Poblano"], steps: ["Brown bison."], mod: "3oz." },
+        "Avocado Toast (Sprouted)": { time: "10 MIN", ing: ["Sprouted Bread", "1/2 Avocado", "2 Eggs"], steps: ["Toast & Assemble."], mod: "1 slice." },
+        "Sprouted Breakfast Wrap": { time: "15 MIN", ing: ["Tortilla", "3 Eggs", "Turkey Bacon"], steps: ["Crisp bacon, wrap."], mod: "1/2 wrap." },
+        "Bison Laab": { time: "25 MIN", ing: ["Bison", "Lime", "Mint", "Fish Sauce"], steps: ["Cook meat, toss in sauce."], mod: "3oz." },
+        "Stealth Liver Sliders": { time: "30 MIN", ing: ["Bison/Liver", "Mushrooms", "Paprika"], steps: ["Grill 4m/side."], mod: "1 slider." },
+        "Chicken Satay": { time: "30 MIN", ing: ["Chicken", "Peanut Butter", "Soy Sauce"], steps: ["Grill skewers."], mod: "3oz." },
+        "Sardine Bowl": { time: "5 MIN", ing: ["Sardines", "Avocado", "Radish"], steps: ["Mash & Serve."], mod: "1.5 palms." },
+        "Squid Ink Risotto": { time: "45 MIN", ing: ["Squid", "Cauli Rice", "Ink", "Garlic"], steps: ["Simmer rice with ink."], mod: "1/2 cup." },
+        "Thai Beef Salad": { time: "30 MIN", ing: ["Steak", "Lemongrass", "Chili", "Lime"], steps: ["Grill & Slice."], mod: "2oz." }
     };
 
-    // Data for Daily Display
+    const macroTargets = { 'J': { 'HIGH CARB': { p: 160, c: 300, f: 75 }, 'LOW CARB': { p: 160, c: 80, f: 100 } }, 'S': { 'HIGH CARB': { p: 105, c: 180, f: 55 }, 'LOW CARB': { p: 105, c: 50, f: 70 } } };
+    
+    // Default macros for demo (simplified)
+    const mealMacros = { p: 40, c: 30, f: 15 }; 
+
     const weeklySchedule = [
-        { w: "REST & RECOVERY", c: "LOW CARB", j: "APOLLO GOLD", rec: ["🔫 THERABODY", "🧘 STATIC"] }, // Sun (0)
-        { w: "HEAVY LIFT", c: "HIGH CARB", j: "PLASMA FLUSH", rec: ["🧖‍♂️ SAUNA", "👢 NORMATEC"] }, // Mon (1)
-        { w: "BOXING (TRAINER)", c: "HIGH CARB", j: "TITAN RED", rec: ["🛏️ MASSAGE", "🔫 THERABODY"] }, // Tue (2)
-        { w: "REFORM & LOW LIFT", c: "LOW CARB", j: "ZENITH GREEN", rec: ["🧖‍♂️ SAUNA"] }, // Wed (3)
-        { w: "BOXING (TRAINER)", c: "HIGH CARB", j: "TITAN RED", rec: ["🛏️ MASSAGE", "👢 NORMATEC"] }, // Thu (4)
-        { w: "YOGA & REFORM", c: "LOW CARB", j: "ZENITH GREEN", rec: ["🧖‍♂️ SAUNA", "🔫 THERABODY"] }, // Fri (5)
-        { w: "CS4 HIIT", c: "HIGH CARB", j: "TITAN RED", rec: ["👢 NORMATEC"] } // Sat (6)
+        { w: "REST & RECOVERY", c: "LOW CARB", rec: {warm: "Light Stretching", gym: "Sauna (20m)", home: "Epsom Salt Bath"} }, 
+        { w: "CHEST & TRICEPS", c: "HIGH CARB", rec: {warm: "Rotator Cuff Bands", gym: "Steam Room (15m)", home: "Ice Pack on Shoulders"} }, 
+        { w: "BACK & BICEPS", c: "HIGH CARB", rec: {warm: "Lat Activation", gym: "Cold Plunge", home: "Foam Roll Lats"} }, 
+        { w: "LEGS & GLUTES", c: "HIGH CARB", rec: {warm: "Hip Openers", gym: "Sauna (15m)", home: "Theragun Quads"} }, 
+        { w: "ACTIVE REST", c: "LOW CARB", rec: {warm: "Walking", gym: "Jacuzzi", home: "Magnesium Oil"} }, 
+        { w: "SHOULDERS & ARMS", c: "HIGH CARB", rec: {warm: "Band Pull-Aparts", gym: "Steam Room", home: "Elevation"} }, 
+        { w: "GLUTE FOCUS", c: "HIGH CARB", rec: {warm: "Glute Bridges", gym: "Sauna", home: "Stretching"} }  
+    ];
+    
+    const meals = [
+        {b: "Bison Steak & Eggs", l: "Bison Laab", d: "Squid Ink Risotto"},
+        {b: "Crab Scramble", l: "Stealth Liver Sliders", d: "Thai Beef Salad"},
+        {b: "Japanese Tamagoyaki", l: "Chicken Satay", d: "Squid Ink Risotto"},
+        {b: "Sea Moss Smoothie", l: "Sardine Bowl", d: "Thai Beef Salad"},
+        {b: "Southwest Bison Scramble", l: "Bison Laab", d: "Squid Ink Risotto"},
+        {b: "Avocado Toast (Sprouted)", l: "Stealth Liver Sliders", d: "Thai Beef Salad"},
+        {b: "Sprouted Breakfast Wrap", l: "Chicken Satay", d: "Squid Ink Risotto"}
     ];
 
-    // Detailed Recovery Logic (Mapped to Day Index 0=Sun)
-    const recoveryData = [
-        // SUN: Rest
-        {
-            warmup: [{t:"None", d:"", n:"Rest Day"}],
-            gym: [{t:"None", d:"", n:"Rest Day"}],
-            home: [
-                {t:"Normatec", d:"30 min", n:"HIPS Attachment (Level 5) - Back maintenance"},
-                {t:"Thera Knee", d:"Contrast", n:"Cycle Hot/Cold for joint health"},
-                {t:"Theragun Pro", d:"Supersoft", n:"Neck/Traps gentle massage"}
-            ]
-        },
-        // MON: Heavy Lift
-        {
-            warmup: [
-                {t:"Thera Knee", d:"15 min", n:"Heat + Vibration (Commute) - Liquefy synovial fluid"},
-                {t:"Theragun Pro", d:"2 min", n:"Heat Head - Glutes/Quads activation"}
-            ],
-            gym: [
-                {t:"Cryotherapy", d:"3 min", n:"(Optional) Use if RPE > 9/10"},
-                {t:"Sauna", d:"20 min", n:"HGH Release phase"},
-                {t:"Aqua Massage", d:"10 min", n:"Mental reset"}
-            ],
-            home: [
-                {t:"Normatec", d:"45 min", n:"HIPS Attachment (Level 7) - Decompress spine"},
-                {t:"Theragun Pro", d:"Thumb", n:"Release glute trigger points"}
-            ]
-        },
-        // TUE: Boxing
-        {
-            warmup: [
-                {t:"Theragun Pro", d:"2 min", n:"Heat Head - Shoulders/Calves (Rotation prep)"}
-            ],
-            gym: [
-                {t:"Aqua Massage", d:"15 min", n:"Upper Back setting - Fix boxer's hunch"},
-                {t:"Sauna", d:"15 min", n:"Cardio Flush"}
-            ],
-            home: [
-                {t:"Normatec", d:"30 min", n:"LEGS Attachment (Level 6) - Zone 1 Boost"},
-                {t:"Theragun Pro", d:"Cold", n:"Spot treat wrists/knuckles"}
-            ]
-        },
-        // WED: Reform
-        {
-            warmup: [
-                {t:"Theragun Pro", d:"Full Body", n:"Standard Ball - Gentle Sweep"}
-            ],
-            gym: [
-                {t:"Sauna", d:"15 min", n:"Circulation only"}
-            ],
-            home: [
-                {t:"Normatec", d:"30 min", n:"LEGS Attachment (Level 4) - Maintenance"}
-            ]
-        },
-        // THU: Boxing
-        {
-            warmup: [
-                {t:"Thera Knee", d:"10 min", n:"Heat - If knees stiff"},
-                {t:"Theragun Pro", d:"Dampener", n:"Obliques - Prep core rotation"}
-            ],
-            gym: [
-                {t:"Aqua Massage", d:"15 min", n:"Neck/Traps focus"}
-            ],
-            home: [
-                {t:"Normatec", d:"30 min", n:"HIPS Attachment (Level 6) - Relieve back torque"}
-            ]
-        },
-        // FRI: Yoga
-        {
-            warmup: [
-                {t:"Theragun Pro", d:"Heat", n:"Hamstrings - Warm fascia for depth"}
-            ],
-            gym: [
-                {t:"Sauna", d:"20 min", n:"Deep heat for mobility"}
-            ],
-            home: [
-                {t:"Thera Knee", d:"20 min", n:"Contrast Mode - Flush joints"}
-            ]
-        },
-        // SAT: CS4
-        {
-            warmup: [
-                {t:"Thera Knee", d:"15 min", n:"Heat + Vibration - Mandatory Prep"}
-            ],
-            gym: [
-                {t:"Cryotherapy", d:"Recommended", n:"Systemic inflammation flush"},
-                {t:"Aqua Massage", d:"10 min", n:"Cool down"}
-            ],
-            home: [
-                {t:"Normatec", d:"60 min", n:"LEGS Attachment (Level 7) - The Big Flush"},
-                {t:"Thera Knee", d:"Cold", n:"If knees are puffy"}
-            ]
-        }
-    ];
+    let weekOffset = 0; let selectedDayIndex = 0; let selectedDateObj = new Date();
 
-    const bKeys = Object.keys(recipeDB).slice(0, 30);
-    const lKeys = Object.keys(recipeDB).slice(30, 60);
-    const dKeys = Object.keys(recipeDB).slice(60, 90);
-
-    const masterSchedule = Array.from({length: 30}, (_, i) => ({ b: bKeys[i], l: lKeys[i], d: dKeys[i] }));
-
-    let weekOffset = 0;
-    function getMonday(offset) { let d = new Date(); let day = d.getDay(), diff = d.getDate() - day + (day == 0 ? -6:1); let mon = new Date(d.setDate(diff)); mon.setDate(mon.getDate() + (offset * 7)); return mon; }
-
-    function renderTabs() {
-        const monday = getMonday(weekOffset);
-        document.getElementById('dateRangeDisplay').innerText = `${monday.toLocaleDateString('en-US', {month:'short', day:'numeric'})} — ${new Date(monday.getTime() + 6*86400000).toLocaleDateString('en-US', {month:'short', day:'numeric'})}`;
-        const tabs = document.getElementById('dayTabs'); tabs.innerHTML = '';
-        ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"].forEach((day, i) => {
-            let tabDate = new Date(monday); tabDate.setDate(monday.getDate() + i);
-            const btn = document.createElement('button');
-            const isToday = tabDate.toDateString() === new Date().toDateString();
-            btn.className = 'tab-btn' + (isToday && weekOffset === 0 ? ' active' : '');
-            btn.innerHTML = `${day}<span>${tabDate.getDate()}</span>`;
-            // Calculate actual day index (0=Sun...6=Sat) for data mapping
-            let dIndex = (i + 1) % 7; 
-            btn.onclick = () => { document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); showDay(tabDate, dIndex); };
-            tabs.appendChild(btn); if(btn.className.includes('active')) showDay(tabDate, dIndex);
-        });
+    function getMonday(offset) { 
+        let d = new Date(); let day = d.getDay(), diff = d.getDate() - day + (day == 0 ? -6:1); 
+        let mon = new Date(d.setDate(diff)); mon.setDate(mon.getDate() + (offset * 7)); return mon; 
     }
 
-    function showDay(dateObj, dayIndex) {
-        const start = new Date(2025, 0, 1);
-        const dayId = Math.floor((dateObj - start) / 86400000);
-        const schedule = weeklySchedule[dayIndex];
-        const meal = masterSchedule[dayId % 30]; 
-        const juice = juiceData[schedule.j];
-
-        document.getElementById('dayContent').innerHTML = `
-            <div class="card">
-                <div class="workout-header">
-                    <div class="workout-title-btn" onclick="openRecovery(${dayIndex})">
-                        <span>${schedule.w}</span> <span class="info-icon">ⓘ</span>
-                    </div>
-                    <span class="carb-pill" style="background:${schedule.c==='HIGH CARB'?'var(--carb-high)':'var(--carb-low)'}">${schedule.c}</span>
-                </div>
-                <div class="label">🍳 Breakfast</div>
-                <div class="value" onclick="openRecipe('${meal.b}')"><span style="color:#fff">🧔🏾‍♂️ J</span> <span style="color:var(--glute-pink)">👩🏾‍🦱 S</span> : ${meal.b}</div>
-                <div class="label">🥗 Lunch</div>
-                <div class="value" onclick="openRecipe('${meal.l}')"><span style="color:#fff">🧔🏾‍♂️ J</span> <span style="color:var(--glute-pink)">👩🏾‍🦱 S</span> : ${meal.l}</div>
-                <div class="label">🍽️ Dinner</div>
-                <div class="value" onclick="openRecipe('${meal.d}')"><span style="color:#fff">🧔🏾‍♂️ J</span> <span style="color:var(--glute-pink)">👩🏾‍🦱 S</span> : ${meal.d}</div>
-                <div class="protocol-row">
-                    <span class="proto-btn" onclick="openProtocol('Sea Moss')">🌊 SEA MOSS</span>
-                    <span class="proto-btn" onclick="openProtocol('Kombucha')">🍄 KOMBUCHA</span>
-                    <span class="proto-btn" style="color:var(--target-green); border-color:var(--target-green);">💧 1.2 GAL</span>
-                </div>
-                <div class="protocol-row" style="margin-top:8px; padding-top:0; border-top:none;">
-                    ${schedule.rec.map(r => `<span class="proto-btn rec-btn">${r}</span>`).join('')}
-                </div>
-            </div>
-            <div class="juice-card" style="border-color:${juice.color}; box-shadow:0 0 15px ${juice.color}20;" onclick="openJuicePrep('${schedule.j}')">
-                <span class="juice-badge" style="color:${juice.color}; border-color:${juice.color}">${juice.badge}</span>
-                <div class="label" style="color:${juice.color}">Kuvings Catalyst</div>
-                <div class="juice-name" style="color:#fff">${schedule.j} <span style="font-size:1.5rem">${juice.icon}</span></div>
-                <div class="juice-benefit" style="border-color:${juice.color}">${juice.text}</div>
-            </div>`;
+    function switchUser(user) { 
+        currentUser = user; 
+        document.getElementById('badgeJ').classList.toggle('active-user', user === 'J');
+        document.getElementById('badgeS').classList.toggle('active-user', user === 'S');
+        showDay(selectedDateObj, selectedDayIndex); 
     }
 
-    function generateGroceryList() {
-        const monday = getMonday(weekOffset);
-        let ingredients = {};
-        ingredients["Sea Moss Gel"] = "1 Jar";
-        ingredients["Kombucha"] = "7 Bottles";
-        ingredients["Mg Electrolytes"] = "1 Tub";
-        ingredients["Water (Gallons)"] = "8 Gallons";
-
-        for (let i = 0; i < 7; i++) {
-            let tabDate = new Date(monday); tabDate.setDate(monday.getDate() + i);
-            const start = new Date(2025, 0, 1);
-            const dayId = Math.floor((tabDate - start) / 86400000);
-            const meal = masterSchedule[dayId % 30];
-            [meal.b, meal.l, meal.d].forEach(mName => {
-                recipeDB[mName].ing.forEach(ing => {
-                    ingredients[ing] = (ingredients[ing] ? "x" : "") + "Check"; 
-                });
-            });
+    function renderTabs() { 
+        const tabsContainer = document.getElementById('dayTabs'); tabsContainer.innerHTML = '';
+        const mon = getMonday(weekOffset); const days = ['M','T','W','T','F','S','S'];
+        let start = new Date(mon); let end = new Date(mon); end.setDate(end.getDate()+6);
+        document.getElementById('dateRangeDisplay').innerText = `${start.toLocaleDateString()} - ${end.toLocaleDateString()}`;
+        for(let i=0; i<7; i++) {
+            let d = new Date(mon); d.setDate(mon.getDate() + i);
+            let btn = document.createElement('button');
+            btn.className = 'tab-btn' + (i === selectedDayIndex ? ' active' : '');
+            btn.innerHTML = `${d.getDate()}<span>${days[i]}</span>`;
+            btn.onclick = () => { selectedDayIndex = i; selectedDateObj = d; renderTabs(); showDay(d, i); };
+            tabsContainer.appendChild(btn);
         }
+    }
+
+    function getDayState(dateKey) { 
+        if (!dayState[dateKey]) dayState[dateKey] = { proto: {sea: false, kom: false, water: false} }; 
+        return dayState[dateKey]; 
+    }
+
+    function showDay(dateObj, dayIndex) { 
+        let schedIndex = (dayIndex + 1) % 7; 
+        let sched = weeklySchedule[schedIndex];
+        let mealPlan = meals[schedIndex]; 
+        const state = getDayState(dateObj.toDateString());
+        const goals = macroTargets[currentUser][sched.c];
         
-        let html = "<ul>";
-        for (const [key, val] of Object.entries(ingredients)) {
-            html += `<li style="margin-bottom:8px; border-bottom:1px solid #333; padding-bottom:4px;">${key}</li>`;
-        }
-        html += "</ul>";
-        document.getElementById('groceryList').innerHTML = html;
-        document.getElementById('groceryModal').style.display = 'block';
+        // Mock current totals
+        const currentP = 110; const currentC = 90; const currentF = 45; 
+        const pct = (val, max) => Math.min(100, (val/max)*100) + '%';
+        const pColor = currentUser === 'J' ? 'var(--accent-gold)' : 'var(--glute-pink)';
+
+        let html = `
+            <div class="workout-header" onclick="openRecovery(${schedIndex})">
+                <div class="workout-title" style="color:${pColor}">
+                    ${sched.w}
+                    <span class="workout-sub">TAP FOR RECOVERY &rarr;</span>
+                </div>
+                <div class="carb-pill" style="background:${sched.c==='HIGH CARB'?'var(--heat-red)':'#333'}">${sched.c}</div>
+            </div>
+
+            <div class="card goal-system">
+                <div class="goal-row">
+                    <div class="goal-label">PRO</div>
+                    <div class="goal-track"><div class="goal-fill" style="width:${pct(currentP, goals.p)}; background:var(--grad-pro)"></div></div>
+                    <div class="goal-val">${currentP}/${goals.p}</div>
+                </div>
+                <div class="goal-row">
+                    <div class="goal-label">CARB</div>
+                    <div class="goal-track"><div class="goal-fill" style="width:${pct(currentC, goals.c)}; background:var(--grad-carb)"></div></div>
+                    <div class="goal-val">${currentC}/${goals.c}</div>
+                </div>
+                <div class="goal-row">
+                    <div class="goal-label">FAT</div>
+                    <div class="goal-track"><div class="goal-fill" style="width:${pct(currentF, goals.f)}; background:var(--grad-fat)"></div></div>
+                    <div class="goal-val">${currentF}/${goals.f}</div>
+                </div>
+            </div>
+
+            <div class="protocol-grid">
+                <div class="proto-btn ${state.proto.sea ? 'active' : ''}" onclick="openProtocolDetail('sea')">
+                    <div class="proto-icon">🪸</div><div class="proto-name">SEA MOSS</div>
+                </div>
+                <div class="proto-btn ${state.proto.kom ? 'active' : ''}" onclick="openProtocolDetail('kom')">
+                    <div class="proto-icon">🥃</div><div class="proto-name">KOMBUCHA</div>
+                </div>
+                <div class="proto-btn ${state.proto.water ? 'active' : ''}" onclick="openProtocolDetail('water')">
+                    <div class="proto-icon">💧</div><div class="proto-name">WATER</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="meal-row" onclick="openRecipe('${mealPlan.b}')">
+                    <div class="meal-lbl">Breakfast</div>
+                    <div class="meal-val">${mealPlan.b}</div>
+                </div>
+                <div class="meal-row" onclick="openRecipe('${mealPlan.l}')">
+                    <div class="meal-lbl">Lunch</div>
+                    <div class="meal-val">${mealPlan.l}</div>
+                </div>
+                <div class="meal-row" style="margin-bottom:0;" onclick="openRecipe('${mealPlan.d}')">
+                    <div class="meal-lbl">Dinner</div>
+                    <div class="meal-val">${mealPlan.d}</div>
+                </div>
+            </div>
+        `;
+        document.getElementById('dayContent').innerHTML = html;
     }
 
-    // New Recovery Modal Function
+    // --- MODAL FUNCTIONS ---
+    let currentProto = null;
+    function openProtocolDetail(type) { 
+        currentProto = type; const data = protocolDetails[type]; 
+        document.getElementById('pdTitle').innerText = data.title; 
+        document.getElementById('pdAmount').innerText = data.amount; 
+        document.getElementById('pdTime').innerText = "Best time: " + data.time; 
+        document.getElementById('pdBenefits').innerText = data.benefits; 
+        
+        const btn = document.getElementById('pdCompleteBtn');
+        const state = getDayState(selectedDateObj.toDateString());
+        if(state.proto[type]) {
+            btn.innerText = "COMPLETED"; btn.style.background = "#333"; btn.style.color = "#666";
+        } else {
+            btn.innerText = "MARK AS DONE"; btn.style.background = "var(--target-green)"; btn.style.color = "#000";
+            btn.onclick = () => { state.proto[type] = true; closeModal('protocolDetailModal'); showDay(selectedDateObj, selectedDayIndex); };
+        }
+        openModal('protocolDetailModal'); 
+    }
+
     function openRecovery(idx) {
-        const data = recoveryData[idx];
-        const title = weeklySchedule[idx].w;
-        document.getElementById('recTitle').innerText = title + " RECOVERY";
-
-        // Helper to build list
-        const buildList = (arr) => arr.map(item => `
-            <div class="rec-item">
-                <div class="rec-tool">${item.t} ${item.d ? `<span style="float:right; opacity:0.7; font-size:0.8em">${item.d}</span>` : ''}</div>
-                <div class="rec-detail">${item.n}</div>
-            </div>
-        `).join('');
-
-        document.getElementById('recWarmup').innerHTML = buildList(data.warmup);
-        document.getElementById('recGym').innerHTML = buildList(data.gym);
-        document.getElementById('recHome').innerHTML = buildList(data.home);
-
+        let sched = weeklySchedule[idx];
+        document.getElementById('recTitle').innerText = sched.w;
+        // Helper to format
+        const fmt = (txt) => `<div class="rec-item">${txt.split('(')[0]}</div><div class="rec-desc">${txt.split('(')[1] ? '('+txt.split('(')[1] : ''}</div>`;
+        document.getElementById('recWarmup').innerHTML = fmt(sched.rec.warm);
+        document.getElementById('recGym').innerHTML = fmt(sched.rec.gym);
+        document.getElementById('recHome').innerHTML = fmt(sched.rec.home);
         openModal('recoveryModal');
     }
 
     function openRecipe(n) { 
-        let r = recipeDB[n];
+        let r = recipeDB[n] || recipeDB["Bison Steak & Eggs"]; 
         document.getElementById('modalTitle').innerText = n; 
-        document.getElementById('modalIng').innerHTML = r.ing.map(i => `<li>• ${i}</li>`).join(''); 
+        document.getElementById('modalTimeBadge').innerText = r.time;
+        document.getElementById('modalIng').innerHTML = r.ing.map(i => `<li>${i}</li>`).join('');
         document.getElementById('modalSteps').innerHTML = r.steps.map(s => `<p>${s}</p>`).join(''); 
         document.getElementById('modalMod').innerText = r.mod; 
-        document.getElementById('modBox').style.display = 'block'; 
         openModal('recipeModal'); 
     }
-    function openJuicePrep(n) { const j = juiceData[n]; document.getElementById('jTitle').innerText = n; document.getElementById('jPrep').innerHTML = j.prep.map(s => `<p>• ${s}</p>`).join(''); openModal('juiceModal'); }
-    function openProtocol(n) { document.getElementById('protoTitle').innerText = n; document.getElementById('protoBody').innerHTML = protocolData[n]; openModal('protocolModal'); }
+
+    function generateGroceryList() { 
+        document.getElementById('groceryList').innerHTML = "<ul><li>6x 8oz Bison Steaks</li><li>2 Dozen Pasture Eggs</li><li>1 Bag Spinach</li><li>1 Bag Cauliflower Rice</li><li>1 Jar Sea Moss</li></ul>";
+        openModal('groceryModal');
+    }
+
     function openModal(id) { document.getElementById(id).style.display = 'block'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
     function changeWeek(dir) { weekOffset += dir; renderTabs(); }
-    function resetToCurrent() { weekOffset = 0; renderTabs(); }
-    window.onload = renderTabs;
+    function resetToCurrent() { weekOffset = 0; renderTabs(); showDay(new Date(), new Date().getDay() === 0 ? 6 : new Date().getDay() - 1); }
+
+    window.onload = function() { 
+        let d = new Date(); let dayIndex = d.getDay() === 0 ? 6 : d.getDay() - 1; 
+        selectedDateObj = d; selectedDayIndex = dayIndex;
+        renderTabs(); showDay(d, dayIndex); 
+    };
 </script>
 </body>
-</html> html>
+</html>
