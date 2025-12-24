@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Centurion | v189 Macro Logic</title>
+    <title>The Centurion | v191 Calorie & Shake Update</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -11,7 +11,7 @@
             --accent-gold: #D4AF37; --accent-silver: #444444; --glute-pink: #d63384;
             --carb-high: #ff9100; --carb-low: #00b0ff; --target-green: #2ecc71;
             --recovery-purple: #9b59b6; --heat-red: #e74c3c; --ice-blue: #3498db;
-            --macro-pro: #e74c3c; --macro-carb: #f39c12; --macro-fat: #3498db;
+            --macro-pro: #e74c3c; --macro-carb: #f39c12; --macro-fat: #3498db; --macro-cal: #9b59b6;
         }
         body { font-family: 'Inter', sans-serif; background-color: var(--bg-dark); color: var(--text-main); margin: 0; padding: 20px; -webkit-tap-highlight-color: transparent; }
         .container { max-width: 1000px; width: 100%; margin: 0 auto; position: relative; }
@@ -48,6 +48,7 @@
         .p-fill { background: var(--macro-pro); }
         .c-fill { background: var(--macro-carb); }
         .f-fill { background: var(--macro-fat); }
+        .cal-fill { background: var(--macro-cal); }
         
         .label { color: var(--accent-silver); font-size: 0.6rem; text-transform: uppercase; font-weight: 700; margin-bottom: 5px; letter-spacing: 1px; }
         .value { font-size: 1.1rem; margin-bottom: 15px; color: #fff; cursor: pointer; border-bottom: 1px solid transparent; display: flex; align-items: center; gap: 8px; }
@@ -76,13 +77,19 @@
         .stat-val { font-size: 1.1rem; color: #fff; font-weight: 800; }
         .stat-lbl { font-size: 0.55rem; color: #666; text-transform: uppercase; margin-top: 5px; font-weight: 700; }
         
-        .bar-container { margin: 25px 0; background: #0a0a0a; padding: 15px; border-radius: 8px; border: 1px solid #222; position: relative; }
+        /* Bar Graph Styles */
+        .bar-container { margin: 25px 0; background: #0a0a0a; padding: 15px; border-radius: 8px; border: 1px solid #222; position: relative; padding-top: 25px; }
         .bar-label-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 0.65rem; color: #888; text-transform: uppercase; font-weight: 700; }
         .bar-bg { background: #151515; height: 18px; border-radius: 2px; position: relative; border: 1px solid #222; }
         .bar-curr { position: absolute; left: 0; top: 0; height: 100%; z-index: 2; border-right: 1px solid rgba(255,255,255,0.3); }
-        .marker { position: absolute; top: -12px; bottom: -12px; width: 2px; z-index: 4; }
-        .marker-goal { background: var(--target-green); box-shadow: 0 0 10px var(--target-green); }
-        .marker-label { position: absolute; top: -28px; transform: translateX(-50%); font-size: 0.55rem; font-weight: 900; background: #000; padding: 2px 5px; border-radius: 2px; white-space: nowrap; border: 1px solid #333; }
+        .marker { position: absolute; top: -12px; bottom: -12px; width: 2px; }
+        .marker-label { position: absolute; top: -25px; transform: translateX(-50%); font-size: 0.55rem; font-weight: 900; background: #000; padding: 2px 5px; border-radius: 2px; white-space: nowrap; border: 1px solid #333; }
+        .marker-goal { background: var(--target-green); box-shadow: 0 0 10px var(--target-green); z-index: 10; }
+        .marker-goal .marker-label { color: var(--target-green); border-color: var(--target-green); }
+        .marker-past { background: #555; z-index: 5; height: 140%; top: -20%; }
+        .marker-past .marker-label { color: #777; border-color: #333; top: -28px; }
+        .marker-now { background: #fff; z-index: 15; height: 140%; top: -20%; box-shadow: 0 0 8px rgba(255,255,255,0.4); }
+        .marker-now .marker-label { color: #fff; border-color: #fff; top: -28px; }
         
         .rec-section { margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #222; }
         .rec-header { font-size: 0.8rem; font-weight: 800; text-transform: uppercase; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
@@ -92,13 +99,18 @@
         .rec-item { background: #111; padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #222; }
         .rec-tool { color: #fff; font-weight: 700; font-size: 0.9rem; margin-bottom: 4px; }
         .rec-detail { color: #888; font-size: 0.8rem; }
+        
+        .shake-option { background: #111; border: 1px solid #333; padding: 20px; border-radius: 8px; margin-bottom: 10px; cursor: pointer; transition: 0.2s; display: flex; justify-content: space-between; align-items: center; }
+        .shake-option:hover { border-color: var(--accent-gold); background: #1a1a1a; }
+        .shake-name { font-weight: 800; color: #fff; font-size: 0.9rem; }
+        .shake-macros { font-size: 0.75rem; color: #888; margin-top: 5px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <header>
-        <div class="version-tag">VER 189.0</div>
+        <div class="version-tag">VER 191.0</div>
         <h1>THE CENTURION</h1>
         <div class="profile-badges">
             <div id="badgeJ" class="badge active-user" onclick="switchUser('J')">🧔🏾‍♂️ JERMAINE</div>
@@ -126,7 +138,27 @@
             <div class="stat-box"><div class="stat-val">20.7%</div><div class="stat-lbl">Body Fat %</div></div>
             <div class="stat-box"><div class="stat-val">1996</div><div class="stat-lbl">BMR (kcal)</div></div>
         </div>
-        <div style="font-size:0.8rem; color:#888; margin-top:15px; text-align:center;">Daily Goal: ~220g Protein.</div>
+        <div class="goal-section">
+            <div style="color:var(--target-green); font-size:0.8rem; font-weight:800; text-transform:uppercase; margin-bottom:15px; text-align:center; letter-spacing:2px;">90-DAY CENTURION TARGET</div>
+            <div class="bar-container">
+                <div class="bar-label-row"><span>Body Fat % Goal</span><span style="color:var(--target-green);">15.0%</span></div>
+                <div class="bar-bg">
+                    <div class="bar-curr" style="width: 20.7%; background: var(--accent-gold);"></div>
+                    <div class="marker marker-past" style="left: 24%;"><span class="marker-label">START</span></div>
+                    <div class="marker marker-now" style="left: 20.7%;"><span class="marker-label">NOW</span></div>
+                    <div class="marker marker-goal" style="left: 15.0%;"><span class="marker-label">GOAL</span></div>
+                </div>
+            </div>
+            <div class="bar-container">
+                <div class="bar-label-row"><span>Muscle Mass Goal</span><span style="color:var(--target-green);">102.0 lbs</span></div>
+                <div class="bar-bg">
+                    <div class="bar-curr" style="width: 89.8%; background: var(--accent-gold);"></div>
+                    <div class="marker marker-past" style="left: 87.2%;"><span class="marker-label">START</span></div>
+                    <div class="marker marker-now" style="left: 89.8%;"><span class="marker-label">NOW</span></div>
+                    <div class="marker marker-goal" style="left: 92.7%;"><span class="marker-label">GOAL</span></div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -140,7 +172,27 @@
             <div class="stat-box"><div class="stat-val">36.1%</div><div class="stat-lbl">Body Fat %</div></div>
             <div class="stat-box"><div class="stat-val">1332</div><div class="stat-lbl">BMR (kcal)</div></div>
         </div>
-        <div style="font-size:0.8rem; color:#888; margin-top:15px; text-align:center;">Daily Goal: ~140g Protein.</div>
+        <div class="goal-section">
+            <div style="color:var(--target-green); font-size:0.8rem; font-weight:800; text-transform:uppercase; margin-bottom:15px; text-align:center; letter-spacing:2px;">90-DAY CENTURION TARGET</div>
+            <div class="bar-container">
+                <div class="bar-label-row"><span>Body Fat % Goal</span><span style="color:var(--target-green);">28.0%</span></div>
+                <div class="bar-bg">
+                    <div class="bar-curr" style="width: 36.1%; background: var(--glute-pink);"></div>
+                    <div class="marker marker-past" style="left: 39%;"><span class="marker-label">START</span></div>
+                    <div class="marker marker-now" style="left: 36.1%;"><span class="marker-label">NOW</span></div>
+                    <div class="marker marker-goal" style="left: 28.0%;"><span class="marker-label">GOAL</span></div>
+                </div>
+            </div>
+            <div class="bar-container">
+                <div class="bar-label-row"><span>Muscle Mass Goal</span><span style="color:var(--target-green);">52.0 lbs</span></div>
+                <div class="bar-bg">
+                    <div class="bar-curr" style="width: 89.4%; background: var(--glute-pink);"></div>
+                    <div class="marker marker-past" style="left: 85.4%;"><span class="marker-label">START</span></div>
+                    <div class="marker marker-now" style="left: 89.4%;"><span class="marker-label">NOW</span></div>
+                    <div class="marker marker-goal" style="left: 94.5%;"><span class="marker-label">GOAL</span></div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -150,21 +202,34 @@
 <div id="groceryModal" class="modal"><div class="modal-content"><span onclick="closeModal('groceryModal')" style="float:right; cursor:pointer;">&times;</span><h2 style="color:var(--target-green); margin-bottom:20px;">🛒 WEEKLY SHOPPING LIST</h2><div id="groceryList" style="color:#ccc; line-height:1.6; font-size:0.9rem;"></div></div></div>
 <div id="recoveryModal" class="modal"><div class="modal-content"><span onclick="closeModal('recoveryModal')" style="float:right; cursor:pointer;">&times;</span><h2 id="recTitle" style="color:#fff; margin-bottom:5px;"></h2><p style="color:#888; font-size:0.8rem; margin-bottom:25px; font-style:italic;">Daily Recovery Protocol</p><div class="rec-section"><div class="rec-header warmup">🔥 PRE-WORKOUT (HOME/CAR)</div><div id="recWarmup"></div></div><div class="rec-section"><div class="rec-header gym">💧 GYM AMENITIES (IN-SHAPE)</div><div id="recGym"></div></div><div class="rec-section" style="border-bottom:none;"><div class="rec-header home">🏠 HOME RESTORATION</div><div id="recHome"></div></div></div></div>
 
-<script>
-    let currentUser = 'J'; // Default to Jermaine
+<div id="shakeModal" class="modal">
+    <div class="modal-content">
+        <span onclick="closeModal('shakeModal')" style="float:right; cursor:pointer;">&times;</span>
+        <h2 style="color:var(--accent-gold); margin-bottom:20px;">SELECT PROTEIN SOURCE</h2>
+        <div id="shakeOptionsList"></div>
+    </div>
+</div>
 
-    // Define Daily Macro Targets
+<script>
+    let currentUser = 'J'; 
+    let selectedShake = null; // Track shake selection
+
     const macroTargets = {
         'J': { 
-            // 217 lbs target: ~220g Protein
-            'HIGH CARB': { p: 230, c: 300, f: 75 },
-            'LOW CARB': { p: 230, c: 80, f: 100 }
+            'HIGH CARB': { p: 230, c: 300, f: 75, k: 2800 },
+            'LOW CARB': { p: 230, c: 80, f: 100, k: 2140 }
         },
         'S': { 
-            // 141 lbs target: ~140g Protein
-            'HIGH CARB': { p: 145, c: 180, f: 55 },
-            'LOW CARB': { p: 145, c: 50, f: 70 }
+            'HIGH CARB': { p: 145, c: 180, f: 55, k: 1800 },
+            'LOW CARB': { p: 145, c: 50, f: 70, k: 1400 }
         }
+    };
+
+    const shakeDB = {
+        "Pea Protein ISO": { p: 25, c: 2, f: 2, k: 120 },
+        "Peanut Protein": { p: 8, c: 5, f: 2, k: 70 },
+        "Centurion Blend (Pea+Peanut)": { p: 33, c: 7, f: 4, k: 190 },
+        "Double Scoop Pea": { p: 50, c: 4, f: 4, k: 240 }
     };
 
     const juiceData = {
@@ -176,104 +241,103 @@
 
     const protocolData = { "Sea Moss": "92 minerals + Iodine.", "Mg Electrolytes": "CNS recovery.", "Kombucha": "Gut lining." };
 
-    // UPDATED RECIPES WITH MACRO DATA (Est. based on ingredients)
-    // Structure: macros: { J: {p,c,f}, S: {p,c,f} }
+    // RECIPES (Macros now include estimated 'k' Calories)
     const recipeDB = {
         // BREAKFASTS
-        "Bison Steak & Eggs": { ing: ["6oz Bison Sirloin", "2 Eggs", "Tomato"], steps: ["Sear sirloin 3m/side."], mod: "Sophia: 3oz bison.", macros: { J:{p:65,c:2,f:28}, S:{p:35,c:2,f:18} } },
-        "Crab Scramble": { ing: ["4oz Crab", "3 Egg Whites", "Chives"], steps: ["Fold crab into whisked eggs."], mod: "Sophia: 3oz crab.", macros: { J:{p:45,c:1,f:5}, S:{p:30,c:1,f:3} } },
-        "Japanese Tamagoyaki": { ing: ["4 Eggs", "Dashi", "Coconut Aminos"], steps: ["Whisk eggs/dashi."], mod: "Sophia: 1.5 palms.", macros: { J:{p:28,c:4,f:20}, S:{p:18,c:3,f:12} } },
-        "Sea Moss Smoothie": { ing: ["2tbsp Sea Moss", "Spinach", "Berries"], steps: ["Blend on high."], mod: "Add 1 scoop collagen.", macros: { J:{p:25,c:35,f:5}, S:{p:25,c:30,f:5} } },
-        "Southwest Bison Scramble": { ing: ["4oz Bison", "3 Egg Whites", "Poblanos"], steps: ["Brown bison."], mod: "Sophia: 3oz bison.", macros: { J:{p:48,c:5,f:12}, S:{p:32,c:4,f:8} } },
-        "Protein Berry Bowl": { ing: ["1 scoop Whey", "Berries", "Chia"], steps: ["Blend base."], mod: "Sophia: 1.5 palms.", macros: { J:{p:35,c:25,f:10}, S:{p:25,c:20,f:8} } },
-        "Chicken Apple Sausage Scramble": { ing: ["1 Chicken Sausage", "3 Eggs", "Apple"], steps: ["Sauté sausage."], mod: "Sophia: 1/2 sausage.", macros: { J:{p:38,c:12,f:22}, S:{p:25,c:8,f:15} } },
-        "Bison & Poached Eggs": { ing: ["6oz Bison Patty", "2 Poached Eggs"], steps: ["Grill patty."], mod: "Sophia: 3oz patty.", macros: { J:{p:62,c:1,f:30}, S:{p:35,c:1,f:20} } },
-        "Omelet Du Fromage": { ing: ["3 Eggs", "Goat Cheese", "Chives"], steps: ["French fold omelet."], mod: "Sophia: 2 eggs.", macros: { J:{p:26,c:2,f:24}, S:{p:18,c:1,f:16} } },
-        "Smoked Salmon Scramble": { ing: ["4oz Smoked Salmon", "3 Eggs", "Dill"], steps: ["Fold salmon into eggs."], mod: "Sophia: 3oz salmon.", macros: { J:{p:40,c:1,f:22}, S:{p:28,c:1,f:15} } },
-        "Hard Boiled Scotch Egg": { ing: ["4oz Bison", "1 Boiled Egg"], steps: ["Wrap egg in bison."], mod: "Sophia: 1/2 portion.", macros: { J:{p:45,c:5,f:20}, S:{p:22,c:3,f:10} } },
-        "Green Omelet": { ing: ["3 Eggs", "Spinach", "Kale Pesto"], steps: ["Blend greens in eggs."], mod: "Sophia: 2 eggs.", macros: { J:{p:24,c:3,f:20}, S:{p:16,c:2,f:14} } },
-        "Chia Pudding": { ing: ["1/4c Chia", "Almond Milk", "Protein"], steps: ["Soak overnight."], mod: "Sophia: 1.5 palms.", macros: { J:{p:30,c:20,f:18}, S:{p:20,c:15,f:12} } },
-        "Egg White Frittata": { ing: ["1c Egg Whites", "Bison Sausage"], steps: ["Bake 350F."], mod: "Sophia: 1 slice.", macros: { J:{p:40,c:5,f:10}, S:{p:25,c:3,f:6} } },
-        "Sea Moss Fruit Bowl": { ing: ["2tbsp Sea Moss", "Mango", "Kiwi"], steps: ["Mix gel with fruit."], mod: "Add protein side.", macros: { J:{p:5,c:45,f:0}, S:{p:5,c:30,f:0} } },
-        "Turkey Bacon & Eggs": { ing: ["4 slices Turkey Bacon", "3 Eggs"], steps: ["Crisp bacon."], mod: "Sophia: 2 slices.", macros: { J:{p:35,c:2,f:18}, S:{p:22,c:1,f:12} } },
-        "Spinach Mushroom Scramble": { ing: ["3 Eggs", "Spinach", "Shiitake"], steps: ["Sauté veg."], mod: "Sophia: 2 eggs.", macros: { J:{p:22,c:5,f:15}, S:{p:14,c:3,f:10} } },
-        "Greek Yogurt Parfait": { ing: ["1c Greek Yogurt", "Walnuts", "Honey"], steps: ["Layer ingredients."], mod: "Sophia: 1/2 cup.", macros: { J:{p:25,c:25,f:10}, S:{p:14,c:15,f:6} } },
-        "Bison Breakfast Burrito Bowl": { ing: ["4oz Bison", "Black Beans", "Salsa"], steps: ["Brown bison."], mod: "Sophia: 2oz bison.", macros: { J:{p:45,c:30,f:12}, S:{p:28,c:20,f:8} } },
-        "Cottage Cheese Bowl": { ing: ["1c Cottage Cheese", "Peaches"], steps: ["Serve chilled."], mod: "Sophia: 1/2 cup.", macros: { J:{p:28,c:15,f:5}, S:{p:14,c:10,f:3} } },
-        "Avocado Toast (GF) & Egg": { ing: ["1 slice GF Bread", "1/2 Avocado", "1 Egg"], steps: ["Toast bread."], mod: "Sophia: 1/2 avocado.", macros: { J:{p:12,c:25,f:18}, S:{p:12,c:25,f:18} } },
-        "Shakshuka (Bison)": { ing: ["4oz Bison", "Tomato Sauce", "2 Eggs"], steps: ["Poach eggs in sauce."], mod: "Sophia: 2oz bison.", macros: { J:{p:48,c:10,f:20}, S:{p:28,c:8,f:14} } },
-        "Quinoa Breakfast Bowl": { ing: ["1/2c Quinoa", "Almond Milk", "Berries"], steps: ["Simmer quinoa."], mod: "Sophia: 1/4 cup.", macros: { J:{p:12,c:45,f:6}, S:{p:8,c:25,f:4} } },
-        "Steak & Spinach (Leftover)": { ing: ["4oz Steak", "Spinach"], steps: ["Reheat steak."], mod: "Sophia: 2oz steak.", macros: { J:{p:35,c:2,f:15}, S:{p:18,c:2,f:8} } },
-        "Protein Pancakes": { ing: ["1 Banana", "2 Eggs", "Protein"], steps: ["Fry like pancakes."], mod: "Sophia: 2 cakes.", macros: { J:{p:35,c:35,f:10}, S:{p:25,c:25,f:8} } },
-        "Overnight Oats (GF)": { ing: ["1/2c Oats", "Chia", "Almond Milk"], steps: ["Soak overnight."], mod: "Sophia: 1/4 cup.", macros: { J:{p:10,c:35,f:8}, S:{p:6,c:18,f:5} } },
-        "Acai Bowl": { ing: ["1 pk Acai", "Spinach", "Protein"], steps: ["Blend frozen."], mod: "Sophia: 1/2 bowl.", macros: { J:{p:25,c:40,f:8}, S:{p:15,c:25,f:5} } },
-        "Breakfast Salad": { ing: ["Arugula", "2 Boiled Eggs", "Bacon"], steps: ["Toss greens."], mod: "Sophia: 1 egg.", macros: { J:{p:20,c:5,f:18}, S:{p:12,c:3,f:12} } },
-        "Tofu Scramble": { ing: ["1 block Tofu", "Turmeric", "Peppers"], steps: ["Sauté tofu."], mod: "Sophia: 1/2 block.", macros: { J:{p:28,c:10,f:12}, S:{p:14,c:6,f:6} } },
-        "Bone Broth & Egg": { ing: ["1c Bone Broth", "1 Egg"], steps: ["Drop egg in broth."], mod: "Sophia: 1 cup.", macros: { J:{p:16,c:1,f:5}, S:{p:16,c:1,f:5} } },
+        "Bison Steak & Eggs": { ing: ["6oz Bison Sirloin", "2 Eggs", "Tomato"], steps: ["Sear sirloin 3m/side."], mod: "Sophia: 3oz bison.", macros: { J:{p:65,c:2,f:28,k:520}, S:{p:35,c:2,f:18,k:310} } },
+        "Crab Scramble": { ing: ["4oz Crab", "3 Egg Whites", "Chives"], steps: ["Fold crab into whisked eggs."], mod: "Sophia: 3oz crab.", macros: { J:{p:45,c:1,f:5,k:230}, S:{p:30,c:1,f:3,k:150} } },
+        "Japanese Tamagoyaki": { ing: ["4 Eggs", "Dashi", "Coconut Aminos"], steps: ["Whisk eggs/dashi."], mod: "Sophia: 1.5 palms.", macros: { J:{p:28,c:4,f:20,k:310}, S:{p:18,c:3,f:12,k:190} } },
+        "Sea Moss Smoothie": { ing: ["2tbsp Sea Moss", "Spinach", "Berries"], steps: ["Blend on high."], mod: "Add 1 scoop collagen.", macros: { J:{p:25,c:35,f:5,k:285}, S:{p:25,c:30,f:5,k:265} } },
+        "Southwest Bison Scramble": { ing: ["4oz Bison", "3 Egg Whites", "Poblanos"], steps: ["Brown bison."], mod: "Sophia: 3oz bison.", macros: { J:{p:48,c:5,f:12,k:320}, S:{p:32,c:4,f:8,k:216} } },
+        "Protein Berry Bowl": { ing: ["1 scoop Whey", "Berries", "Chia"], steps: ["Blend base."], mod: "Sophia: 1.5 palms.", macros: { J:{p:35,c:25,f:10,k:330}, S:{p:25,c:20,f:8,k:252} } },
+        "Chicken Apple Sausage Scramble": { ing: ["1 Chicken Sausage", "3 Eggs", "Apple"], steps: ["Sauté sausage."], mod: "Sophia: 1/2 sausage.", macros: { J:{p:38,c:12,f:22,k:398}, S:{p:25,c:8,f:15,k:267} } },
+        "Bison & Poached Eggs": { ing: ["6oz Bison Patty", "2 Poached Eggs"], steps: ["Grill patty."], mod: "Sophia: 3oz patty.", macros: { J:{p:62,c:1,f:30,k:522}, S:{p:35,c:1,f:20,k:324} } },
+        "Omelet Du Fromage": { ing: ["3 Eggs", "Goat Cheese", "Chives"], steps: ["French fold omelet."], mod: "Sophia: 2 eggs.", macros: { J:{p:26,c:2,f:24,k:328}, S:{p:18,c:1,f:16,k:220} } },
+        "Smoked Salmon Scramble": { ing: ["4oz Smoked Salmon", "3 Eggs", "Dill"], steps: ["Fold salmon into eggs."], mod: "Sophia: 3oz salmon.", macros: { J:{p:40,c:1,f:22,k:362}, S:{p:28,c:1,f:15,k:251} } },
+        "Hard Boiled Scotch Egg": { ing: ["4oz Bison", "1 Boiled Egg"], steps: ["Wrap egg in bison."], mod: "Sophia: 1/2 portion.", macros: { J:{p:45,c:5,f:20,k:380}, S:{p:22,c:3,f:10,k:190} } },
+        "Green Omelet": { ing: ["3 Eggs", "Spinach", "Kale Pesto"], steps: ["Blend greens in eggs."], mod: "Sophia: 2 eggs.", macros: { J:{p:24,c:3,f:20,k:288}, S:{p:16,c:2,f:14,k:198} } },
+        "Chia Pudding": { ing: ["1/4c Chia", "Almond Milk", "Protein"], steps: ["Soak overnight."], mod: "Sophia: 1.5 palms.", macros: { J:{p:30,c:20,f:18,k:362}, S:{p:20,c:15,f:12,k:248} } },
+        "Egg White Frittata": { ing: ["1c Egg Whites", "Bison Sausage"], steps: ["Bake 350F."], mod: "Sophia: 1 slice.", macros: { J:{p:40,c:5,f:10,k:270}, S:{p:25,c:3,f:6,k:166} } },
+        "Sea Moss Fruit Bowl": { ing: ["2tbsp Sea Moss", "Mango", "Kiwi"], steps: ["Mix gel with fruit."], mod: "Add protein side.", macros: { J:{p:5,c:45,f:0,k:200}, S:{p:5,c:30,f:0,k:140} } },
+        "Turkey Bacon & Eggs": { ing: ["4 slices Turkey Bacon", "3 Eggs"], steps: ["Crisp bacon."], mod: "Sophia: 2 slices.", macros: { J:{p:35,c:2,f:18,k:310}, S:{p:22,c:1,f:12,k:200} } },
+        "Spinach Mushroom Scramble": { ing: ["3 Eggs", "Spinach", "Shiitake"], steps: ["Sauté veg."], mod: "Sophia: 2 eggs.", macros: { J:{p:22,c:5,f:15,k:243}, S:{p:14,c:3,f:10,k:158} } },
+        "Greek Yogurt Parfait": { ing: ["1c Greek Yogurt", "Walnuts", "Honey"], steps: ["Layer ingredients."], mod: "Sophia: 1/2 cup.", macros: { J:{p:25,c:25,f:10,k:290}, S:{p:14,c:15,f:6,k:170} } },
+        "Bison Breakfast Burrito Bowl": { ing: ["4oz Bison", "Black Beans", "Salsa"], steps: ["Brown bison."], mod: "Sophia: 2oz bison.", macros: { J:{p:45,c:30,f:12,k:408}, S:{p:28,c:20,f:8,k:264} } },
+        "Cottage Cheese Bowl": { ing: ["1c Cottage Cheese", "Peaches"], steps: ["Serve chilled."], mod: "Sophia: 1/2 cup.", macros: { J:{p:28,c:15,f:5,k:217}, S:{p:14,c:10,f:3,k:123} } },
+        "Avocado Toast (GF) & Egg": { ing: ["1 slice GF Bread", "1/2 Avocado", "1 Egg"], steps: ["Toast bread."], mod: "Sophia: 1/2 avocado.", macros: { J:{p:12,c:25,f:18,k:310}, S:{p:12,c:25,f:18,k:310} } },
+        "Shakshuka (Bison)": { ing: ["4oz Bison", "Tomato Sauce", "2 Eggs"], steps: ["Poach eggs in sauce."], mod: "Sophia: 2oz bison.", macros: { J:{p:48,c:10,f:20,k:412}, S:{p:28,c:8,f:14,k:270} } },
+        "Quinoa Breakfast Bowl": { ing: ["1/2c Quinoa", "Almond Milk", "Berries"], steps: ["Simmer quinoa."], mod: "Sophia: 1/4 cup.", macros: { J:{p:12,c:45,f:6,k:282}, S:{p:8,c:25,f:4,k:168} } },
+        "Steak & Spinach (Leftover)": { ing: ["4oz Steak", "Spinach"], steps: ["Reheat steak."], mod: "Sophia: 2oz steak.", macros: { J:{p:35,c:2,f:15,k:283}, S:{p:18,c:2,f:8,k:152} } },
+        "Protein Pancakes": { ing: ["1 Banana", "2 Eggs", "Protein"], steps: ["Fry like pancakes."], mod: "Sophia: 2 cakes.", macros: { J:{p:35,c:35,f:10,k:370}, S:{p:25,c:25,f:8,k:272} } },
+        "Overnight Oats (GF)": { ing: ["1/2c Oats", "Chia", "Almond Milk"], steps: ["Soak overnight."], mod: "Sophia: 1/4 cup.", macros: { J:{p:10,c:35,f:8,k:252}, S:{p:6,c:18,f:5,k:141} } },
+        "Acai Bowl": { ing: ["1 pk Acai", "Spinach", "Protein"], steps: ["Blend frozen."], mod: "Sophia: 1/2 bowl.", macros: { J:{p:25,c:40,f:8,k:332}, S:{p:15,c:25,f:5,k:205} } },
+        "Breakfast Salad": { ing: ["Arugula", "2 Boiled Eggs", "Bacon"], steps: ["Toss greens."], mod: "Sophia: 1 egg.", macros: { J:{p:20,c:5,f:18,k:262}, S:{p:12,c:3,f:12,k:168} } },
+        "Tofu Scramble": { ing: ["1 block Tofu", "Turmeric", "Peppers"], steps: ["Sauté tofu."], mod: "Sophia: 1/2 block.", macros: { J:{p:28,c:10,f:12,k:260}, S:{p:14,c:6,f:6,k:134} } },
+        "Bone Broth & Egg": { ing: ["1c Bone Broth", "1 Egg"], steps: ["Drop egg in broth."], mod: "Sophia: 1 cup.", macros: { J:{p:16,c:1,f:5,k:113}, S:{p:16,c:1,f:5,k:113} } },
 
         // LUNCHES
-        "Sardine Bowl": { ing: ["1 tin Sardines", "Avocado", "Lemon"], steps: ["Rinse sardines."], mod: "Sophia: 1.5 palms.", macros: { J:{p:25,c:5,f:20}, S:{p:18,c:3,f:15} } },
-        "Bison Laab": { ing: ["6oz Bison", "Lime", "Fish Sauce"], steps: ["Brown bison."], mod: "Sophia: 3oz.", macros: { J:{p:45,c:5,f:12}, S:{p:22,c:3,f:6} } },
-        "Stealth Liver Sliders": { ing: ["5oz Bison", "1oz Liver", "Paprika"], steps: ["Grill 4m/side."], mod: "Sophia: 1 slider.", macros: { J:{p:48,c:2,f:15}, S:{p:24,c:1,f:8} } },
-        "Crab Tower": { ing: ["4oz Crab", "Mango", "Cucumber"], steps: ["Layer ingredients."], mod: "Sophia: 3oz crab.", macros: { J:{p:25,c:15,f:2}, S:{p:18,c:10,f:2} } },
-        "Sriracha Bison Tacos": { ing: ["5oz Bison", "Yogurt", "Sriracha"], steps: ["Brown meat."], mod: "Sophia: 3oz.", macros: { J:{p:42,c:8,f:12}, S:{p:24,c:5,f:6} } },
-        "Chicken Satay": { ing: ["6oz Chicken Breast", "Peanut Sauce", "Cucumber"], steps: ["Grill skewers."], mod: "Sophia: 3oz.", macros: { J:{p:50,c:6,f:10}, S:{p:25,c:4,f:5} } },
-        "Octopus Salad": { ing: ["6oz Boiled Octopus", "Potato", "Paprika"], steps: ["Slice octopus."], mod: "Sophia: 3oz.", macros: { J:{p:40,c:25,f:5}, S:{p:20,c:15,f:3} } },
-        "Shrimp Ceviche": { ing: ["6oz Shrimp", "Lime", "Tomato"], steps: ["Cure in lime."], mod: "Sophia: 3oz.", macros: { J:{p:35,c:8,f:3}, S:{p:18,c:5,f:2} } },
-        "Sardine Cucumber Boats": { ing: ["1 tin Sardines", "Cucumber", "Dill"], steps: ["Fill cucumbers."], mod: "Sophia: 1.5 palms.", macros: { J:{p:25,c:4,f:15}, S:{p:18,c:2,f:10} } },
-        "Bison Lettuce Cups": { ing: ["6oz Bison", "Water Chestnuts"], steps: ["Stir fry meat."], mod: "Sophia: 3oz.", macros: { J:{p:45,c:10,f:12}, S:{p:22,c:6,f:6} } },
-        "Tuna Tartare": { ing: ["6oz Sushi Tuna", "Sesame Oil"], steps: ["Dice tuna."], mod: "Sophia: 3oz.", macros: { J:{p:42,c:2,f:10}, S:{p:21,c:2,f:5} } },
-        "Salmon Salad": { ing: ["6oz Canned Salmon", "Celery", "Mayo"], steps: ["Mix all."], mod: "Sophia: 3oz.", macros: { J:{p:38,c:2,f:18}, S:{p:19,c:1,f:10} } },
-        "Ostrich Carpaccio": { ing: ["4oz Ostrich", "Capers", "Olive Oil"], steps: ["Slice raw."], mod: "Sophia: 2oz.", macros: { J:{p:28,c:1,f:8}, S:{p:14,c:1,f:4} } },
-        "Bison Kofta": { ing: ["6oz Bison", "Cumin", "Coriander"], steps: ["Grill skewers."], mod: "Sophia: 3oz.", macros: { J:{p:45,c:5,f:15}, S:{p:22,c:3,f:8} } },
-        "Crab & Avocado Salad": { ing: ["4oz Crab", "Avocado", "Grapefruit"], steps: ["Toss salad."], mod: "Sophia: 3oz.", macros: { J:{p:25,c:12,f:15}, S:{p:18,c:8,f:10} } },
-        "Spicy Sardine Wrap": { ing: ["1 tin Sardines", "Collard Leaf"], steps: ["Wrap in leaf."], mod: "Sophia: 1.5 palms.", macros: { J:{p:25,c:2,f:15}, S:{p:18,c:1,f:10} } },
-        "Bison Burger": { ing: ["6oz Bison", "Tomato Bun", "Mustard"], steps: ["Grill patty."], mod: "Sophia: 3oz.", macros: { J:{p:45,c:2,f:20}, S:{p:22,c:2,f:10} } },
-        "Chicken Waldorf Salad": { ing: ["6oz Chicken", "Apple", "Walnuts"], steps: ["Mix salad."], mod: "Sophia: 3oz.", macros: { J:{p:48,c:15,f:15}, S:{p:24,c:10,f:8} } },
-        "Shrimp Summer Rolls": { ing: ["6 Shrimp", "Rice Paper", "Herbs"], steps: ["Wrap rolls."], mod: "Sophia: 3 rolls.", macros: { J:{p:30,c:30,f:2}, S:{p:15,c:15,f:1} } },
-        "Cod Fish Tacos": { ing: ["6oz Cod", "Cabbage Slaw"], steps: ["Sear cod."], mod: "Sophia: 1 taco.", macros: { J:{p:35,c:25,f:8}, S:{p:18,c:15,f:5} } },
-        "Seared Ahi Salad": { ing: ["6oz Ahi", "Sesame Crust", "Greens"], steps: ["Sear rare."], mod: "Sophia: 3oz.", macros: { J:{p:42,c:5,f:8}, S:{p:21,c:3,f:4} } },
-        "Turkey Meatballs": { ing: ["6oz Turkey", "Spinach", "Marinara"], steps: ["Bake meatballs."], mod: "Sophia: 3oz.", macros: { J:{p:35,c:8,f:10}, S:{p:18,c:4,f:5} } },
-        "Grilled Chicken Caesar": { ing: ["6oz Chicken", "Romaine", "Parmesan"], steps: ["Grill chicken."], mod: "Sophia: 3oz.", macros: { J:{p:50,c:5,f:15}, S:{p:25,c:3,f:8} } },
-        "Beef Carpaccio": { ing: ["4oz Beef Tenderloin", "Arugula", "Parmesan"], steps: ["Slice raw."], mod: "Sophia: 2oz.", macros: { J:{p:28,c:2,f:12}, S:{p:14,c:2,f:6} } },
-        "Poke Bowl": { ing: ["4oz Tuna", "Cauli Rice", "Edamame"], steps: ["Assemble bowl."], mod: "Sophia: 3oz.", macros: { J:{p:35,c:15,f:10}, S:{p:22,c:10,f:6} } },
-        "Lobster Roll": { ing: ["4oz Lobster", "Celery", "Mayo"], steps: ["Mix salad."], mod: "Sophia: 2oz.", macros: { J:{p:22,c:25,f:15}, S:{p:11,c:15,f:8} } },
-        "Thai Beef Salad": { ing: ["4oz Steak", "Lime", "Chili"], steps: ["Toss salad."], mod: "Sophia: 2oz.", macros: { J:{p:30,c:8,f:12}, S:{p:15,c:5,f:6} } },
-        "Smoked Mackerel Pate": { ing: ["4oz Mackerel", "Cream Cheese"], steps: ["Blend."], mod: "Sophia: 2oz.", macros: { J:{p:25,c:2,f:25}, S:{p:12,c:2,f:15} } },
-        "Gazpacho w/ Shrimp": { ing: ["Tomato Base", "4 Shrimp"], steps: ["Blend soup."], mod: "Sophia: 3 shrimp.", macros: { J:{p:15,c:15,f:2}, S:{p:10,c:10,f:2} } },
-        "Curried Chicken Salad": { ing: ["6oz Chicken", "Curry", "Grapes"], steps: ["Mix salad."], mod: "Sophia: 3oz.", macros: { J:{p:48,c:12,f:15}, S:{p:24,c:8,f:8} } },
+        "Sardine Bowl": { ing: ["1 tin Sardines", "Avocado", "Lemon"], steps: ["Rinse sardines."], mod: "Sophia: 1.5 palms.", macros: { J:{p:25,c:5,f:20,k:300}, S:{p:18,c:3,f:15,k:219} } },
+        "Bison Laab": { ing: ["6oz Bison", "Lime", "Fish Sauce"], steps: ["Brown bison."], mod: "Sophia: 3oz.", macros: { J:{p:45,c:5,f:12,k:308}, S:{p:22,c:3,f:6,k:154} } },
+        "Stealth Liver Sliders": { ing: ["5oz Bison", "1oz Liver", "Paprika"], steps: ["Grill 4m/side."], mod: "Sophia: 1 slider.", macros: { J:{p:48,c:2,f:15,k:335}, S:{p:24,c:1,f:8,k:172} } },
+        "Crab Tower": { ing: ["4oz Crab", "Mango", "Cucumber"], steps: ["Layer ingredients."], mod: "Sophia: 3oz crab.", macros: { J:{p:25,c:15,f:2,k:178}, S:{p:18,c:10,f:2,k:130} } },
+        "Sriracha Bison Tacos": { ing: ["5oz Bison", "Yogurt", "Sriracha"], steps: ["Brown meat."], mod: "Sophia: 3oz.", macros: { J:{p:42,c:8,f:12,k:308}, S:{p:24,c:5,f:6,k:170} } },
+        "Chicken Satay": { ing: ["6oz Chicken Breast", "Peanut Sauce", "Cucumber"], steps: ["Grill skewers."], mod: "Sophia: 3oz.", macros: { J:{p:50,c:6,f:10,k:314}, S:{p:25,c:4,f:5,k:161} } },
+        "Octopus Salad": { ing: ["6oz Boiled Octopus", "Potato", "Paprika"], steps: ["Slice octopus."], mod: "Sophia: 3oz.", macros: { J:{p:40,c:25,f:5,k:305}, S:{p:20,c:15,f:3,k:167} } },
+        "Shrimp Ceviche": { ing: ["6oz Shrimp", "Lime", "Tomato"], steps: ["Cure in lime."], mod: "Sophia: 3oz.", macros: { J:{p:35,c:8,f:3,k:199}, S:{p:18,c:5,f:2,k:110} } },
+        "Sardine Cucumber Boats": { ing: ["1 tin Sardines", "Cucumber", "Dill"], steps: ["Fill cucumbers."], mod: "Sophia: 1.5 palms.", macros: { J:{p:25,c:4,f:15,k:251}, S:{p:18,c:2,f:10,k:170} } },
+        "Bison Lettuce Cups": { ing: ["6oz Bison", "Water Chestnuts"], steps: ["Stir fry meat."], mod: "Sophia: 3oz.", macros: { J:{p:45,c:10,f:12,k:328}, S:{p:22,c:6,f:6,k:166} } },
+        "Tuna Tartare": { ing: ["6oz Sushi Tuna", "Sesame Oil"], steps: ["Dice tuna."], mod: "Sophia: 3oz.", macros: { J:{p:42,c:2,f:10,k:266}, S:{p:21,c:2,f:5,k:137} } },
+        "Salmon Salad": { ing: ["6oz Canned Salmon", "Celery", "Mayo"], steps: ["Mix all."], mod: "Sophia: 3oz.", macros: { J:{p:38,c:2,f:18,k:322}, S:{p:19,c:1,f:10,k:170} } },
+        "Ostrich Carpaccio": { ing: ["4oz Ostrich", "Capers", "Olive Oil"], steps: ["Slice raw."], mod: "Sophia: 2oz.", macros: { J:{p:28,c:1,f:8,k:188}, S:{p:14,c:1,f:4,k:96} } },
+        "Bison Kofta": { ing: ["6oz Bison", "Cumin", "Coriander"], steps: ["Grill skewers."], mod: "Sophia: 3oz.", macros: { J:{p:45,c:5,f:15,k:335}, S:{p:22,c:3,f:8,k:172} } },
+        "Crab & Avocado Salad": { ing: ["4oz Crab", "Avocado", "Grapefruit"], steps: ["Toss salad."], mod: "Sophia: 3oz.", macros: { J:{p:25,c:12,f:15,k:283}, S:{p:18,c:8,f:10,k:194} } },
+        "Spicy Sardine Wrap": { ing: ["1 tin Sardines", "Collard Leaf"], steps: ["Wrap in leaf."], mod: "Sophia: 1.5 palms.", macros: { J:{p:25,c:2,f:15,k:243}, S:{p:18,c:1,f:10,k:166} } },
+        "Bison Burger": { ing: ["6oz Bison", "Tomato Bun", "Mustard"], steps: ["Grill patty."], mod: "Sophia: 3oz.", macros: { J:{p:45,c:2,f:20,k:368}, S:{p:22,c:2,f:10,k:186} } },
+        "Chicken Waldorf Salad": { ing: ["6oz Chicken", "Apple", "Walnuts"], steps: ["Mix salad."], mod: "Sophia: 3oz.", macros: { J:{p:48,c:15,f:15,k:387}, S:{p:24,c:10,f:8,k:208} } },
+        "Shrimp Summer Rolls": { ing: ["6 Shrimp", "Rice Paper", "Herbs"], steps: ["Wrap rolls."], mod: "Sophia: 3 rolls.", macros: { J:{p:30,c:30,f:2,k:258}, S:{p:15,c:15,f:1,k:129} } },
+        "Cod Fish Tacos": { ing: ["6oz Cod", "Cabbage Slaw"], steps: ["Sear cod."], mod: "Sophia: 1 taco.", macros: { J:{p:35,c:25,f:8,k:312}, S:{p:18,c:15,f:5,k:177} } },
+        "Seared Ahi Salad": { ing: ["6oz Ahi", "Sesame Crust", "Greens"], steps: ["Sear rare."], mod: "Sophia: 3oz.", macros: { J:{p:42,c:5,f:8,k:260}, S:{p:21,c:3,f:4,k:132} } },
+        "Turkey Meatballs": { ing: ["6oz Turkey", "Spinach", "Marinara"], steps: ["Bake meatballs."], mod: "Sophia: 3oz.", macros: { J:{p:35,c:8,f:10,k:262}, S:{p:18,c:4,f:5,k:133} } },
+        "Grilled Chicken Caesar": { ing: ["6oz Chicken", "Romaine", "Parmesan"], steps: ["Grill chicken."], mod: "Sophia: 3oz.", macros: { J:{p:50,c:5,f:15,k:355}, S:{p:25,c:3,f:8,k:184} } },
+        "Beef Carpaccio": { ing: ["4oz Beef Tenderloin", "Arugula", "Parmesan"], steps: ["Slice raw."], mod: "Sophia: 2oz.", macros: { J:{p:28,c:2,f:12,k:228}, S:{p:14,c:2,f:6,k:118} } },
+        "Poke Bowl": { ing: ["4oz Tuna", "Cauli Rice", "Edamame"], steps: ["Assemble bowl."], mod: "Sophia: 3oz.", macros: { J:{p:35,c:15,f:10,k:290}, S:{p:22,c:10,f:6,k:182} } },
+        "Lobster Roll": { ing: ["4oz Lobster", "Celery", "Mayo"], steps: ["Mix salad."], mod: "Sophia: 2oz.", macros: { J:{p:22,c:25,f:15,k:323}, S:{p:11,c:15,f:8,k:176} } },
+        "Thai Beef Salad": { ing: ["4oz Steak", "Lime", "Chili"], steps: ["Toss salad."], mod: "Sophia: 2oz.", macros: { J:{p:30,c:8,f:12,k:260}, S:{p:15,c:5,f:6,k:134} } },
+        "Smoked Mackerel Pate": { ing: ["4oz Mackerel", "Cream Cheese"], steps: ["Blend."], mod: "Sophia: 2oz.", macros: { J:{p:25,c:2,f:25,k:333}, S:{p:12,c:2,f:15,k:191} } },
+        "Gazpacho w/ Shrimp": { ing: ["Tomato Base", "4 Shrimp"], steps: ["Blend soup."], mod: "Sophia: 3 shrimp.", macros: { J:{p:15,c:15,f:2,k:138}, S:{p:10,c:10,f:2,k:98} } },
+        "Curried Chicken Salad": { ing: ["6oz Chicken", "Curry", "Grapes"], steps: ["Mix salad."], mod: "Sophia: 3oz.", macros: { J:{p:48,c:12,f:15,k:375}, S:{p:24,c:8,f:8,k:200} } },
 
-        // DINNERS (Higher Protein Loading)
-        "Ostrich Steaks": { ing: ["6oz Ostrich", "Blackberries", "Ghee"], steps: ["Sear 3m/side."], mod: "Sophia: 3oz.", macros: { J:{p:48,c:5,f:10}, S:{p:24,c:3,f:6} } },
-        "Wild Elk Medallions": { ing: ["6oz Elk", "Juniper", "Bone Broth"], steps: ["Sear 3m/side."], mod: "Sophia: 3oz.", macros: { J:{p:50,c:2,f:5}, S:{p:25,c:1,f:3} } },
-        "Miso Sea Bass": { ing: ["6oz Sea Bass", "Miso Glaze", "Bok Choy"], steps: ["Bake 400F."], mod: "Sophia: 3oz.", macros: { J:{p:40,c:10,f:15}, S:{p:20,c:6,f:8} } },
-        "Garlic Ghee Lobster": { ing: ["2 Tails", "Garlic", "Ghee"], steps: ["Grill 5m."], mod: "Sophia: 1 tail.", macros: { J:{p:45,c:2,f:20}, S:{p:22,c:2,f:10} } },
-        "Grilled Branzino": { ing: ["Whole Fish", "Lemon", "Rosemary"], steps: ["Grill 6m/side."], mod: "Sophia: 1/2 fish.", macros: { J:{p:40,c:0,f:15}, S:{p:20,c:0,f:8} } },
-        "Bison Fillet": { ing: ["6oz Fillet", "Thyme", "Ghee"], steps: ["Sear 4m/side."], mod: "Sophia: 3oz.", macros: { J:{p:45,c:0,f:15}, S:{p:22,c:0,f:8} } },
-        "SF Style Cioppino": { ing: ["Mussels", "White Fish", "Fennel"], steps: ["Simmer broth."], mod: "Sophia: 1.5 cups.", macros: { J:{p:40,c:15,f:8}, S:{p:25,c:10,f:5} } },
-        "Bison Ribeye": { ing: ["8oz Ribeye", "Salt", "Pepper"], steps: ["Sear 3m/side."], mod: "Sophia: 3oz.", macros: { J:{p:55,c:0,f:35}, S:{p:25,c:0,f:15} } },
-        "Elk Stir Fry": { ing: ["6oz Elk", "Broccoli", "Ginger"], steps: ["Wok sear."], mod: "Sophia: 3oz.", macros: { J:{p:50,c:10,f:8}, S:{p:25,c:5,f:4} } },
-        "Grilled Octopus": { ing: ["6oz Octopus", "Lemon", "Oregano"], steps: ["Grill char."], mod: "Sophia: 3oz.", macros: { J:{p:45,c:5,f:5}, S:{p:22,c:3,f:3} } },
-        "Scallops & Asparagus": { ing: ["6 Scallops", "Asparagus", "Lemon"], steps: ["Sear 2m/side."], mod: "Sophia: 3 scallops.", macros: { J:{p:35,c:8,f:5}, S:{p:18,c:5,f:3} } },
-        "Bison Meatballs": { ing: ["6oz Bison", "Almond Flour", "Marinara"], steps: ["Bake 15m."], mod: "Sophia: 3oz.", macros: { J:{p:42,c:10,f:18}, S:{p:21,c:5,f:10} } },
-        "Steamed Mussels": { ing: ["1lb Mussels", "Garlic", "White Wine"], steps: ["Steam open."], mod: "Sophia: 1/2 lb.", macros: { J:{p:40,c:10,f:8}, S:{p:20,c:5,f:4} } },
-        "Surf & Turf": { ing: ["3oz Bison", "3 Shrimp", "Ghee"], steps: ["Grill both."], mod: "Sophia: 2oz/2 shrimp.", macros: { J:{p:40,c:0,f:15}, S:{p:25,c:0,f:8} } },
-        "Pan Seared Cod": { ing: ["6oz Cod", "Capers", "Butter"], steps: ["Sear cod."], mod: "Sophia: 3oz.", macros: { J:{p:35,c:2,f:8}, S:{p:18,c:2,f:4} } },
-        "Garlic Shrimp Skewers": { ing: ["6 Shrimp", "Garlic", "Parsley"], steps: ["Grill 2m."], mod: "Sophia: 4 shrimp.", macros: { J:{p:30,c:2,f:8}, S:{p:20,c:2,f:5} } },
-        "Chicken Piccata": { ing: ["6oz Chicken", "Lemon", "Capers"], steps: ["Pan fry."], mod: "Sophia: 3oz.", macros: { J:{p:48,c:5,f:15}, S:{p:24,c:3,f:8} } },
-        "Herb Crusted Branzino": { ing: ["Fillets", "Parsley", "Almond Meal"], steps: ["Pan fry."], mod: "Sophia: 1 fillet.", macros: { J:{p:40,c:5,f:15}, S:{p:20,c:3,f:8} } },
-        "Salmon Plank": { ing: ["6oz Salmon", "Cedar Plank", "Lemon"], steps: ["Grill 15m."], mod: "Sophia: 3oz.", macros: { J:{p:38,c:0,f:20}, S:{p:19,c:0,f:10} } },
-        "Bison Short Ribs": { ing: ["8oz Ribs", "Red Wine", "Carrots"], steps: ["Braise 3h."], mod: "Sophia: 4oz.", macros: { J:{p:50,c:10,f:30}, S:{p:25,c:5,f:15} } },
-        "Dungeness Crab Legs": { ing: ["1lb Legs", "Ghee", "Lemon"], steps: ["Steam."], mod: "Sophia: 1/2 lb.", macros: { J:{p:45,c:0,f:15}, S:{p:22,c:0,f:8} } },
-        "Lamb Chops": { ing: ["3 Chops", "Rosemary", "Garlic"], steps: ["Sear 3m."], mod: "Sophia: 2 chops.", macros: { J:{p:50,c:0,f:35}, S:{p:30,c:0,f:20} } },
-        "Halibut w/ Mango Salsa": { ing: ["6oz Halibut", "Mango", "Jalapeno"], steps: ["Pan sear."], mod: "Sophia: 3oz.", macros: { J:{p:38,c:15,f:5}, S:{p:19,c:10,f:3} } },
-        "Duck Breast": { ing: ["6oz Duck", "Orange Glaze"], steps: ["Sear skin."], mod: "Sophia: 3oz.", macros: { J:{p:40,c:10,f:25}, S:{p:20,c:5,f:12} } },
-        "Venison Steak": { ing: ["6oz Venison", "Juniper", "Thyme"], steps: ["Sear rare."], mod: "Sophia: 3oz.", macros: { J:{p:50,c:2,f:6}, S:{p:25,c:1,f:3} } },
-        "Rainbow Trout": { ing: ["Whole Trout", "Almonds", "Butter"], steps: ["Pan fry."], mod: "Sophia: 1/2 fish.", macros: { J:{p:40,c:5,f:15}, S:{p:20,c:3,f:8} } },
-        "Clams Linguine": { ing: ["1lb Clams", "Zucchini", "Garlic"], steps: ["Steam."], mod: "Sophia: 1/2 lb.", macros: { J:{p:35,c:15,f:8}, S:{p:18,c:8,f:4} } },
-        "Swordfish Steak": { ing: ["6oz Swordfish", "Lemon", "Oregano"], steps: ["Grill 4m."], mod: "Sophia: 3oz.", macros: { J:{p:40,c:0,f:15}, S:{p:20,c:0,f:8} } },
-        "Squid Ink Risotto": { ing: ["Squid", "Cauli Rice", "Ink"], steps: ["Sauté."], mod: "Sophia: 1/2 cup.", macros: { J:{p:35,c:20,f:10}, S:{p:18,c:15,f:6} } },
-        "Paella (Seafood Only)": { ing: ["Shrimp", "Mussels", "Saffron"], steps: ["Simmer."], mod: "Sophia: 1 cup.", macros: { J:{p:45,c:35,f:12}, S:{p:25,c:25,f:8} } }
+        // DINNERS
+        "Ostrich Steaks": { ing: ["6oz Ostrich", "Blackberries", "Ghee"], steps: ["Sear 3m/side."], mod: "Sophia: 3oz.", macros: { J:{p:48,c:5,f:10,k:302}, S:{p:24,c:3,f:6,k:162} } },
+        "Wild Elk Medallions": { ing: ["6oz Elk", "Juniper", "Bone Broth"], steps: ["Sear 3m/side."], mod: "Sophia: 3oz.", macros: { J:{p:50,c:2,f:5,k:253}, S:{p:25,c:1,f:3,k:131} } },
+        "Miso Sea Bass": { ing: ["6oz Sea Bass", "Miso Glaze", "Bok Choy"], steps: ["Bake 400F."], mod: "Sophia: 3oz.", macros: { J:{p:40,c:10,f:15,k:335}, S:{p:20,c:6,f:8,k:176} } },
+        "Garlic Ghee Lobster": { ing: ["2 Tails", "Garlic", "Ghee"], steps: ["Grill 5m."], mod: "Sophia: 1 tail.", macros: { J:{p:45,c:2,f:20,k:368}, S:{p:22,c:2,f:10,k:186} } },
+        "Grilled Branzino": { ing: ["Whole Fish", "Lemon", "Rosemary"], steps: ["Grill 6m/side."], mod: "Sophia: 1/2 fish.", macros: { J:{p:40,c:0,f:15,k:295}, S:{p:20,c:0,f:8,k:152} } },
+        "Bison Fillet": { ing: ["6oz Fillet", "Thyme", "Ghee"], steps: ["Sear 4m/side."], mod: "Sophia: 3oz.", macros: { J:{p:45,c:0,f:15,k:315}, S:{p:22,c:0,f:8,k:160} } },
+        "SF Style Cioppino": { ing: ["Mussels", "White Fish", "Fennel"], steps: ["Simmer broth."], mod: "Sophia: 1.5 cups.", macros: { J:{p:40,c:15,f:8,k:292}, S:{p:25,c:10,f:5,k:185} } },
+        "Bison Ribeye": { ing: ["8oz Ribeye", "Salt", "Pepper"], steps: ["Sear 3m/side."], mod: "Sophia: 3oz.", macros: { J:{p:55,c:0,f:35,k:535}, S:{p:25,c:0,f:15,k:235} } },
+        "Elk Stir Fry": { ing: ["6oz Elk", "Broccoli", "Ginger"], steps: ["Wok sear."], mod: "Sophia: 3oz.", macros: { J:{p:50,c:10,f:8,k:312}, S:{p:25,c:5,f:4,k:156} } },
+        "Grilled Octopus": { ing: ["6oz Octopus", "Lemon", "Oregano"], steps: ["Grill char."], mod: "Sophia: 3oz.", macros: { J:{p:45,c:5,f:5,k:245}, S:{p:22,c:3,f:3,k:127} } },
+        "Scallops & Asparagus": { ing: ["6 Scallops", "Asparagus", "Lemon"], steps: ["Sear 2m/side."], mod: "Sophia: 3 scallops.", macros: { J:{p:35,c:8,f:5,k:217}, S:{p:18,c:5,f:3,k:119} } },
+        "Bison Meatballs": { ing: ["6oz Bison", "Almond Flour", "Marinara"], steps: ["Bake 15m."], mod: "Sophia: 3oz.", macros: { J:{p:42,c:10,f:18,k:370}, S:{p:21,c:5,f:10,k:194} } },
+        "Steamed Mussels": { ing: ["1lb Mussels", "Garlic", "White Wine"], steps: ["Steam open."], mod: "Sophia: 1/2 lb.", macros: { J:{p:40,c:10,f:8,k:272}, S:{p:20,c:5,f:4,k:136} } },
+        "Surf & Turf": { ing: ["3oz Bison", "3 Shrimp", "Ghee"], steps: ["Grill both."], mod: "Sophia: 2oz/2 shrimp.", macros: { J:{p:40,c:0,f:15,k:295}, S:{p:25,c:0,f:8,k:172} } },
+        "Pan Seared Cod": { ing: ["6oz Cod", "Capers", "Butter"], steps: ["Sear cod."], mod: "Sophia: 3oz.", macros: { J:{p:35,c:2,f:8,k:220}, S:{p:18,c:2,f:4,k:116} } },
+        "Garlic Shrimp Skewers": { ing: ["6 Shrimp", "Garlic", "Parsley"], steps: ["Grill 2m."], mod: "Sophia: 4 shrimp.", macros: { J:{p:30,c:2,f:8,k:200}, S:{p:20,c:2,f:5,k:133} } },
+        "Chicken Piccata": { ing: ["6oz Chicken", "Lemon", "Capers"], steps: ["Pan fry."], mod: "Sophia: 3oz.", macros: { J:{p:48,c:5,f:15,k:347}, S:{p:24,c:3,f:8,k:180} } },
+        "Herb Crusted Branzino": { ing: ["Fillets", "Parsley", "Almond Meal"], steps: ["Pan fry."], mod: "Sophia: 1 fillet.", macros: { J:{p:40,c:5,f:15,k:315}, S:{p:20,c:3,f:8,k:164} } },
+        "Salmon Plank": { ing: ["6oz Salmon", "Cedar Plank", "Lemon"], steps: ["Grill 15m."], mod: "Sophia: 3oz.", macros: { J:{p:38,c:0,f:20,k:332}, S:{p:19,c:0,f:10,k:166} } },
+        "Bison Short Ribs": { ing: ["8oz Ribs", "Red Wine", "Carrots"], steps: ["Braise 3h."], mod: "Sophia: 4oz.", macros: { J:{p:50,c:10,f:30,k:510}, S:{p:25,c:5,f:15,k:255} } },
+        "Dungeness Crab Legs": { ing: ["1lb Legs", "Ghee", "Lemon"], steps: ["Steam."], mod: "Sophia: 1/2 lb.", macros: { J:{p:45,c:0,f:15,k:315}, S:{p:22,c:0,f:8,k:160} } },
+        "Lamb Chops": { ing: ["3 Chops", "Rosemary", "Garlic"], steps: ["Sear 3m."], mod: "Sophia: 2 chops.", macros: { J:{p:50,c:0,f:35,k:515}, S:{p:30,c:0,f:20,k:300} } },
+        "Halibut w/ Mango Salsa": { ing: ["6oz Halibut", "Mango", "Jalapeno"], steps: ["Pan sear."], mod: "Sophia: 3oz.", macros: { J:{p:38,c:15,f:5,k:257}, S:{p:19,c:10,f:3,k:143} } },
+        "Duck Breast": { ing: ["6oz Duck", "Orange Glaze"], steps: ["Sear skin."], mod: "Sophia: 3oz.", macros: { J:{p:40,c:10,f:25,k:425}, S:{p:20,c:5,f:12,k:208} } },
+        "Venison Steak": { ing: ["6oz Venison", "Juniper", "Thyme"], steps: ["Sear rare."], mod: "Sophia: 3oz.", macros: { J:{p:50,c:2,f:6,k:262}, S:{p:25,c:1,f:3,k:131} } },
+        "Rainbow Trout": { ing: ["Whole Trout", "Almonds", "Butter"], steps: ["Pan fry."], mod: "Sophia: 1/2 fish.", macros: { J:{p:40,c:5,f:15,k:315}, S:{p:20,c:3,f:8,k:164} } },
+        "Clams Linguine": { ing: ["1lb Clams", "Zucchini", "Garlic"], steps: ["Steam."], mod: "Sophia: 1/2 lb.", macros: { J:{p:35,c:15,f:8,k:272}, S:{p:18,c:8,f:4,k:140} } },
+        "Swordfish Steak": { ing: ["6oz Swordfish", "Lemon", "Oregano"], steps: ["Grill 4m."], mod: "Sophia: 3oz.", macros: { J:{p:40,c:0,f:15,k:295}, S:{p:20,c:0,f:8,k:152} } },
+        "Squid Ink Risotto": { ing: ["Squid", "Cauli Rice", "Ink"], steps: ["Sauté."], mod: "Sophia: 1/2 cup.", macros: { J:{p:35,c:20,f:10,k:310}, S:{p:18,c:15,f:6,k:186} } },
+        "Paella (Seafood Only)": { ing: ["Shrimp", "Mussels", "Saffron"], steps: ["Simmer."], mod: "Sophia: 1 cup.", macros: { J:{p:45,c:35,f:12,k:428}, S:{p:25,c:25,f:8,k:272} } }
     };
 
     const weeklySchedule = [
@@ -287,19 +351,19 @@
     ];
 
     const recoveryData = [
-        // SUN: Rest
+        // SUN
         { warmup: [{t:"None", d:"", n:"Rest Day"}], gym: [{t:"None", d:"", n:"Rest Day"}], home: [{t:"Normatec", d:"30 min", n:"HIPS Attachment (Level 5)"}, {t:"Thera Knee", d:"Contrast", n:"Cycle Hot/Cold"}, {t:"Theragun Pro", d:"Supersoft", n:"Neck/Traps"}] },
-        // MON: Heavy Lift
+        // MON
         { warmup: [{t:"Thera Knee", d:"15 min", n:"Heat + Vibration"}, {t:"Theragun Pro", d:"2 min", n:"Heat Head - Glutes/Quads"}], gym: [{t:"Cryotherapy", d:"3 min", n:"If RPE > 9/10"}, {t:"Sauna", d:"20 min", n:"HGH Release"}, {t:"Aqua Massage", d:"10 min", n:"Mental reset"}], home: [{t:"Normatec", d:"45 min", n:"HIPS Attachment (Level 7)"}, {t:"Theragun Pro", d:"Thumb", n:"Glute trigger points"}] },
-        // TUE: Boxing
+        // TUE
         { warmup: [{t:"Theragun Pro", d:"2 min", n:"Heat Head - Shoulders"}], gym: [{t:"Aqua Massage", d:"15 min", n:"Upper Back setting"}, {t:"Sauna", d:"15 min", n:"Cardio Flush"}], home: [{t:"Normatec", d:"30 min", n:"LEGS Attachment (Zone 1 Boost)"}, {t:"Theragun Pro", d:"Cold", n:"Wrists/Knuckles"}] },
-        // WED: Reform
+        // WED
         { warmup: [{t:"Theragun Pro", d:"Full Body", n:"Standard Ball - Sweep"}], gym: [{t:"Sauna", d:"15 min", n:"Circulation only"}], home: [{t:"Normatec", d:"30 min", n:"LEGS (Level 4)"}] },
-        // THU: Boxing
+        // THU
         { warmup: [{t:"Thera Knee", d:"10 min", n:"Heat - If stiff"}, {t:"Theragun Pro", d:"Dampener", n:"Obliques - Rotation prep"}], gym: [{t:"Aqua Massage", d:"15 min", n:"Neck/Traps"}], home: [{t:"Normatec", d:"30 min", n:"HIPS (Level 6)"}] },
-        // FRI: Yoga
+        // FRI
         { warmup: [{t:"Theragun Pro", d:"Heat", n:"Hamstrings"}], gym: [{t:"Sauna", d:"20 min", n:"Deep heat"}], home: [{t:"Thera Knee", d:"20 min", n:"Contrast Mode"}] },
-        // SAT: CS4
+        // SAT
         { warmup: [{t:"Thera Knee", d:"15 min", n:"Heat + Vibration"}], gym: [{t:"Cryotherapy", d:"Recommended", n:"Systemic flush"}, {t:"Aqua Massage", d:"10 min", n:"Cool down"}], home: [{t:"Normatec", d:"60 min", n:"LEGS (Level 7)"}, {t:"Thera Knee", d:"Cold", n:"If puffy"}] }
     ];
 
@@ -310,20 +374,17 @@
     const masterSchedule = Array.from({length: 30}, (_, i) => ({ b: bKeys[i], l: lKeys[i], d: dKeys[i] }));
 
     let weekOffset = 0;
-    let selectedDayIndex = 0; // Track current viewed day for macro recalc
+    let selectedDayIndex = 0; 
     let selectedDateObj = new Date();
 
     function getMonday(offset) { let d = new Date(); let day = d.getDay(), diff = d.getDate() - day + (day == 0 ? -6:1); let mon = new Date(d.setDate(diff)); mon.setDate(mon.getDate() + (offset * 7)); return mon; }
 
     function switchUser(user) {
         currentUser = user;
-        // Visual toggle
         document.getElementById('badgeJ').classList.toggle('active-user', user === 'J');
         document.getElementById('badgeS').classList.toggle('active-user', user === 'S');
-        document.getElementById('badgeJ').classList.toggle('sophia', false); // Clean J styling
-        document.getElementById('badgeS').classList.toggle('sophia', user === 'S'); // Apply Sophia pink glow
-        
-        // Re-render current day to update Macros
+        document.getElementById('badgeJ').classList.toggle('sophia', false); 
+        document.getElementById('badgeS').classList.toggle('sophia', user === 'S'); 
         showDay(selectedDateObj, selectedDayIndex);
     }
 
@@ -344,15 +405,25 @@
     }
 
     function calculateMacros(meal, scheduleType) {
-        const rB = recipeDB[meal.b].macros[currentUser] || {p:0,c:0,f:0};
-        const rL = recipeDB[meal.l].macros[currentUser] || {p:0,c:0,f:0};
-        const rD = recipeDB[meal.d].macros[currentUser] || {p:0,c:0,f:0};
+        const rB = recipeDB[meal.b].macros[currentUser] || {p:0,c:0,f:0,k:0};
+        const rL = recipeDB[meal.l].macros[currentUser] || {p:0,c:0,f:0,k:0};
+        const rD = recipeDB[meal.d].macros[currentUser] || {p:0,c:0,f:0,k:0};
 
-        const total = {
+        let total = {
             p: rB.p + rL.p + rD.p,
             c: rB.c + rL.c + rD.c,
-            f: rB.f + rL.f + rD.f
+            f: rB.f + rL.f + rD.f,
+            k: rB.k + rL.k + rD.k
         };
+
+        // Add Shake if selected
+        if (selectedShake) {
+            const sM = shakeDB[selectedShake];
+            total.p += sM.p;
+            total.c += sM.c;
+            total.f += sM.f;
+            total.k += sM.k;
+        }
 
         const goal = macroTargets[currentUser][scheduleType];
         
@@ -374,6 +445,7 @@
         const pPct = Math.min((total.p / goal.p) * 100, 100);
         const cPct = Math.min((total.c / goal.c) * 100, 100);
         const fPct = Math.min((total.f / goal.f) * 100, 100);
+        const kPct = Math.min((total.k / goal.k) * 100, 100);
 
         document.getElementById('dayContent').innerHTML = `
             <div class="macro-dashboard">
@@ -390,9 +462,13 @@
                     <div class="macro-label"><span>CARBS</span><span>${total.c}g / ${goal.c}g</span></div>
                     <div class="macro-bar-bg"><div class="macro-bar-fill c-fill" style="width:${cPct}%"></div></div>
                 </div>
-                <div class="macro-row" style="margin-bottom:0">
+                <div class="macro-row">
                     <div class="macro-label"><span>FATS</span><span>${total.f}g / ${goal.f}g</span></div>
                     <div class="macro-bar-bg"><div class="macro-bar-fill f-fill" style="width:${fPct}%"></div></div>
+                </div>
+                <div class="macro-row" style="margin-bottom:0">
+                    <div class="macro-label"><span>CALORIES</span><span>${total.k} / ${goal.k}</span></div>
+                    <div class="macro-bar-bg"><div class="macro-bar-fill cal-fill" style="width:${kPct}%"></div></div>
                 </div>
             </div>
 
@@ -408,6 +484,12 @@
                 <div class="value" onclick="openRecipe('${meal.l}')"><span style="color:#fff">🧔🏾‍♂️ J</span> <span style="color:var(--glute-pink)">👩🏾‍🦱 S</span> : ${meal.l}</div>
                 <div class="label">🍽️ Dinner</div>
                 <div class="value" onclick="openRecipe('${meal.d}')"><span style="color:#fff">🧔🏾‍♂️ J</span> <span style="color:var(--glute-pink)">👩🏾‍🦱 S</span> : ${meal.d}</div>
+                
+                <div class="label">🥤 Shake / Snack</div>
+                <div class="value" style="color:var(--accent-gold); border:1px dashed #333; padding:10px; border-radius:6px; margin-bottom:15px;" onclick="openShakeSelector()">
+                    ${selectedShake ? selectedShake : '+ ADD PROTEIN SHAKE'}
+                </div>
+
                 <div class="protocol-row">
                     <span class="proto-btn" onclick="openProtocol('Sea Moss')">🌊 SEA MOSS</span>
                     <span class="proto-btn" onclick="openProtocol('Kombucha')">🍄 KOMBUCHA</span>
@@ -432,6 +514,7 @@
         ingredients["Kombucha"] = "7 Bottles";
         ingredients["Mg Electrolytes"] = "1 Tub";
         ingredients["Water (Gallons)"] = "8 Gallons";
+        ingredients["Pea/Peanut Protein"] = "1 Bag Each";
 
         for (let i = 0; i < 7; i++) {
             let tabDate = new Date(monday); tabDate.setDate(monday.getDate() + i);
@@ -452,6 +535,27 @@
         html += "</ul>";
         document.getElementById('groceryList').innerHTML = html;
         document.getElementById('groceryModal').style.display = 'block';
+    }
+
+    function openShakeSelector() {
+        const container = document.getElementById('shakeOptionsList');
+        container.innerHTML = Object.keys(shakeDB).map(key => {
+            const s = shakeDB[key];
+            return `<div class="shake-option" onclick="selectShake('${key}')">
+                <div>
+                    <div class="shake-name">${key}</div>
+                    <div class="shake-macros">P: ${s.p}g | C: ${s.c}g | Kcal: ${s.k}</div>
+                </div>
+                <span style="color:var(--accent-gold); font-size:1.2rem;">+</span>
+            </div>`;
+        }).join('');
+        openModal('shakeModal');
+    }
+
+    function selectShake(name) {
+        selectedShake = name;
+        closeModal('shakeModal');
+        showDay(selectedDateObj, selectedDayIndex); // Refresh macros
     }
 
     function openRecovery(idx) {
@@ -480,16 +584,15 @@
         document.getElementById('modalSteps').innerHTML = r.steps.map(s => `<p>${s}</p>`).join(''); 
         document.getElementById('modalMod').innerText = r.mod; 
         
-        // Show Macro Detail in Recipe Modal
         const jM = r.macros.J; const sM = r.macros.S;
         const macroHTML = `<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:20px; font-size:0.8rem; text-align:center;">
             <div style="background:#111; padding:10px; border-radius:6px; border:1px solid #333">
                 <div style="color:var(--accent-gold); font-weight:800; margin-bottom:5px;">JERMAINE</div>
-                <div>P: ${jM.p}g | C: ${jM.c}g | F: ${jM.f}g</div>
+                <div>P: ${jM.p}g | C: ${jM.c}g | K: ${jM.k}</div>
             </div>
             <div style="background:#111; padding:10px; border-radius:6px; border:1px solid var(--glute-pink)">
                 <div style="color:var(--glute-pink); font-weight:800; margin-bottom:5px;">SOPHIA</div>
-                <div>P: ${sM.p}g | C: ${sM.c}g | F: ${sM.f}g</div>
+                <div>P: ${sM.p}g | C: ${sM.c}g | K: ${sM.k}</div>
             </div>
         </div>`;
 
