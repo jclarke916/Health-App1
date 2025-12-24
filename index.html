@@ -2,232 +2,340 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Centurion | v208 Longevity Audit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>The Centurion | v215 UI Overhaul</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-dark: #000000; --card-bg: #111111; --text-main: #E5E4E2; --text-dim: #888888;
-            --accent-gold: #D4AF37; --accent-silver: #444444; --glute-pink: #d63384;
-            --carb-high: #ff9100; --carb-low: #00b0ff; --target-green: #2ecc71;
-            --recovery-purple: #9b59b6; --heat-red: #e74c3c; --ice-blue: #3498db;
-            --macro-pro: #e74c3c; --macro-carb: #f39c12; --macro-fat: #3498db; --macro-cal: #9b59b6;
+            /* Core Palette */
+            --bg-body: #050505;
+            --bg-card: #141414;
+            --bg-panel: #1A1A1A;
+            
+            /* Text */
+            --text-main: #FFFFFF;
+            --text-muted: #888888;
+            --text-dark: #000000;
+
+            /* Accents */
+            --accent-gold: #D4AF37;
+            --accent-gold-dim: rgba(212, 175, 55, 0.15);
+            --glute-pink: #FF4081;
+            --glute-pink-dim: rgba(255, 64, 129, 0.15);
+            
+            /* Functional Colors */
+            --target-green: #00E676;
+            --heat-red: #FF3D00;
+            --ice-blue: #00B0FF;
+            --recovery-purple: #D500F9;
+            
+            /* Macros (Gradients) */
+            --grad-pro: linear-gradient(90deg, #FF5252, #D50000);
+            --grad-carb: linear-gradient(90deg, #FFAB40, #FF6D00);
+            --grad-fat: linear-gradient(90deg, #448AFF, #2962FF);
+            --grad-cal: linear-gradient(90deg, #B388FF, #6200EA);
         }
-        body { font-family: 'Inter', sans-serif; background-color: var(--bg-dark); color: var(--text-main); margin: 0; padding: 20px; -webkit-tap-highlight-color: transparent; }
-        .container { max-width: 1000px; width: 100%; margin: 0 auto; position: relative; }
-        header { text-align: center; margin-bottom: 25px; border-bottom: 1px solid #333; padding-bottom: 20px; position: relative; }
-        .version-tag { position: absolute; top: 0; right: 0; font-size: 0.6rem; color: #444; letter-spacing: 1px; font-weight: 800; }
-        h1 { font-weight: 300; letter-spacing: 2px; text-transform: uppercase; margin: 0; background: linear-gradient(to right, #fff, #888); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        
-        .profile-badges { display: flex; justify-content: center; gap: 10px; margin-top: 15px; }
-        .badge { background: #1a1a1a; padding: 10px 20px; border-radius: 4px; border: 1px solid #333; font-size: 0.7rem; color: var(--accent-silver); text-transform: uppercase; cursor: pointer; font-weight: 800; transition: 0.3s; opacity: 0.5; }
-        .badge.active-user { border-color: var(--accent-gold); color: #fff; opacity: 1; box-shadow: 0 0 10px rgba(212, 175, 55, 0.2); }
-        .badge.active-user.sophia { border-color: var(--glute-pink); box-shadow: 0 0 10px rgba(214, 51, 132, 0.2); }
 
-        .status-bar { text-align: center; color: var(--accent-gold); font-size: 0.85rem; margin: 15px 0; text-transform: uppercase; font-weight: 700; letter-spacing: 1px; }
-        .controls { display: flex; justify-content: center; gap: 8px; margin-bottom: 25px; width: 100%; }
-        .nav-btn { background: var(--card-bg); border: 1px solid #333; color: var(--text-main); padding: 12px 0; width: 24%; border-radius: 6px; cursor: pointer; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; text-align: center; }
-        .grocery-btn { background: #1a1a1a; color: var(--target-green); border-color: var(--target-green); }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-        .tabs { display: flex; justify-content: space-between; background: var(--card-bg); padding: 5px; border-radius: 8px; margin-bottom: 25px; border: 1px solid #222; overflow-x: auto; }
-        .tab-btn { background: none; border: none; color: #555; padding: 10px; cursor: pointer; flex: 1; font-size: 0.75rem; display: flex; flex-direction: column; align-items: center; min-width: 62px; }
-        .tab-btn.active { color: var(--accent-gold); background: rgba(255,255,255,0.03); font-weight: 800; border-radius: 4px; }
-        
-        .card { background: var(--card-bg); border-radius: 12px; padding: 30px; border: 1px solid #222; position: relative; margin-bottom: 20px; }
-        .card::before { content: ""; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--accent-gold); }
-        
-        .macro-dashboard { background: #0a0a0a; border: 1px solid #222; border-radius: 8px; padding: 15px; margin-bottom: 20px; cursor: pointer; transition: 0.2s; position: relative; }
-        .macro-dashboard:hover { border-color: var(--accent-gold); background: #111; }
-        .view-goals-link { position: absolute; top: 15px; right: 15px; color: var(--accent-gold); font-size: 0.6rem; font-weight: 800; opacity: 0.8; }
-        .macro-header { display: flex; justify-content: space-between; font-size: 0.7rem; text-transform: uppercase; font-weight: 700; color: #888; margin-bottom: 10px; }
-        .macro-row { margin-bottom: 12px; }
-        .macro-label { display: flex; justify-content: space-between; font-size: 0.65rem; margin-bottom: 4px; font-weight: 700; }
-        .macro-bar-bg { height: 8px; background: #222; border-radius: 4px; overflow: hidden; }
-        .macro-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
-        .p-fill { background: var(--macro-pro); }
-        .c-fill { background: var(--macro-carb); }
-        .f-fill { background: var(--macro-fat); }
-        .cal-fill { background: var(--macro-cal); }
-        
-        .label { color: var(--accent-silver); font-size: 0.6rem; text-transform: uppercase; font-weight: 700; margin-bottom: 5px; letter-spacing: 1px; }
-        .value { font-size: 1.1rem; margin-bottom: 15px; color: #fff; cursor: pointer; border-bottom: 1px solid transparent; display: flex; align-items: center; gap: 8px; }
-        .carb-pill { padding: 4px 12px; border-radius: 4px; font-size: 0.7rem; font-weight: 900; color: #fff; text-transform: uppercase; float: right; }
-        
-        .workout-header { display:flex; justify-content:space-between; margin-bottom:20px; font-weight:800; text-transform:uppercase; color:var(--accent-gold); align-items: center; }
-        .workout-title-btn { cursor: pointer; border: 1px solid transparent; padding: 5px 10px; border-radius: 6px; margin-left: -10px; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
-        .workout-title-btn:hover { border-color: var(--accent-gold); background: rgba(212, 175, 55, 0.1); }
-        
-        .protocol-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px; border-top: 1px solid #222; padding-top: 15px; }
-        .proto-btn { background: #151515; border: 1px solid #333; color: #aaa; padding: 8px 12px; border-radius: 4px; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: 0.2s; }
-        .proto-btn:hover { border-color: var(--accent-gold); color: #fff; transform: translateY(-2px); }
-        .proto-btn.active { background: rgba(46, 204, 113, 0.1); border-color: var(--target-green); color: var(--target-green); }
-        .rec-btn { border-color: var(--recovery-purple); color: #ccc; }
-        .rec-btn:hover { border-color: #fff; color: var(--recovery-purple); }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg-body); 
+            color: var(--text-main); 
+            margin: 0; 
+            padding: 20px 15px; 
+            font-size: 16px;
+        }
 
-        .juice-card { background: linear-gradient(145deg, #0a0a0a, #111111); border: 1px solid #333; border-radius: 12px; padding: 30px; position: relative; margin-bottom: 20px; cursor: pointer; transition: 0.3s; opacity: 0.6; }
-        .juice-card.active { opacity: 1; border-color: var(--accent-gold); box-shadow: 0 0 20px rgba(212, 175, 55, 0.1); }
-        .juice-name { font-size: 1.6rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
-        .juice-benefit { font-size: 0.8rem; color: #ccc; font-style: italic; margin-bottom: 10px; display: block; border-left: 3px solid; padding-left: 12px; line-height: 1.5; }
-        .juice-badge { float: right; border: 1px solid; padding: 4px 8px; border-radius: 4px; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; margin-bottom: 10px; display: inline-block; }
-        .juice-macro-row { font-size: 0.7rem; color: var(--accent-gold); font-weight: 700; margin-top: 15px; letter-spacing: 1px; }
+        .container { max-width: 600px; margin: 0 auto; width: 100%; }
 
-        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); overflow-y: auto; padding-top: 20px; }
-        .modal-content { background: #050505; margin: 0 auto; padding: 35px; border: 1px solid #333; width: 92%; max-width: 750px; border-radius: 12px; }
+        /* --- HEADER & NAV --- */
+        header { text-align: center; margin-bottom: 30px; position: relative; }
+        .version-tag { font-size: 0.55rem; color: #333; font-weight: 800; letter-spacing: 2px; margin-bottom: 5px; display: block; }
         
-        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-        .stat-box { background: #111; padding: 15px; border-radius: 6px; border: 1px solid #222; text-align: center; }
-        .stat-val { font-size: 1.1rem; color: #fff; font-weight: 800; }
-        .stat-lbl { font-size: 0.55rem; color: #666; text-transform: uppercase; margin-top: 5px; font-weight: 700; }
+        h1 { 
+            font-weight: 200; 
+            letter-spacing: 4px; 
+            text-transform: uppercase; 
+            margin: 0; 
+            font-size: 1.8rem;
+            background: linear-gradient(to bottom, #fff, #999);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .profile-badges { display: flex; justify-content: center; gap: 12px; margin-top: 20px; }
+        .badge { 
+            background: #000; 
+            padding: 12px 25px; 
+            border-radius: 30px; 
+            border: 1px solid #333; 
+            font-size: 0.75rem; 
+            color: #666; 
+            text-transform: uppercase; 
+            cursor: pointer; 
+            font-weight: 700; 
+            transition: all 0.3s ease; 
+            letter-spacing: 1px;
+        }
+        .badge.active-user { border-color: var(--accent-gold); color: var(--accent-gold); background: var(--accent-gold-dim); box-shadow: 0 0 15px var(--accent-gold-dim); }
+        .badge.active-user.sophia { border-color: var(--glute-pink); color: var(--glute-pink); background: var(--glute-pink-dim); box-shadow: 0 0 15px var(--glute-pink-dim); }
+
+        /* --- CONTROLS & TABS --- */
+        .status-bar { text-align: center; color: var(--text-muted); font-size: 0.75rem; margin: 20px 0 10px 0; text-transform: uppercase; font-weight: 700; letter-spacing: 1.5px; }
         
-        /* 3-BAR LAYOUT - FULL TEXT LABELS */
-        .prog-section { margin-bottom: 30px; }
-        .prog-title { font-size: 0.7rem; color: #888; text-transform: uppercase; font-weight: 700; margin-bottom: 10px; display: flex; justify-content: space-between; }
+        .controls { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 20px; }
+        .nav-btn { 
+            background: var(--bg-card); 
+            border: none; 
+            color: var(--text-muted); 
+            padding: 14px 0; 
+            width: 24%; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-size: 0.65rem; 
+            font-weight: 800; 
+            text-transform: uppercase; 
+            transition: 0.2s; 
+        }
+        .nav-btn:active { transform: scale(0.98); background: #222; }
+        .grocery-btn { color: var(--target-green); background: rgba(0, 230, 118, 0.05); }
+
+        .tabs { 
+            display: flex; 
+            justify-content: space-between; 
+            background: var(--bg-card); 
+            padding: 6px; 
+            border-radius: 12px; 
+            margin-bottom: 30px; 
+            overflow-x: auto; 
+            scrollbar-width: none; 
+        }
+        .tabs::-webkit-scrollbar { display: none; }
+        
+        .tab-btn { 
+            background: none; 
+            border: none; 
+            color: #555; 
+            padding: 12px 0; 
+            cursor: pointer; 
+            flex: 1; 
+            font-size: 0.7rem; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            min-width: 50px; 
+            border-radius: 8px;
+            transition: 0.3s;
+        }
+        .tab-btn span { font-size: 0.9rem; margin-top: 4px; font-weight: 600; }
+        .tab-btn.active { color: #fff; background: #222; font-weight: 700; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+
+        /* --- CARDS & DASHBOARD --- */
+        .card, .macro-dashboard, .juice-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 20px;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .macro-dashboard { cursor: pointer; transition: transform 0.2s; }
+        .macro-dashboard:active { transform: scale(0.99); }
+        .view-goals-link { position: absolute; top: 25px; right: 25px; color: var(--text-muted); font-size: 0.6rem; font-weight: 800; letter-spacing: 1px; }
+
+        .macro-header { display: flex; flex-direction: column; margin-bottom: 20px; }
+        .macro-header span:first-child { font-size: 0.9rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: #fff; }
+        
+        .macro-row { margin-bottom: 16px; }
+        .macro-label { display: flex; justify-content: space-between; font-size: 0.65rem; margin-bottom: 6px; font-weight: 700; color: #999; text-transform: uppercase; }
+        .macro-bar-bg { height: 6px; background: #222; border-radius: 10px; overflow: hidden; }
+        .macro-bar-fill { height: 100%; border-radius: 10px; transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1); box-shadow: 0 0 10px rgba(255,255,255,0.1); }
+        
+        .p-fill { background: var(--grad-pro); }
+        .c-fill { background: var(--grad-carb); }
+        .f-fill { background: var(--grad-fat); }
+        .cal-fill { background: var(--grad-cal); }
+
+        /* --- WORKOUT & MEAL CARD --- */
+        .card::before { content: ""; position: absolute; top: 20px; bottom: 20px; left: 0; width: 3px; background: var(--accent-gold); border-radius: 0 4px 4px 0; }
+        
+        .workout-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #222; }
+        .workout-title-btn { 
+            font-size: 1rem; 
+            font-weight: 800; 
+            text-transform: uppercase; 
+            color: #fff; 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+            cursor: pointer;
+        }
+        .info-icon { font-size: 0.7rem; color: var(--text-muted); border: 1px solid #333; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .carb-pill { font-size: 0.6rem; font-weight: 900; padding: 5px 10px; border-radius: 4px; color: #fff; text-transform: uppercase; letter-spacing: 1px; }
+
+        .label { color: var(--text-muted); font-size: 0.6rem; text-transform: uppercase; font-weight: 800; margin-bottom: 4px; letter-spacing: 1px; }
+        .value { font-size: 0.95rem; margin-bottom: 20px; color: #fff; font-weight: 400; line-height: 1.4; cursor: pointer; transition: 0.2s; }
+        .value:hover { color: var(--accent-gold); }
+
+        .snack-slot { 
+            background: #0f0f0f; 
+            border: 1px dashed #333; 
+            padding: 12px; 
+            border-radius: 8px; 
+            margin-bottom: 10px; 
+            cursor: pointer; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            color: #555; 
+            font-size: 0.8rem;
+            transition: 0.2s;
+        }
+        .snack-slot.filled { border-style: solid; border-color: #333; color: #fff; background: #181818; }
+        .snack-remove { color: #555; font-size: 1.2rem; padding: 0 10px; }
+        .snack-remove:hover { color: var(--heat-red); }
+
+        .protocol-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 25px; padding-top: 20px; border-top: 1px solid #222; }
+        .proto-btn { 
+            background: #111; 
+            border: 1px solid #333; 
+            color: #888; 
+            padding: 8px 14px; 
+            border-radius: 20px; 
+            font-size: 0.6rem; 
+            font-weight: 800; 
+            text-transform: uppercase; 
+            cursor: pointer; 
+            transition: 0.2s; 
+        }
+        .proto-btn.active { background: rgba(0, 230, 118, 0.1); border-color: var(--target-green); color: var(--target-green); }
+
+        /* --- JUICE CARD --- */
+        .juice-card { opacity: 0.6; transition: 0.3s; border: 1px solid #222; }
+        .juice-card.active { opacity: 1; border-color: var(--accent-gold); box-shadow: 0 0 25px rgba(212, 175, 55, 0.15); }
+        .juice-badge { float: right; border: 1px solid; padding: 4px 8px; border-radius: 4px; font-size: 0.55rem; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; }
+        .juice-name { font-size: 1.4rem; font-weight: 900; letter-spacing: -0.5px; text-transform: uppercase; margin: 10px 0; color: #fff; }
+        .juice-macro-row { margin-top: 15px; font-size: 0.65rem; font-weight: 800; color: var(--accent-gold); text-transform: uppercase; letter-spacing: 1px; border-top: 1px solid #222; padding-top: 10px; }
+
+        /* --- MODALS --- */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); backdrop-filter: blur(8px); overflow-y: auto; padding: 20px; }
+        .modal-content { background: #111; margin: 20px auto; padding: 30px; border: 1px solid #333; width: 100%; max-width: 600px; border-radius: 20px; box-shadow: 0 20px 50px #000; }
+        .modal-content h2 { margin-top: 0; font-size: 1.2rem; letter-spacing: 1px; text-transform: uppercase; }
+
+        /* --- STAT GRID (In Profile) --- */
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px; }
+        .stat-box { background: #0a0a0a; padding: 20px; border-radius: 12px; border: 1px solid #222; text-align: center; }
+        .stat-val { font-size: 1.4rem; color: #fff; font-weight: 800; letter-spacing: -1px; }
+        .stat-lbl { font-size: 0.6rem; color: #666; text-transform: uppercase; margin-top: 5px; font-weight: 700; letter-spacing: 1px; }
+
+        /* --- PROGRESS BARS (3-Step) --- */
+        .prog-section { margin-bottom: 35px; }
+        .prog-title { display: flex; justify-content: space-between; font-size: 0.7rem; font-weight: 800; color: #fff; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 1px; }
         .prog-bar-row { display: flex; align-items: center; margin-bottom: 8px; }
-        .prog-label { font-size: 0.55rem; font-weight: 800; width: 60px; letter-spacing: 0.5px; } /* Wider to fit words */
-        .prog-track { flex: 1; height: 8px; background: #151515; border-radius: 4px; overflow: hidden; border: 1px solid #222; margin: 0 10px; }
-        .prog-fill { height: 100%; }
-        .prog-val { font-size: 0.7rem; font-weight: 800; width: 60px; text-align: right; }
+        .prog-label { width: 50px; font-size: 0.55rem; font-weight: 900; color: #555; text-transform: uppercase; letter-spacing: 1px; }
+        .prog-track { flex: 1; height: 6px; background: #1a1a1a; border-radius: 4px; overflow: hidden; margin: 0 15px; }
+        .prog-fill { height: 100%; border-radius: 4px; }
+        .prog-val { width: 50px; text-align: right; font-size: 0.75rem; font-weight: 700; color: #fff; }
 
-        .rec-section { margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #222; }
-        .rec-header { font-size: 0.8rem; font-weight: 800; text-transform: uppercase; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
-        .rec-header.warmup { color: var(--heat-red); }
-        .rec-header.gym { color: var(--ice-blue); }
-        .rec-header.home { color: var(--recovery-purple); }
-        .rec-item { background: #111; padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #222; }
-        .rec-tool { color: #fff; font-weight: 700; font-size: 0.9rem; margin-bottom: 4px; }
-        .rec-detail { color: #888; font-size: 0.8rem; }
-        
-        .shake-option { background: #111; border: 1px solid #333; padding: 20px; border-radius: 8px; margin-bottom: 10px; cursor: pointer; transition: 0.2s; display: flex; justify-content: space-between; align-items: center; }
-        .shake-option:hover { border-color: var(--accent-gold); background: #1a1a1a; }
-        .shake-name { font-weight: 800; color: #fff; font-size: 0.9rem; }
-        .shake-macros { font-size: 0.75rem; color: #888; margin-top: 5px; }
-        
-        .snack-slot { border: 1px dashed #333; padding: 10px; border-radius: 6px; margin-bottom: 8px; cursor: pointer; color: #888; font-size: 0.8rem; display: flex; justify-content: space-between; align-items: center; }
-        .snack-slot:hover { border-color: var(--accent-gold); color: #fff; }
-        .snack-slot.filled { border-style: solid; border-color: var(--accent-silver); color: #fff; background: #151515; }
-        .snack-remove { color: #666; font-size: 1.2rem; padding: 0 10px; }
-        .snack-remove:hover { color: #e74c3c; }
-
+        /* --- TABLES & LISTS --- */
         .hist-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.75rem; color: #ccc; }
-        .hist-table th { text-align: left; border-bottom: 1px solid #333; padding: 8px; color: var(--accent-gold); font-size: 0.65rem; text-transform: uppercase; }
-        .hist-table td { border-bottom: 1px solid #222; padding: 12px 8px; }
-        .hist-table tr:last-child td { border-bottom: none; }
+        .hist-table th { text-align: left; border-bottom: 1px solid #333; padding: 10px 5px; color: var(--accent-gold); font-size: 0.6rem; text-transform: uppercase; font-weight: 800; }
+        .hist-table td { border-bottom: 1px solid #222; padding: 15px 5px; }
         
-        /* Updated Preparation Styling */
-        .chef-steps { counter-reset: step; }
-        .chef-steps p { margin-bottom: 20px; line-height: 1.5; color: #ddd; position: relative; padding-left: 30px; }
-        .chef-steps p strong { color: #fff; }
-        .chef-steps p::before { counter-increment: step; content: counter(step) "."; position: absolute; left: 0; color: var(--accent-gold); font-weight: 800; }
-        
-        /* ALERT BOX STYLING */
-        .scan-alert { text-align: center; font-size: 0.7rem; font-weight: 800; margin-top: 15px; padding: 10px; border-radius: 4px; text-transform: uppercase; display: none; }
-        .scan-alert.upcoming { color: var(--heat-red); border: 1px solid var(--heat-red); background: rgba(231, 76, 60, 0.1); animation: pulse 2s infinite; }
-        .scan-alert.overdue { color: #fff; background: var(--heat-red); border: 1px solid var(--heat-red); }
-        @keyframes pulse { 0% { opacity: 0.7; } 50% { opacity: 1; } 100% { opacity: 0.7; } }
+        .chef-steps { counter-reset: step; color: #ccc; font-size: 0.9rem; line-height: 1.6; }
+        .chef-steps p { margin-bottom: 15px; position: relative; padding-left: 30px; }
+        .chef-steps p::before { counter-increment: step; content: counter(step); position: absolute; left: 0; top: 0; width: 20px; height: 20px; background: #222; color: #fff; font-size: 0.6rem; font-weight: 800; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+
+        /* Alert */
+        .scan-alert { text-align: center; font-size: 0.7rem; font-weight: 800; margin-top: 20px; padding: 15px; border-radius: 8px; text-transform: uppercase; letter-spacing: 1px; display: none; }
+        .scan-alert.upcoming { color: var(--heat-red); border: 1px solid var(--heat-red); background: rgba(231, 76, 60, 0.1); }
+        .scan-alert.overdue { background: var(--heat-red); color: #fff; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <header>
-        <div class="version-tag">VER 208.0</div>
+        <div class="version-tag">VER 214.0</div>
         <h1>THE CENTURION</h1>
         <div class="profile-badges">
             <div id="badgeJ" class="badge active-user" onclick="switchUser('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="badgeS" class="badge" onclick="switchUser('S')">👩🏾‍🦱 SOPHIA</div>
         </div>
     </header>
+    
     <div id="dateRangeDisplay" class="status-bar">...</div>
+    
     <div class="controls">
-        <button class="nav-btn" onclick="changeWeek(-1)">PREV WEEK</button>
+        <button class="nav-btn" onclick="changeWeek(-1)">PREV</button>
         <button class="nav-btn" onclick="resetToCurrent()">TODAY</button>
-        <button class="nav-btn" onclick="changeWeek(1)">NEXT WEEK</button>
-        <button class="nav-btn grocery-btn" onclick="generateGroceryList()">GROCERIES</button>
+        <button class="nav-btn" onclick="changeWeek(1)">NEXT</button>
+        <button class="nav-btn grocery-btn" onclick="generateGroceryList()">SHOP</button>
     </div>
+    
     <div id="dayTabs" class="tabs"></div>
     <div id="dayContent"></div>
 </div>
 
-<div id="jermaineModal" class="modal">
-    <div class="modal-content">
-        <span onclick="closeModal('jermaineModal')" style="float:right; cursor:pointer; font-size:24px;">&times;</span>
-        <h2 style="color:var(--accent-gold);">🧔🏾‍♂️ JERMAINE: CLINICAL DATA</h2>
-        <div class="stat-grid">
-            <div class="stat-box"><div class="stat-val">217.1</div><div class="stat-lbl">Weight (lbs)</div></div>
-            <div class="stat-box"><div class="stat-val">98.8</div><div class="stat-lbl">Muscle Mass (lbs)</div></div>
-            <div class="stat-box"><div class="stat-val">20.7%</div><div class="stat-lbl">Body Fat %</div></div>
-            <div class="stat-box"><div class="stat-val">1996</div><div class="stat-lbl">BMR (kcal)</div></div>
-        </div>
-        
-        <div id="jGoalHeader" style="color:var(--target-green); font-size:0.8rem; font-weight:800; text-transform:uppercase; margin-bottom:25px; text-align:center; letter-spacing:2px;">30-DAY TARGET</div>
-        
-        <div class="prog-section">
-            <div class="prog-title"><span>Body Fat %</span><span style="color:var(--target-green)">Target: 19.2%</span></div>
-            <div class="prog-bar-row"><div class="prog-label" style="color:#777">START</div><div class="prog-track"><div class="prog-fill" style="width:17.9%; background:#555"></div></div><div class="prog-val" style="color:#777">17.9%</div></div>
-            <div class="prog-bar-row"><div class="prog-label" style="color:#fff">NOW</div><div class="prog-track"><div class="prog-fill" style="width:20.7%; background:var(--accent-gold)"></div></div><div class="prog-val" style="color:#fff">20.7%</div></div>
-            <div class="prog-bar-row"><div class="prog-label" style="color:var(--target-green)">GOAL</div><div class="prog-track"><div class="prog-fill" style="width:19.2%; background:var(--target-green)"></div></div><div class="prog-val" style="color:var(--target-green)">19.2%</div></div>
-        </div>
-        <div class="prog-section">
-            <div class="prog-title"><span>Muscle Mass</span><span style="color:var(--target-green)">Target: 99.8 lbs</span></div>
-            <div class="prog-bar-row"><div class="prog-label" style="color:#777">START</div><div class="prog-track"><div class="prog-fill" style="width:90.4%; background:#555"></div></div><div class="prog-val" style="color:#777">99.4</div></div>
-            <div class="prog-bar-row"><div class="prog-label" style="color:#fff">NOW</div><div class="prog-track"><div class="prog-fill" style="width:89.8%; background:var(--accent-gold)"></div></div><div class="prog-val" style="color:#fff">98.8</div></div>
-            <div class="prog-bar-row"><div class="prog-label" style="color:var(--target-green)">GOAL</div><div class="prog-track"><div class="prog-fill" style="width:91.8%; background:var(--target-green)"></div></div><div class="prog-val" style="color:var(--target-green)">99.8</div></div>
-        </div>
-        
-        <div id="jScanAlert" class="scan-alert"></div>
-            
-        <h3 style="color:#888; font-size:0.75rem; text-transform:uppercase; margin-top:30px; border-bottom:1px solid #333; padding-bottom:10px;">SCAN HISTORY</h3>
-        <table class="hist-table">
-            <thead><tr><th>Date</th><th>Weight</th><th>Muscle</th><th>Body Fat</th><th>Visceral</th></tr></thead>
-            <tbody id="jHistBody"></tbody>
-        </table>
+<div id="jermaineModal" class="modal"><div class="modal-content">
+    <span onclick="closeModal('jermaineModal')" style="float:right; cursor:pointer; font-size:24px;">&times;</span>
+    <h2 style="color:var(--accent-gold);">🧔🏾‍♂️ JERMAINE</h2>
+    <div class="stat-grid">
+        <div class="stat-box"><div class="stat-val">217.1</div><div class="stat-lbl">Weight</div></div>
+        <div class="stat-box"><div class="stat-val">98.8</div><div class="stat-lbl">Muscle</div></div>
+        <div class="stat-box"><div class="stat-val">20.7%</div><div class="stat-lbl">Body Fat</div></div>
+        <div class="stat-box"><div class="stat-val">1996</div><div class="stat-lbl">BMR</div></div>
     </div>
-</div>
-
-<div id="sophiaModal" class="modal">
-    <div class="modal-content">
-        <span onclick="closeModal('sophiaModal')" style="float:right; cursor:pointer; font-size:24px;">&times;</span>
-        <h2 style="color:var(--glute-pink);">👩🏾‍🦱 SOPHIA: CLINICAL DATA</h2>
-        <div class="stat-grid">
-            <div class="stat-box"><div class="stat-val">141.5</div><div class="stat-lbl">Weight (lbs)</div></div>
-            <div class="stat-box"><div class="stat-val">49.2</div><div class="stat-lbl">Muscle Mass (lbs)</div></div>
-            <div class="stat-box"><div class="stat-val">36.1%</div><div class="stat-lbl">Body Fat %</div></div>
-            <div class="stat-box"><div class="stat-val">1332</div><div class="stat-lbl">BMR (kcal)</div></div>
-        </div>
-        
-        <div id="sGoalHeader" style="color:var(--target-green); font-size:0.8rem; font-weight:800; text-transform:uppercase; margin-bottom:25px; text-align:center; letter-spacing:2px;">30-DAY TARGET</div>
-        <div class="prog-section">
-            <div class="prog-title"><span>Body Fat %</span><span style="color:var(--target-green)">Target: 34.6%</span></div>
-            <div class="prog-bar-row"><div class="prog-label" style="color:#777">START</div><div class="prog-track"><div class="prog-fill" style="width:33.0%; background:#555"></div></div><div class="prog-val" style="color:#777">33.0%</div></div>
-            <div class="prog-bar-row"><div class="prog-label" style="color:#fff">NOW</div><div class="prog-track"><div class="prog-fill" style="width:36.1%; background:var(--glute-pink)"></div></div><div class="prog-val" style="color:#fff">36.1%</div></div>
-            <div class="prog-bar-row"><div class="prog-label" style="color:var(--target-green)">GOAL</div><div class="prog-track"><div class="prog-fill" style="width:34.6%; background:var(--target-green)"></div></div><div class="prog-val" style="color:var(--target-green)">34.6%</div></div>
-        </div>
-        <div class="prog-section">
-            <div class="prog-title"><span>Muscle Mass</span><span style="color:var(--target-green)">Target: 49.8 lbs</span></div>
-            <div class="prog-bar-row"><div class="prog-label" style="color:#777">START</div><div class="prog-track"><div class="prog-fill" style="width:90.9%; background:#555"></div></div><div class="prog-val" style="color:#777">50.0</div></div>
-            <div class="prog-bar-row"><div class="prog-label" style="color:#fff">NOW</div><div class="prog-track"><div class="prog-fill" style="width:89.4%; background:var(--glute-pink)"></div></div><div class="prog-val" style="color:#fff">49.2</div></div>
-            <div class="prog-bar-row"><div class="prog-label" style="color:var(--target-green)">GOAL</div><div class="prog-track"><div class="prog-fill" style="width:90.5%; background:var(--target-green)"></div></div><div class="prog-val" style="color:var(--target-green)">49.8</div></div>
-        </div>
-
-        <div id="sScanAlert" class="scan-alert"></div>
-
-        <h3 style="color:#888; font-size:0.75rem; text-transform:uppercase; margin-top:30px; border-bottom:1px solid #333; padding-bottom:10px;">SCAN HISTORY</h3>
-        <table class="hist-table">
-            <thead><tr><th>Date</th><th>Weight</th><th>Muscle</th><th>Body Fat</th><th>Visceral</th></tr></thead>
-            <tbody id="sHistBody"></tbody>
-        </table>
+    <div id="jGoalHeader" style="color:var(--target-green); font-size:0.75rem; font-weight:800; text-transform:uppercase; margin-bottom:25px; text-align:center; letter-spacing:2px;">30-DAY TARGET</div>
+    <div class="prog-section">
+        <div class="prog-title"><span>Body Fat %</span><span style="color:var(--target-green)">Target: 19.2%</span></div>
+        <div class="prog-bar-row"><div class="prog-label">START</div><div class="prog-track"><div class="prog-fill" style="width:17.9%; background:#333"></div></div><div class="prog-val" style="color:#777">17.9%</div></div>
+        <div class="prog-bar-row"><div class="prog-label" style="color:#fff">NOW</div><div class="prog-track"><div class="prog-fill" style="width:20.7%; background:var(--accent-gold)"></div></div><div class="prog-val">20.7%</div></div>
+        <div class="prog-bar-row"><div class="prog-label" style="color:var(--target-green)">GOAL</div><div class="prog-track"><div class="prog-fill" style="width:19.2%; background:var(--target-green)"></div></div><div class="prog-val" style="color:var(--target-green)">19.2%</div></div>
     </div>
-</div>
-
-<div id="recipeModal" class="modal"><div class="modal-content"><span onclick="closeModal('recipeModal')" style="float:right; cursor:pointer;">&times;</span><h2 id="modalTitle" style="color:#fff; margin-bottom:5px;"></h2><div style="color:var(--accent-gold); font-size:0.75rem; font-weight:800; margin:15px 0 5px 0;">INGREDIENTS</div><ul id="modalIng" style="list-style:none; padding:0; margin-bottom:25px; color:#ccc; font-size:0.9rem;"></ul><div style="color:var(--accent-gold); font-size:0.75rem; font-weight:800; margin-bottom:12px;">CHEF PREPARATION</div><div id="modalSteps" class="chef-steps" style="counter-reset: step;"></div><div id="modBox" style="background:rgba(214, 51, 132, 0.1); border:1px solid var(--glute-pink); padding:15px; border-radius:6px; margin-top:20px;"><div style="color:var(--glute-pink); font-size:0.8rem; font-weight:800; text-transform:uppercase;">🍑 Sophia's Mod</div><div id="modalMod" style="color:#e5e4e2; font-size:0.85rem;"></div></div></div></div>
-
-<div id="juiceModal" class="modal"><div class="modal-content">
-    <span onclick="closeModal('juiceModal')" style="float:right; cursor:pointer;">&times;</span>
-    <h2 id="jTitle" style="color:var(--accent-gold);"></h2>
-    <div id="jMacros" style="color:#888; font-size:0.8rem; margin-bottom:20px; font-weight:700;"></div>
-    <div id="jPrep" class="chef-steps" style="counter-reset: step;"></div>
+    <div class="prog-section">
+        <div class="prog-title"><span>Muscle Mass</span><span style="color:var(--target-green)">Target: 99.8 lbs</span></div>
+        <div class="prog-bar-row"><div class="prog-label">START</div><div class="prog-track"><div class="prog-fill" style="width:90.4%; background:#333"></div></div><div class="prog-val" style="color:#777">99.4</div></div>
+        <div class="prog-bar-row"><div class="prog-label" style="color:#fff">NOW</div><div class="prog-track"><div class="prog-fill" style="width:89.8%; background:var(--accent-gold)"></div></div><div class="prog-val">98.8</div></div>
+        <div class="prog-bar-row"><div class="prog-label" style="color:var(--target-green)">GOAL</div><div class="prog-track"><div class="prog-fill" style="width:91.8%; background:var(--target-green)"></div></div><div class="prog-val" style="color:var(--target-green)">99.8</div></div>
+    </div>
+    <div id="jScanAlert" class="scan-alert"></div>
+    <h3 style="color:#888; font-size:0.75rem; text-transform:uppercase; margin-top:30px; border-bottom:1px solid #333; padding-bottom:10px;">SCAN HISTORY</h3>
+    <table class="hist-table"><thead><tr><th>Date</th><th>Weight</th><th>Muscle</th><th>Body Fat</th><th>Visceral</th></tr></thead><tbody id="jHistBody"></tbody></table>
 </div></div>
 
+<div id="sophiaModal" class="modal"><div class="modal-content">
+    <span onclick="closeModal('sophiaModal')" style="float:right; cursor:pointer; font-size:24px;">&times;</span>
+    <h2 style="color:var(--glute-pink);">👩🏾‍🦱 SOPHIA</h2>
+    <div class="stat-grid">
+        <div class="stat-box"><div class="stat-val">141.5</div><div class="stat-lbl">Weight</div></div>
+        <div class="stat-box"><div class="stat-val">49.2</div><div class="stat-lbl">Muscle</div></div>
+        <div class="stat-box"><div class="stat-val">36.1%</div><div class="stat-lbl">Body Fat</div></div>
+        <div class="stat-box"><div class="stat-val">1332</div><div class="stat-lbl">BMR</div></div>
+    </div>
+    <div id="sGoalHeader" style="color:var(--target-green); font-size:0.75rem; font-weight:800; text-transform:uppercase; margin-bottom:25px; text-align:center; letter-spacing:2px;">30-DAY TARGET</div>
+    <div class="prog-section">
+        <div class="prog-title"><span>Body Fat %</span><span style="color:var(--target-green)">Target: 34.6%</span></div>
+        <div class="prog-bar-row"><div class="prog-label">START</div><div class="prog-track"><div class="prog-fill" style="width:33.0%; background:#333"></div></div><div class="prog-val" style="color:#777">33.0%</div></div>
+        <div class="prog-bar-row"><div class="prog-label" style="color:#fff">NOW</div><div class="prog-track"><div class="prog-fill" style="width:36.1%; background:var(--glute-pink)"></div></div><div class="prog-val">36.1%</div></div>
+        <div class="prog-bar-row"><div class="prog-label" style="color:var(--target-green)">GOAL</div><div class="prog-track"><div class="prog-fill" style="width:34.6%; background:var(--target-green)"></div></div><div class="prog-val" style="color:var(--target-green)">34.6%</div></div>
+    </div>
+    <div class="prog-section">
+        <div class="prog-title"><span>Muscle Mass</span><span style="color:var(--target-green)">Target: 49.8 lbs</span></div>
+        <div class="prog-bar-row"><div class="prog-label">START</div><div class="prog-track"><div class="prog-fill" style="width:90.9%; background:#333"></div></div><div class="prog-val" style="color:#777">50.0</div></div>
+        <div class="prog-bar-row"><div class="prog-label" style="color:#fff">NOW</div><div class="prog-track"><div class="prog-fill" style="width:89.4%; background:var(--glute-pink)"></div></div><div class="prog-val">49.2</div></div>
+        <div class="prog-bar-row"><div class="prog-label" style="color:var(--target-green)">GOAL</div><div class="prog-track"><div class="prog-fill" style="width:90.5%; background:var(--target-green)"></div></div><div class="prog-val" style="color:var(--target-green)">49.8</div></div>
+    </div>
+    <div id="sScanAlert" class="scan-alert"></div>
+    <h3 style="color:#888; font-size:0.75rem; text-transform:uppercase; margin-top:30px; border-bottom:1px solid #333; padding-bottom:10px;">SCAN HISTORY</h3>
+    <table class="hist-table"><thead><tr><th>Date</th><th>Weight</th><th>Muscle</th><th>Body Fat</th><th>Visceral</th></tr></thead><tbody id="sHistBody"></tbody></table>
+</div></div>
+
+<div id="recipeModal" class="modal"><div class="modal-content"><span onclick="closeModal('recipeModal')" style="float:right; cursor:pointer;">&times;</span><h2 id="modalTitle" style="color:#fff; margin-bottom:5px;"></h2><div style="color:var(--accent-gold); font-size:0.75rem; font-weight:800; margin:15px 0 5px 0;">INGREDIENTS</div><ul id="modalIng" style="list-style:none; padding:0; margin-bottom:25px; color:#ccc; font-size:0.9rem;"></ul><div style="color:var(--accent-gold); font-size:0.75rem; font-weight:800; margin-bottom:12px;">CHEF PREPARATION</div><div id="modalSteps" class="chef-steps" style="counter-reset: step;"></div><div id="modBox" style="background:rgba(214, 51, 132, 0.1); border:1px solid var(--glute-pink); padding:15px; border-radius:6px; margin-top:20px;"><div style="color:var(--glute-pink); font-size:0.8rem; font-weight:800; text-transform:uppercase;">🍑 Sophia's Mod</div><div id="modalMod" style="color:#e5e4e2; font-size:0.85rem;"></div></div></div></div>
+<div id="juiceModal" class="modal"><div class="modal-content"><span onclick="closeModal('juiceModal')" style="float:right; cursor:pointer;">&times;</span><h2 id="jTitle" style="color:var(--accent-gold);"></h2><div id="jMacros" style="color:#888; font-size:0.8rem; margin-bottom:20px; font-weight:700;"></div><div id="jPrep" class="chef-steps" style="counter-reset: step;"></div></div></div>
 <div id="protocolModal" class="modal"><div class="modal-content"><span onclick="closeModal('protocolModal')" style="float:right; cursor:pointer;">&times;</span><h2 id="protoTitle" style="color:var(--accent-gold);"></h2><div id="protoBody" style="font-size:0.95rem; color:#ccc; line-height:1.7;"></div></div></div>
 <div id="groceryModal" class="modal"><div class="modal-content"><span onclick="closeModal('groceryModal')" style="float:right; cursor:pointer;">&times;</span><h2 style="color:var(--target-green); margin-bottom:20px;">🛒 WEEKLY SHOPPING LIST</h2><div id="groceryList" style="color:#ccc; line-height:1.6; font-size:0.9rem;"></div></div></div>
 <div id="recoveryModal" class="modal"><div class="modal-content"><span onclick="closeModal('recoveryModal')" style="float:right; cursor:pointer;">&times;</span><h2 id="recTitle" style="color:#fff; margin-bottom:5px;"></h2><p style="color:#888; font-size:0.8rem; margin-bottom:25px; font-style:italic;">Daily Recovery Protocol</p><div class="rec-section"><div class="rec-header warmup">🔥 PRE-WORKOUT (HOME/CAR)</div><div id="recWarmup"></div></div><div class="rec-section"><div class="rec-header gym">💧 GYM AMENITIES (IN-SHAPE)</div><div id="recGym"></div></div><div class="rec-section" style="border-bottom:none;"><div class="rec-header home">🏠 HOME RESTORATION</div><div id="recHome"></div></div></div></div>
@@ -237,102 +345,38 @@
     let currentUser = 'J'; 
     let dayState = {}; 
     let selectedDateStr = "";
-    let currentSnackSlot = 1;
-
-    // --- CLINICAL HISTORY DATA ---
-    const jermaineHistory = [
-        { date: "Dec 24, 2024", w: "217.1", m: "98.8", bf: "20.7%", v: "10" },
-        { date: "Oct 30, 2024", w: "210.8", m: "99.4", bf: "17.9%", v: "-" }
-    ];
-    const sophiaHistory = [
-        { date: "Dec 24, 2024", w: "141.5", m: "49.2", bf: "36.1%", v: "9" },
-        { date: "Oct 30, 2024", w: "136.1", m: "50.0", bf: "33.0%", v: "-" }
-    ];
+    
+    // --- CLINICAL HISTORY ---
+    const jermaineHistory = [{ date: "Dec 24, 2025", w: "217.1", m: "98.8", bf: "20.7%", v: "10" }, { date: "Oct 30, 2024", w: "210.8", m: "99.4", bf: "17.9%", v: "-" }];
+    const sophiaHistory = [{ date: "Dec 24, 2025", w: "141.5", m: "49.2", bf: "36.1%", v: "9" }, { date: "Oct 30, 2024", w: "136.1", m: "50.0", bf: "33.0%", v: "-" }];
 
     function renderHistory() {
         const jBody = document.getElementById('jHistBody');
         jBody.innerHTML = jermaineHistory.map(h => `<tr><td>${h.date}</td><td>${h.w}</td><td>${h.m}</td><td>${h.bf}</td><td>${h.v}</td></tr>`).join('');
-        
         const sBody = document.getElementById('sHistBody');
         sBody.innerHTML = sophiaHistory.map(h => `<tr><td>${h.date}</td><td>${h.w}</td><td>${h.m}</td><td>${h.bf}</td><td>${h.v}</td></tr>`).join('');
-
-        // UPDATE SMART GOALS
         updateGoalStatus(jermaineHistory, 'jGoalHeader', 'jScanAlert');
         updateGoalStatus(sophiaHistory, 'sGoalHeader', 'sScanAlert');
     }
 
     function updateGoalStatus(history, headerId, alertId) {
-        // Sort history by date descending to get true latest
         history.sort((a, b) => new Date(b.date) - new Date(a.date));
-        
-        const latest = new Date(history[0].date); 
-        const target = new Date(latest);
-        target.setDate(latest.getDate() + 30);
-        
-        // Update Header Text
-        const options = { month: 'short', day: 'numeric' };
-        const dateStr = target.toLocaleDateString('en-US', options).toUpperCase();
-        document.getElementById(headerId).innerText = `NEXT 30 DAYS: ${dateStr} TARGET`;
-
-        // Check for Alert (7 Day Window)
+        const latest = new Date(history[0].date);
+        const target = new Date(latest); target.setDate(latest.getDate() + 30);
+        document.getElementById(headerId).innerText = `NEXT 30 DAYS: ${target.toLocaleDateString('en-US', {month:'short', day:'numeric'}).toUpperCase()} TARGET`;
         const today = new Date();
-        const diffTime = target - today;
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+        const diffDays = Math.ceil((target - today) / (1000 * 60 * 60 * 24));
         const alertBox = document.getElementById(alertId);
-
-        // Logic: If target is in future (>7 days), show nothing.
-        // If target is coming up (<= 7 days and > 0), show Yellow/Red warning.
-        // If target is passed (<= 0), show Overdue.
-        
-        if (diffDays <= 7 && diffDays > 0) {
-            alertBox.style.display = 'block';
-            alertBox.className = 'scan-alert upcoming';
-            alertBox.innerText = `⚠️ SCAN UPCOMING: ${diffDays} DAYS REMAINING`;
-        } else if (diffDays <= 0) {
-            alertBox.style.display = 'block';
-            alertBox.className = 'scan-alert overdue';
-            alertBox.innerText = `⚠️ SCAN DUE NOW: PLEASE UPDATE BIOMETRICS`;
-        } else {
-            alertBox.style.display = 'none';
-        }
+        if (diffDays <= 7 && diffDays > 0) { alertBox.style.display = 'block'; alertBox.className = 'scan-alert upcoming'; alertBox.innerText = `⚠️ SCAN UPCOMING: ${diffDays} DAYS REMAINING`; }
+        else if (diffDays <= 0) { alertBox.style.display = 'block'; alertBox.className = 'scan-alert overdue'; alertBox.innerText = `⚠️ SCAN DUE NOW: PLEASE UPDATE BIOMETRICS`; }
+        else { alertBox.style.display = 'none'; }
     }
 
-    const macroTargets = {
-        'J': { 'HIGH CARB': { p: 160, c: 300, f: 75, k: 2500 }, 'LOW CARB': { p: 160, c: 80, f: 100, k: 1860 } },
-        'S': { 'HIGH CARB': { p: 105, c: 180, f: 55, k: 1635 }, 'LOW CARB': { p: 105, c: 50, f: 70, k: 1250 } }
-    };
+    const macroTargets = { 'J': { 'HIGH CARB': { p: 160, c: 300, f: 75, k: 2500 }, 'LOW CARB': { p: 160, c: 80, f: 100, k: 1860 } }, 'S': { 'HIGH CARB': { p: 105, c: 180, f: 55, k: 1635 }, 'LOW CARB': { p: 105, c: 50, f: 70, k: 1250 } } };
+    const snackDB = { "Pea Protein ISO": { p: 25, c: 2, f: 2, k: 120 }, "Peanut Protein": { p: 8, c: 5, f: 2, k: 70 }, "Centurion Blend (Pea+Peanut)": { p: 33, c: 7, f: 4, k: 190 }, "Double Scoop Pea": { p: 50, c: 4, f: 4, k: 240 }, "Kirkland Mixed Nuts (1.5oz)": { p: 9, c: 8, f: 23, k: 260 }, "Hummus & Carrots": { p: 6, c: 20, f: 10, k: 180 }, "Beef Jerky (1oz)": { p: 12, c: 3, f: 1, k: 80 }, "Hard Boiled Eggs (2)": { p: 12, c: 1, f: 10, k: 140 }, "Edamame (1 cup)": { p: 17, c: 15, f: 8, k: 188 }, "Greek Yogurt (1 cup)": { p: 20, c: 8, f: 0, k: 120 }, "Tuna Packet (StarKist)": { p: 17, c: 0, f: 1, k: 80 }, "Apple & Almond Butter": { p: 4, c: 22, f: 12, k: 200 }, "Cottage Cheese & Pineapple": { p: 14, c: 18, f: 2, k: 140 }, "REMOVE": { p: 0, c: 0, f: 0, k: 0 } };
+    const juiceData = { "TITAN RED": { color: "#E74C3C", icon: "🦅", badge: "⚡ NITRIC BOOST", text: "Beet nitrates maximize oxygen delivery.", prep: ["2 Beets", "2 Carrots", "1 Pomegranate", "1 Orange"], macros: {p: 2, c: 25, f: 0, k: 110} }, "ZENITH GREEN": { color: "#2ECC71", icon: "🦉", badge: "🌿 ALKALIZER", text: "Cilantro & Dandelion flush cortisol.", prep: ["4 Kale", "1c Wheatgrass", "1 Cucumber", "1/2c Cilantro"], macros: {p: 2, c: 15, f: 0, k: 70} }, "PLASMA FLUSH": { color: "#FF6B81", icon: "🦩", badge: "⚡ NITRO PUMP", text: "L-Citrulline reduces lifting fatigue.", prep: ["3c Watermelon", "1 Lime", "Pinch Salt"], macros: {p: 1, c: 28, f: 0, k: 120} }, "APOLLO GOLD": { color: "#F1C40F", icon: "🦁", badge: "🛡️ JOINT GUARD", text: "Turmeric & Ginger reduce inflammation.", prep: ["2 Pears", "2in Ginger", "1in Turmeric", "Black Pepper"], macros: {p: 1, c: 30, f: 0, k: 130} } };
+    const protocolData = { "Sea Moss": { text: "92 minerals + Iodine.", macros: {p:0, c:1, f:0, k:5} }, "Mg Electrolytes": { text: "CNS recovery.", macros: {p:0, c:0, f:0, k:0} }, "Kombucha": { text: "Gut lining.", macros: {p:0, c:12, f:0, k:60} } };
 
-    const snackDB = {
-        "Pea Protein ISO": { p: 25, c: 2, f: 2, k: 120 },
-        "Peanut Protein": { p: 8, c: 5, f: 2, k: 70 },
-        "Centurion Blend (Pea+Peanut)": { p: 33, c: 7, f: 4, k: 190 },
-        "Double Scoop Pea": { p: 50, c: 4, f: 4, k: 240 },
-        "Kirkland Mixed Nuts (1.5oz)": { p: 9, c: 8, f: 23, k: 260 },
-        "Hummus & Carrots": { p: 6, c: 20, f: 10, k: 180 },
-        "Beef Jerky (1oz)": { p: 12, c: 3, f: 1, k: 80 },
-        "Hard Boiled Eggs (2)": { p: 12, c: 1, f: 10, k: 140 },
-        "Edamame (1 cup)": { p: 17, c: 15, f: 8, k: 188 },
-        "Greek Yogurt (1 cup)": { p: 20, c: 8, f: 0, k: 120 },
-        "Tuna Packet (StarKist)": { p: 17, c: 0, f: 1, k: 80 },
-        "Apple & Almond Butter": { p: 4, c: 22, f: 12, k: 200 },
-        "Cottage Cheese & Pineapple": { p: 14, c: 18, f: 2, k: 140 },
-        "REMOVE": { p: 0, c: 0, f: 0, k: 0 }
-    };
-
-    const juiceData = {
-        "TITAN RED": { color: "#E74C3C", icon: "🦅", badge: "⚡ NITRIC BOOST", text: "Beet nitrates maximize oxygen delivery.", prep: ["2 Beets", "2 Carrots", "1 Pomegranate", "1 Orange"], macros: {p: 2, c: 25, f: 0, k: 110} },
-        "ZENITH GREEN": { color: "#2ECC71", icon: "🦉", badge: "🌿 ALKALIZER", text: "Cilantro & Dandelion flush cortisol.", prep: ["4 Kale", "1c Wheatgrass", "1 Cucumber", "1/2c Cilantro"], macros: {p: 2, c: 15, f: 0, k: 70} },
-        "PLASMA FLUSH": { color: "#FF6B81", icon: "🦩", badge: "⚡ NITRO PUMP", text: "L-Citrulline reduces lifting fatigue.", prep: ["3c Watermelon", "1 Lime", "Pinch Salt"], macros: {p: 1, c: 28, f: 0, k: 120} },
-        "APOLLO GOLD": { color: "#F1C40F", icon: "🦁", badge: "🛡️ JOINT GUARD", text: "Turmeric & Ginger reduce inflammation.", prep: ["2 Pears", "2in Ginger", "1in Turmeric", "Black Pepper"], macros: {p: 1, c: 30, f: 0, k: 130} }
-    };
-
-    const protocolData = { 
-        "Sea Moss": { text: "92 minerals + Iodine.", macros: {p:0, c:1, f:0, k:5} },
-        "Mg Electrolytes": { text: "CNS recovery.", macros: {p:0, c:0, f:0, k:0} },
-        "Kombucha": { text: "Gut lining.", macros: {p:0, c:12, f:0, k:60} } 
-    };
-
-    // EXPANDED CHEF PREP DB (ALL MEALS AUDITED)
     const recipeDB = {
         "Bison Steak & Eggs": { ing: ["6oz Bison Sirloin", "2 Eggs", "Tomato", "Salt/Pepper", "**Asparagus**", "**Bell Peppers**"], steps: ["Remove bison from fridge 20 mins prior to cooking.", "Heat a cast-iron skillet over **High Heat**.", "Season bison heavily with salt and pepper.", "Sear steak for **3 minutes per side** for medium-rare.", "Remove steak and let rest for 5 minutes.", "In the same skillet, lower heat to **Medium**. Add asparagus and bell peppers.", "Sauté vegetables for **5-7 minutes** until tender-crisp.", "Push veggies to the side, crack eggs into the pan.", "Fry eggs for **2-3 minutes** until whites are set but yolks runny."], mod: "Sophia: 3oz bison.", macros: { J:{p:65,c:5,f:28,k:530}, S:{p:35,c:5,f:18,k:320} } },
         "Crab Scramble": { ing: ["4oz Crab", "3 Egg Whites", "Chives", "Ghee", "**Spinach**", "**Tomato**"], steps: ["Whisk egg whites vigorously in a bowl until frothy.", "Heat non-stick pan over **Low Heat**. Add 1 tsp Ghee.", "Add spinach and diced tomato. Sauté for **2 minutes** until wilted.", "Pour in egg whites. Use spatula to push edges to center.", "When eggs are 80% done (about **2 minutes**), fold in crab meat.", "Sprinkle with fresh chives and remove from heat immediately."], mod: "Sophia: 3oz crab.", macros: { J:{p:45,c:3,f:5,k:238}, S:{p:30,c:3,f:3,k:158} } },
@@ -341,31 +385,30 @@
         "Southwest Bison Scramble": { ing: ["4oz Bison", "3 Egg Whites", "Poblanos", "Cumin", "**Onions**", "**Kale**"], steps: ["Heat pan over **Medium-High Heat**.", "Sauté diced poblanos and onions for **4 minutes** until caramelized.", "Add ground bison and cumin. Cook until browned (**4-5 mins**).", "Toss in kale and cook for **1 min** until wilted.", "Lower heat to **Low**. Pour in egg whites.", "Scramble gently for **2 minutes** until fluffy."], mod: "Sophia: 3oz bison.", macros: { J:{p:48,c:8,f:12,k:332}, S:{p:32,c:6,f:8,k:224} } },
         "Protein Berry Bowl": { ing: ["1 scoop Whey", "**Blackberries/Raspberries**", "Chia Seeds", "Almond Milk", "**Cauliflower Rice (Frozen)**"], steps: ["Place frozen berries (low sugar), frozen cauliflower rice (adds bulk/fiber, no taste), and protein powder in a bowl.", "Pour small amount of almond milk over top.", "Mash with a spoon until it forms a 'sorbet' texture.", "Top with chia seeds. No cooking required."], mod: "Sophia: 1.5 palms.", macros: { J:{p:35,c:18,f:10,k:302}, S:{p:25,c:14,f:8,k:230} } },
         "Chicken Apple Sausage Scramble": { ing: ["1 Chicken Sausage", "3 Eggs", "Apple", "Sage", "**Mushrooms**", "**Spinach**"], steps: ["Slice sausage into coins. Dice apple and mushrooms.", "Heat pan over **Medium Heat**.", "Sauté sausage, mushrooms, and apple for **5 minutes** until golden.", "Add spinach and cook until wilted.", "Crack eggs directly into pan. Scramble vigorously.", "Cook for **2 minutes** until eggs are set."], mod: "Sophia: 1/2 sausage.", macros: { J:{p:38,c:14,f:22,k:406}, S:{p:25,c:10,f:15,k:275} } },
-        "Bison & Poached Eggs": { ing: ["6oz Bison Patty", "2 Poached Eggs", "**Asparagus**"], steps: ["Form bison into a patty. Season with salt and pepper.", "Grill or pan sear over **Medium-High Heat** for **3-4 minutes per side**.", "In a separate pot of simmering water with vinegar, poach eggs for **3 minutes**.", "Steam asparagus until tender-crisp.", "Serve eggs on top of patty with asparagus on side."], mod: "Sophia: 3oz patty.", macros: { J:{p:62,c:4,f:30,k:534}, S:{p:35,c:3,f:20,k:332} } },
-        "Omelet Du Fromage": { ing: ["3 Eggs", "Goat Cheese", "Chives", "**Arugula**"], steps: ["Whisk eggs with a pinch of salt.", "Heat pan over **Low Heat** with butter/ghee.", "Pour eggs. As they set, sprinkle crumbled goat cheese and chives.", "Fold into a classic French roll.", "Serve alongside a fresh arugula salad with lemon."], mod: "Sophia: 2 eggs.", macros: { J:{p:26,c:2,f:24,k:328}, S:{p:18,c:1,f:16,k:220} } },
-        "Smoked Salmon Scramble": { ing: ["4oz Smoked Salmon", "3 Eggs", "Dill", "**Cucumber**"], steps: ["Whisk eggs with fresh dill.", "Scramble gently over **Low Heat**.", "When eggs are soft and almost set, fold in smoked salmon pieces (do not overcook salmon).", "Remove from heat immediately.", "Serve with sliced cucumber rounds for crunch."], mod: "Sophia: 3oz salmon.", macros: { J:{p:40,c:3,f:22,k:370}, S:{p:28,c:2,f:15,k:255} } },
-        "Hard Boiled Scotch Egg": { ing: ["4oz Bison", "1 Boiled Egg", "**Mixed Greens**"], steps: ["Soft boil egg (6 mins). Peel carefully.", "Wrap bison meat around the egg to seal it.", "Bake at **400°F** for **15 minutes** or air fry.", "Serve over a bed of mixed greens."], mod: "Sophia: 1/2 portion.", macros: { J:{p:45,c:5,f:20,k:380}, S:{p:22,c:3,f:10,k:190} } },
-        "Green Omelet": { ing: ["3 Eggs", "Spinach", "Kale Pesto", "**Broccoli**"], steps: ["Blend eggs with a handful of spinach until green.", "Cook as a flat omelet in a pan.", "Spread kale pesto inside and fold.", "Serve with steamed broccoli on the side."], mod: "Sophia: 2 eggs.", macros: { J:{p:24,c:6,f:20,k:300}, S:{p:16,c:4,f:14,k:206} } },
-        "Chia Pudding": { ing: ["1/4c Chia", "Almond Milk", "Protein", "**Zucchini (Grated)**"], steps: ["Mix chia seeds, protein powder, and almond milk.", "Stir in finely grated zucchini (adds volume, no taste).", "Let sit in fridge overnight to thicken.", "Top with cinnamon before eating."], mod: "Sophia: 1.5 palms.", macros: { J:{p:30,c:22,f:18,k:370}, S:{p:20,c:16,f:12,k:252} } },
-        "Egg White Frittata": { ing: ["1c Egg Whites", "Bison Sausage", "**Peppers**", "**Onion**"], steps: ["Sauté sausage, peppers, and onions in an oven-safe skillet.", "Pour egg whites over the mixture.", "Bake at **350°F** for **20 minutes** until set.", "Slice into wedges."], mod: "Sophia: 1 slice.", macros: { J:{p:40,c:8,f:10,k:282}, S:{p:25,c:5,f:6,k:174} } },
-        "Sea Moss Fruit Bowl": { ing: ["2tbsp Sea Moss", "**Berries**", "**Cucumber**"], steps: ["In a bowl, combine sea moss gel with fresh berries.", "Add diced cucumber for hydration and crunch.", "Mix gently. Avoid high sugar fruits like mango on low carb days."], mod: "Add protein side.", macros: { J:{p:5,c:20,f:0,k:110}, S:{p:5,c:15,f:0,k:90} } },
-        "Turkey Bacon & Eggs": { ing: ["4 slices Turkey Bacon", "3 Eggs", "**Tomato**", "**Avocado**"], steps: ["Crisp turkey bacon in a pan.", "Fry eggs in the same pan to desired doneness.", "Slice tomato and avocado.", "Plate bacon and eggs with the fresh veggie slices."], mod: "Sophia: 2 slices.", macros: { J:{p:35,c:5,f:22,k:358}, S:{p:22,c:3,f:15,k:235} } },
-        "Spinach Mushroom Scramble": { ing: ["3 Eggs", "Spinach", "Shiitake", "**Onions**"], steps: ["Sauté onions and shiitake mushrooms until browned.", "Add spinach and cook until wilted.", "Pour in whisked eggs and scramble until soft.", "Season with salt and pepper."], mod: "Sophia: 2 eggs.", macros: { J:{p:22,c:7,f:15,k:251}, S:{p:14,c:4,f:10,k:162} } },
-        "Greek Yogurt Parfait": { ing: ["1c Greek Yogurt", "Walnuts", "Honey (Tiny Drizzle)", "**Cucumber**"], steps: ["Scoop greek yogurt into a bowl.", "Top with crushed walnuts and a tiny drizzle of honey.", "Add diced cucumber on the side or mixed in for freshness."], mod: "Sophia: 1/2 cup.", macros: { J:{p:25,c:18,f:10,k:270}, S:{p:14,c:12,f:6,k:160} } },
-        "Bison Breakfast Burrito Bowl": { ing: ["4oz Bison", "Black Beans (Small Amount)", "Salsa", "**Lettuce**", "**Peppers**"], steps: ["Brown bison meat with taco seasoning.", "Build bowl with a base of shredded lettuce.", "Top with bison, sautéed peppers, and a small spoon of black beans.", "Finish with salsa."], mod: "Sophia: 2oz bison.", macros: { J:{p:45,c:18,f:12,k:360}, S:{p:28,c:12,f:8,k:240} } },
-        "Cottage Cheese Bowl": { ing: ["1c Cottage Cheese", "**Berries**", "**Cucumber**"], steps: ["Serve cottage cheese chilled.", "Top with low-sugar berries (raspberries/blackberries).", "Add diced cucumber for volume."], mod: "Sophia: 1/2 cup.", macros: { J:{p:28,c:10,f:5,k:200}, S:{p:14,c:6,f:3,k:110} } },
-        "Avocado Toast (GF) & Egg": { ing: ["1 slice GF Bread", "1/2 Avocado", "1 Egg", "**Radish**"], steps: ["Toast gluten-free bread.", "Mash avocado with lemon and salt; spread on toast.", "Top with a fried or poached egg.", "Garnish with thin radish slices."], mod: "Sophia: 1/2 avocado.", macros: { J:{p:12,c:26,f:18,k:314}, S:{p:12,c:26,f:18,k:314} } },
-        "Shakshuka (Bison)": { ing: ["4oz Bison", "Tomato Sauce", "2 Eggs", "**Spinach**"], steps: ["Brown bison in a skillet.", "Pour in tomato sauce and bring to a simmer.", "Stir in spinach.", "Crack eggs into the sauce. Cover and cook until whites set."], mod: "Sophia: 2oz bison.", macros: { J:{p:48,c:12,f:20,k:420}, S:{p:28,c:9,f:14,k:274} } },
-        "Quinoa Breakfast Bowl": { ing: ["1/4c Quinoa", "Hemp Hearts", "Almond Milk", "Berries", "**Zucchini**"], steps: ["Simmer quinoa and hemp hearts in almond milk.", "Stir in grated zucchini during last 2 mins of cooking.", "Top with fresh berries."], mod: "Sophia: 1/4 cup.", macros: { J:{p:15,c:22,f:10,k:240}, S:{p:10,c:15,f:6,k:160} } },
-        "Steak & Spinach (Leftover)": { ing: ["4oz Steak", "Spinach", "**Mushrooms**"], steps: ["Sauté mushrooms in a pan.", "Add spinach and cook until wilted.", "Add sliced leftover steak just to warm through (do not overcook)."], mod: "Sophia: 2oz steak.", macros: { J:{p:35,c:4,f:15,k:291}, S:{p:18,c:3,f:8,k:156} } },
-        "Protein Pancakes": { ing: ["1 Banana", "2 Eggs", "Protein", "**Cauliflower Rice**"], steps: ["Blend banana, eggs, protein powder, and cauliflower rice.", "Pour batter onto a hot griddle.", "Flip when bubbles form.", "Cook until golden."], mod: "Sophia: 2 cakes.", macros: { J:{p:35,c:38,f:10,k:382}, S:{p:25,c:27,f:8,k:280} } },
-        "Overnight Oats (GF)": { ing: ["1/2c Oats", "Chia", "Almond Milk", "**Carrot (Grated)**"], steps: ["Mix oats, chia, almond milk, and grated carrot.", "Add cinnamon and a drop of vanilla.", "Refrigerate overnight.", "Eat cold."], mod: "Sophia: 1/4 cup.", macros: { J:{p:10,c:38,f:8,k:264}, S:{p:6,c:20,f:5,k:149} } },
-        "Acai Bowl": { ing: ["1/2 pk Acai", "Spinach", "Protein", "**Cucumber**"], steps: ["Blend acai packet, spinach, protein powder, and cucumber.", "Pour into a bowl.", "Top with a few seeds or nuts if desired."], mod: "Sophia: 1/2 bowl.", macros: { J:{p:25,c:20,f:8,k:260}, S:{p:15,c:15,f:5,k:170} } },
+        "Bison & Poached Eggs": { ing: ["6oz Bison Patty", "2 Poached Eggs", "**Asparagus**"], steps: ["Grill patty. Steam asparagus."], mod: "Sophia: 3oz patty.", macros: { J:{p:62,c:4,f:30,k:534}, S:{p:35,c:3,f:20,k:332} } },
+        "Omelet Du Fromage": { ing: ["3 Eggs", "Goat Cheese", "Chives", "**Arugula**"], steps: ["French fold omelet. Serve with side salad."], mod: "Sophia: 2 eggs.", macros: { J:{p:26,c:2,f:24,k:328}, S:{p:18,c:1,f:16,k:220} } },
+        "Smoked Salmon Scramble": { ing: ["4oz Smoked Salmon", "3 Eggs", "Dill", "**Cucumber**"], steps: ["Fold salmon into eggs. Serve with sliced cucumber."], mod: "Sophia: 3oz salmon.", macros: { J:{p:40,c:3,f:22,k:370}, S:{p:28,c:2,f:15,k:255} } },
+        "Hard Boiled Scotch Egg": { ing: ["4oz Bison", "1 Boiled Egg", "**Mixed Greens**"], steps: ["Wrap egg in bison. Serve on greens."], mod: "Sophia: 1/2 portion.", macros: { J:{p:45,c:5,f:20,k:380}, S:{p:22,c:3,f:10,k:190} } },
+        "Green Omelet": { ing: ["3 Eggs", "Spinach", "Kale Pesto", "**Broccoli**"], steps: ["Blend greens in eggs. Sauté broccoli on side."], mod: "Sophia: 2 eggs.", macros: { J:{p:24,c:6,f:20,k:300}, S:{p:16,c:4,f:14,k:206} } },
+        "Chia Pudding": { ing: ["1/4c Chia", "Almond Milk", "Protein", "**Zucchini (Grated)**"], steps: ["Soak overnight. Mix in grated zucchini for volume."], mod: "Sophia: 1.5 palms.", macros: { J:{p:30,c:22,f:18,k:370}, S:{p:20,c:16,f:12,k:252} } },
+        "Egg White Frittata": { ing: ["1c Egg Whites", "Bison Sausage", "**Peppers**", "**Onion**"], steps: ["Bake 350F with veggies."], mod: "Sophia: 1 slice.", macros: { J:{p:40,c:8,f:10,k:282}, S:{p:25,c:5,f:6,k:174} } },
+        "Sea Moss Fruit Bowl": { ing: ["2tbsp Sea Moss", "**Berries**", "**Cucumber**"], steps: ["Mix gel with berries and cucumber slices. Avoid high sugar mango."], mod: "Add protein side.", macros: { J:{p:5,c:20,f:0,k:110}, S:{p:5,c:15,f:0,k:90} } },
+        "Turkey Bacon & Eggs": { ing: ["4 slices Turkey Bacon", "3 Eggs", "**Tomato**", "**Avocado**"], steps: ["Crisp bacon. Serve with sliced tomato/avo."], mod: "Sophia: 2 slices.", macros: { J:{p:35,c:5,f:22,k:358}, S:{p:22,c:3,f:15,k:235} } },
+        "Spinach Mushroom Scramble": { ing: ["3 Eggs", "Spinach", "Shiitake", "**Onions**"], steps: ["Sauté veg. Scramble eggs."], mod: "Sophia: 2 eggs.", macros: { J:{p:22,c:7,f:15,k:251}, S:{p:14,c:4,f:10,k:162} } },
+        "Greek Yogurt Parfait": { ing: ["1c Greek Yogurt", "Walnuts", "Honey (Tiny Drizzle)", "**Cucumber**"], steps: ["Layer ingredients. Cucumber adds crunch."], mod: "Sophia: 1/2 cup.", macros: { J:{p:25,c:18,f:10,k:270}, S:{p:14,c:12,f:6,k:160} } },
+        "Bison Breakfast Burrito Bowl": { ing: ["4oz Bison", "Black Beans (Small Amount)", "Salsa", "**Lettuce**", "**Peppers**"], steps: ["Brown bison. Serve over lettuce/peppers. Go light on beans."], mod: "Sophia: 2oz bison.", macros: { J:{p:45,c:18,f:12,k:360}, S:{p:28,c:12,f:8,k:240} } },
+        "Cottage Cheese Bowl": { ing: ["1c Cottage Cheese", "**Berries**", "**Cucumber**"], steps: ["Serve chilled with diced cucumber and low sugar berries."], mod: "Sophia: 1/2 cup.", macros: { J:{p:28,c:10,f:5,k:200}, S:{p:14,c:6,f:3,k:110} } },
+        "Avocado Toast (GF) & Egg": { ing: ["1 slice GF Bread", "1/2 Avocado", "1 Egg", "**Radish**"], steps: ["Toast bread. Top with radish slices."], mod: "Sophia: 1/2 avocado.", macros: { J:{p:12,c:26,f:18,k:314}, S:{p:12,c:26,f:18,k:314} } },
+        "Shakshuka (Bison)": { ing: ["4oz Bison", "Tomato Sauce", "2 Eggs", "**Spinach**"], steps: ["Poach eggs in sauce. Add spinach at end."], mod: "Sophia: 2oz bison.", macros: { J:{p:48,c:12,f:20,k:420}, S:{p:28,c:9,f:14,k:274} } },
+        "Quinoa Breakfast Bowl": { ing: ["1/4c Quinoa", "Hemp Hearts", "Almond Milk", "Berries", "**Zucchini**"], steps: ["Simmer quinoa with grated zucchini."], mod: "Sophia: 1/4 cup.", macros: { J:{p:15,c:22,f:10,k:240}, S:{p:10,c:15,f:6,k:160} } },
+        "Steak & Spinach (Leftover)": { ing: ["4oz Steak", "Spinach", "**Mushrooms**"], steps: ["Reheat steak. Sauté mushrooms."], mod: "Sophia: 2oz steak.", macros: { J:{p:35,c:4,f:15,k:291}, S:{p:18,c:3,f:8,k:156} } },
+        "Protein Pancakes": { ing: ["1 Banana", "2 Eggs", "Protein", "**Cauliflower Rice**"], steps: ["Mix cauliflower into batter. Fry."], mod: "Sophia: 2 cakes.", macros: { J:{p:35,c:38,f:10,k:382}, S:{p:25,c:27,f:8,k:280} } },
+        "Overnight Oats (GF)": { ing: ["1/2c Oats", "Chia", "Almond Milk", "**Carrot (Grated)**"], steps: ["Soak overnight. Add carrot cake flavor."], mod: "Sophia: 1/4 cup.", macros: { J:{p:10,c:38,f:8,k:264}, S:{p:6,c:20,f:5,k:149} } },
+        "Acai Bowl": { ing: ["1/2 pk Acai", "Spinach", "Protein", "**Cucumber**"], steps: ["Blend frozen with cucumber. Use less fruit."], mod: "Sophia: 1/2 bowl.", macros: { J:{p:25,c:20,f:8,k:260}, S:{p:15,c:15,f:5,k:170} } },
         "Breakfast Salad": { ing: ["**Mixed Greens/Arugula**", "2 Boiled Eggs", "**Turkey Bacon (Uncured)**", "**Tomato**", "**Cucumber**"], steps: ["Crisp the turkey bacon in a pan or oven (400F for 10 mins).", "Chop bacon and boiled eggs.", "Toss mixed greens, tomato, and cucumber in a bowl.", "Top with egg and bacon. Drizzle with olive oil or lemon."], mod: "Sophia: 1 egg.", macros: { J:{p:20,c:8,f:18,k:274}, S:{p:12,c:5,f:12,k:176} } },
         "Tofu Scramble": { ing: ["1 block Firm Tofu", "Turmeric", "Nutritional Yeast", "**Bell Peppers**", "**Kale**", "**Onion**"], steps: ["Press tofu for 10 minutes to remove water.", "Sauté diced onion and peppers in oil for **5 minutes**.", "Crumble tofu into the pan. Add turmeric, salt, and nutritional yeast.", "Cook for **5-7 minutes** until slightly browned. Stir in kale at the end."], mod: "Sophia: 1/2 block.", macros: { J:{p:28,c:14,f:12,k:276}, S:{p:14,c:8,f:6,k:142} } },
         "Bone Broth & Egg": { ing: ["1c Bone Broth", "1 Egg", "**Spinach**"], steps: ["Bring bone broth to a simmer.", "Stir in spinach.", "Crack egg into broth and poach for **3 minutes**.", "Serve hot."], mod: "Sophia: 1 cup.", macros: { J:{p:16,c:2,f:5,k:117}, S:{p:16,c:2,f:5,k:117} } },
-
-        // LUNCHES
+        
         "Sardine Bowl": { ing: ["1 tin Sardines", "1/2 Avocado", "Lemon", "Olive Oil", "**Cucumber**", "**Radish**"], steps: ["Drain oil from sardine tin.", "In a bowl, mash avocado with lemon juice.", "Slice cucumber and radish thinly.", "Top avocado with sardines and veggies.", "Drizzle with fresh olive oil and cracked pepper. No cooking required."], mod: "Sophia: 1.5 palms.", macros: { J:{p:25,c:8,f:20,k:312}, S:{p:18,c:5,f:15,k:227} } },
         "Bison Laab": { ing: ["6oz Bison", "Lime", "Fish Sauce", "Mint", "Chili", "**Green Beans**", "**Cabbage**"], steps: ["Heat wok or skillet over **High Heat**.", "Add bison and chopped green beans. Cook until browned (**5-6 mins**).", "Remove from heat. Immediately stir in lime juice and fish sauce.", "Toss with fresh mint, chili flakes, and shredded cabbage.", "Serve in lettuce cups."], mod: "Sophia: 3oz.", macros: { J:{p:45,c:10,f:12,k:328}, S:{p:22,c:6,f:6,k:166} } },
         "Stealth Liver Sliders": { ing: ["5oz Ground Bison", "1oz Beef Liver (ground)", "Smoked Paprika", "**Portobello Mushrooms (Bun)**", "**Grilled Onions**"], steps: ["Mix bison and liver thoroughly. Form into patties.", "Season with paprika, salt, and pepper.", "Grill or pan-sear for **4 minutes per side** (Medium).", "Sauté mushrooms and onions in the same pan.", "Serve patties between mushroom caps."], mod: "Sophia: 1 slider.", macros: { J:{p:48,c:6,f:15,k:351}, S:{p:24,c:3,f:8,k:180} } },
