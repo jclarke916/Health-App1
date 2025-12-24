@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v222.11 Pro Fix</title>
+    <title>The Centurion | v222.12 Pro Expansion</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -29,7 +29,7 @@
         .tab-btn { background: none; border: none; color: #555; padding: 12px 0; cursor: pointer; flex: 1; font-size: 0.7rem; display: flex; flex-direction: column; align-items: center; border-radius: 12px; }
         .tab-btn span { font-size: 0.95rem; margin-top: 5px; font-weight: 600; }
         .tab-btn.active { color: #fff; background: #222; font-weight: 700; }
-        .card, .macro-dashboard, .juice-card { background: var(--bg-card); border-radius: 24px; padding: 32px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.03); position: relative; box-shadow: 0 15px 50px -10px rgba(0,0,0,0.6); }
+        .card, .macro-dashboard { background: var(--bg-card); border-radius: 24px; padding: 32px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.03); position: relative; box-shadow: 0 15px 50px -10px rgba(0,0,0,0.6); }
         .card::before { content: ""; position: absolute; top: 35px; bottom: 35px; left: 0; width: 4px; background: var(--accent-gold); border-radius: 0 4px 4px 0; }
         .label { color: #666; font-size: 0.65rem; text-transform: uppercase; font-weight: 800; margin-bottom: 8px; letter-spacing: 1.5px; }
         .value { font-size: 1.05rem; margin-bottom: 25px; color: #fff; font-weight: 500; cursor: pointer; }
@@ -54,12 +54,15 @@
         .prog-fill.past { background: #333; }
         .prog-fill.current { background: var(--accent-gold); }
         .prog-fill.goal { background: var(--target-green); box-shadow: 0 0 10px var(--target-green); }
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
+        .stat-box { background: #0a0a0a; padding: 20px; border-radius: 16px; border: 1px solid #222; }
+        .stat-val { font-size: 1.6rem; font-weight: 800; color: #fff; display: block; }
+        .stat-lbl { font-size: 0.65rem; color: #555; text-transform: uppercase; font-weight: 800; letter-spacing: 1px; }
     </style>
 </head>
 <body>
 <div class="container">
-    <header>
-        <h1>THE CENTURION</h1>
+    <header><h1>THE CENTURION</h1>
         <div class="profile-badges">
             <div id="badgeJ" class="badge active-user" onclick="switchUser('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="badgeS" class="badge" onclick="switchUser('S')">👩🏾‍🦱 SOPHIA</div>
@@ -77,7 +80,7 @@
 </div>
 
 <div id="recipeModal" class="modal"><div class="modal-content"><span onclick="closeModal('recipeModal')" style="float:right; cursor:pointer; font-size:1.5rem;">&times;</span><h2 id="modalTitle" style="color:#fff;"></h2><div id="modalIng" style="color:#ccc; margin: 20px 0;"></div><div id="modalSteps" class="chef-steps"></div></div></div>
-<div id="profileModal" class="modal"><div class="modal-content"><span onclick="closeModal('profileModal')" style="float:right; cursor:pointer;">&times;</span><h2 id="profTitle" style="color:#fff;"></h2><div id="profStats"></div><div id="profBars"></div><div id="profHistory"></div></div></div>
+<div id="profileModal" class="modal"><div class="modal-content"><span onclick="closeModal('profileModal')" style="float:right; cursor:pointer;">&times;</span><h2 id="profTitle" style="color:#fff;"></h2><div id="profStats"></div><div id="profBars"></div></div></div>
 
 <script>
     let currentUser = 'J'; 
@@ -86,33 +89,58 @@
 
     const recipeDB = {
         breakfast: [
-            { name: "Japanese Tamagoyaki", ing: ["4 Pasture Eggs", "1 tbsp Dashi", "1/2 cup Finely Grated Zucchini", "Light Soy"], steps: ["Whisk eggs with dashi and zucchini until bubbles form.","Heat tamagoyaki pan on med-low.","Lightly oil surface using a paper towel.","Pour a very thin layer of egg.","Once set but tacky, roll tightly from front to back.","Push roll to the front.","Oil empty space again.","Pour second layer, lifting first roll to flow under.","Roll original log over the new layer.","Repeat until all mixture is used.","Firm up shape with a spatula.","Transfer to a cutting board.","Let rest 2 minutes.","Slice into 1-inch thick rectangles.","Serve with fresh radish."] },
-            { name: "Bison & Pasture Eggs", ing: ["6oz Bison Strips", "2 Large Eggs", "Asparagus", "Ghee"], steps: ["Temper bison at room temp for 10m.","Heat cast iron with ghee.","Sear bison strips for 3m per side.","Remove meat and tent with foil.","In same pan, flash-sear asparagus.","Move asparagus to plate.","Crack eggs into pan.","Cook sunny-side up until whites set.","Season eggs with sea salt.","Plate bison alongside eggs.","Finish with cracked pepper."] },
-            { name: "Sprouted Protein Wrap", ing: ["Sprouted Tortilla", "3 Eggs", "Turkey Bacon", "Spinach"], steps: ["Crisp turkey bacon in pan.","Whisk 3 eggs with a splash of water.","Sauté spinach in bacon fat until wilted.","Pour eggs over spinach.","Scramble until just soft.","Warm tortilla on open flame.","Layer bacon in center.","Top with spinach scramble.","Fold sides in tightly.","Sear the seam side down in pan.","Slice on a bias."] }
-            // Expansion to 14 entries would go here...
+            { name: "Japanese Tamagoyaki", ing: ["4 Pasture Eggs", "Dashi", "Grated Zucchini"], steps: ["Whisk eggs with 1 tbsp dashi and sea salt.", "Fold in squeezed-dry grated zucchini.", "Lightly oil tamago pan over medium-low heat.", "Pour 1/4 of egg mixture to coat bottom.", "Once set, roll tightly to one end.", "Re-oil empty pan area.", "Pour next layer, lifting roll to flow under.", "Roll log over new layer.", "Repeat until all egg is used.", "Firm up square shape with spatula.", "Rest on board for 2m.", "Slice into 1-inch pieces."] },
+            { name: "Bison & Pasture Eggs", ing: ["6oz Bison Sirloin", "2 Eggs", "Asparagus"], steps: ["Bring bison to room temp.", "Heat cast iron until smoking.", "Sear bison 3m/side.", "Rest bison under foil for 5m.", "Trim asparagus ends.", "Sear asparagus in bison fat 4m.", "Fry eggs sunny-side up in ghee.", "Season with flaky salt.", "Slice bison against grain.", "Plate eggs and bison side-by-side.", "Garnish with pepper."] },
+            { name: "Sprouted Protein Wrap", ing: ["Sprouted Tortilla", "3 Eggs", "Turkey Bacon"], steps: ["Crisp bacon in non-stick pan.", "Remove bacon; keep 1 tsp fat.", "Whisk eggs with splash of water.", "Scramble eggs until just soft.", "Warm tortilla on open flame.", "Layer bacon center-strip.", "Top with eggs.", "Add fresh spinach.", "Fold sides tightly.", "Sear seam-side down in pan.", "Slice on extreme bias."] },
+            { name: "Bone Broth & Ginger Poach", ing: ["1.5c Broth", "2 Eggs", "Ginger"], steps: ["Simmer broth with ginger matchsticks.", "Bring to low rolling boil.", "Whirlpool the liquid.", "Drop eggs into center.", "Poach 3.5m for soft yolk.", "Transfer eggs to deep bowl.", "Pour broth over eggs.", "Garnish with chili oil.", "Add green onion."] },
+            { name: "Steak matchsticks & Eggs", ing: ["4oz Steak", "3 Eggs", "Peppers"], steps: ["Julienne steak into strips.", "High-heat stir fry steak 2m.", "Remove strips.", "Sauté peppers in same pan.", "Whisk eggs thoroughly.", "Pour eggs over peppers.", "Add steak back to center.", "Fold omelet style.", "Plate with avocado."] },
+            { name: "Avocado Sardine Toast", ing: ["Sprouted Bread", "Sardines", "1 Avocado"], steps: ["Toast sprouted bread well.", "Mash avocado with lime.", "Spread thick layer on toast.", "Drain sardines.", "Place sardines on top.", "Add red pepper flakes.", "Drizzle olive oil.", "Finish with sea salt."] },
+            { name: "Turkey Sausage Scramble", ing: ["2 Turkey Links", "Spinach", "2 Eggs"], steps: ["Crumble sausage into pan.", "Brown sausages 5m.", "Add huge handful of spinach.", "Wilt spinach.", "Pour whisked eggs in.", "Scramble softly.", "Plate hot."] },
+            { name: "Ghee Fried Eggs & Greens", ing: ["3 Eggs", "Kale", "Ghee"], steps: ["Melt ghee over med-high.", "Fry eggs crispy-edge style.", "Baste tops with ghee.", "Remove eggs.", "Sauté kale in same pan.", "Add lemon juice to kale.", "Plate eggs over kale."] },
+            { name: "Soft Poach & Asparagus", ing: ["2 Eggs", "Asparagus", "Prosciutto"], steps: ["Wrap asparagus in prosciutto.", "Roast 400F for 10m.", "Poach eggs separately.", "Place eggs on asparagus spears.", "Break yolks for 'sauce'."] },
+            { name: "Mushroom Egg White Bake", ing: ["1c Egg Whites", "Mushrooms", "Thyme"], steps: ["Sauté mushrooms until dark.", "Place in small oven dish.", "Pour egg whites over.", "Bake 375F for 15m.", "Finish with thyme."] },
+            { name: "Smoked Salmon Omelet", ing: ["3oz Salmon", "Eggs", "Dill"], steps: ["Whisk eggs.", "Cook omelet flat.", "Top with cold salmon.", "Sprinkle fresh dill.", "Fold and serve."] },
+            { name: "Zucchini Hash & Eggs", ing: ["1 Zucchini", "Onion", "2 Eggs"], steps: ["Grate zucchini/onion.", "Squeeze out all moisture.", "Fry until crispy like hash.", "Top with fried eggs."] },
+            { name: "Herb Goat Cheese Scramble", ing: ["2 Eggs", "Goat Cheese", "Chives"], steps: ["Whisk eggs with chives.", "Scramble low and slow.", "Fold in cheese at end.", "Remove from heat immediately."] },
+            { name: "Steak Tip Breakfast Bowl", ing: ["5oz Steak", "Arugula", "1 Egg"], steps: ["Sear steak tips 4m.", "Place over arugula bed.", "Top with over-easy egg.", "Yolk dresses the leaves."] }
         ],
         lunch: [
-            { name: "Thai Beef Power Salad", ing: ["6oz Flank Steak", "Gem Lettuce", "Mint", "Lime", "Chili"], steps: ["Grill steak to rare ahead of time.","Chill steak for 1 hour.","Slice against grain very thin.","Wash gem lettuce and spin dry.","Pick mint leaves from stems.","Whisk lime juice and chili for dressing.","Pack steak and greens in large bowl.","Keep dressing in separate leak-proof jar.","When ready, pour dressing over beef.","Toss thoroughly.","Garnish with extra mint."] },
-            { name: "Portable Chicken Wraps", ing: ["6oz Chicken", "Butter Lettuce", "Cashew Cream"], steps: ["Poach chicken in bone broth.","Shred chicken with two forks.","Mix chicken with cashew cream.","Season with garlic powder.","Pack chicken mix in airtight container.","Pack lettuce heads in separate bag.","At work, spoon chicken into lettuce.","Roll tightly and eat like a taco.","Zero mess, high protein."] }
+            { name: "Thai Beef Power Salad", ing: ["6oz Flank Steak", "Gem Lettuce", "Mint", "Lime"], steps: ["Grill steak med-rare ahead.", "Chill steak 1hr.", "Slice paper thin.", "Whisk lime/chili dressing.", "Pack lettuce/mint dry.", "Dress beef at work."] },
+            { name: "Portable Chicken Wraps", ing: ["6oz Chicken", "Butter Lettuce", "Cashews"], steps: ["Poach/shred chicken.", "Mix with cashew cream.", "Pack airtight.", "Keep lettuce separate.", "Spoon into cups at desk."] },
+            { name: "Sardine & Radish Bowl", ing: ["Sardines", "Radish", "Cucumber", "Olive Oil"], steps: ["Slice radish/cucumber thin.", "Toss with salt/oil.", "Add sardines on top.", "Pack cold."] },
+            { name: "Cold Flank & Asparagus", ing: ["6oz Steak", "Asparagus", "Mustard"], steps: ["Blanch asparagus.", "Slice cold steak.", "Dip both in dijonnaise.", "Pack in glass container."] },
+            { name: "Turkey Gem Wraps", ing: ["Ground Turkey", "Ginger", "Lettuce"], steps: ["Sauté turkey with ginger.", "Drain fat well.", "Pack turkey in small jar.", "Pack lettuce cups."] },
+            { name: "Salmon Salad Cups", ing: ["Canned Salmon", "Celery", "Onion"], steps: ["Mix salmon/celery/onion.", "No mayo - use lemon/oil.", "Pack into cucumber boats."] },
+            { name: "Bison Jerky & Nut Plate", ing: ["Bison Jerky", "Almonds", "Olives"], steps: ["Zero prep.", "Portion jerky.", "Portion nuts.", "Pack with 10 olives."] },
+            { name: "Steak Arugula Jar", ing: ["Steak", "Arugula", "Beets"], steps: ["Layer dressing bottom.", "Add steak next.", "Top with arugula.", "Shake at work."] },
+            { name: "Chicken Lemon Bowl", ing: ["Chicken", "Broccoli", "Lemon"], steps: ["Steam broccoli.", "Grill chicken.", "Pack with lemon wedge."] },
+            { name: "Tuna Stuffed Peppers", ing: ["Tuna", "Bell Peppers"], steps: ["Mix tuna with dill.", "Clean pepper halves.", "Stuff and pack."] },
+            { name: "Beef & Broccoli Cold", ing: ["Beef strips", "Broccoli", "Sesame"], steps: ["Sauté beef.", "Steam broccoli.", "Toss with sesame oil."] },
+            { name: "Arugula Sardine Salad", ing: ["Sardines", "Arugula", "Capers"], steps: ["Mix arugula/capers.", "Top with sardines.", "Add lots of lemon."] },
+            { name: "Turkey & Avocado Roll", ing: ["Turkey slices", "Avocado"], steps: ["Wrap avocado in turkey.", "Secure with toothpick."] },
+            { name: "Cold Poached Salmon", ing: ["Salmon", "Cucumber", "Dill"], steps: ["Poach salmon ahead.", "Serve cold with cucumber."] }
         ],
         dinner: [
-            { name: "Clams & Garlic Liquor", ing: ["1lb Manila Clams", "4 Garlic Cloves", "Parsley", "Chili Flakes"], steps: ["Purge clams in cold salt water.","Mince garlic finely.","Heat olive oil in deep pan.","Sauté garlic and chili until fragrant.","Add clams all at once.","Pour in 1/2 cup bone broth.","Cover tightly for 5-7 minutes.","Discard any unopened shells.","Fold in fresh chopped parsley.","Squeeze half a lemon over.","Serve in a deep bowl."] }
+            { name: "Clams & Garlic Liquor", ing: ["1lb Clams", "Garlic", "Parsley", "Broth"], steps: ["Mince 4 garlic cloves.", "Sauté in oil until soft.", "Add cleaned clams.", "Pour in 1/2c broth.", "Cover and steam 6m.", "Discard closed shells.", "Add parsley.", "Serve in deep bowl."] },
+            { name: "Wild Salmon & Bok Choy", ing: ["6oz Salmon", "Bok Choy", "Ginger"], steps: ["Skin-down sear 5m.", "Flip for 2m.", "Steam bok choy with ginger.", "Drizzle with tamari."] },
+            { name: "Bison Chili Pot", ing: ["Ground Bison", "Peppers", "Onion"], steps: ["Brown bison well.", "Add diced veg.", "Simmer with cumin 20m.", "Serve hot."] },
+            { name: "Steak & Zucchini Ribbons", ing: ["Steak", "Zucchini", "Garlic"], steps: ["Peel zucchini into strips.", "Sear steak 4m.", "Flash sauté ribbons 1m."] },
+            { name: "Garlic Butter Scallops", ing: ["Scallops", "Garlic", "Spinach"], steps: ["Dry scallops well.", "Sear 2m per side.", "Sauté spinach in same pan."] },
+            { name: "Lemon Herb Cod", ing: ["Cod", "Rosemary", "Broccoli"], steps: ["Roast cod at 400F.", "Steam broccoli.", "Top with rosemary oil."] },
+            { name: "Spicy Beef Stir Fry", ing: ["Beef", "Peppers", "Snap Peas"], steps: ["High heat stir fry beef.", "Add veg.", "Tamari finish."] },
+            { name: "Lamb Chops & Mint", ing: ["Lamb", "Mint", "Cauliflower"], steps: ["Sear lamb 3m/side.", "Mash cauliflower.", "Mint garnish."] },
+            { name: "Shrimp & Asparagus", ing: ["Shrimp", "Asparagus", "Lemon"], steps: ["Sauté shrimp 3m.", "Sear asparagus.", "Combine with lemon."] },
+            { name: "Turkey Burgers Naked", ing: ["Turkey", "Mushrooms", "Arugula"], steps: ["Patty turkey/shroom mix.", "Grill 5m/side.", "Serve over arugula."] },
+            { name: "Rainbow Trout Bake", ing: ["Trout", "Lemon", "Parsley"], steps: ["Wrap in foil.", "Bake 15m.", "Finish with parsley."] },
+            { name: "Sirloin & Mushrooms", ing: ["Sirloin", "Mushrooms", "Thyme"], steps: ["Sear steak.", "Sauté mushrooms dark.", "Butter baste."] },
+            { name: "Pesto Salmon", ing: ["Salmon", "Homemade Pesto"], steps: ["Spread pesto on salmon.", "Bake 12m.", "Serve with greens."] },
+            { name: "Sea Bass & Leeks", ing: ["Bass", "Leeks", "Lemon"], steps: ["Sauté leeks until soft.", "Pan sear bass.", "Lemon finish."] }
         ]
     };
 
     const userHistory = {
-        'J': { 
-            past: { bf: 17.9, muscle: 99.4, weight: 210.8 },
-            current: { date: "Dec 24, 2025", weight: 217.1, muscle: 98.8, bf: 20.7 },
-            goal: { bf: 19.2, muscle: 99.8, weight: 212.0 },
-            history: [{ date: "Dec 24, 2025", w: 217.1, m: 98.8, bf: 20.7 }, { date: "Oct 30, 2024", w: 210.8, m: 99.4, bf: 17.9 }]
-        },
-        'S': { 
-            past: { bf: 33.0, muscle: 50.0, weight: 136.1 },
-            current: { date: "Dec 24, 2025", weight: 141.5, muscle: 49.2, bf: 36.1 },
-            goal: { bf: 34.6, muscle: 49.8, weight: 138.0 },
-            history: [{ date: "Dec 24, 2025", w: 141.5, m: 49.2, bf: 36.1 }, { date: "Oct 30, 2024", w: 136.1, m: 50.0, bf: 33.0 }]
-        }
+        'J': { past: { bf: 17.9, m: 99.4, w: 210.8 }, curr: { date: "Dec 24", w: 217.1, m: 98.8, bf: 20.7 }, goal: { bf: 19.2, m: 99.8, w: 212.0 }, hist: [{ d: "Dec 24, 2025", w: 217.1, m: 98.8, bf: 20.7 }, { d: "Oct 30, 2024", w: 210.8, m: 99.4, bf: 17.9 }] },
+        'S': { past: { bf: 33.0, m: 50.0, w: 136.1 }, curr: { date: "Dec 24", w: 141.5, m: 49.2, bf: 36.1 }, goal: { bf: 34.6, m: 49.8, w: 138.0 }, hist: [{ d: "Dec 24, 2025", w: 141.5, m: 49.2, bf: 36.1 }, { d: "Oct 30, 2024", w: 136.1, m: 50.0, bf: 33.0 }] }
     };
 
     const weeklySchedule = [{j:"APOLLO GOLD"}, {j:"TITAN RED"}, {j:"ZENITH GREEN"}, {j:"TITAN RED"}, {j:"PLASMA FLUSH"}, {j:"ZENITH GREEN"}, {j:"TITAN RED"}];
@@ -139,16 +167,16 @@
 
     function showDay(dateObj, dayIndex) {
         const dayId = Math.floor(dateObj.getTime() / 86400000);
-        const b = recipeDB.breakfast[Math.abs(dayId) % recipeDB.breakfast.length];
-        const l = recipeDB.lunch[Math.abs(dayId) % recipeDB.lunch.length];
-        const d = recipeDB.dinner[Math.abs(dayId) % recipeDB.dinner.length];
+        const b = recipeDB.breakfast[Math.abs(dayId) % 14];
+        const l = recipeDB.lunch[Math.abs(dayId) % 14];
+        const d = recipeDB.dinner[Math.abs(dayId) % 14];
         const goal = (currentUser === 'J') ? {p:160, k:1860} : {p:105, k:1250};
 
         document.getElementById('dayContent').innerHTML = `
             <div class="card">
-                <div class="label">🍳 Breakfast</div><div class="value" onclick="openRecipe('breakfast', ${Math.abs(dayId) % recipeDB.breakfast.length})">${b.name}</div>
-                <div class="label">🥗 Lunch</div><div class="value" onclick="openRecipe('lunch', ${Math.abs(dayId) % recipeDB.lunch.length})">${l.name} 💼</div>
-                <div class="label">🍽️ Dinner</div><div class="value" onclick="openRecipe('dinner', ${Math.abs(dayId) % recipeDB.dinner.length})">${d.name}</div>
+                <div class="label">🍳 Breakfast</div><div class="value" onclick="openRecipe('breakfast', ${Math.abs(dayId) % 14})">${b.name}</div>
+                <div class="label">🥗 Lunch</div><div class="value" onclick="openRecipe('lunch', ${Math.abs(dayId) % 14})">${l.name} 💼</div>
+                <div class="label">🍽️ Dinner</div><div class="value" onclick="openRecipe('dinner', ${Math.abs(dayId) % 14})">${d.name}</div>
             </div>
             <div class="macro-dashboard">
                 <div class="macro-row"><div class="macro-label"><span>PROTEIN</span><span>81g / ${goal.p}g</span></div><div class="macro-bar-bg"><div class="macro-bar-fill p-fill" style="width:50%;"></div></div></div>
@@ -162,9 +190,9 @@
 
     function openProfileModal() {
         const u = userHistory[currentUser]; document.getElementById('profTitle').innerText = currentUser === 'J' ? "🧔🏾‍♂️ JERMAINE" : "👩🏾‍🦱 SOPHIA";
-        document.getElementById('profStats').innerHTML = `<div class="stat-grid"><div class="stat-box"><span class="stat-val">${u.current.weight}</span><span class="stat-lbl">Weight</span></div><div class="stat-box"><span class="stat-val">${u.current.bf}%</span><span class="stat-lbl">Body Fat</span></div></div>`;
+        document.getElementById('profStats').innerHTML = `<div class="stat-grid"><div class="stat-box"><span class="stat-val">${u.curr.w}</span><span class="stat-lbl">Weight</span></div><div class="stat-box"><span class="stat-val">${u.curr.bf}%</span><span class="stat-lbl">Body Fat</span></div></div>`;
         const drawBars = (title, past, curr, goal, unit) => `<div class="prog-section"><div class="prog-title"><span>${title}</span><span>Target: ${goal}${unit}</span></div><div class="prog-bar-row"><div class="prog-label">Past</div><div class="prog-track"><div class="prog-fill past" style="width:${(past/Math.max(past,curr,goal))*100}%"></div></div></div><div class="prog-bar-row"><div class="prog-label">Now</div><div class="prog-track"><div class="prog-fill current" style="width:${(curr/Math.max(past,curr,goal))*100}%"></div></div></div><div class="prog-bar-row"><div class="prog-label" style="color:var(--target-green)">Goal</div><div class="prog-track"><div class="prog-fill goal" style="width:${(goal/Math.max(past,curr,goal))*100}%"></div></div></div></div>`;
-        document.getElementById('profBars').innerHTML = drawBars("Body Fat", u.past.bf, u.current.bf, u.goal.bf, "%") + drawBars("Muscle", u.past.muscle, u.current.muscle, u.goal.muscle, "lbs");
+        document.getElementById('profBars').innerHTML = drawBars("Body Fat", u.past.bf, u.curr.bf, u.goal.bf, "%") + drawBars("Muscle", u.past.m, u.curr.m, u.goal.m, "lbs");
         document.getElementById('profileModal').style.display = 'block';
     }
 
