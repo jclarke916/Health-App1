@@ -80,16 +80,14 @@
 <div id="masterModal" class="modal"><div class="modal-content"><span onclick="closeM()" style="float:right;cursor:pointer">&times;</span><h2 id="mTitle"></h2><div id="mSub" style="color:var(--gold);font-size:0.7rem;margin:10px 0"></div><div id="mBody" class="chef-steps" style="counter-reset:step"></div><div id="mTip" class="chef-tip"></div></div></div>
 
 <script>
+<script>
 let user='J', offset=0, selDate=new Date();
+// This variable holds your choice for the day. null means nothing selected yet.
+let dailySnack = null; 
 
 const rDB = {
-    "Aqua Chair": ["Hydro-Massage","Align body to zero-gravity.","Jets to glutes and lats.","20 Min Duration."],
-    "Sauna": ["HSP Induction","185°F Range.","20 Mins total.","Heavy metal detox sweat."],
-    "Theragun": ["Percussive","Float over muscles.","2m per limb.","Target Lats/Hips."],
-    "Normatec": ["Compression","Level 4 Intensity.","Full leg cycle.","30m Lymphatic flush."],
     "Sea Moss": ["92 Minerals","2 TBSP Fasted.","Thyroid & Gut support."],
-    "Kombucha": ["Probiotic","4 OZ post-Lunch.","Enzyme support."],
-    "Pre-Workout": ["Nitro-Boost","6g Citrulline Malate.","Take 20m before training."]
+    "Kombucha": ["Probiotic","4 OZ post-Lunch.","Enzyme support."]
 };
 
 const jDB = {
@@ -196,6 +194,7 @@ const mDB = {
         "Trout Bake|Trout,Parsley,Lemon|bake|Stuff the cavity with fresh parsley and lemon.",
         "Beef Heart Roast|Heart,Thyme,Ghee|sear|Serve with horseradish to aid in fat digestion."
     ],
+    // ADDED MACROS TO SNACKS: |Protein|Carbs|Calories
     s: [
         "Greek Yogurt Bowl|Berries,Honey,Walnuts|raw|Probiotic boost for gut health.|22|18|240",
         "Hard Boiled Eggs|Sea Salt,Pepper|boil|Perfect amino acid profile.|12|1|140",
@@ -236,7 +235,9 @@ function render(){
     for(let i=0; i<7; i++){
         let d=new Date(mon); d.setDate(mon.getDate()+i);
         const b=document.createElement('div'); b.className='tab'+(d.toDateString()===selDate.toDateString()?' active':'');
-        b.innerHTML=`${days[i]}<br>${d.getDate()}`; b.onclick=()=>{selDate=d; render()}; tabs.appendChild(b);
+        // When changing days, RESET the snack selection
+        b.onclick=()=>{ dailySnack=null; selDate=d; render() }; 
+        tabs.appendChild(b);
         if(b.classList.contains('active')) showDay(d, i);
     }
 }
@@ -244,25 +245,33 @@ function render(){
 function showDay(dObj, idx){
     const id=Math.floor(dObj.getTime()/864e5);
     
-    // 1. GET DATA (Now splits into 7 parts for snacks to get macros)
+    // GET MEALS
     const b = (mDB.b[Math.abs(id) % mDB.b.length]).split('|');
     const l = (mDB.l[Math.abs(id) % mDB.l.length]).split('|');
     const dn = (mDB.d[Math.abs(id) % mDB.d.length]).split('|');
-    const s1 = (mDB.s[Math.abs(id) % mDB.s.length]).split('|');
-    const s2 = (mDB.s[(Math.abs(id) + 3) % mDB.s.length]).split('|');
 
     const sch=["HEAVY LIFT","BOXING","REFORM","BOXING","REFORM/YOGA","CS4","RELAX"];
     const jcs=["PLASMA FLUSH","TITAN RED","ZENITH GREEN","TITAN RED","ZENITH GREEN","TITAN RED","APOLLO GOLD"];
     const j=jDB[jcs[idx]], g=(user==='J')?{P:165,C:(idx%2===0?130:85),K:1950}:{P:105,C:55,K:1300};
-    const rT = (idx===0||idx===5)?'Aqua Chair':(idx===1||idx===3)?'Sauna':'Normatec';
     
-    // 2. CALCULATE MACROS (Meals Base + Juice + Snack 1 + Snack 2)
-    // Base Meals Avg: 98g Pro, 45g Carb, 1180 Cal. We add snacks on top.
-    let p = 98 + j[2] + parseInt(s1[4]) + parseInt(s2[4]);
-    let c = 45 + j[3] + parseInt(s1[5]) + parseInt(s2[5]);
-    let k = 1180 + j[4] + parseInt(s1[6]) + parseInt(s2[6]);
+    // CALC MACROS: BASE MEALS (98/45/1180) + JUICE + SNACK (IF SELECTED)
+    let sPro = dailySnack ? parseInt(dailySnack[4]) : 0;
+    let sCarb = dailySnack ? parseInt(dailySnack[5]) : 0;
+    let sCal = dailySnack ? parseInt(dailySnack[6]) : 0;
+
+    let p = 98 + j[2] + sPro;
+    let c = 45 + j[3] + sCarb;
+    let k = 1180 + j[4] + sCal;
+
+    // SNACK UI LOGIC
+    // If dailySnack is null, show "Select". If set, show name and allow re-select.
+    let snackHTML = '';
+    if(!dailySnack) {
+        snackHTML = `<div class="value" onclick="openSnackSelector()" style="color:#888; border-style:dashed">➕ TAP TO SELECT SNACK</div>`;
+    } else {
+        snackHTML = `<div class="value" onclick="openSnackSelector()">${dailySnack[0]} <span style="font-size:0.6rem;color:var(--green)">+${sPro}g Pro</span></div>`;
+    }
     
-    // 3. RENDER
     document.getElementById('dayContent').innerHTML = `
         <div style="font-weight:800;cursor:pointer;color:var(--blue);border-bottom:1px solid #222;padding-bottom:10px;margin-bottom:15px" onclick="openRecoveryPhase('${sch[idx]}')">${sch[idx]} (VIEW PHASE GUIDE)</div>
         
@@ -270,14 +279,8 @@ function showDay(dObj, idx){
         <div class="label">🥗 Lunch</div><div class="value" onclick="openR('${l[0]}','${l[1]}','${l[2]}','${l[3]}')">${l[0]} 💼</div>
         <div class="label">🍽️ Dinner</div><div class="value" onclick="openR('${dn[0]}','${dn[1]}','${dn[2]}','${dn[3]}')">${dn[0]}</div>
         
-        <div class="label">🥜 Snack I (+${s1[4]}g Pro)</div><div class="value" onclick="openR('${s1[0]}','${s1[1]}','${s1[2]}','${s1[3]}')">${s1[0]}</div>
-        <div class="label">🥜 Snack II (+${s2[4]}g Pro)</div><div class="value" onclick="openR('${s2[0]}','${s2[1]}','${s2[2]}','${s2[3]}')">${s2[0]}</div>
-
-        <div class="proto-grid">
-            <div class="proto-box active" onclick="openSnackMenu()" style="border-color:var(--gold);color:var(--gold)"><span class="p-qty">SELECT</span>PICK OPTION</div>
-            <div class="proto-box rec" onclick="openM('${rT}')"><span class="p-qty">RECOV</span>${rT.split(' ')[0]}</div>
-            <div class="proto-box rec" onclick="openM('Theragun')"><span class="p-qty">GUN</span>Thera</div>
-        </div>
+        <div class="label">🥜 Snack Option</div>
+        ${snackHTML}
 
         <div class="macro-dashboard">
             <div class="macro-row"><div class="macro-label"><span>PROTEIN</span><span>${p.toFixed(0)}g / ${g.P}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${(p/g.P)*100}%; background:var(--g-pro)"></div></div></div>
@@ -285,6 +288,39 @@ function showDay(dObj, idx){
             <div class="macro-row"><div class="macro-label"><span>CALORIES</span><span>${k} / ${g.K}</span></div><div class="macro-bg"><div class="macro-fill" style="width:${(k/g.K)*100}%; background:var(--g-cal)"></div></div></div>
         </div>
         <div class="card" style="text-align:center"><div class="label" style="color:var(--gold)">Kuvings Cold Pressed</div><div class="juice-name" onclick="openJ('${jcs[idx]}')">${jcs[idx]}</div></div>`;
+}
+
+// NEW FUNCTION: Opens the list to pick a snack
+function openSnackSelector() {
+    const modalBody = document.getElementById('mBody');
+    document.getElementById('mTitle').innerText = "SELECT SNACK";
+    document.getElementById('mSub').innerText = "CALCULATES MACROS AUTOMATICALLY";
+    
+    let html = '';
+    mDB.s.forEach((item, index) => {
+        let s = item.split('|');
+        // On click, we call applySnack with the index of the item
+        html += `<div class="value" onclick="applySnack(${index})">
+            ${s[0]} 
+            <span style="float:right;font-size:0.7rem;color:#666">${s[4]}g Pro | ${s[6]} Cal</span>
+        </div>`;
+    });
+    
+    modalBody.innerHTML = html;
+    document.getElementById('mTip').innerText = "";
+    document.getElementById('masterModal').style.display = 'block';
+}
+
+// NEW FUNCTION: Sets the snack and refreshes the day view
+function applySnack(idx) {
+    dailySnack = mDB.s[idx].split('|'); // Save the choice
+    document.getElementById('masterModal').style.display = 'none'; // Close modal
+    
+    // Re-run showDay for the current date to update text and macros
+    // We need to find the current index (0-6) based on selDate
+    const mon=getMon(offset);
+    const dayDiff = Math.floor((selDate - mon) / 864e5);
+    showDay(selDate, dayDiff);
 }
 
 function openR(n,i,a,t){
@@ -351,10 +387,8 @@ function openBio() {
     const u = uH[user];
     const modalBody = document.getElementById('mBody');
     
-    // Check user for display name
     const fullName = (user === 'J') ? "JERMAINE" : "SOPHIA";
     document.getElementById('mTitle').innerText = fullName + " CLINICAL SCAN";
-
     document.getElementById('mSub').innerText = `Weight: ${u.now.w} lbs | Updated Dec 24`;
     
     const metrics = [
@@ -398,22 +432,6 @@ function openBio() {
 
 function closeM(){ document.getElementById('masterModal').style.display='none' }
 window.onload=render;
-
-function openSnackMenu() {
-    const modalBody = document.getElementById('mBody');
-    document.getElementById('mTitle').innerText = "SNACK OPTIONS";
-    document.getElementById('mSub').innerText = "CHOOSE ONE FOR TODAY";
-    
-    let html = '';
-    mDB.s.forEach(item => {
-        let s = item.split('|');
-        html += `<div class="value" onclick="openR('${s[0]}','${s[1]}','${s[2]}','${s[3]}')">${s[0]}</div>`;
-    });
-    
-    modalBody.innerHTML = html;
-    document.getElementById('mTip').innerText = "TIP: Prioritize protein-heavy snacks on lifting days.";
-    document.getElementById('masterModal').style.display = 'block';
-}
 </script>
 </body>
 </html>
