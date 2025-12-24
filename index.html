@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v223 Chef Edition</title>
+    <title>The Centurion | v224 Recovery Edition</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -43,7 +43,8 @@
         .card, .macro-dashboard, .juice-card { background: var(--bg-card); border-radius: 24px; padding: 32px; margin-bottom: 25px; position: relative; box-shadow: 0 15px 50px -10px rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.03); }
         .card::before { content: ""; position: absolute; top: 35px; bottom: 35px; left: 0; width: 4px; background: var(--accent-gold); border-radius: 0 4px 4px 0; box-shadow: 4px 0 15px rgba(212, 175, 55, 0.2); }
         
-        .workout-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 1px solid #222; }
+        /* WORKOUT HEADER - NOW CLICKABLE */
+        .workout-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 1px solid #222; cursor: pointer; }
         .workout-title-btn { font-size: 1.1rem; font-weight: 800; text-transform: uppercase; color: #fff; display: flex; align-items: center; gap: 10px; letter-spacing: 0.5px; }
         .carb-pill { font-size: 0.65rem; font-weight: 900; padding: 6px 14px; border-radius: 6px; color: #fff; text-transform: uppercase; letter-spacing: 1px; }
 
@@ -100,6 +101,12 @@
         .proto-label { color: var(--accent-gold); font-size: 0.75rem; font-weight: 800; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 1px; }
         .proto-val { color: #fff; font-size: 1.1rem; font-weight: 500; line-height: 1.5; }
         .proto-desc { color: #aaa; font-size: 1rem; line-height: 1.7; }
+        .timeline-section { border-left: 2px solid #333; padding-left: 25px; margin-left: 10px; padding-bottom: 30px; position: relative; }
+        .timeline-header { font-size: 0.75rem; font-weight: 900; color: #fff; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 1px; }
+        .timeline-header.warmup { color: var(--heat-red); }
+        .timeline-header.gym { color: var(--ice-blue); }
+        .timeline-header.home { color: var(--recovery-purple); }
+        .timeline-section::before { content: ''; position: absolute; left: -6px; top: 0; width: 10px; height: 10px; border-radius: 50%; background: #444; }
 
         .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 40px; }
         .stat-box { background: #0a0a0a; padding: 25px; border-radius: 16px; border: 1px solid #222; text-align: center; }
@@ -116,13 +123,15 @@
         .prog-val { width: 50px; text-align: right; font-size: 0.75rem; font-weight: 700; color: #fff; }
         .scan-alert { text-align: center; font-size: 0.7rem; font-weight: 800; margin-top: 25px; padding: 15px; border-radius: 8px; text-transform: uppercase; letter-spacing: 1px; display: none; }
         .scan-alert.upcoming { color: var(--heat-red); border: 1px solid var(--heat-red); background: rgba(231, 76, 60, 0.1); }
+        
+        .complete-btn { background: var(--target-green); color: #000; width: 100%; border: none; padding: 15px; border-radius: 12px; font-weight: 800; font-size: 0.9rem; margin-top: 15px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <header>
-        <div class="version-tag">VER 223.0</div>
+        <div class="version-tag">VER 224.0</div>
         <h1>THE CENTURION</h1>
         <div class="profile-badges">
             <div id="badgeJ" class="badge active-user" onclick="switchUser('J')">🧔🏾‍♂️ JERMAINE</div>
@@ -147,8 +156,8 @@
     <span onclick="closeModal('jermaineModal')" style="float:right; cursor:pointer; font-size:24px;">&times;</span>
     <h2 style="color:var(--accent-gold);">🧔🏾‍♂️ JERMAINE</h2>
     <div class="stat-grid">
-        <div class="stat-box"><div class="stat-val">217.1</div><div class="stat-lbl">Weight</div></div>
-        <div class="stat-box"><div class="stat-val">98.8</div><div class="stat-lbl">Muscle</div></div>
+        <div class="stat-box"><div class="stat-val">217.1</div><div class="stat-lbl">LBS Weight</div></div>
+        <div class="stat-box" style="border-color:var(--accent-gold); background:#1a1500;"><div class="stat-val" style="color:var(--accent-gold)">98.8</div><div class="stat-lbl" style="color:#fff">LBS Muscle Mass</div></div>
         <div class="stat-box"><div class="stat-val">20.7%</div><div class="stat-lbl">Body Fat</div></div>
         <div class="stat-box"><div class="stat-val">1996</div><div class="stat-lbl">BMR</div></div>
     </div>
@@ -159,15 +168,14 @@
         <div class="prog-bar-row"><div class="prog-label" style="color:#fff">NOW</div><div class="prog-track"><div class="prog-fill gold" style="width:20.7%;"></div></div><div class="prog-val">20.7%</div></div>
         <div class="prog-bar-row"><div class="prog-label" style="color:var(--target-green)">GOAL</div><div class="prog-track"><div class="prog-fill green" style="width:19.2%;"></div></div><div class="prog-val" style="color:var(--target-green)">19.2%</div></div>
     </div>
-    <div id="jScanAlert" class="scan-alert"></div>
 </div></div>
 
 <div id="sophiaModal" class="modal"><div class="modal-content">
     <span onclick="closeModal('sophiaModal')" style="float:right; cursor:pointer; font-size:24px;">&times;</span>
     <h2 style="color:var(--glute-pink);">👩🏾‍🦱 SOPHIA</h2>
     <div class="stat-grid">
-        <div class="stat-box"><div class="stat-val">141.5</div><div class="stat-lbl">Weight</div></div>
-        <div class="stat-box"><div class="stat-val">49.2</div><div class="stat-lbl">Muscle</div></div>
+        <div class="stat-box"><div class="stat-val">141.5</div><div class="stat-lbl">LBS Weight</div></div>
+        <div class="stat-box" style="border-color:var(--glute-pink); background:#1a000a;"><div class="stat-val" style="color:var(--glute-pink)">49.2</div><div class="stat-lbl" style="color:#fff">LBS Muscle Mass</div></div>
         <div class="stat-box"><div class="stat-val">36.1%</div><div class="stat-lbl">Body Fat</div></div>
         <div class="stat-box"><div class="stat-val">1332</div><div class="stat-lbl">BMR</div></div>
     </div>
@@ -178,7 +186,6 @@
         <div class="prog-bar-row"><div class="prog-label" style="color:#fff">NOW</div><div class="prog-track"><div class="prog-fill gold" style="width:36.1%;"></div></div><div class="prog-val">36.1%</div></div>
         <div class="prog-bar-row"><div class="prog-label" style="color:var(--target-green)">GOAL</div><div class="prog-track"><div class="prog-fill green" style="width:34.6%;"></div></div><div class="prog-val" style="color:var(--target-green)">34.6%</div></div>
     </div>
-    <div id="sScanAlert" class="scan-alert"></div>
 </div></div>
 
 <div id="recipeModal" class="modal"><div class="modal-content">
@@ -200,9 +207,39 @@
 <div id="protocolDetailModal" class="modal"><div class="modal-content">
     <span onclick="closeModal('protocolDetailModal')" style="float:right; cursor:pointer; font-size:24px;">&times;</span>
     <h2 id="pdTitle" style="color:var(--target-green); margin-bottom:20px;"></h2>
-    <div class="proto-detail-row"><div class="proto-label">Dosage / Amount</div><div id="pdAmount" class="proto-val"></div></div>
-    <div class="proto-detail-row"><div class="proto-label">What is it?</div><div id="pdWhat" class="proto-desc"></div></div>
-    <div class="proto-detail-row" style="border-bottom:none;"><div class="proto-label">Health Benefits</div><div id="pdBenefits" class="proto-desc"></div></div>
+    
+    <div class="proto-detail-row">
+        <div class="proto-label">Amount / Dosage</div>
+        <div id="pdAmount" class="proto-val"></div>
+    </div>
+    <div class="proto-detail-row">
+        <div class="proto-label">Best Time to Take</div>
+        <div id="pdTime" class="proto-val" style="color:var(--ice-blue);"></div>
+    </div>
+    <div class="proto-detail-row" style="border-bottom:none;">
+        <div class="proto-label">Mechanism & Benefits</div>
+        <div id="pdBenefits" class="proto-desc"></div>
+    </div>
+    <button id="pdCompleteBtn" class="complete-btn">MARK AS DONE</button>
+</div></div>
+
+<div id="recoveryModal" class="modal"><div class="modal-content">
+    <span onclick="closeModal('recoveryModal')" style="float:right; cursor:pointer;">&times;</span>
+    <h2 id="recTitle" style="color:#fff; margin-bottom:5px;"></h2>
+    <p style="color:#888; font-size:0.8rem; margin-bottom:30px; font-style:italic;">Daily Recovery Protocol</p>
+    
+    <div class="timeline-section">
+        <div class="timeline-header warmup">🔥 PRE-WORKOUT</div>
+        <div id="recWarmup" style="color:#ddd;"></div>
+    </div>
+    <div class="timeline-section">
+        <div class="timeline-header gym">💧 GYM AMENITIES</div>
+        <div id="recGym" style="color:#ddd;"></div>
+    </div>
+    <div class="timeline-section" style="border-left:none;">
+        <div class="timeline-header home">🏠 HOME RESTORATION</div>
+        <div id="recHome" style="color:#ddd;"></div>
+    </div>
 </div></div>
 
 <div id="groceryModal" class="modal"><div class="modal-content"><span onclick="closeModal('groceryModal')" style="float:right; cursor:pointer;">&times;</span><h2 style="color:var(--target-green); margin-bottom:20px;">🛒 WEEKLY SHOPPING LIST</h2><div id="groceryList" style="color:#ccc; line-height:1.6; font-size:0.9rem;"></div></div></div>
@@ -216,9 +253,9 @@
     
     // --- PROTOCOL DETAIL ---
     const protocolDetails = {
-        "sea": { title: "SEA MOSS", amount: "2 Tbsp (Morning)", what: "Wildcrafted Sea Moss Gel.", benefits: "92/102 minerals. Thyroid & Gut support." },
-        "kom": { title: "KOMBUCHA", amount: "4-8 oz (Gut Shot)", what: "Fermented Tea.", benefits: "Probiotics for digestion & energy." },
-        "water": { title: "HYDRATION", amount: "1 Gallon Target", what: "Filtered Water + Electrolytes.", benefits: "Muscle fullness, cognition, toxin flush." }
+        "sea": { title: "SEA MOSS", amount: "2 Tbsp (Gel)", time: "First thing AM (Empty Stomach)", benefits: "Contains 92 of 102 minerals the body needs. Supports thyroid function and gut lining repair." },
+        "kom": { title: "KOMBUCHA", amount: "4-6 oz (Gut Shot)", time: "Before Lunch (Mid-day)", benefits: "Provides probiotics to aid digestion and acetic acid to blunt the insulin response of your meal." },
+        "water": { title: "HYDRATION", amount: "1 Gallon Target", time: "Sip Consistently (Stop 2h before bed)", benefits: "Critical for muscle fullness (volumization) and flushing metabolic waste products." }
     };
     
     // --- RECIPES ---
@@ -316,28 +353,23 @@
         document.getElementById('modalIng').innerHTML = r.ing.map(i => '<li>• ' + i.replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--target-green)">$1</b>') + '</li>').join('');
         document.getElementById('modalSteps').innerHTML = r.steps.map(s => `<p>${s.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')}</p>`).join(''); 
         document.getElementById('modalMod').innerText = r.mod; 
-        
-        // Macro display in recipe modal
-        const jM = r.macros.J; const sM = r.macros.S;
-        // Logic could go here to show specific macros if needed
         openModal('recipeModal'); 
     }
 
     const macroTargets = { 'J': { 'HIGH CARB': { p: 160, c: 300, f: 75, k: 2500 }, 'LOW CARB': { p: 160, c: 80, f: 100, k: 1860 } }, 'S': { 'HIGH CARB': { p: 105, c: 180, f: 55, k: 1635 }, 'LOW CARB': { p: 105, c: 50, f: 70, k: 1250 } } };
     const snackDB = { "Pea Protein ISO": { p: 25, c: 2, f: 2, k: 120 }, "Peanut Protein": { p: 8, c: 5, f: 2, k: 70 }, "Centurion Blend": { p: 33, c: 7, f: 4, k: 190 }, "REMOVE": { p: 0, c: 0, f: 0, k: 0 } };
     
-    // Schedules
+    // UPDATED: Added 'rec' object for Recovery/Amenities
     const weeklySchedule = [
-        { w: "REST & RECOVERY", c: "LOW CARB", j: "APOLLO GOLD" }, // Sun
-        { w: "CHEST & TRICEPS", c: "HIGH CARB", j: "PUMP JUICE" }, // Mon
-        { w: "BACK & BICEPS", c: "HIGH CARB", j: "PLASMA FLUSH" }, // Tue
-        { w: "LEGS & GLUTES", c: "HIGH CARB", j: "PUMP JUICE" }, // Wed
-        { w: "ACTIVE REST", c: "LOW CARB", j: "APOLLO GOLD" }, // Thu
-        { w: "SHOULDERS & ARMS", c: "HIGH CARB", j: "PLASMA FLUSH" }, // Fri
-        { w: "GLUTE FOCUS", c: "HIGH CARB", j: "PUMP JUICE" }  // Sat
+        { w: "REST & RECOVERY", c: "LOW CARB", j: "APOLLO GOLD", rec: {warm: "Light Stretching", gym: "Sauna (20m)", home: "Epsom Salt Bath"} }, 
+        { w: "CHEST & TRICEPS", c: "HIGH CARB", j: "PUMP JUICE", rec: {warm: "Rotator Cuff Bands", gym: "Steam Room (15m)", home: "Ice Pack on Shoulders"} }, 
+        { w: "BACK & BICEPS", c: "HIGH CARB", j: "PLASMA FLUSH", rec: {warm: "Lat Activation", gym: "Cold Plunge", home: "Foam Roll Lats"} }, 
+        { w: "LEGS & GLUTES", c: "HIGH CARB", j: "PUMP JUICE", rec: {warm: "Hip Openers", gym: "Sauna (15m)", home: "Theragun Quads"} }, 
+        { w: "ACTIVE REST", c: "LOW CARB", j: "APOLLO GOLD", rec: {warm: "Walking", gym: "Jacuzzi", home: "Magnesium Oil"} }, 
+        { w: "SHOULDERS & ARMS", c: "HIGH CARB", j: "PLASMA FLUSH", rec: {warm: "Band Pull-Aparts", gym: "Steam Room", home: "Elevation"} }, 
+        { w: "GLUTE FOCUS", c: "HIGH CARB", j: "PUMP JUICE", rec: {warm: "Glute Bridges", gym: "Sauna", home: "Stretching"} }  
     ];
     
-    // Simple meal rotation
     const meals = [
         {b: "Bison Steak & Eggs", l: "Bison Laab", d: "Squid Ink Risotto"},
         {b: "Crab Scramble", l: "Stealth Liver Sliders", d: "Thai Beef Salad"},
@@ -395,17 +427,8 @@
         return dayState[dateKey]; 
     }
 
-    function toggleProtocol(pType) {
-        const key = selectedDateObj.toDateString();
-        const state = getDayState(key);
-        state.proto[pType] = !state.proto[pType];
-        showDay(selectedDateObj, selectedDayIndex);
-    }
-
     function calculateMacros(mealPlan, scheduleType, dateKey) { 
         let t = {p:0, c:0, f:0, k:0};
-        
-        // Sum meals
         ['b','l','d'].forEach(m => {
             let r = recipeDB[mealPlan[m]];
             if(r && r.macros && r.macros[currentUser]) {
@@ -413,25 +436,19 @@
                 t.p += mac.p; t.c += mac.c; t.f += mac.f; t.k += mac.k;
             }
         });
-
-        // Sum Snacks
         const state = getDayState(dateKey);
         [state.s1, state.s2, state.s3].forEach(s => {
             if(s && snackDB[s]) {
                 t.p += snackDB[s].p; t.c += snackDB[s].c; t.f += snackDB[s].f; t.k += snackDB[s].k;
             }
         });
-
         return { total: t, goal: macroTargets[currentUser][scheduleType] }; 
     }
 
     function showDay(dateObj, dayIndex) { 
-        // Logic for Sunday (index 6) vs Monday (0) mapping
-        // weeklySchedule is 0=Sun, 1=Mon... but loop above is 0=Mon.
-        // Let's map loop index 0(Mon) to schedule index 1.
         let schedIndex = (dayIndex + 1) % 7; 
         let sched = weeklySchedule[schedIndex];
-        let mealPlan = meals[schedIndex]; // Loop through 7 meal plans
+        let mealPlan = meals[schedIndex]; 
         
         const macros = calculateMacros(mealPlan, sched.c, dateObj.toDateString());
         const state = getDayState(dateObj.toDateString());
@@ -440,9 +457,9 @@
         const pColor = currentUser === 'J' ? 'var(--accent-gold)' : 'var(--glute-pink)';
 
         let html = `
-            <div class="workout-header">
+            <div class="workout-header" onclick="openRecovery(${schedIndex})">
                 <div class="workout-title-btn" style="color:${pColor}">
-                    ${sched.w}
+                    ${sched.w} <span style="font-size:0.7rem; opacity:0.6;">(TAP FOR RECOVERY)</span>
                 </div>
                 <div class="carb-pill" style="background:${sched.c==='HIGH CARB'?'var(--heat-red)':'#444'}">${sched.c}</div>
             </div>
@@ -450,13 +467,13 @@
             <div class="protocol-container">
                 <div class="protocol-header">DAILY PROTOCOL</div>
                 <div class="protocol-grid">
-                    <div class="proto-btn ${state.proto.sea ? 'active' : ''}" onclick="toggleProtocol('sea')">
+                    <div class="proto-btn ${state.proto.sea ? 'active' : ''}" onclick="openProtocolDetail('sea')">
                         <span>🪸</span>SEA MOSS
                     </div>
-                    <div class="proto-btn ${state.proto.kom ? 'active' : ''}" onclick="toggleProtocol('kom')">
+                    <div class="proto-btn ${state.proto.kom ? 'active' : ''}" onclick="openProtocolDetail('kom')">
                         <span>🥃</span>KOMBUCHA
                     </div>
-                    <div class="proto-btn ${state.proto.water ? 'active' : ''}" onclick="toggleProtocol('water')">
+                    <div class="proto-btn ${state.proto.water ? 'active' : ''}" onclick="openProtocolDetail('water')">
                         <span>💧</span>WATER
                     </div>
                 </div>
@@ -521,7 +538,6 @@
 
     function generateGroceryList() { 
         let html = "<ul>";
-        // Simple logic to pull unique ingredients from the current week's meals
         html += "<li>6x 8oz Bison Steaks</li>";
         html += "<li>2 Dozen Pasture Eggs</li>";
         html += "<li>1 Bag Spinach</li>";
@@ -559,13 +575,45 @@
         showDay(selectedDateObj, selectedDayIndex);
     }
     
+    // NEW: Open Protocol Details (with Complete Button)
+    let currentProto = null;
     function openProtocolDetail(type) { 
+        currentProto = type;
         const data = protocolDetails[type]; 
         document.getElementById('pdTitle').innerText = data.title; 
         document.getElementById('pdAmount').innerText = data.amount; 
-        document.getElementById('pdWhat').innerText = data.what; 
+        document.getElementById('pdTime').innerText = data.time; 
         document.getElementById('pdBenefits').innerText = data.benefits; 
+        
+        // Setup the complete button
+        const btn = document.getElementById('pdCompleteBtn');
+        const state = getDayState(selectedDateObj.toDateString());
+        
+        if(state.proto[type]) {
+            btn.innerText = "ALREADY COMPLETED";
+            btn.style.background = "#333";
+            btn.style.color = "#888";
+        } else {
+            btn.innerText = "MARK AS DONE";
+            btn.style.background = "var(--target-green)";
+            btn.style.color = "#000";
+            btn.onclick = function() {
+                state.proto[type] = true;
+                closeModal('protocolDetailModal');
+                showDay(selectedDateObj, selectedDayIndex);
+            };
+        }
         openModal('protocolDetailModal'); 
+    }
+    
+    // NEW: Open Recovery Modal
+    function openRecovery(idx) {
+        let sched = weeklySchedule[idx];
+        document.getElementById('recTitle').innerText = sched.w;
+        document.getElementById('recWarmup').innerText = sched.rec.warm;
+        document.getElementById('recGym').innerText = sched.rec.gym;
+        document.getElementById('recHome').innerText = sched.rec.home;
+        openModal('recoveryModal');
     }
     
     function openJuiceModal(jName) { 
@@ -585,14 +633,11 @@
     function changeWeek(dir) { weekOffset += dir; renderTabs(); }
     function resetToCurrent() { weekOffset = 0; renderTabs(); showDay(new Date(), new Date().getDay() === 0 ? 6 : new Date().getDay() - 1); }
 
-    // Init
     window.onload = function() { 
-        // Set default day to today
         let d = new Date();
-        let dayIndex = d.getDay() === 0 ? 6 : d.getDay() - 1; // Mon=0
+        let dayIndex = d.getDay() === 0 ? 6 : d.getDay() - 1; 
         selectedDateObj = d;
         selectedDayIndex = dayIndex;
-        
         renderTabs(); 
         showDay(d, dayIndex); 
     };
