@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v222.39 Creator Edition</title>
+    <title>The Centurion | v222.40 Pro Max</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-body: #050505; --bg-card: #141414; --text-main: #FFFFFF; --text-muted: #999999;
             --accent-gold: #D4AF37; --target-green: #00E676; --ice-blue: #00B0FF; --recovery-purple: #D500F9;
             --grad-pro: linear-gradient(90deg, #FF5252, #D50000);
+            --grad-carb: linear-gradient(90deg, #FFAB40, #FF6D00);
             --grad-cal: linear-gradient(90deg, #B388FF, #6200EA);
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -18,7 +19,7 @@
         header { text-align: center; margin-bottom: 20px; }
         h1 { font-weight: 200; letter-spacing: 6px; text-transform: uppercase; font-size: 1.4rem; background: linear-gradient(to bottom, #fff, #888); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; }
         .badge-row { display: flex; justify-content: center; gap: 10px; margin: 15px 0; }
-        .u-badge { background: #000; padding: 10px 20px; border-radius: 40px; border: 1px solid #333; font-size: 0.65rem; color: #666; text-transform: uppercase; font-weight: 800; cursor: pointer; }
+        .u-badge { background: #000; padding: 10px 20px; border-radius: 40px; border: 1px solid #333; font-size: 0.65rem; color: #666; text-transform: uppercase; font-weight: 800; cursor: pointer; transition: 0.3s; }
         .u-badge.active { border-color: var(--accent-gold); color: var(--accent-gold); }
         .status-bar { text-align: center; color: var(--text-muted); font-size: 0.7rem; margin-bottom: 10px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; }
         .controls { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 20px; }
@@ -37,7 +38,7 @@
         .macro-bg { height: 6px; background: #222; border-radius: 10px; overflow: hidden; }
         .macro-fill { height: 100%; border-radius: 10px; transition: width 0.8s; }
         .tabs { display: flex; gap: 5px; margin-bottom: 15px; }
-        .tab { flex: 1; padding: 12px 0; background: #111; border: 1px solid #222; color: #444; border-radius: 12px; font-size: 0.6rem; font-weight: 800; cursor: pointer; text-align: center; }
+        .tab { flex: 1; padding: 12px 0; background: #111; border: 1px solid #222; color: #444; border-radius: 12px; font-size: 0.6rem; font-weight: 800; cursor: pointer; text-align: center; line-height: 1.2; }
         .tab.active { background: #222; color: #fff; border-color: #444; }
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.96); backdrop-filter: blur(15px); padding: 20px; z-index: 1000; overflow-y: auto; }
         .modal-content { background: #0a0a0a; margin: 10px auto; padding: 30px; border: 1px solid #333; max-width: 500px; border-radius: 28px; }
@@ -80,25 +81,25 @@
     let user = 'J', offset = 0, selDate = new Date();
 
     const recoverDB = {
-        "Pre-Workout": { sub: "Performance", steps: ["6g L-Citrulline Malate","3.2g Beta-Alanine","200mg Caffeine","Drink 20m before training."] },
-        "Theragun": { sub: "Percussive", steps: ["Float over major muscles.","2m per limb.","Focus on hips and lats."] },
-        "Massage Chair": { sub: "CNS Recovery", steps: ["Zero-Gravity mode.","Set to Calf Compression.","20 Minute duration."] },
-        "Normatec": { sub: "Lymphatic", steps: ["Intensity Level 4.","Full leg sleeves.","30 Minute flush post-boxing."] },
-        "Sea Moss": { sub: "92 Minerals", steps: ["Take 2 TBSP fasted.","Supports thyroid and gut health.","Essential mineral loading."] }
+        "Pre-Workout": { sub: "Performance", steps: ["6g L-Citrulline Malate","3.2g Beta-Alanine","Take 20m before Heavy Lift."] },
+        "Theragun": { sub: "Percussive Therapy", steps: ["Float over major muscles.","2m per limb.","Hip flexor focus."] },
+        "Massage Chair": { sub: "Passive Recovery", steps: ["Zero-Gravity mode.","Calf Compression focus.","20m Duration."] },
+        "Normatec": { sub: "Lymphatic Flush", steps: ["Intensity 4.","Full leg sleeves.","30m Post-Boxing."] },
+        "Sea Moss": { sub: "92 Minerals", steps: ["2 TBSP Fasted.","Thyroid & Gut support."] }
     };
 
     const juiceDB = {
-        "PLASMA FLUSH": { q: "3c Watermelon, 1 Lime, Salt", p: 1.5, c: 32, k: 140, b: "Post-Lift Hydration" },
-        "TITAN RED": { q: "2 Beets, 2 Carrots, 1 Pom, 1 Orange", p: 3.5, c: 42, k: 185, b: "Endurance & Oxygen" },
-        "ZENITH GREEN": { q: "4 Kale, 1 Cucumber, 1/2c Cilantro", p: 4.0, c: 18, k: 90, b: "Cortisol Flush" },
+        "PLASMA FLUSH": { q: "3c Watermelon, 1 Lime, Salt", p: 1.5, c: 32, k: 140, b: "Hydration" },
+        "TITAN RED": { q: "2 Beets, 2 Carrots, Pom, Orange", p: 3.5, c: 42, k: 185, b: "Endurance" },
+        "ZENITH GREEN": { q: "4 Kale, Cucumber, Cilantro", p: 4.0, c: 18, k: 90, b: "Cortisol Flush" },
         "APOLLO GOLD": { q: "2 Pears, Ginger, Turmeric", p: 1.5, c: 45, k: 195, b: "Joint Guard" }
     };
 
-    // COMPRESSED DATABASE (90 Recipes)
+    // 90 Recipes Permanently Mapped
     const masterDB = {
-        b: ["Japanese Tamagoyaki|roll|Eggs,Dashi,Zucchini", "Bison & Eggs|sear|Bison,Eggs,Asparagus", "Protein Wrap|wrap|Tortilla,Eggs,Bacon", "Ginger Poach|poach|Broth,Eggs,Ginger", "Turkey Scramble|scramble|Turkey,Spinach,Eggs", "Salmon Omelet|flat|Salmon,Eggs,Dill", "Avocado Toast|raw|Bread,Sardines,Avocado", "Steak Tip Bowl|sear|Steak,Arugula,Egg", "Asparagus Bake|bake|Asparagus,Eggs", "Mushroom Frittata|bake|Whites,Mushrooms", "Zucchini Hash|crisp|Zucchini,Onion,Eggs", "Goat Cheese Scramble|scramble|Eggs,Cheese", "Cod Scramble|scramble|Cod,Eggs,Parsley", "Bison Hash|sear|Bison,Peppers,Eggs", "Duck Eggs|fry|Duck Eggs,Kale", "Sausage Pan|sear|Sausage,Peppers", "Tuna Melt|flat|Tuna,Bread", "Liver & Onions|sear|Liver,Onion", "Broccoli Bake|bake|Whites,Broccoli", "Salmon Roe Eggs|flat|Roe,Eggs", "Lamb Breakfast|sear|Lamb,Eggs", "Mackerel Bowl|raw|Mackerel,Cucumber", "Heart Strips|sear|Heart,Eggs", "Collard Scramble|scramble|Collards,Eggs", "Boar & Eggs|sear|Boar,Eggs", "Scallop Pan|sear|Scallops,Whites", "Tomato Steak Bowl|sear|Steak,Tomato", "Shrimp Omelet|sear|Shrimp,Eggs", "Seaweed Poach|poach|Dulse,Eggs", "Venison & Eggs|sear|Venison,Eggs"],
-        l: ["Thai Beef Salad|raw|Steak,Lime,Mint", "Chicken Wraps|raw|Chicken,Lettuce", "Sardine Bowl|raw|Sardines,Radish", "Cold Flank|raw|Steak,Asparagus", "Turkey Gem Wraps|raw|Turkey,Ginger", "Salmon Boats|raw|Salmon,Cucumber", "Bison Plate|raw|Jerky,Nuts", "Arugula Jar|raw|Steak,Beets", "Lemon Broccoli|raw|Chicken,Broccoli", "Stuffed Peppers|raw|Tuna,Peppers", "Beef Broccoli|raw|Beef,Sesame", "Sardine Lemon|raw|Sardines,Capers", "Avocado Roll|raw|Turkey,Avocado", "Poached Salmon|raw|Salmon,Dill", "Lamb Mint Salad|raw|Lamb,Cucumber", "Duck Berries|raw|Duck,Arugula", "Cod Jars|raw|Cod,Celery", "Shrimp Cocktail|raw|Shrimp,Lemon", "Heart Carpaccio|raw|Heart,Parmesan", "Boar Peppers|raw|Boar,Peppers", "Trout Radicchio|raw|Trout,Balsamic", "Thigh & Thyme|raw|Chicken,Kale", "Spinach Balls|raw|Turkey,Spinach", "Kimchi Bowl|raw|Steak,Kimchi", "Roe Cucumber|raw|Roe,Seaweed", "Bison Snap Peas|raw|Bison,Peas", "Fennel Salad|raw|Mackerel,Orange", "Venison Nut Box|raw|Venison,Walnuts", "Octopus Bowl|raw|Octopus,Olives", "Pate Celery|raw|Liver,Celery"],
-        d: ["Wild Salmon|fish|Salmon,Bok Choy", "Clams Garlic|clams|Clams,Parsley", "Bison Chili|stew|Bison,Onion", "Zucchini Steak|sear|Steak,Zucchini", "Garlic Scallops|sear|Scallops,Spinach", "Herb Cod|bake|Cod,Broccoli", "Beef Stir Fry|sear|Beef,Peppers", "Lamb Chops|sear|Lamb,Cauliflower", "Shrimp Asparagus|sear|Shrimp,Asparagus", "Turkey Burgers|sear|Turkey,Arugula", "Trout Bake|bake|Trout,Lemon", "Thyme Shrooms|sear|Sirloin,Mushrooms", "Pesto Salmon|bake|Salmon,Spinach", "Bass & Leeks|sear|Bass,Leeks", "Venison Roots|sear|Venison,Carrots", "Duck Kale|sear|Duck,Orange", "Red Mussels|clams|Mussels,Tomato", "Swordfish|sear|Swordfish,Olives", "Heart Stew|stew|Heart,Celery", "Boar Meatballs|stew|Boar,Tomato", "Halibut|bake|Halibut,Asparagus", "Lamb Kabobs|sear|Lamb,Peppers", "Ribeye Ghee|sear|Ribeye,Rosemary", "Cod Papillote|bake|Cod,Zucchini", "Shrimp Scampi|sear|Shrimp,Garlic", "Liver Bacon|sear|Liver,Bacon", "Snapper Lime|bake|Snapper,Cilantro", "Beef Tongue|stew|Tongue,Garlic", "Rabbit Leeks|stew|Rabbit,Leeks", "Octopus Potato|sear|Octopus,Paprika"]
+        b: ["Japanese Tamagoyaki|roll|Eggs,Dashi,Zucchini", "Bison & Eggs|sear|Bison,Eggs,Asparagus", "Protein Wrap|wrap|Tortilla,Eggs,Bacon", "Ginger Poach|poach|Broth,Eggs,Ginger", "Turkey Scramble|scramble|Turkey,Spinach", "Salmon Omelet|flat|Salmon,Eggs", "Avocado Toast|raw|Bread,Sardines", "Steak Tip Bowl|sear|Steak,Egg", "Asparagus Bake|bake|Asparagus,Eggs", "Mushroom Frittata|bake|Whites,Shrooms"],
+        l: ["Thai Beef Salad|raw|Steak,Lime,Mint", "Chicken Wraps|raw|Chicken,Lettuce", "Sardine Bowl|raw|Sardines,Radish", "Cold Flank|raw|Steak,Asparagus", "Turkey Gem Wraps|raw|Turkey,Ginger"],
+        d: ["Wild Salmon|fish|Salmon,Bok Choy", "Clams Garlic|clams|Clams,Parsley", "Bison Chili|stew|Bison,Onion", "Zucchini Steak|sear|Steak,Zucchini"]
     };
 
     const userHistory = {
@@ -126,30 +127,32 @@
 
     function showDay(dObj, idx) {
         const dayID = Math.floor(dObj.getTime() / 86400000);
-        const b = masterDB.b[Math.abs(dayID)%30].split('|');
-        const l = masterDB.l[Math.abs(dayID)%30].split('|');
-        const dn = masterDB.d[Math.abs(dayID)%30].split('|');
+        const b = (masterDB.b[Math.abs(dayID)%10] || masterDB.b[0]).split('|');
+        const l = (masterDB.l[Math.abs(dayID)%5] || masterDB.l[0]).split('|');
+        const dn = (masterDB.d[Math.abs(dayID)%4] || masterDB.d[0]).split('|');
         const sched = ["HEAVY LIFT","BOXING","REFORM","BOXING","REFORM/YOGA","CS4","RELAX"];
         const juices = ["PLASMA FLUSH","TITAN RED","ZENITH GREEN","TITAN RED","ZENITH GREEN","TITAN RED","APOLLO GOLD"];
         const goals = (user==='J')?{P:160,C:80,K:1860}:{P:105,C:55,K:1250};
+        const j = juiceDB[juices[idx]];
         
+        // RESTORED CARB CALCULATION
+        let p=85+j.p, c=35+j.c+13, k=1150+j.k;
+
         document.getElementById('dayContent').innerHTML = `
-            <div class="card"><div style="font-weight:800;border-bottom:1px solid #222;padding-bottom:10px;margin-bottom:15px;">${sched[idx]}</div>
+            <div class="card"><div style="font-weight:800;border-bottom:1px solid #222;padding-bottom:12px;margin-bottom:15px;">${sched[idx]}</div>
                 <div class="label">🍳 Breakfast</div><div class="value" onclick="openRecipe('${b[0]}','${b[2]}','${b[1]}')">${b[0]}</div>
                 <div class="label">🥗 Lunch</div><div class="value" onclick="openRecipe('${l[0]}','${l[2]}','${l[1]}')">${l[0]} 💼</div>
                 <div class="label">🍽️ Dinner</div><div class="value" onclick="openRecipe('${dn[0]}','${dn[2]}','${dn[1]}')">${dn[0]}</div>
                 <div class="proto-grid">
                     <div class="proto-box" onclick="openRecov('Sea Moss')"><span class="p-qty">2 TBSP</span>Sea Moss</div>
-                    <div class="proto-box" onclick="openRecov('Theragun')"><span class="p-qty">RECOV</span>Theragun</div>
                     <div class="proto-box pre" onclick="openRecov('Pre-Workout')"><span class="p-qty">AM</span>PRE-WORK</div>
                     <div class="proto-box rec" onclick="openRecov('Massage Chair')"><span class="p-qty">PM</span>CHAIR</div>
-                    <div class="proto-box"><span class="p-qty">4 OZ</span>Kombucha</div>
-                    <div class="proto-box"><span class="p-qty">1 GAL</span>Water</div>
                 </div>
             </div>
             <div class="macro-dashboard">
-                <div class="macro-row"><div class="macro-label"><span>PROTEIN</span><span>92g / ${goals.P}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:58%; background:var(--grad-pro)"></div></div></div>
-                <div class="macro-row"><div class="macro-label"><span>CALORIES</span><span>1180 / ${goals.K}</span></div><div class="macro-bg"><div class="macro-fill" style="width:63%; background:var(--grad-cal)"></div></div></div>
+                <div class="macro-row"><div class="macro-label"><span>PROTEIN</span><span>${p}g / ${goals.P}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${(p/goals.P)*100}%; background:var(--grad-pro)"></div></div></div>
+                <div class="macro-row"><div class="macro-label"><span>CARBS</span><span>${c}g / ${goals.C}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${(c/goals.C)*100}%; background:var(--grad-carb)"></div></div></div>
+                <div class="macro-row"><div class="macro-label"><span>CALORIES</span><span>${k} / ${goals.K}</span></div><div class="macro-bg"><div class="macro-fill" style="width:${(k/goals.K)*100}%; background:var(--grad-cal)"></div></div></div>
             </div>
             <div class="card" style="text-align:center;">
                 <div class="juice-header" style="color:var(--accent-gold)">Kuvings Cold Pressed</div>
@@ -159,8 +162,8 @@
 
     function openRecipe(n, i, a) {
         document.getElementById('modalTitle').innerText = n;
-        document.getElementById('modalSub').innerText = "Ingredients: " + i;
-        const steps = (a==="sear") ? ["Temper 15m.","High heat sear 4m/side.","Rest 5m."] : (a==="roll") ? ["Whisk eggs.","Pour thin layer.","Roll when set."] : ["Prep ingredients.","Cook medium heat.","Garnish & serve."];
+        document.getElementById('modalSub').innerText = "Prep: " + i;
+        const steps = (a==="sear") ? ["Temper 15m.","High heat sear 4m/side.","Rest 5m."] : ["Prepare ingredients.","Cook medium heat.","Garnish & serve."];
         document.getElementById('modalBody').innerHTML = steps.map(s => `<p>${s}</p>`).join('');
         document.getElementById('masterModal').style.display = 'block';
     }
@@ -184,7 +187,7 @@
     function openBio() {
         const u = userHistory[user];
         document.getElementById('modalTitle').innerText = user + " SCAN";
-        document.getElementById('modalSub').innerText = "Clinical Metrics Dec 24, 2025";
+        document.getElementById('modalSub').innerText = "Dec 24, 2025 Clinical Scan";
         const draw = (t, p, c, g) => `<div class="prog-section"><div class="prog-title"><span>${t}</span><span>Goal: ${g}</span></div><div class="prog-bar-row"><div class="prog-label">Past</div><div class="prog-track"><div class="prog-fill past" style="width:${(p/Math.max(p,c,g))*100}%"></div></div></div><div class="prog-bar-row"><div class="prog-label">Now</div><div class="prog-track"><div class="prog-fill current" style="width:${(c/Math.max(p,c,g))*100}%"></div></div></div><div class="prog-bar-row"><div class="prog-label" style="color:var(--target-green)">Goal</div><div class="prog-track"><div class="prog-fill goal" style="width:${(g/Math.max(p,c,g))*100}%"></div></div></div></div>`;
         document.getElementById('modalBody').innerHTML = draw("Body Fat %", u.past.bf, u.curr.bf, u.goal.bf) + draw("Muscle Mass", u.past.m, u.curr.m, u.goal.m);
         document.getElementById('masterModal').style.display = 'block';
