@@ -3,14 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v226 Metric Master</title>
+    <title>The Centurion | v227 Dashboard Edition</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-body: #050505; --bg-card: #121212; --text-main: #FFFFFF; --text-muted: #888888;
             --accent-gold: #D4AF37; --glute-pink: #FF4081; --target-green: #00E676;
             --heat-red: #FF3D00; --ice-blue: #00B0FF; --recovery-purple: #D500F9;
-            --graph-line: #444; --graph-fill: rgba(255, 255, 255, 0.05);
+            --grad-pro: linear-gradient(90deg, #FF5252, #D50000);
+            --grad-carb: linear-gradient(90deg, #FFAB40, #FF6D00);
+            --grad-fat: linear-gradient(90deg, #448AFF, #2962FF);
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { font-family: 'Inter', sans-serif; background-color: var(--bg-body); color: var(--text-main); margin: 0; padding: 30px 20px; font-size: 16px; line-height: 1.6; }
@@ -37,6 +39,15 @@
 
         .card { background: var(--bg-card); border-radius: 20px; padding: 25px; margin-bottom: 20px; border: 1px solid #222; box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5); }
         
+        /* MACRO DASHBOARD STYLES */
+        .macro-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 15px; }
+        .macro-title { font-size: 0.8rem; font-weight: 800; color: #fff; text-transform: uppercase; letter-spacing: 1px; }
+        .macro-cal { font-size: 0.7rem; color: #666; font-weight: 600; }
+        .macro-row { margin-bottom: 12px; }
+        .macro-label-row { display: flex; justify-content: space-between; font-size: 0.65rem; color: #888; font-weight: 700; margin-bottom: 5px; text-transform: uppercase; }
+        .macro-track { height: 8px; background: #1a1a1a; border-radius: 10px; overflow: hidden; }
+        .macro-fill { height: 100%; border-radius: 10px; transition: width 0.5s ease; }
+
         .workout-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; cursor: pointer; border-bottom: 1px solid #1a1a1a; padding-bottom: 15px; }
         .workout-title { font-size: 1rem; font-weight: 800; text-transform: uppercase; color: #fff; display: flex; flex-direction: column; }
         .workout-sub { font-size: 0.6rem; color: var(--recovery-purple); font-weight: 600; margin-top: 4px; letter-spacing: 1px; }
@@ -48,17 +59,29 @@
         .meal-lbl { font-size: 0.6rem; color: #555; font-weight: 800; text-transform: uppercase; margin-bottom: 4px; }
         .meal-val { font-size: 1rem; color: #fff; font-weight: 500; }
 
+        /* PROTOCOL GRID */
+        .protocol-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 25px; }
+        .proto-btn { background: #0a0a0a; border: 1px solid #222; color: #666; padding: 12px 0; border-radius: 12px; text-align: center; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; transition: 0.2s; }
+        .proto-icon { font-size: 1.2rem; }
+        .proto-name { font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+        .proto-btn.active { border-color: var(--target-green); color: var(--target-green); background: rgba(0, 230, 118, 0.05); }
+
         /* MODALS */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); backdrop-filter: blur(5px); overflow-y: auto; padding: 20px; }
         .modal-content { background: #121212; margin: 40px auto; padding: 30px; border: 1px solid #333; width: 100%; max-width: 600px; border-radius: 20px; }
         .close-btn { float: right; font-size: 1.5rem; cursor: pointer; color: #666; }
 
+        /* GOAL BARS (Restored) */
+        .bar-container { margin: 25px 0; position: relative; }
+        .bar-label-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.65rem; color: #888; text-transform: uppercase; font-weight: 700; }
+        .bar-bg { background: #151515; height: 12px; border-radius: 2px; position: relative; border: 1px solid #222; }
+        .bar-curr { position: absolute; left: 0; top: 0; height: 100%; z-index: 2; border-right: 1px solid rgba(255,255,255,0.5); }
+        .marker { position: absolute; top: -8px; bottom: -8px; width: 2px; z-index: 4; background: var(--target-green); box-shadow: 0 0 10px var(--target-green); }
+        .marker-label { position: absolute; top: -20px; transform: translateX(-50%); font-size: 0.55rem; font-weight: 900; background: #000; padding: 2px 5px; border-radius: 2px; white-space: nowrap; border: 1px solid #333; color: var(--target-green); }
+
         /* GRAPH STYLES */
         .graph-container { height: 150px; width: 100%; margin: 20px 0; position: relative; border-bottom: 1px solid #333; border-left: 1px solid #333; }
         svg { width: 100%; height: 100%; overflow: visible; }
-        .graph-path { fill: none; stroke-width: 3; stroke-linecap: round; }
-        .graph-dot { r: 4; stroke: #000; stroke-width: 2; }
-        .graph-label { font-size: 0.6rem; fill: #666; font-weight: 700; }
         
         .history-log { max-height: 150px; overflow-y: auto; margin-top: 20px; border-top: 1px solid #222; padding-top: 10px; }
         .hist-row { display: flex; justify-content: space-between; font-size: 0.8rem; padding: 8px 0; border-bottom: 1px solid #1a1a1a; color: #aaa; }
@@ -80,7 +103,7 @@
 
 <div class="container">
     <header>
-        <div class="version-tag">v226</div>
+        <div class="version-tag">v227</div>
         <h1>CENTURION</h1>
         <div class="profile-badges">
             <div id="badgeJ" class="badge active-user" onclick="switchUser('J')">Jermaine</div>
@@ -94,7 +117,7 @@
         <button class="nav-btn" onclick="changeWeek(-1)">PREV</button>
         <button class="nav-btn" onclick="resetToCurrent()">TODAY</button>
         <button class="nav-btn" onclick="changeWeek(1)">NEXT</button>
-        <button class="nav-btn grocery-btn" onclick="openProfileModal()">MY STATS</button>
+        <button class="nav-btn grocery-btn" onclick="openProfileModal()">MY DATA</button>
     </div>
     
     <div id="dayTabs" class="tabs"></div>
@@ -112,7 +135,10 @@
         <div class="mm-box"><div class="mm-val" id="profVisc"></div><div class="mm-lbl">Visceral</div></div>
     </div>
 
-    <div style="font-size:0.7rem; font-weight:800; color:#666; text-transform:uppercase;">Body Fat Trend</div>
+    <div style="font-size:0.7rem; font-weight:800; color:#666; text-transform:uppercase; margin-top:30px;">90-DAY TARGETS</div>
+    <div id="goalBarsContainer"></div>
+
+    <div style="font-size:0.7rem; font-weight:800; color:#666; text-transform:uppercase; margin-top:30px;">Body Fat Trend</div>
     <div class="graph-container" id="bfGraph"></div>
 
     <div id="nextScanBox" class="next-scan-alert"></div>
@@ -145,59 +171,79 @@
     <div id="recContent"></div>
 </div></div>
 
+<div id="protocolDetailModal" class="modal"><div class="modal-content">
+    <span class="close-btn" onclick="closeModal('protocolDetailModal')">&times;</span>
+    <h2 id="pdTitle" style="color:var(--target-green); margin-top:0;"></h2>
+    <div class="proto-detail-row"><div class="proto-label">Amount</div><div id="pdAmount" class="proto-val" style="color:#fff; font-size:1.2rem; font-weight:700;"></div></div>
+    <div class="proto-detail-row" style="margin-top:10px;"><div class="proto-label">Best Time</div><div id="pdTime" class="proto-val" style="color:var(--ice-blue)"></div></div>
+    <div style="margin-top:20px; color:#ccc; line-height:1.6;" id="pdBenefits"></div>
+    <button id="pdCompleteBtn" class="complete-btn" style="width:100%; margin-top:20px; background:var(--target-green); border:none; padding:15px; border-radius:10px; font-weight:800; cursor:pointer;">MARK AS DONE</button>
+</div></div>
+
 <script>
     let currentUser = 'J'; 
     let selectedDateStr = "";
     
-    // --- HISTORIC DATA ---
-    // Format: { date: 'YYYY-MM-DD', weight: lbs, bf: %, muscle: lbs, visc: lvl }
+    // --- HISTORIC & GOAL DATA ---
     const userHistory = {
         'J': [
             { date: '2025-10-01', weight: 225.0, bf: 22.5, muscle: 96.0, visc: 11 },
             { date: '2025-11-01', weight: 221.4, bf: 21.8, muscle: 97.2, visc: 10 },
-            { date: '2025-12-01', weight: 217.1, bf: 20.7, muscle: 98.8, visc: 10 } // Latest
+            { date: '2025-12-01', weight: 217.1, bf: 20.7, muscle: 98.8, visc: 10 } 
         ],
         'S': [
             { date: '2025-10-01', weight: 146.0, bf: 38.0, muscle: 47.0, visc: 10 },
             { date: '2025-11-01', weight: 143.2, bf: 37.1, muscle: 48.1, visc: 9 },
-            { date: '2025-12-01', weight: 141.5, bf: 36.1, muscle: 49.2, visc: 9 } // Latest
+            { date: '2025-12-01', weight: 141.5, bf: 36.1, muscle: 49.2, visc: 9 } 
         ]
+    };
+
+    const userGoals = {
+        'J': { weight: 205.0, bf: 15.0, muscle: 102.0 },
+        'S': { weight: 135.0, bf: 28.0, muscle: 52.0 }
+    };
+
+    const protocolDetails = {
+        "sea": { title: "SEA MOSS", amount: "2 Tbsp (Gel)", time: "AM (Empty Stomach)", benefits: "92/102 minerals. Thyroid & Gut support." },
+        "kom": { title: "KOMBUCHA", amount: "4-6 oz", time: "Before Lunch", benefits: "Probiotics & Insulin sensitivity." },
+        "water": { title: "HYDRATION", amount: "1 Gallon", time: "All Day", benefits: "Muscle fullness & detox." }
     };
 
     const recipeDB = {
         "Bison Steak & Eggs": { 
             time: "35 MIN", 
             ing: ["6oz Bison Sirloin", "2 Pasture Eggs", "1/2 cup Asparagus", "1 tsp Ghee"], 
-            steps: ["**Prep:** Remove bison from fridge 30 mins prior to cooking. Pat dry.", "**Sear:** Heat cast-iron to High. Sear steak 3 mins per side.", "**Rest:** Let steak rest 8 mins. While resting, fry eggs in residual fat."],
+            steps: ["**Prep:** Remove bison from fridge 30 mins prior to cooking.", "**Sear:** Heat cast-iron to High. Sear steak 3 mins per side.", "**Rest:** Let steak rest 8 mins."],
             macros: { J: {p: 65, c: 5, f: 28, k: 530}, S: {p: 40, c: 3, f: 18, k: 340} }
         },
         "Crab Scramble": { 
             time: "15 MIN", 
             ing: ["4oz Lump Crab", "3 Egg Whites", "1 cup Spinach", "Old Bay Seasoning"], 
-            steps: ["**Whisk:** Beat egg whites with seasoning.", "**Fold:** Sauté spinach, pour in eggs. When 80% cooked, fold in crab meat gently.", "**Serve:** Top with chives."],
+            steps: ["**Whisk:** Beat egg whites with seasoning.", "**Fold:** Sauté spinach, pour in eggs. When 80% cooked, fold in crab meat."],
             macros: { J: {p: 45, c: 3, f: 5, k: 240}, S: {p: 30, c: 3, f: 3, k: 160} }
         },
         "Bison Laab": { 
             time: "25 MIN", 
             ing: ["6oz Ground Bison", "Lime Juice", "Fresh Mint", "Fish Sauce", "Chili Flakes"], 
-            steps: ["**Cook:** Brown bison in a dry pan (no oil).", "**Dress:** Remove from heat. Stir in lime, fish sauce, and chili immediately.", "**Herb:** Toss in fresh mint right before serving."],
+            steps: ["**Cook:** Brown bison in a dry pan.", "**Dress:** Remove from heat. Stir in lime, fish sauce, and chili immediately."],
             macros: { J: {p: 48, c: 10, f: 12, k: 340}, S: {p: 32, c: 6, f: 8, k: 220} }
         },
         "Squid Ink Risotto": { 
             time: "45 MIN", 
             ing: ["1/2 cup Squid Rings", "1 cup Cauliflower Rice", "1 tsp Squid Ink", "Garlic"], 
-            steps: ["**Sauté:** Cook garlic and cauli rice in olive oil.", "**Ink:** Dissolve ink in warm broth, pour over rice.", "**Simmer:** Cook until liquid absorbs. Pan sear squid separately and top."],
+            steps: ["**Sauté:** Cook garlic and cauli rice.", "**Ink:** Dissolve ink in warm broth, pour over rice.", "**Simmer:** Cook until liquid absorbs."],
             macros: { J: {p: 35, c: 15, f: 10, k: 310}, S: {p: 25, c: 10, f: 8, k: 210} }
         },
         "Thai Beef Salad": { 
             time: "30 MIN", 
             ing: ["6oz Flank Steak", "Lemongrass", "Cucumber", "Lime Dressing"], 
-            steps: ["**Grill:** Cook steak medium-rare. Rest 10 mins. Slice thin.", "**Toss:** Combine greens and cucumber.", "**Dress:** Pour dressing over meat and greens."],
+            steps: ["**Grill:** Cook steak medium-rare.", "**Toss:** Combine greens and cucumber.", "**Dress:** Pour dressing over meat and greens."],
             macros: { J: {p: 50, c: 12, f: 15, k: 380}, S: {p: 30, c: 8, f: 10, k: 240} }
         },
-        // Defaults for demo
         "Avocado Toast": { time: "10 MIN", ing:["Toast", "Avocado"], steps:["Toast bread", "Mash avo"], macros: { J:{p:20,c:30,f:20,k:400}, S:{p:15,c:20,f:15,k:300}}}
     };
+    
+    const macroTargets = { 'J': { 'HIGH CARB': { p: 160, c: 300, f: 75, k: 2500 }, 'LOW CARB': { p: 160, c: 80, f: 100, k: 1860 } }, 'S': { 'HIGH CARB': { p: 105, c: 180, f: 55, k: 1635 }, 'LOW CARB': { p: 105, c: 50, f: 70, k: 1250 } } };
 
     const weeklySchedule = [
         { w: "REST & RECOVERY", c: "LOW CARB", rec: {warm: "Light Stretching", gym: "Sauna (20m)", home: "Epsom Salt Bath"} }, 
@@ -209,7 +255,6 @@
         { w: "GLUTE FOCUS", c: "HIGH CARB", rec: {warm: "Glute Bridges", gym: "Sauna", home: "Stretching"} }  
     ];
     
-    // Simple rotation for demo
     const meals = [
         {b: "Bison Steak & Eggs", l: "Bison Laab", d: "Squid Ink Risotto"},
         {b: "Crab Scramble", l: "Avocado Toast", d: "Thai Beef Salad"},
@@ -249,19 +294,73 @@
         }
     }
 
+    function getDayState(dateKey) { 
+        if (!dayState[dateKey]) dayState[dateKey] = { proto: {sea: false, kom: false, water: false} }; 
+        return dayState[dateKey]; 
+    }
+
+    function calculateTotalMacros(mealPlan) {
+        let t = {p:0, c:0, f:0};
+        ['b','l','d'].forEach(m => {
+            let r = recipeDB[mealPlan[m]];
+            if(r && r.macros && r.macros[currentUser]) {
+                t.p += r.macros[currentUser].p;
+                t.c += r.macros[currentUser].c;
+                t.f += r.macros[currentUser].f;
+            }
+        });
+        return t;
+    }
+
     function showDay(dateObj, dayIndex) { 
         let schedIndex = (dayIndex + 1) % 7; 
         let sched = weeklySchedule[schedIndex];
         let mealPlan = meals[schedIndex]; 
+        const state = getDayState(dateObj.toDateString());
+        const goals = macroTargets[currentUser][sched.c];
+        const actuals = calculateTotalMacros(mealPlan);
         const pColor = currentUser === 'J' ? 'var(--accent-gold)' : 'var(--glute-pink)';
 
+        const pct = (val, max) => Math.min(100, (val/max)*100) + '%';
+
         let html = `
+            <div class="card">
+                <div class="macro-header">
+                    <div class="macro-title">Daily Macros</div>
+                    <div class="macro-cal">${Math.round(actuals.p*4 + actuals.c*4 + actuals.f*9)} / ${goals.k} KCAL</div>
+                </div>
+                <div class="macro-row">
+                    <div class="macro-label-row"><span>Protein</span><span>${actuals.p} / ${goals.p}g</span></div>
+                    <div class="macro-track"><div class="macro-fill" style="width:${pct(actuals.p, goals.p)}; background:var(--grad-pro)"></div></div>
+                </div>
+                <div class="macro-row">
+                    <div class="macro-label-row"><span>Carbs</span><span>${actuals.c} / ${goals.c}g</span></div>
+                    <div class="macro-track"><div class="macro-fill" style="width:${pct(actuals.c, goals.c)}; background:var(--grad-carb)"></div></div>
+                </div>
+                <div class="macro-row">
+                    <div class="macro-label-row"><span>Fats</span><span>${actuals.f} / ${goals.f}g</span></div>
+                    <div class="macro-track"><div class="macro-fill" style="width:${pct(actuals.f, goals.f)}; background:var(--grad-fat)"></div></div>
+                </div>
+            </div>
+
             <div class="workout-header" onclick="openRecovery(${schedIndex})">
                 <div class="workout-title" style="color:${pColor}">
                     ${sched.w}
                     <span class="workout-sub">TAP FOR RECOVERY &rarr;</span>
                 </div>
                 <div class="carb-pill" style="background:${sched.c==='HIGH CARB'?'var(--heat-red)':'#333'}">${sched.c}</div>
+            </div>
+
+            <div class="protocol-grid">
+                <div class="proto-btn ${state.proto.sea ? 'active' : ''}" onclick="openProtocolDetail('sea')">
+                    <div class="proto-icon">🪸</div><div class="proto-name">SEA MOSS</div>
+                </div>
+                <div class="proto-btn ${state.proto.kom ? 'active' : ''}" onclick="openProtocolDetail('kom')">
+                    <div class="proto-icon">🥃</div><div class="proto-name">KOMBUCHA</div>
+                </div>
+                <div class="proto-btn ${state.proto.water ? 'active' : ''}" onclick="openProtocolDetail('water')">
+                    <div class="proto-icon">💧</div><div class="proto-name">WATER</div>
+                </div>
             </div>
 
             <div class="card">
@@ -282,128 +381,124 @@
         document.getElementById('dayContent').innerHTML = html;
     }
 
-    // --- PROFILE & GRAPH LOGIC ---
+    // --- PROFILE, GRAPH, & GOAL BARS ---
     function openProfileModal() {
         const h = userHistory[currentUser];
         const latest = h[h.length - 1];
+        const goal = userGoals[currentUser];
         
-        // 1. Populate Stats
+        // 1. Stats
         document.getElementById('profTitle').innerText = currentUser === 'J' ? "JERMAINE" : "SOPHIA";
         document.getElementById('profWeight').innerText = latest.weight;
         document.getElementById('profMuscle').innerText = latest.muscle;
         document.getElementById('profBF').innerText = latest.bf + '%';
         document.getElementById('profVisc').innerText = latest.visc;
 
-        // 2. Generate SVG Line Graph for Body Fat
+        // 2. Goal Bars Logic
+        const color = currentUser === 'J' ? 'var(--accent-gold)' : 'var(--glute-pink)';
+        
+        // Helper to draw a goal bar
+        const drawGoalBar = (label, current, target, suffix) => {
+            // Calculate percentages. If target < current (e.g. weight loss), scale differently? 
+            // Simple visualizer: max is max(current, target) * 1.1
+            const max = Math.max(current, target) * 1.1;
+            const currPct = (current / max) * 100;
+            const targPct = (target / max) * 100;
+            
+            return `
+            <div class="bar-container">
+                <div class="bar-label-row"><span>${label}</span><span style="color:var(--target-green)">Target: ${target}${suffix}</span></div>
+                <div class="bar-bg">
+                    <div class="bar-curr" style="width: ${currPct}%; background: ${color};"></div>
+                    <div class="marker" style="left: ${targPct}%;">
+                        <span class="marker-label">GOAL</span>
+                    </div>
+                </div>
+            </div>`;
+        };
+
+        let barsHtml = "";
+        barsHtml += drawGoalBar("Body Fat %", latest.bf, goal.bf, "%");
+        barsHtml += drawGoalBar("Muscle Mass", latest.muscle, goal.muscle, " lbs");
+        document.getElementById('goalBarsContainer').innerHTML = barsHtml;
+
+        // 3. Graph
         renderGraph(h);
 
-        // 3. Generate History Log
+        // 4. History
         let logHtml = "";
-        // Sort descending for log
         [...h].reverse().forEach(entry => {
-            logHtml += `<div class="hist-row"><span>${entry.date}</span> <span>${entry.bf}% BF</span></div>`;
+            logHtml += `<div class="hist-row"><span>${entry.date}</span> <span>${entry.bf}% BF / ${entry.muscle}lb Muscle</span></div>`;
         });
         document.getElementById('historyLog').innerHTML = logHtml;
 
-        // 4. Next Scan Calculator
+        // 5. Alert
         const lastScanDate = new Date(latest.date);
-        const nextScanDate = new Date(lastScanDate);
-        nextScanDate.setDate(lastScanDate.getDate() + 30);
-        
+        const nextScanDate = new Date(lastScanDate); nextScanDate.setDate(lastScanDate.getDate() + 30);
         const daysLeft = Math.ceil((nextScanDate - new Date()) / (1000 * 60 * 60 * 24));
         const alertBox = document.getElementById('nextScanBox');
-        
         if(daysLeft <= 0) {
             alertBox.innerText = "⚠️ SCAN DUE NOW";
-            alertBox.style.background = "rgba(255, 61, 0, 0.2)";
-            alertBox.style.color = "var(--heat-red)";
+            alertBox.style.background = "rgba(255, 61, 0, 0.2)"; alertBox.style.color = "var(--heat-red)";
         } else {
             alertBox.innerText = `NEXT SCAN: ${nextScanDate.toLocaleDateString()} (${daysLeft} Days)`;
-            alertBox.style.background = "rgba(212, 175, 55, 0.1)";
-            alertBox.style.color = "var(--accent-gold)";
+            alertBox.style.background = "rgba(212, 175, 55, 0.1)"; alertBox.style.color = "var(--accent-gold)";
         }
 
         openModal('profileModal');
     }
 
     function renderGraph(data) {
-        const svgW = 500; const svgH = 150;
-        const padding = 20;
-        
-        // Find Min/Max BF to scale graph
+        const svgW = 500; const svgH = 150; const padding = 20;
         const bfs = data.map(d => d.bf);
-        const minVal = Math.min(...bfs) - 1;
-        const maxVal = Math.max(...bfs) + 1;
+        const minVal = Math.min(...bfs) - 1; const maxVal = Math.max(...bfs) + 1;
         
-        // Map points
         let points = "";
         data.forEach((d, i) => {
             const x = padding + (i / (data.length - 1)) * (svgW - padding * 2);
-            // Invert Y because SVG 0 is top
             const y = svgH - padding - ((d.bf - minVal) / (maxVal - minVal)) * (svgH - padding * 2);
             points += `${x},${y} `;
         });
 
         const color = currentUser === 'J' ? '#D4AF37' : '#FF4081';
-        
-        const svgHtml = `
-            <svg viewBox="0 0 ${svgW} ${svgH}">
-                <polyline points="${points}" fill="none" stroke="${color}" stroke-width="4" />
-                ${data.map((d, i) => {
-                    const x = padding + (i / (data.length - 1)) * (svgW - padding * 2);
-                    const y = svgH - padding - ((d.bf - minVal) / (maxVal - minVal)) * (svgH - padding * 2);
-                    return `<circle cx="${x}" cy="${y}" r="6" fill="#000" stroke="${color}" stroke-width="2" />
-                            <text x="${x}" y="${y - 15}" text-anchor="middle" fill="#fff" font-size="16" font-weight="bold">${d.bf}%</text>`;
-                }).join('')}
-            </svg>
-        `;
-        document.getElementById('bfGraph').innerHTML = svgHtml;
+        document.getElementById('bfGraph').innerHTML = `<svg viewBox="0 0 ${svgW} ${svgH}"><polyline points="${points}" fill="none" stroke="${color}" stroke-width="4" />${data.map((d, i) => { const x = padding + (i / (data.length - 1)) * (svgW - padding * 2); const y = svgH - padding - ((d.bf - minVal) / (maxVal - minVal)) * (svgH - padding * 2); return `<circle cx="${x}" cy="${y}" r="6" fill="#000" stroke="${color}" stroke-width="2" /><text x="${x}" y="${y - 15}" text-anchor="middle" fill="#fff" font-size="16" font-weight="bold">${d.bf}%</text>`; }).join('')}</svg>`;
     }
 
     // --- OTHER MODALS ---
     function openRecipe(n) { 
         let r = recipeDB[n] || recipeDB["Bison Steak & Eggs"]; 
-        let m = r.macros[currentUser] || r.macros['J']; // Fallback
-        
+        let m = r.macros[currentUser] || r.macros['J'];
         document.getElementById('modalTitle').innerText = n; 
         document.getElementById('modalTimeBadge').innerText = r.time;
-        
-        // Populate specific meal macros
-        document.getElementById('macP').innerText = m.p + 'g';
-        document.getElementById('macC').innerText = m.c + 'g';
-        document.getElementById('macF').innerText = m.f + 'g';
-        document.getElementById('macK').innerText = m.k;
-
+        document.getElementById('macP').innerText = m.p + 'g'; document.getElementById('macC').innerText = m.c + 'g'; document.getElementById('macF').innerText = m.f + 'g'; document.getElementById('macK').innerText = m.k;
         document.getElementById('modalIng').innerHTML = r.ing.map(i => `<li>${i}</li>`).join('');
-        // Enhance formatting for chef steps
-        document.getElementById('modalSteps').innerHTML = r.steps.map(s => {
-            // Bold text between ** **
-            return `<p>${s.replace(/\*\*(.*?)\*\*/g, '<strong style="color:#fff">$1</strong>')}</p>`;
-        }).join(''); 
-        
+        document.getElementById('modalSteps').innerHTML = r.steps.map(s => `<p>${s.replace(/\*\*(.*?)\*\*/g, '<strong style="color:#fff">$1</strong>')}</p>`).join(''); 
         openModal('recipeModal'); 
     }
 
     function openRecovery(idx) {
         let sched = weeklySchedule[idx];
         document.getElementById('recTitle').innerText = sched.w;
-        const fmt = (txt) => `<div style="margin-bottom:15px; border-left:2px solid #333; padding-left:15px;">
-            <div style="font-size:0.7rem; font-weight:800; color:#888;">${txt.split(':')[0]}</div>
-            <div style="font-size:1rem; color:#fff;">${txt.split(':')[1] || txt}</div>
-        </div>`;
-        
-        let html = `
-            <div style="color:var(--heat-red); font-size:0.8rem; font-weight:800; margin-bottom:10px;">PRE-WORKOUT</div>
-            <div style="color:#ccc; margin-bottom:20px;">${sched.rec.warm}</div>
-            
-            <div style="color:var(--ice-blue); font-size:0.8rem; font-weight:800; margin-bottom:10px;">GYM AMENITIES</div>
-            <div style="color:#ccc; margin-bottom:20px;">${sched.rec.gym}</div>
-            
-            <div style="color:var(--recovery-purple); font-size:0.8rem; font-weight:800; margin-bottom:10px;">HOME RESTORATION</div>
-            <div style="color:#ccc; margin-bottom:20px;">${sched.rec.home}</div>
-        `;
-        document.getElementById('recContent').innerHTML = html;
+        const fmt = (txt) => `<div style="margin-bottom:15px; border-left:2px solid #333; padding-left:15px;"><div style="font-size:0.7rem; font-weight:800; color:#888;">${txt.split(':')[0]}</div><div style="font-size:1rem; color:#fff;">${txt.split(':')[1] || txt}</div></div>`;
+        document.getElementById('recContent').innerHTML = `
+            <div style="color:var(--heat-red); font-size:0.8rem; font-weight:800; margin-bottom:10px;">PRE-WORKOUT</div>${fmt(sched.rec.warm)}
+            <div style="color:var(--ice-blue); font-size:0.8rem; font-weight:800; margin-bottom:10px;">GYM AMENITIES</div>${fmt(sched.rec.gym)}
+            <div style="color:var(--recovery-purple); font-size:0.8rem; font-weight:800; margin-bottom:10px;">HOME RESTORATION</div>${fmt(sched.rec.home)}`;
         openModal('recoveryModal');
+    }
+
+    let currentProto = null;
+    function openProtocolDetail(type) { 
+        currentProto = type; const data = protocolDetails[type]; 
+        document.getElementById('pdTitle').innerText = data.title; 
+        document.getElementById('pdAmount').innerText = data.amount; 
+        document.getElementById('pdTime').innerText = "Best time: " + data.time; 
+        document.getElementById('pdBenefits').innerText = data.benefits; 
+        const btn = document.getElementById('pdCompleteBtn');
+        const state = getDayState(selectedDateObj.toDateString());
+        if(state.proto[type]) { btn.innerText = "COMPLETED"; btn.style.background = "#333"; btn.style.color = "#666"; } 
+        else { btn.innerText = "MARK AS DONE"; btn.style.background = "var(--target-green)"; btn.style.color = "#000"; btn.onclick = () => { state.proto[type] = true; closeModal('protocolDetailModal'); showDay(selectedDateObj, selectedDayIndex); }; }
+        openModal('protocolDetailModal'); 
     }
 
     function openModal(id) { document.getElementById(id).style.display = 'block'; }
