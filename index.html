@@ -192,8 +192,16 @@ const mDB = {
 };
 
 const uH = {
-    'J': { past: { bf: 17.9, m: 99.4, w: 210.8 }, now: { bf: 19.0, m: 99.0, w: 217.0 }, goal: { bf: 19.2, m: 99.8, w: 212.0 } },
-    'S': { past: { bf: 33.0, m: 50.0, w: 136.1 }, now: { bf: 36.1, m: 49.2, w: 141.5 }, goal: { bf: 34.6, m: 49.8, w: 138.0 } }
+    'J': { 
+        past: { bf: 17.9, m: 99.4, w: 210.8, vf: 11, bmr: 1950, age: 38 }, 
+        now:  { bf: 19.0, m: 99.0, w: 217.0, vf: 10, bmr: 2050, age: 34 }, 
+        goal: { bf: 15.0, m: 105.0, w: 212.0, vf: 7, bmr: 2100, age: 30 } 
+    },
+    'S': { 
+        past: { bf: 33.0, m: 50.0, w: 136.1, vf: 8, bmr: 1300, age: 40 }, 
+        now:  { bf: 36.1, m: 49.2, w: 141.5, vf: 9, bmr: 1250, age: 38 }, 
+        goal: { bf: 28.0, m: 55.0, w: 138.0, vf: 5, bmr: 1400, age: 32 } 
+    }
 };
 
 function switchU(uID){ user=uID; document.querySelectorAll('.u-badge').forEach(b=>b.classList.remove('active')); document.getElementById('b'+uID.toLowerCase()).classList.add('active'); render(); }
@@ -271,23 +279,36 @@ function openJ(n){
 
 function openBio() {
     const u = uH[user];
-    document.getElementById('mTitle').innerText = user + " SCAN";
-    document.getElementById('mSub').innerText = `Weight: ${u.now.w} lbs | Clinical Update: Dec 24`;
-    const drawBar = (label, past, now, goal) => {
-        const unit = label.includes('%') ? '%' : ' lbs';
+    const modalBody = document.getElementById('mBody');
+    document.getElementById('mTitle').innerText = user + " CLINICAL SCAN";
+    document.getElementById('mSub').innerText = `Current Weight: ${u.now.w} lbs | Updated Dec 24`;
+    
+    // Config for all metrics you want to display
+    const metrics = [
+        { label: "Body Fat %", key: "bf", unit: "%" },
+        { label: "Muscle Mass", key: "m", unit: " lbs" },
+        { label: "Visceral Fat", key: "vf", unit: " lvl" },
+        { label: "Metabolic Age", key: "age", unit: " yrs" }
+    ];
+
+    let html = '';
+    metrics.forEach(m => {
+        const past = u.past[m.key], now = u.now[m.key], goal = u.goal[m.key];
         const max = Math.max(past, now, goal);
-        return `
+        
+        html += `
             <div class="bio-section">
-                <div class="bio-title"><span>${label}</span><span>Goal: ${goal}${unit}</span></div>
+                <div class="bio-title"><span>${m.label}</span><span>Goal: ${goal}${m.unit}</span></div>
                 <div class="bar-group">
                     <div class="bar-row"><div class="bar-lbl">Past</div><div class="bar-track"><div class="bar-fill past" style="width:${(past/max)*100}%"></div></div></div>
                     <div class="bar-row"><div class="bar-lbl">Now</div><div class="bar-track"><div class="bar-fill now" style="width:${(now/max)*100}%"></div></div></div>
                     <div class="bar-row"><div class="bar-lbl" style="color:var(--green)">Goal</div><div class="bar-track"><div class="bar-fill goal" style="width:${(goal/max)*100}%"></div></div></div>
                 </div>
             </div>`;
-    };
-    document.getElementById('mBody').innerHTML = drawBar("Body Fat %", u.past.bf, u.now.bf, u.goal.bf) + drawBar("Muscle Mass", u.past.m, u.now.m, u.goal.m);
-    document.getElementById('mTip').innerText = "";
+    });
+
+    modalBody.innerHTML = html;
+    document.getElementById('mTip').innerText = `BMR: ${u.now.bmr} kcal / day`;
     document.getElementById('masterModal').style.display = 'block';
 }
 
