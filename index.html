@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v222.5 Pro</title>
+    <title>The Centurion | v222.6 Pro</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -47,8 +47,11 @@
         .p-fill { background: var(--grad-pro); } .c-fill { background: var(--grad-carb); } .f-fill { background: var(--grad-fat); } .cal-fill { background: var(--grad-cal); }
         .juice-badge { float: right; border: 1px solid; padding: 5px 10px; border-radius: 6px; font-size: 0.6rem; font-weight: 900; text-transform: uppercase; }
         .juice-name { font-size: 1.5rem; font-weight: 900; text-transform: uppercase; margin: 15px 0; color: #fff; }
-        .juice-benefit { font-size: 0.85rem; color: #bbb; font-style: italic; margin-bottom: 20px; border-left: 3px solid #444; padding-left: 15px; }
-
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); backdrop-filter: blur(10px); overflow-y: auto; padding: 20px; }
+        .modal-content { background: #0a0a0a; margin: 30px auto; padding: 40px; border: 1px solid #333; width: 100%; max-width: 600px; border-radius: 24px; }
+        .chef-steps { counter-reset: step; color: #ccc; font-size: 0.95rem; line-height: 1.8; margin-top: 25px; }
+        .chef-steps p { margin-bottom: 20px; position: relative; padding-left: 35px; }
+        .chef-steps p::before { counter-increment: step; content: counter(step); position: absolute; left: 0; top: 2px; width: 22px; height: 22px; background: #222; color: var(--accent-gold); font-size: 0.7rem; font-weight: 800; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px solid #333; }
         .prog-section { margin-bottom: 40px; }
         .prog-title { display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: 800; color: #fff; text-transform: uppercase; margin-bottom: 15px; }
         .prog-bar-row { display: flex; align-items: center; margin-bottom: 15px; }
@@ -60,17 +63,6 @@
         .prog-fill.goal { background: var(--target-green); }
         .scan-alert { text-align: center; font-size: 0.7rem; font-weight: 800; margin-top: 25px; padding: 15px; border-radius: 8px; text-transform: uppercase; }
         .scan-alert.upcoming { color: var(--heat-red); border: 1px solid var(--heat-red); background: rgba(231, 76, 60, 0.1); }
-
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); backdrop-filter: blur(10px); overflow-y: auto; padding: 20px; }
-        .modal-content { background: #0a0a0a; margin: 30px auto; padding: 40px; border: 1px solid #333; width: 100%; max-width: 600px; border-radius: 24px; }
-        .timeline-section { margin-bottom: 30px; border-left: 2px solid #222; padding-left: 15px; }
-        .timeline-header { font-size: 0.8rem; font-weight: 800; text-transform: uppercase; color: #fff; margin-bottom: 15px; }
-        .timeline-item { margin-bottom: 15px; }
-        .timeline-tool { font-size: 1rem; font-weight: 600; color: #fff; }
-        .timeline-desc { font-size: 0.85rem; color: #888; }
-        .chef-steps { counter-reset: step; color: #ccc; font-size: 0.95rem; line-height: 1.8; margin-top: 25px; }
-        .chef-steps p { margin-bottom: 20px; position: relative; padding-left: 35px; }
-        .chef-steps p::before { counter-increment: step; content: counter(step); position: absolute; left: 0; top: 2px; width: 22px; height: 22px; background: #222; color: var(--accent-gold); font-size: 0.7rem; font-weight: 800; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px solid #333; }
     </style>
 </head>
 <body>
@@ -108,18 +100,24 @@
 
     const snackDB = { "Pea Protein ISO": {p:25, c:2, f:2, k:120}, "Kirkland Mixed Nuts": {p:9, c:8, f:23, k:260}, "Greek Yogurt": {p:20, c:8, f:0, k:120}, "REMOVE": {p:0, c:0, f:0, k:0} };
 
-    // Full 30-Recipe Database
+    // Categorized Recipe Database
     const recipeDB = {
-        "Bone Broth & Egg": { ing: ["1 cup Bone Broth", "1 Egg", "Ginger"], steps: ["Heat broth.", "Poach egg directly in broth."] },
-        "Thai Beef Salad": { ing: ["6oz Steak", "Lime", "Mint"], steps: ["Grill steak.", "Toss with herbs and lime."] },
-        "Clams Linguine": { ing: ["Fresh Clams", "Garlic", "Parsley"], steps: ["Steam clams with garlic."] },
-        "Bison Steak & Eggs": { ing: ["6oz Bison", "2 Eggs", "Asparagus"], steps: ["Sear bison 3m/side.", "Fry eggs."] },
-        "Sardine Bowl": { ing: ["Sardines", "Avocado", "Radish"], steps: ["Mash avocado.", "Top with sardines."] },
-        "Sprouted Breakfast Wrap": { ing: ["Sprouted Tortilla", "3 Eggs", "Turkey Bacon"], steps: ["Scramble eggs.", "Fill tortilla."] },
-        "Japanese Tamagoyaki": { ing: ["4 Eggs", "Dashi", "Zucchini"], steps: ["Whisk eggs.", "Roll thin layers."] }
+        breakfast: {
+            "Bone Broth & Egg": { ing: ["1 cup Bone Broth", "1 Egg", "Ginger"], steps: ["Heat broth.", "Poach egg."] },
+            "Bison Steak & Eggs": { ing: ["6oz Bison", "2 Eggs", "Asparagus"], steps: ["Sear bison.", "Fry eggs."] },
+            "Sprouted Breakfast Wrap": { ing: ["Sprouted Tortilla", "3 Eggs", "Turkey Bacon"], steps: ["Scramble eggs.", "Fill wrap."] }
+        },
+        lunch: {
+            "Thai Beef Salad": { ing: ["6oz Steak", "Lime", "Mint"], steps: ["Grill steak ahead.", "Toss with herbs at work."], portable: true },
+            "Sardine Bowl": { ing: ["Sardines", "Avocado", "Radish"], steps: ["Mix avocado/radish.", "Top with sardines."], portable: true },
+            "Chicken Lettuce Wraps": { ing: ["6oz Chicken", "Gem Lettuce", "Cashews"], steps: ["Cook chicken.", "Pack in lettuce cups."], portable: true }
+        },
+        dinner: {
+            "Clams Linguine": { ing: ["Clams", "Garlic", "Parsley"], steps: ["Steam clams."] },
+            "Grilled Salmon": { ing: ["6oz Salmon", "Bok Choy"], steps: ["Pan sear salmon."] },
+            "Bison Chili": { ing: ["Ground Bison", "Tomatoes", "Peppers"], steps: ["Slow cook bison."] }
+        }
     };
-    const bKeys = Object.keys(recipeDB);
-    const masterSchedule = Array.from({length: 30}, (_, i) => ({ b: bKeys[i % bKeys.length], l: bKeys[(i+1) % bKeys.length], d: bKeys[(i+2) % bKeys.length] }));
 
     const juiceData = { 
         "TITAN RED": { badge: "NITRIC BOOST", prep: ["2 Beets", "2 Carrots", "1 Pomegranate", "1 Orange"], macros: {p: 2, c: 25, f: 0, k: 110}, benefit: "Maximizes oxygen delivery." }, 
@@ -150,21 +148,8 @@
         { w: "HIIT", c: "HIGH CARB", j: "TITAN RED", type: "HIIT" }
     ];
 
-    function getMonday(offset) {
-        let d = new Date(); let day = d.getDay();
-        let diff = d.getDate() - day + (day === 0 ? -6 : 1);
-        let mon = new Date(d.setDate(diff)); mon.setHours(0,0,0,0);
-        mon.setDate(mon.getDate() + (offset * 7)); return mon;
-    }
-
     function changeWeek(dir) { weekOffset += dir; renderTabs(); }
-
-    function resetToCurrent() {
-        weekOffset = 0; selectedDateObj = new Date(); selectedDateObj.setHours(0,0,0,0);
-        selectedDayIndex = selectedDateObj.getDay() === 0 ? 6 : selectedDateObj.getDay() - 1;
-        renderTabs();
-    }
-
+    function resetToCurrent() { weekOffset = 0; selectedDateObj = new Date(); selectedDateObj.setHours(0,0,0,0); selectedDayIndex = selectedDateObj.getDay() === 0 ? 6 : selectedDateObj.getDay() - 1; renderTabs(); }
     function switchUser(user) { currentUser = user; document.querySelectorAll('.badge').forEach(b => b.classList.remove('active-user')); document.getElementById('badge'+user).classList.add('active-user'); showDay(selectedDateObj, selectedDayIndex); }
 
     function renderTabs() {
@@ -174,8 +159,7 @@
         document.getElementById('dateRangeDisplay').innerText = `${mon.toLocaleDateString('en-US', opt)} - ${end.toLocaleDateString('en-US', opt)}`;
         for (let i = 0; i < 7; i++) {
             let d = new Date(mon); d.setDate(mon.getDate() + i);
-            const btn = document.createElement('button');
-            btn.className = 'tab-btn' + (d.toDateString() === selectedDateObj.toDateString() ? ' active' : '');
+            const btn = document.createElement('button'); btn.className = 'tab-btn' + (d.toDateString() === selectedDateObj.toDateString() ? ' active' : '');
             btn.innerHTML = `${days[i]}<span>${d.getDate()}</span>`;
             btn.onclick = () => { selectedDateObj = d; selectedDayIndex = i; renderTabs(); };
             tabs.appendChild(btn);
@@ -184,11 +168,10 @@
     }
 
     function showDay(dateObj, dayIndex) {
-        const start = new Date(2025, 0, 1);
-        const dayId = Math.floor((dateObj - start) / 86400000);
-        const meal = masterSchedule[Math.abs(dayId) % 30];
-        const schedule = weeklySchedule[dayIndex];
-        const state = dayState[dateObj.toDateString()] || { s1: null };
+        const start = new Date(2025, 0, 1); const dayId = Math.floor((dateObj - start) / 86400000);
+        const bList = Object.keys(recipeDB.breakfast); const lList = Object.keys(recipeDB.lunch); const dList = Object.keys(recipeDB.dinner);
+        const meal = { b: bList[Math.abs(dayId) % bList.length], l: lList[Math.abs(dayId) % lList.length], d: dList[Math.abs(dayId) % dList.length] };
+        const schedule = weeklySchedule[dayIndex]; const state = dayState[dateObj.toDateString()] || { s1: null };
         const goal = (currentUser === 'J') ? {p:160, c:80, f:100, k:1860} : {p:105, c:50, f:70, k:1250};
 
         document.getElementById('dayContent').innerHTML = `
@@ -197,13 +180,13 @@
                     <div style="font-weight:800; font-size:1.1rem; color:#fff;">${schedule.w} ⓘ</div>
                     <span class="badge" style="padding:6px 12px; font-size:0.6rem; background:#222; border:none;">${schedule.c}</span>
                 </div>
-                <div class="label">🍳 Breakfast</div><div class="value" onclick="openRecipe('${meal.b}')">${meal.b}</div>
-                <div class="label">🥗 Lunch</div><div class="value" onclick="openRecipe('${meal.l}')">${meal.l}</div>
-                <div class="label">🍽️ Dinner</div><div class="value" onclick="openRecipe('${meal.d}')">${meal.d}</div>
+                <div class="label">🍳 Breakfast</div><div class="value" onclick="openRecipe('breakfast', '${meal.b}')">${meal.b}</div>
+                <div class="label">🥗 Lunch</div><div class="value" onclick="openRecipe('lunch', '${meal.l}')">${meal.l} 💼</div>
+                <div class="label">🍽️ Dinner</div><div class="value" onclick="openRecipe('dinner', '${meal.d}')">${meal.d}</div>
                 <div class="label">🥤 Snack Slot</div><div class="snack-slot ${state.s1?'filled':''}" onclick="openSnackSelector()">${state.s1 || '+ ADD SNACK'}</div>
             </div>
             <div class="macro-dashboard">
-                <div style="font-size:0.8rem; font-weight:800; color:#fff; margin-bottom:25px; text-transform:uppercase;">${currentUser === 'J' ? 'JERMAINE' : 'SOPHIA'} DAILY MACROS</div>
+                <div style="font-size:0.8rem; font-weight:800; color:#fff; margin-bottom:25px; text-transform:uppercase;">${currentUser === 'J' ? 'JERMAINE' : 'SOPHIA'} MACROS</div>
                 <div class="macro-row"><div class="macro-label"><span>PROTEIN</span><span>81g / ${goal.p}g</span></div><div class="macro-bar-bg"><div class="macro-bar-fill p-fill" style="width:50%;"></div></div></div>
                 <div class="macro-row"><div class="macro-label"><span>CARBS</span><span>32g / ${goal.c}g</span></div><div class="macro-bar-bg"><div class="macro-bar-fill c-fill" style="width:40%;"></div></div></div>
                 <div class="macro-row"><div class="macro-label"><span>FATS</span><span>45g / ${goal.f}g</span></div><div class="macro-bar-bg"><div class="macro-bar-fill f-fill" style="width:45%;"></div></div></div>
@@ -216,25 +199,23 @@
             </div>`;
     }
 
+    function openRecipe(cat, name) { const r = recipeDB[cat][name]; document.getElementById('modalTitle').innerText = name; document.getElementById('modalIng').innerHTML = r.ing.map(i => `• ${i}<br>`).join(''); document.getElementById('modalSteps').innerHTML = r.steps.map(s => `<p>${s}</p>`).join(''); document.getElementById('recipeModal').style.display = 'block'; }
     function openProfileModal() {
-        const u = userHistory[currentUser];
-        document.getElementById('profTitle').innerText = currentUser === 'J' ? "🧔🏾‍♂️ JERMAINE" : "👩🏾‍🦱 SOPHIA";
+        const u = userHistory[currentUser]; document.getElementById('profTitle').innerText = currentUser === 'J' ? "🧔🏾‍♂️ JERMAINE" : "👩🏾‍🦱 SOPHIA";
         document.getElementById('profStats').innerHTML = `<div class="stat-grid"><div class="stat-box"><div class="stat-val">${u.current.weight}</div><div class="stat-lbl">Weight</div></div><div class="stat-box"><div class="stat-val">${u.current.bf}%</div><div class="stat-lbl">Body Fat</div></div></div>`;
-        const drawBars = (title, past, curr, goal, unit) => `<div class="prog-section"><div class="prog-title"><span>${title}</span><span style="color:var(--target-green)">Target: ${goal}${unit}</span></div><div class="prog-bar-row"><div class="prog-label">PAST</div><div class="prog-track"><div class="prog-fill past" style="width:${(past/Math.max(past,curr,goal))*100}%"></div></div><div style="font-size:0.7rem; color:#666">${past}${unit}</div></div><div class="prog-bar-row"><div class="prog-label">NOW</div><div class="prog-track"><div class="prog-fill current" style="width:${(curr/Math.max(past,curr,goal))*100}%"></div></div><div style="font-size:0.7rem; color:#fff">${curr}${unit}</div></div><div class="prog-bar-row"><div class="prog-label">GOAL</div><div class="prog-track"><div class="prog-fill goal" style="width:${(goal/Math.max(past,curr,goal))*100}%"></div></div><div style="font-size:0.7rem; color:var(--target-green)">${goal}${unit}</div></div></div>`;
+        const drawBars = (t, p, c, g, u) => `<div class="prog-section"><div class="prog-title"><span>${t}</span><span style="color:var(--target-green)">Target: ${g}${u}</span></div><div class="prog-bar-row"><div class="prog-label">PAST</div><div class="prog-track"><div class="prog-fill past" style="width:${(p/Math.max(p,c,g))*100}%"></div></div><div style="font-size:0.7rem; color:#666">${p}${u}</div></div><div class="prog-bar-row"><div class="prog-label">NOW</div><div class="prog-track"><div class="prog-fill current" style="width:${(c/Math.max(p,c,g))*100}%"></div></div><div style="font-size:0.7rem; color:#fff">${c}${u}</div></div><div class="prog-bar-row"><div class="prog-label">GOAL</div><div class="prog-track"><div class="prog-fill goal" style="width:${(g/Math.max(p,c,g))*100}%"></div></div><div style="font-size:0.7rem; color:var(--target-green)">${g}${u}</div></div></div>`;
         document.getElementById('profBars').innerHTML = drawBars("Body Fat %", u.past.bf, u.current.bf, u.goal.bf, "%") + drawBars("Muscle Mass", u.past.muscle, u.current.muscle, u.goal.muscle, " lbs");
-        const nextScan = new Date(u.current.date); nextScan.setDate(nextScan.getDate() + 30);
-        const diff = Math.ceil((nextScan - new Date()) / 86400000);
-        document.getElementById('scanAlertBox').innerHTML = diff <= 7 ? `<div class="scan-alert upcoming">⚠️ SCAN DUE IN ${diff} DAYS</div>` : `<div style="text-align:center; color:#444; font-size:0.65rem; text-transform:uppercase;">Next Clinical Scan: ${nextScan.toLocaleDateString()}</div>`;
+        const next = new Date(u.current.date); next.setDate(next.getDate() + 30); const diff = Math.ceil((next - new Date()) / 86400000);
+        document.getElementById('scanAlertBox').innerHTML = diff <= 7 ? `<div class="scan-alert upcoming">⚠️ SCAN DUE IN ${diff} DAYS</div>` : `<div style="text-align:center; color:#444; font-size:0.65rem; text-transform:uppercase;">Next Scan: ${next.toLocaleDateString()}</div>`;
         document.getElementById('profileModal').style.display = 'block';
     }
 
-    function openJuiceModal(name) { const j = juiceData[name]; document.getElementById('jTitle').innerText = name; document.getElementById('jMacros').innerText = `P: ${j.macros.p}g | C: ${j.macros.c}g | Kcal: ${j.macros.k}`; document.getElementById('jPrep').innerHTML = j.prep.map(s => `<p>${s}</p>`).join(''); document.getElementById('juiceModal').style.display = 'block'; }
-    function openRecipe(name) { const r = recipeDB[name]; document.getElementById('modalTitle').innerText = name; document.getElementById('modalIng').innerHTML = r.ing.map(i => `• ${i}<br>`).join(''); document.getElementById('modalSteps').innerHTML = r.steps.map(s => `<p>${s}</p>`).join(''); document.getElementById('recipeModal').style.display = 'block'; }
-    function openSnackSelector() { document.getElementById('snackOptionsList').innerHTML = Object.keys(snackDB).map(key => `<div style="padding:15px; border-bottom:1px solid #222; cursor:pointer;" onclick="selectSnack('${key}')">${key}</div>`).join(''); document.getElementById('snackModal').style.display = 'block'; }
-    function selectSnack(name) { const key = selectedDateObj.toDateString(); if (!dayState[key]) dayState[key] = { s1: null }; dayState[key].s1 = name === 'REMOVE' ? null : name; closeModal('snackModal'); showDay(selectedDateObj, selectedDayIndex); }
-    function openRecovery(type) { const r = recoveryMatrix[type] || recoveryMatrix["RECOVERY"]; document.getElementById('recTitle').innerText = type + " RECOVERY"; document.getElementById('recTimeline').innerHTML = `<div class="timeline-section"><div class="timeline-header" style="color:var(--heat-red)">Pre-Workout</div><div class="timeline-item"><div class="timeline-tool">${r.warmup}</div></div></div><div class="timeline-section"><div class="timeline-header" style="color:var(--ice-blue)">Gym Amenities</div><div class="timeline-item"><div class="timeline-tool">${r.gym}</div></div></div><div class="timeline-section" style="border:none;"><div class="timeline-header" style="color:var(--recovery-purple)">Home Restoration</div><div class="timeline-item"><div class="timeline-tool">${r.home}</div></div></div>`; document.getElementById('recoveryModal').style.display = 'block'; }
+    function getMonday(o) { let d = new Date(); let day = d.getDay(); let diff = d.getDate() - day + (day === 0 ? -6 : 1); let mon = new Date(d.setDate(diff)); mon.setHours(0,0,0,0); mon.setDate(mon.getDate() + (o * 7)); return mon; }
+    function openJuiceModal(n) { const j = juiceData[n]; document.getElementById('jTitle').innerText = n; document.getElementById('jMacros').innerText = `P: ${j.macros.p}g | C: ${j.macros.c}g | Kcal: ${j.macros.k}`; document.getElementById('jPrep').innerHTML = j.prep.map(s => `<p>${s}</p>`).join(''); document.getElementById('juiceModal').style.display = 'block'; }
+    function openSnackSelector() { document.getElementById('snackOptionsList').innerHTML = Object.keys(snackDB).map(k => `<div style="padding:15px; border-bottom:1px solid #222; cursor:pointer;" onclick="selectSnack('${k}')">${k}</div>`).join(''); document.getElementById('snackModal').style.display = 'block'; }
+    function selectSnack(n) { const k = selectedDateObj.toDateString(); if (!dayState[k]) dayState[k] = { s1: null }; dayState[k].s1 = n === 'REMOVE' ? null : n; closeModal('snackModal'); showDay(selectedDateObj, selectedDayIndex); }
+    function openRecovery(t) { const r = recoveryMatrix[t] || recoveryMatrix["RECOVERY"]; document.getElementById('recTitle').innerText = t + " RECOVERY"; document.getElementById('recTimeline').innerHTML = `<div class="timeline-section"><div class="timeline-header" style="color:var(--heat-red)">Pre-Workout</div><div class="timeline-item"><div class="timeline-tool">${r.warmup}</div></div></div><div class="timeline-section"><div class="timeline-header" style="color:var(--ice-blue)">Gym Amenities</div><div class="timeline-item"><div class="timeline-tool">${r.gym}</div></div></div><div class="timeline-section" style="border:none;"><div class="timeline-header" style="color:var(--recovery-purple)">Home Restoration</div><div class="timeline-item"><div class="timeline-tool">${r.home}</div></div></div>`; document.getElementById('recoveryModal').style.display = 'block'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-
     window.onload = resetToCurrent;
 </script>
 </body>
