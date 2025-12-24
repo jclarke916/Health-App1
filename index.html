@@ -50,13 +50,13 @@
         .bar-fill.past{background:#333}
         .bar-fill.now{background:var(--gold);box-shadow:0 0 10px rgba(212,175,55,0.3)}
         .bar-fill.goal{background:var(--green);box-shadow:0 0 12px rgba(0,230,118,0.4)}
-.rec-phase-list { position: relative; padding-left: 25px; margin-top: 20px; }
-.rec-phase-list::before { content: ''; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: linear-gradient(to bottom, var(--blue), var(--purple)); }
-.phase-item { position: relative; margin-bottom: 25px; }
-.phase-item::after { content: ''; position: absolute; left: -22px; top: 5px; width: 10px; height: 10px; background: var(--bg); border: 2px solid var(--blue); border-radius: 50%; }
-.phase-time { font-size: 0.6rem; font-weight: 900; color: var(--blue); text-transform: uppercase; letter-spacing: 1px; }
-.phase-title { display: block; font-size: 0.9rem; font-weight: 700; color: #fff; margin: 2px 0; }
-.phase-detail { font-size: 0.75rem; color: #999; line-height: 1.4; display: block; }
+        .rec-phase-list { position: relative; padding-left: 25px; margin-top: 20px; }
+        .rec-phase-list::before { content: ''; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: linear-gradient(to bottom, var(--blue), var(--purple)); }
+        .phase-item { position: relative; margin-bottom: 25px; }
+        .phase-item::after { content: ''; position: absolute; left: -22px; top: 5px; width: 10px; height: 10px; background: var(--bg); border: 2px solid var(--blue); border-radius: 50%; }
+        .phase-time { font-size: 0.6rem; font-weight: 900; color: var(--blue); text-transform: uppercase; letter-spacing: 1px; }
+        .phase-title { display: block; font-size: 0.9rem; font-weight: 700; color: #fff; margin: 2px 0; }
+        .phase-detail { font-size: 0.75rem; color: #999; line-height: 1.4; display: block; }
     </style>
 </head>
 <body>
@@ -80,9 +80,7 @@
 <div id="masterModal" class="modal"><div class="modal-content"><span onclick="closeM()" style="float:right;cursor:pointer">&times;</span><h2 id="mTitle"></h2><div id="mSub" style="color:var(--gold);font-size:0.7rem;margin:10px 0"></div><div id="mBody" class="chef-steps" style="counter-reset:step"></div><div id="mTip" class="chef-tip"></div></div></div>
 
 <script>
-<script>
 let user='J', offset=0, selDate=new Date();
-// This variable holds your choice for the day. null means nothing selected yet.
 let dailySnack = null; 
 
 const rDB = {
@@ -194,7 +192,6 @@ const mDB = {
         "Trout Bake|Trout,Parsley,Lemon|bake|Stuff the cavity with fresh parsley and lemon.",
         "Beef Heart Roast|Heart,Thyme,Ghee|sear|Serve with horseradish to aid in fat digestion."
     ],
-    // ADDED MACROS TO SNACKS: |Protein|Carbs|Calories
     s: [
         "Greek Yogurt Bowl|Berries,Honey,Walnuts|raw|Probiotic boost for gut health.|22|18|240",
         "Hard Boiled Eggs|Sea Salt,Pepper|boil|Perfect amino acid profile.|12|1|140",
@@ -235,7 +232,6 @@ function render(){
     for(let i=0; i<7; i++){
         let d=new Date(mon); d.setDate(mon.getDate()+i);
         const b=document.createElement('div'); b.className='tab'+(d.toDateString()===selDate.toDateString()?' active':'');
-        // When changing days, RESET the snack selection
         b.onclick=()=>{ dailySnack=null; selDate=d; render() }; 
         tabs.appendChild(b);
         if(b.classList.contains('active')) showDay(d, i);
@@ -264,7 +260,6 @@ function showDay(dObj, idx){
     let k = 1180 + j[4] + sCal;
 
     // SNACK UI LOGIC
-    // If dailySnack is null, show "Select". If set, show name and allow re-select.
     let snackHTML = '';
     if(!dailySnack) {
         snackHTML = `<div class="value" onclick="openSnackSelector()" style="color:#888; border-style:dashed">➕ TAP TO SELECT SNACK</div>`;
@@ -290,7 +285,6 @@ function showDay(dObj, idx){
         <div class="card" style="text-align:center"><div class="label" style="color:var(--gold)">Kuvings Cold Pressed</div><div class="juice-name" onclick="openJ('${jcs[idx]}')">${jcs[idx]}</div></div>`;
 }
 
-// NEW FUNCTION: Opens the list to pick a snack
 function openSnackSelector() {
     const modalBody = document.getElementById('mBody');
     document.getElementById('mTitle').innerText = "SELECT SNACK";
@@ -299,7 +293,6 @@ function openSnackSelector() {
     let html = '';
     mDB.s.forEach((item, index) => {
         let s = item.split('|');
-        // On click, we call applySnack with the index of the item
         html += `<div class="value" onclick="applySnack(${index})">
             ${s[0]} 
             <span style="float:right;font-size:0.7rem;color:#666">${s[4]}g Pro | ${s[6]} Cal</span>
@@ -311,13 +304,9 @@ function openSnackSelector() {
     document.getElementById('masterModal').style.display = 'block';
 }
 
-// NEW FUNCTION: Sets the snack and refreshes the day view
 function applySnack(idx) {
-    dailySnack = mDB.s[idx].split('|'); // Save the choice
-    document.getElementById('masterModal').style.display = 'none'; // Close modal
-    
-    // Re-run showDay for the current date to update text and macros
-    // We need to find the current index (0-6) based on selDate
+    dailySnack = mDB.s[idx].split('|');
+    document.getElementById('masterModal').style.display = 'none';
     const mon=getMon(offset);
     const dayDiff = Math.floor((selDate - mon) / 864e5);
     showDay(selDate, dayDiff);
