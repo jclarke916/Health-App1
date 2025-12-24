@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Centurion | v200 Juice Macro Detail</title>
+    <title>The Centurion | v202 Auto Juice</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -64,11 +64,11 @@
         .rec-btn { border-color: var(--recovery-purple); color: #ccc; }
         .rec-btn:hover { border-color: #fff; color: var(--recovery-purple); }
 
-        .juice-card { background: linear-gradient(145deg, #0a0a0a, #111111); border: 1px solid #333; border-radius: 12px; padding: 30px; position: relative; margin-bottom: 20px; cursor: pointer; transition: 0.3s; opacity: 0.6; }
-        .juice-card.active { opacity: 1; border-color: var(--accent-gold); box-shadow: 0 0 20px rgba(212, 175, 55, 0.1); }
+        .juice-card { background: linear-gradient(145deg, #0a0a0a, #111111); border: 1px solid var(--accent-gold); border-radius: 12px; padding: 30px; position: relative; margin-bottom: 20px; cursor: pointer; transition: 0.3s; box-shadow: 0 0 20px rgba(212, 175, 55, 0.1); }
         .juice-name { font-size: 1.6rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
         .juice-benefit { font-size: 0.8rem; color: #ccc; font-style: italic; margin-bottom: 10px; display: block; border-left: 3px solid; padding-left: 12px; line-height: 1.5; }
         .juice-badge { float: right; border: 1px solid; padding: 4px 8px; border-radius: 4px; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; margin-bottom: 10px; display: inline-block; }
+        .juice-macro-row { font-size: 0.7rem; color: var(--accent-gold); font-weight: 700; margin-top: 15px; letter-spacing: 1px; }
 
         .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); overflow-y: auto; padding-top: 20px; }
         .modal-content { background: #050505; margin: 0 auto; padding: 35px; border: 1px solid #333; width: 92%; max-width: 750px; border-radius: 12px; }
@@ -111,17 +111,13 @@
         .hist-table th { text-align: left; border-bottom: 1px solid #333; padding: 8px; color: var(--accent-gold); font-size: 0.65rem; text-transform: uppercase; }
         .hist-table td { border-bottom: 1px solid #222; padding: 12px 8px; }
         .hist-table tr:last-child td { border-bottom: none; }
-        
-        .log-btn { background: var(--target-green); color: #000; border: none; width: 100%; padding: 15px; font-weight: 800; text-transform: uppercase; border-radius: 6px; cursor: pointer; margin-top: 20px; }
-        .log-btn:hover { background: #2ecc71; }
-        .remove-log-btn { background: #e74c3c; color: #fff; border: none; width: 100%; padding: 15px; font-weight: 800; text-transform: uppercase; border-radius: 6px; cursor: pointer; margin-top: 20px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <header>
-        <div class="version-tag">VER 200.0</div>
+        <div class="version-tag">VER 202.0</div>
         <h1>THE CENTURION</h1>
         <div class="profile-badges">
             <div id="badgeJ" class="badge active-user" onclick="switchUser('J')">🧔🏾‍♂️ JERMAINE</div>
@@ -216,7 +212,6 @@
     <h2 id="jTitle" style="color:var(--accent-gold);"></h2>
     <div id="jMacros" style="color:#888; font-size:0.8rem; margin-bottom:20px; font-weight:700;"></div>
     <div id="jPrep" class="chef-steps" style="counter-reset: step;"></div>
-    <div id="jAction"></div>
 </div></div>
 
 <div id="protocolModal" class="modal"><div class="modal-content"><span onclick="closeModal('protocolModal')" style="float:right; cursor:pointer;">&times;</span><h2 id="protoTitle" style="color:var(--accent-gold);"></h2><div id="protoBody" style="font-size:0.95rem; color:#ccc; line-height:1.7;"></div></div></div>
@@ -438,7 +433,7 @@
 
     function getDayState(dateKey) {
         if (!dayState[dateKey]) {
-            dayState[dateKey] = { s1: null, s2: null, s3: null, proto: {sea: false, kom: false}, juice: false };
+            dayState[dateKey] = { s1: null, s2: null, s3: null, proto: {sea: false, kom: false} };
         }
         return dayState[dateKey];
     }
@@ -463,12 +458,11 @@
         if (state.proto.sea) { let p = protocolData["Sea Moss"].macros; total.p+=p.p; total.c+=p.c; total.f+=p.f; total.k+=p.k; }
         if (state.proto.kom) { let p = protocolData["Kombucha"].macros; total.p+=p.p; total.c+=p.c; total.f+=p.f; total.k+=p.k; }
 
-        if (state.juice) { 
-            const dayIdx = new Date(dateKey).getDay();
-            const schedJuiceName = weeklySchedule[(dayIdx + 6) % 7].j; 
-            const jM = juiceData[schedJuiceName].macros;
-            total.p+=jM.p; total.c+=jM.c; total.f+=jM.f; total.k+=jM.k;
-        }
+        // AUTO-INCLUDE JUICE
+        const dayIdx = new Date(dateKey).getDay();
+        const schedJuiceName = weeklySchedule[(dayIdx + 6) % 7].j; 
+        const jM = juiceData[schedJuiceName].macros;
+        total.p+=jM.p; total.c+=jM.c; total.f+=jM.f; total.k+=jM.k;
 
         const goal = macroTargets[currentUser][scheduleType];
         return { total, goal, state };
@@ -496,6 +490,7 @@
                 <div class="view-goals-link">VIEW GOALS ↗</div>
                 <div class="macro-header">
                     <span>${currentUser === 'J' ? 'JERMAINE' : 'SOPHIA'} DAILY MACROS</span>
+                    <span style="color:${schedule.c === 'HIGH CARB' ? 'var(--carb-high)' : 'var(--carb-low)'}">${schedule.c}</span>
                 </div>
                 
                 <div class="macro-row"><div class="macro-label"><span>PROTEIN</span><span>${total.p}g / ${goal.p}g</span></div><div class="macro-bar-bg"><div class="macro-bar-fill p-fill" style="width:${pPct}%"></div></div></div>
@@ -531,11 +526,12 @@
                     ${schedule.rec.map(r => `<span class="proto-btn rec-btn">${r}</span>`).join('')}
                 </div>
             </div>
-            <div class="juice-card ${state.juice ? 'active' : ''}" style="border-color:${juice.color};" onclick="openJuiceModal('${schedule.j}')">
+            <div class="juice-card active" style="border-color:${juice.color};" onclick="openJuiceModal('${schedule.j}')">
                 <span class="juice-badge" style="color:${juice.color}; border-color:${juice.color}">${juice.badge}</span>
                 <div class="label" style="color:${juice.color}">Kuvings Catalyst</div>
                 <div class="juice-name" style="color:#fff">${schedule.j} <span style="font-size:1.5rem">${juice.icon}</span></div>
-                <div class="juice-benefit" style="border-color:${juice.color}">${state.juice ? 'MACROS ADDED ✓' : juice.text}</div>
+                <div class="juice-benefit" style="border-color:${juice.color}">${juice.text}</div>
+                <div class="juice-macro-row">${juice.macros.k} KCAL • ${juice.macros.c}G CARB • INCLUDED ✓</div>
             </div>`;
     }
 
@@ -593,24 +589,10 @@
 
     function openJuiceModal(jName) {
         const j = juiceData[jName];
-        const state = getDayState(selectedDateStr);
         document.getElementById('jTitle').innerText = jName;
         document.getElementById('jMacros').innerText = `MACROS: P: ${j.macros.p}g | C: ${j.macros.c}g | Kcal: ${j.macros.k}`;
         document.getElementById('jPrep').innerHTML = j.prep.map(s => `<p>• ${s}</p>`).join('');
-        
-        // Show Log Button based on state
-        const btnHtml = state.juice 
-            ? `<button class="remove-log-btn" onclick="confirmJuice(false)">REMOVE FROM LOG</button>`
-            : `<button class="log-btn" onclick="confirmJuice(true)">DRINK & LOG</button>`;
-            
-        document.getElementById('jAction').innerHTML = btnHtml;
         openModal('juiceModal');
-    }
-
-    function confirmJuice(shouldLog) {
-        dayState[selectedDateStr].juice = shouldLog;
-        closeModal('juiceModal');
-        showDay(selectedDateObj, selectedDayIndex);
     }
 
     function openProfileModal() {
