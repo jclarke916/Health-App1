@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v222.12 Pro Expansion</title>
+    <title>The Centurion | v222.16 Pro Protocol</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -11,6 +11,8 @@
             --accent-gold: #D4AF37; --glute-pink: #FF4081; --target-green: #00E676;
             --heat-red: #FF3D00; --ice-blue: #00B0FF; --recovery-purple: #D500F9;
             --grad-pro: linear-gradient(90deg, #FF5252, #D50000);
+            --grad-carb: linear-gradient(90deg, #FFAB40, #FF6D00);
+            --grad-fat: linear-gradient(90deg, #448AFF, #2962FF);
             --grad-cal: linear-gradient(90deg, #B388FF, #6200EA);
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -18,51 +20,70 @@
         .container { max-width: 600px; margin: 0 auto; width: 100%; position: relative; }
         header { text-align: center; margin-bottom: 30px; }
         h1 { font-weight: 200; letter-spacing: 6px; text-transform: uppercase; margin: 0; font-size: 1.6rem; background: linear-gradient(to bottom, #fff, #888); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
         .profile-badges { display: flex; justify-content: center; gap: 15px; margin-top: 25px; }
         .badge { background: #000; padding: 14px 28px; border-radius: 40px; border: 1px solid #333; font-size: 0.75rem; color: #666; text-transform: uppercase; cursor: pointer; font-weight: 700; transition: 0.3s; }
         .badge.active-user { border-color: var(--accent-gold); color: var(--accent-gold); box-shadow: 0 0 20px rgba(212, 175, 55, 0.1); }
         .badge.active-user.sophia { border-color: var(--glute-pink); color: var(--glute-pink); box-shadow: 0 0 20px rgba(255, 64, 129, 0.1); }
+        
         .status-bar { text-align: center; color: var(--text-muted); font-size: 0.8rem; margin: 25px 0 15px 0; text-transform: uppercase; font-weight: 800; letter-spacing: 2px; }
         .controls { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 30px; }
         .nav-btn { background: var(--bg-card); border: 1px solid #222; color: var(--text-muted); padding: 16px 0; width: 24%; border-radius: 14px; cursor: pointer; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; }
+        
         .tabs { display: flex; justify-content: space-between; background: var(--bg-card); padding: 8px; border-radius: 18px; margin-bottom: 35px; border: 1px solid #222; }
         .tab-btn { background: none; border: none; color: #555; padding: 12px 0; cursor: pointer; flex: 1; font-size: 0.7rem; display: flex; flex-direction: column; align-items: center; border-radius: 12px; }
         .tab-btn span { font-size: 0.95rem; margin-top: 5px; font-weight: 600; }
         .tab-btn.active { color: #fff; background: #222; font-weight: 700; }
-        .card, .macro-dashboard { background: var(--bg-card); border-radius: 24px; padding: 32px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.03); position: relative; box-shadow: 0 15px 50px -10px rgba(0,0,0,0.6); }
+
+        .card, .macro-dashboard, .juice-card { background: var(--bg-card); border-radius: 24px; padding: 32px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.03); position: relative; }
         .card::before { content: ""; position: absolute; top: 35px; bottom: 35px; left: 0; width: 4px; background: var(--accent-gold); border-radius: 0 4px 4px 0; }
         .label { color: #666; font-size: 0.65rem; text-transform: uppercase; font-weight: 800; margin-bottom: 8px; letter-spacing: 1.5px; }
         .value { font-size: 1.05rem; margin-bottom: 25px; color: #fff; font-weight: 500; cursor: pointer; }
+
+        /* Protocol Grid */
+        .protocol-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 20px; padding-top: 25px; border-top: 1px solid #222; }
+        .proto-btn { background: #0a0a0a; border: 1px solid #222; color: #555; padding: 15px 5px; border-radius: 14px; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; cursor: pointer; text-align: center; transition: 0.3s; position: relative; }
+        .proto-btn.active { border-color: var(--target-green); color: var(--target-green); background: rgba(0, 230, 118, 0.05); }
+        .proto-time { font-size: 0.5rem; color: #444; display: block; margin-top: 4px; letter-spacing: 0.5px; }
+        .proto-btn.active .proto-time { color: var(--target-green); opacity: 0.7; }
+
+        /* Macro Dashboard */
         .macro-row { margin-bottom: 22px; }
         .macro-label { display: flex; justify-content: space-between; font-size: 0.7rem; margin-bottom: 8px; font-weight: 700; color: #aaa; text-transform: uppercase; }
         .macro-bar-bg { height: 8px; background: #222; border-radius: 10px; overflow: hidden; }
-        .macro-bar-fill { height: 100%; border-radius: 10px; transition: width 0.8s ease; }
-        .p-fill { background: var(--grad-pro); } .cal-fill { background: var(--grad-cal); }
-        .juice-header { color: var(--accent-gold); font-size: 0.7rem; font-weight: 900; text-transform: uppercase; margin-bottom: 15px; letter-spacing: 2px; text-align: center; }
-        .juice-name { font-size: 1.5rem; font-weight: 900; text-transform: uppercase; margin: 10px 0; color: #fff; text-align: center; }
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); backdrop-filter: blur(10px); overflow-y: auto; padding: 20px; }
-        .modal-content { background: #0a0a0a; margin: 30px auto; padding: 40px; border: 1px solid #333; width: 100%; max-width: 550px; border-radius: 32px; }
-        .chef-steps { counter-reset: step; color: #ccc; font-size: 0.85rem; line-height: 1.6; margin-top: 25px; }
-        .chef-steps p { margin-bottom: 12px; position: relative; padding-left: 35px; }
-        .chef-steps p::before { counter-increment: step; content: counter(step); position: absolute; left: 0; top: 0; width: 22px; height: 22px; background: #222; color: var(--accent-gold); font-size: 0.7rem; font-weight: 800; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px solid #333; }
+        .macro-bar-fill { height: 100%; border-radius: 10px; transition: width 0.8s cubic-bezier(0.17, 0.67, 0.83, 0.67); }
+        .p-fill { background: var(--grad-pro); } .c-fill { background: var(--grad-carb); } .f-fill { background: var(--grad-fat); } .cal-fill { background: var(--grad-cal); }
+
+        /* Juice Styles */
+        .juice-header { color: var(--accent-gold); font-size: 0.65rem; font-weight: 900; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 2px; text-align: center; }
+        .juice-name { font-size: 1.5rem; font-weight: 900; text-transform: uppercase; margin: 5px 0; color: #fff; text-align: center; }
+        .juice-benefit { font-size: 0.7rem; color: #777; font-style: italic; text-align: center; margin-bottom: 15px; }
+        .juice-macros { font-size: 0.65rem; color: var(--accent-gold); text-align: center; font-weight: 800; margin-bottom: 15px; }
+        .juice-ing { font-size: 0.75rem; color: #ccc; text-align: center; border-top: 1px dashed #222; padding-top: 12px; }
+
+        /* Biometrics */
         .prog-section { margin-bottom: 35px; }
         .prog-title { display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: 800; color: #fff; text-transform: uppercase; margin-bottom: 12px; }
         .prog-bar-row { display: flex; align-items: center; margin-bottom: 10px; }
         .prog-label { width: 50px; font-size: 0.55rem; color: #444; text-transform: uppercase; font-weight: 900; }
         .prog-track { flex: 1; height: 10px; background: #111; border-radius: 10px; margin: 0 12px; border: 1px solid #222; }
-        .prog-fill { height: 100%; border-radius: 10px; }
+        .prog-fill { height: 100%; border-radius: 10px; transition: width 1s ease; }
         .prog-fill.past { background: #333; }
         .prog-fill.current { background: var(--accent-gold); }
         .prog-fill.goal { background: var(--target-green); box-shadow: 0 0 10px var(--target-green); }
-        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
-        .stat-box { background: #0a0a0a; padding: 20px; border-radius: 16px; border: 1px solid #222; }
-        .stat-val { font-size: 1.6rem; font-weight: 800; color: #fff; display: block; }
-        .stat-lbl { font-size: 0.65rem; color: #555; text-transform: uppercase; font-weight: 800; letter-spacing: 1px; }
+
+        /* Modals */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); backdrop-filter: blur(10px); overflow-y: auto; padding: 20px; }
+        .modal-content { background: #0a0a0a; margin: 30px auto; padding: 40px; border: 1px solid #333; width: 100%; max-width: 550px; border-radius: 32px; }
+        .chef-steps { counter-reset: step; color: #ccc; font-size: 0.85rem; line-height: 1.6; margin-top: 25px; }
+        .chef-steps p { margin-bottom: 12px; position: relative; padding-left: 35px; }
+        .chef-steps p::before { counter-increment: step; content: counter(step); position: absolute; left: 0; top: 0; width: 22px; height: 22px; background: #222; color: var(--accent-gold); font-size: 0.7rem; font-weight: 800; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px solid #333; }
     </style>
 </head>
 <body>
 <div class="container">
-    <header><h1>THE CENTURION</h1>
+    <header>
+        <h1>THE CENTURION</h1>
         <div class="profile-badges">
             <div id="badgeJ" class="badge active-user" onclick="switchUser('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="badgeS" class="badge" onclick="switchUser('S')">👩🏾‍🦱 SOPHIA</div>
@@ -86,69 +107,61 @@
     let currentUser = 'J'; 
     let weekOffset = 0;
     let selectedDateObj = new Date();
+    let dayState = {};
+
+    const juiceDB = {
+        "TITAN RED": { q: "2 Beets, 2 Carrots, 1 Pomegranate, 1 Orange", b: "Oxygen delivery & blood flow.", p:2, c:25, f:0, k:110 },
+        "ZENITH GREEN": { q: "4 Kale, 1c Wheatgrass, 1 Cucumber, 1/2c Cilantro", b: "Flush cortisol & alkalize.", p:2, c:15, f:0, k:70 },
+        "PLASMA FLUSH": { q: "3c Watermelon, 1 Lime, Pinch Salt", b: "Hydration & lifting pump.", p:1, c:28, f:0, k:120 },
+        "APOLLO GOLD": { q: "2 Pears, 2in Ginger, 1in Turmeric, Pepper", b: "Reduce inflammation & joint guard.", p:1, c:30, f:0, k:130 }
+    };
+
+    const protocolDB = {
+        "sea": { name: "Sea Moss", time: "Morning Fasted", benefit: "92 Minerals", p:0, c:1, f:0, k:5 },
+        "kom": { name: "Kombucha", time: "Post-Lunch", benefit: "Probiotic Gut Health", p:0, c:12, f:0, k:50 },
+        "water": { name: "1 Gal Water", time: "All Day", benefit: "Cellular Detox", p:0, c:0, f:0, k:0 }
+    };
 
     const recipeDB = {
         breakfast: [
-            { name: "Japanese Tamagoyaki", ing: ["4 Pasture Eggs", "Dashi", "Grated Zucchini"], steps: ["Whisk eggs with 1 tbsp dashi and sea salt.", "Fold in squeezed-dry grated zucchini.", "Lightly oil tamago pan over medium-low heat.", "Pour 1/4 of egg mixture to coat bottom.", "Once set, roll tightly to one end.", "Re-oil empty pan area.", "Pour next layer, lifting roll to flow under.", "Roll log over new layer.", "Repeat until all egg is used.", "Firm up square shape with spatula.", "Rest on board for 2m.", "Slice into 1-inch pieces."] },
-            { name: "Bison & Pasture Eggs", ing: ["6oz Bison Sirloin", "2 Eggs", "Asparagus"], steps: ["Bring bison to room temp.", "Heat cast iron until smoking.", "Sear bison 3m/side.", "Rest bison under foil for 5m.", "Trim asparagus ends.", "Sear asparagus in bison fat 4m.", "Fry eggs sunny-side up in ghee.", "Season with flaky salt.", "Slice bison against grain.", "Plate eggs and bison side-by-side.", "Garnish with pepper."] },
-            { name: "Sprouted Protein Wrap", ing: ["Sprouted Tortilla", "3 Eggs", "Turkey Bacon"], steps: ["Crisp bacon in non-stick pan.", "Remove bacon; keep 1 tsp fat.", "Whisk eggs with splash of water.", "Scramble eggs until just soft.", "Warm tortilla on open flame.", "Layer bacon center-strip.", "Top with eggs.", "Add fresh spinach.", "Fold sides tightly.", "Sear seam-side down in pan.", "Slice on extreme bias."] },
-            { name: "Bone Broth & Ginger Poach", ing: ["1.5c Broth", "2 Eggs", "Ginger"], steps: ["Simmer broth with ginger matchsticks.", "Bring to low rolling boil.", "Whirlpool the liquid.", "Drop eggs into center.", "Poach 3.5m for soft yolk.", "Transfer eggs to deep bowl.", "Pour broth over eggs.", "Garnish with chili oil.", "Add green onion."] },
-            { name: "Steak matchsticks & Eggs", ing: ["4oz Steak", "3 Eggs", "Peppers"], steps: ["Julienne steak into strips.", "High-heat stir fry steak 2m.", "Remove strips.", "Sauté peppers in same pan.", "Whisk eggs thoroughly.", "Pour eggs over peppers.", "Add steak back to center.", "Fold omelet style.", "Plate with avocado."] },
-            { name: "Avocado Sardine Toast", ing: ["Sprouted Bread", "Sardines", "1 Avocado"], steps: ["Toast sprouted bread well.", "Mash avocado with lime.", "Spread thick layer on toast.", "Drain sardines.", "Place sardines on top.", "Add red pepper flakes.", "Drizzle olive oil.", "Finish with sea salt."] },
-            { name: "Turkey Sausage Scramble", ing: ["2 Turkey Links", "Spinach", "2 Eggs"], steps: ["Crumble sausage into pan.", "Brown sausages 5m.", "Add huge handful of spinach.", "Wilt spinach.", "Pour whisked eggs in.", "Scramble softly.", "Plate hot."] },
-            { name: "Ghee Fried Eggs & Greens", ing: ["3 Eggs", "Kale", "Ghee"], steps: ["Melt ghee over med-high.", "Fry eggs crispy-edge style.", "Baste tops with ghee.", "Remove eggs.", "Sauté kale in same pan.", "Add lemon juice to kale.", "Plate eggs over kale."] },
-            { name: "Soft Poach & Asparagus", ing: ["2 Eggs", "Asparagus", "Prosciutto"], steps: ["Wrap asparagus in prosciutto.", "Roast 400F for 10m.", "Poach eggs separately.", "Place eggs on asparagus spears.", "Break yolks for 'sauce'."] },
-            { name: "Mushroom Egg White Bake", ing: ["1c Egg Whites", "Mushrooms", "Thyme"], steps: ["Sauté mushrooms until dark.", "Place in small oven dish.", "Pour egg whites over.", "Bake 375F for 15m.", "Finish with thyme."] },
-            { name: "Smoked Salmon Omelet", ing: ["3oz Salmon", "Eggs", "Dill"], steps: ["Whisk eggs.", "Cook omelet flat.", "Top with cold salmon.", "Sprinkle fresh dill.", "Fold and serve."] },
-            { name: "Zucchini Hash & Eggs", ing: ["1 Zucchini", "Onion", "2 Eggs"], steps: ["Grate zucchini/onion.", "Squeeze out all moisture.", "Fry until crispy like hash.", "Top with fried eggs."] },
-            { name: "Herb Goat Cheese Scramble", ing: ["2 Eggs", "Goat Cheese", "Chives"], steps: ["Whisk eggs with chives.", "Scramble low and slow.", "Fold in cheese at end.", "Remove from heat immediately."] },
-            { name: "Steak Tip Breakfast Bowl", ing: ["5oz Steak", "Arugula", "1 Egg"], steps: ["Sear steak tips 4m.", "Place over arugula bed.", "Top with over-easy egg.", "Yolk dresses the leaves."] }
+            { name: "Japanese Tamagoyaki", steps: ["Whisk base.","Oil pan.","Layer thin.","Roll log."] },
+            { name: "Bison & Pasture Eggs", steps: ["Sear bison.","Fry eggs.","Plate with ghee."] }
         ],
         lunch: [
-            { name: "Thai Beef Power Salad", ing: ["6oz Flank Steak", "Gem Lettuce", "Mint", "Lime"], steps: ["Grill steak med-rare ahead.", "Chill steak 1hr.", "Slice paper thin.", "Whisk lime/chili dressing.", "Pack lettuce/mint dry.", "Dress beef at work."] },
-            { name: "Portable Chicken Wraps", ing: ["6oz Chicken", "Butter Lettuce", "Cashews"], steps: ["Poach/shred chicken.", "Mix with cashew cream.", "Pack airtight.", "Keep lettuce separate.", "Spoon into cups at desk."] },
-            { name: "Sardine & Radish Bowl", ing: ["Sardines", "Radish", "Cucumber", "Olive Oil"], steps: ["Slice radish/cucumber thin.", "Toss with salt/oil.", "Add sardines on top.", "Pack cold."] },
-            { name: "Cold Flank & Asparagus", ing: ["6oz Steak", "Asparagus", "Mustard"], steps: ["Blanch asparagus.", "Slice cold steak.", "Dip both in dijonnaise.", "Pack in glass container."] },
-            { name: "Turkey Gem Wraps", ing: ["Ground Turkey", "Ginger", "Lettuce"], steps: ["Sauté turkey with ginger.", "Drain fat well.", "Pack turkey in small jar.", "Pack lettuce cups."] },
-            { name: "Salmon Salad Cups", ing: ["Canned Salmon", "Celery", "Onion"], steps: ["Mix salmon/celery/onion.", "No mayo - use lemon/oil.", "Pack into cucumber boats."] },
-            { name: "Bison Jerky & Nut Plate", ing: ["Bison Jerky", "Almonds", "Olives"], steps: ["Zero prep.", "Portion jerky.", "Portion nuts.", "Pack with 10 olives."] },
-            { name: "Steak Arugula Jar", ing: ["Steak", "Arugula", "Beets"], steps: ["Layer dressing bottom.", "Add steak next.", "Top with arugula.", "Shake at work."] },
-            { name: "Chicken Lemon Bowl", ing: ["Chicken", "Broccoli", "Lemon"], steps: ["Steam broccoli.", "Grill chicken.", "Pack with lemon wedge."] },
-            { name: "Tuna Stuffed Peppers", ing: ["Tuna", "Bell Peppers"], steps: ["Mix tuna with dill.", "Clean pepper halves.", "Stuff and pack."] },
-            { name: "Beef & Broccoli Cold", ing: ["Beef strips", "Broccoli", "Sesame"], steps: ["Sauté beef.", "Steam broccoli.", "Toss with sesame oil."] },
-            { name: "Arugula Sardine Salad", ing: ["Sardines", "Arugula", "Capers"], steps: ["Mix arugula/capers.", "Top with sardines.", "Add lots of lemon."] },
-            { name: "Turkey & Avocado Roll", ing: ["Turkey slices", "Avocado"], steps: ["Wrap avocado in turkey.", "Secure with toothpick."] },
-            { name: "Cold Poached Salmon", ing: ["Salmon", "Cucumber", "Dill"], steps: ["Poach salmon ahead.", "Serve cold with cucumber."] }
+            { name: "Thai Beef Salad", steps: ["Grill ahead.","Slice thin.","Pack portable."] },
+            { name: "Chicken Lettuce Wraps", steps: ["Sauté chicken.","Minced chestnuts.","Cold pack."] }
         ],
         dinner: [
-            { name: "Clams & Garlic Liquor", ing: ["1lb Clams", "Garlic", "Parsley", "Broth"], steps: ["Mince 4 garlic cloves.", "Sauté in oil until soft.", "Add cleaned clams.", "Pour in 1/2c broth.", "Cover and steam 6m.", "Discard closed shells.", "Add parsley.", "Serve in deep bowl."] },
-            { name: "Wild Salmon & Bok Choy", ing: ["6oz Salmon", "Bok Choy", "Ginger"], steps: ["Skin-down sear 5m.", "Flip for 2m.", "Steam bok choy with ginger.", "Drizzle with tamari."] },
-            { name: "Bison Chili Pot", ing: ["Ground Bison", "Peppers", "Onion"], steps: ["Brown bison well.", "Add diced veg.", "Simmer with cumin 20m.", "Serve hot."] },
-            { name: "Steak & Zucchini Ribbons", ing: ["Steak", "Zucchini", "Garlic"], steps: ["Peel zucchini into strips.", "Sear steak 4m.", "Flash sauté ribbons 1m."] },
-            { name: "Garlic Butter Scallops", ing: ["Scallops", "Garlic", "Spinach"], steps: ["Dry scallops well.", "Sear 2m per side.", "Sauté spinach in same pan."] },
-            { name: "Lemon Herb Cod", ing: ["Cod", "Rosemary", "Broccoli"], steps: ["Roast cod at 400F.", "Steam broccoli.", "Top with rosemary oil."] },
-            { name: "Spicy Beef Stir Fry", ing: ["Beef", "Peppers", "Snap Peas"], steps: ["High heat stir fry beef.", "Add veg.", "Tamari finish."] },
-            { name: "Lamb Chops & Mint", ing: ["Lamb", "Mint", "Cauliflower"], steps: ["Sear lamb 3m/side.", "Mash cauliflower.", "Mint garnish."] },
-            { name: "Shrimp & Asparagus", ing: ["Shrimp", "Asparagus", "Lemon"], steps: ["Sauté shrimp 3m.", "Sear asparagus.", "Combine with lemon."] },
-            { name: "Turkey Burgers Naked", ing: ["Turkey", "Mushrooms", "Arugula"], steps: ["Patty turkey/shroom mix.", "Grill 5m/side.", "Serve over arugula."] },
-            { name: "Rainbow Trout Bake", ing: ["Trout", "Lemon", "Parsley"], steps: ["Wrap in foil.", "Bake 15m.", "Finish with parsley."] },
-            { name: "Sirloin & Mushrooms", ing: ["Sirloin", "Mushrooms", "Thyme"], steps: ["Sear steak.", "Sauté mushrooms dark.", "Butter baste."] },
-            { name: "Pesto Salmon", ing: ["Salmon", "Homemade Pesto"], steps: ["Spread pesto on salmon.", "Bake 12m.", "Serve with greens."] },
-            { name: "Sea Bass & Leeks", ing: ["Bass", "Leeks", "Lemon"], steps: ["Sauté leeks until soft.", "Pan sear bass.", "Lemon finish."] }
+            { name: "Clams & Garlic Liquor", steps: ["Mince garlic.","Steam clams.","Add parsley."] }
         ]
     };
 
     const userHistory = {
-        'J': { past: { bf: 17.9, m: 99.4, w: 210.8 }, curr: { date: "Dec 24", w: 217.1, m: 98.8, bf: 20.7 }, goal: { bf: 19.2, m: 99.8, w: 212.0 }, hist: [{ d: "Dec 24, 2025", w: 217.1, m: 98.8, bf: 20.7 }, { d: "Oct 30, 2024", w: 210.8, m: 99.4, bf: 17.9 }] },
-        'S': { past: { bf: 33.0, m: 50.0, w: 136.1 }, curr: { date: "Dec 24", w: 141.5, m: 49.2, bf: 36.1 }, goal: { bf: 34.6, m: 49.8, w: 138.0 }, hist: [{ d: "Dec 24, 2025", w: 141.5, m: 49.2, bf: 36.1 }, { d: "Oct 30, 2024", w: 136.1, m: 50.0, bf: 33.0 }] }
+        'J': { past: { bf: 17.9, m: 99.4, w: 210.8 }, curr: { w: 217.1, m: 98.8, bf: 20.7 }, goal: { bf: 19.2, m: 99.8, w: 212.0 } },
+        'S': { past: { bf: 33.0, m: 50.0, w: 136.1 }, curr: { w: 141.5, m: 49.2, bf: 36.1 }, goal: { bf: 34.6, m: 49.8, w: 138.0 } }
     };
 
-    const weeklySchedule = [{j:"APOLLO GOLD"}, {j:"TITAN RED"}, {j:"ZENITH GREEN"}, {j:"TITAN RED"}, {j:"PLASMA FLUSH"}, {j:"ZENITH GREEN"}, {j:"TITAN RED"}];
+    const weeklySchedule = [
+        { w: "HEAVY LIFT", j: "PLASMA FLUSH", c: "HIGH CARB" },
+        { w: "BOXING", j: "TITAN RED", c: "HIGH CARB" },
+        { w: "REFORM & LIGHT LIFT", j: "ZENITH GREEN", c: "LOW CARB" },
+        { w: "BOXING", j: "TITAN RED", c: "HIGH CARB" },
+        { w: "REFORM & YOGA", j: "ZENITH GREEN", c: "LOW CARB" },
+        { w: "CS4", j: "TITAN RED", c: "HIGH CARB" },
+        { w: "REST & RECOVERY", j: "APOLLO GOLD", c: "LOW CARB" }
+    ];
 
     function switchUser(u) { currentUser = u; document.querySelectorAll('.badge').forEach(b => b.classList.remove('active-user')); document.getElementById('badge'+u).classList.add('active-user'); renderTabs(); }
     function getMonday(o) { let d = new Date(); d.setHours(0,0,0,0); let day = d.getDay(); let diff = d.getDate() - day + (day === 0 ? -6 : 1); d.setDate(diff + (o * 7)); return d; }
     function changeWeek(dir) { weekOffset += dir; renderTabs(); }
     function resetToCurrent() { weekOffset = 0; selectedDateObj = new Date(); renderTabs(); }
+
+    function toggleProtocol(type) {
+        const key = selectedDateObj.toDateString();
+        if (!dayState[key]) dayState[key] = { sea: false, kom: false, water: false };
+        dayState[key][type] = !dayState[key][type];
+        showDay(selectedDateObj, selectedDateObj.getDay() === 0 ? 6 : selectedDateObj.getDay() - 1);
+    }
 
     function renderTabs() {
         const mon = getMonday(weekOffset); const days = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
@@ -166,25 +179,54 @@
     }
 
     function showDay(dateObj, dayIndex) {
-        const dayId = Math.floor(dateObj.getTime() / 86400000);
-        const b = recipeDB.breakfast[Math.abs(dayId) % 14];
-        const l = recipeDB.lunch[Math.abs(dayId) % 14];
-        const d = recipeDB.dinner[Math.abs(dayId) % 14];
-        const goal = (currentUser === 'J') ? {p:160, k:1860} : {p:105, k:1250};
+        const schedule = weeklySchedule[dayIndex];
+        const j = juiceDB[schedule.j];
+        const key = dateObj.toDateString();
+        const state = dayState[key] || { sea: false, kom: false, water: false };
+        
+        let p=81, c=32, f=45, k=960; // Baseline
+        c += j.c; k += j.k; p += j.p; // Add Juice
+        if(state.sea) { c += protocolDB.sea.c; k += protocolDB.sea.k; }
+        if(state.kom) { c += protocolDB.kom.c; k += protocolDB.kom.k; }
+
+        const goal = (currentUser === 'J') ? {p:160, c:80, f:100, k:1860} : {p:105, c:55, f:75, k:1250};
 
         document.getElementById('dayContent').innerHTML = `
             <div class="card">
-                <div class="label">🍳 Breakfast</div><div class="value" onclick="openRecipe('breakfast', ${Math.abs(dayId) % 14})">${b.name}</div>
-                <div class="label">🥗 Lunch</div><div class="value" onclick="openRecipe('lunch', ${Math.abs(dayId) % 14})">${l.name} 💼</div>
-                <div class="label">🍽️ Dinner</div><div class="value" onclick="openRecipe('dinner', ${Math.abs(dayId) % 14})">${d.name}</div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; border-bottom:1px solid #222; padding-bottom:15px;">
+                    <div style="font-weight:800; font-size:1.1rem; color:#fff;">${schedule.w}</div>
+                    <span class="badge" style="padding:6px 12px; font-size:0.6rem; background:#222; border:none;">${schedule.c}</span>
+                </div>
+                <div class="label">🍳 Breakfast</div><div class="value" onclick="openRecipe('breakfast', 0)">Japanese Tamagoyaki</div>
+                <div class="label">🥗 Lunch</div><div class="value" onclick="openRecipe('lunch', 0)">Thai Beef Salad 💼</div>
+                <div class="label">🍽️ Dinner</div><div class="value" onclick="openRecipe('dinner', 0)">Clams & Garlic Liquor</div>
+                
+                <div class="protocol-grid">
+                    <div class="proto-btn ${state.sea?'active':''}" onclick="toggleProtocol('sea')">
+                        Sea Moss <span class="proto-time">Morning</span>
+                    </div>
+                    <div class="proto-btn ${state.kom?'active':''}" onclick="toggleProtocol('kom')">
+                        Kombucha <span class="proto-time">Post-Lunch</span>
+                    </div>
+                    <div class="proto-btn ${state.water?'active':''}" onclick="toggleProtocol('water')">
+                        1 Gal Water <span class="proto-time">Continuous</span>
+                    </div>
+                </div>
             </div>
+            
             <div class="macro-dashboard">
-                <div class="macro-row"><div class="macro-label"><span>PROTEIN</span><span>81g / ${goal.p}g</span></div><div class="macro-bar-bg"><div class="macro-bar-fill p-fill" style="width:50%;"></div></div></div>
-                <div class="macro-row"><div class="macro-label"><span>CALORIES</span><span>960 / ${goal.k}</span></div><div class="macro-bar-bg"><div class="macro-bar-fill cal-fill" style="width:51%;"></div></div></div>
+                <div class="macro-row"><div class="macro-label"><span>PROTEIN</span><span>${p}g / ${goal.p}g</span></div><div class="macro-bar-bg"><div class="macro-bar-fill p-fill" style="width:${Math.min((p/goal.p)*100, 100)}%;"></div></div></div>
+                <div class="macro-row"><div class="macro-label"><span>CARBS</span><span>${c}g / ${goal.c}g</span></div><div class="macro-bar-bg"><div class="macro-bar-fill c-fill" style="width:${Math.min((c/goal.c)*100, 100)}%;"></div></div></div>
+                <div class="macro-row"><div class="macro-label"><span>FATS</span><span>${f}g / ${goal.f}g</span></div><div class="macro-bar-bg"><div class="macro-bar-fill f-fill" style="width:${Math.min((f/goal.f)*100, 100)}%;"></div></div></div>
+                <div class="macro-row"><div class="macro-label"><span>CALORIES</span><span>${k} / ${goal.k}</span></div><div class="macro-bar-bg"><div class="macro-bar-fill cal-fill" style="width:${Math.min((k/goal.k)*100, 100)}%;"></div></div></div>
             </div>
-            <div class="juice-card">
+
+            <div class="card">
                 <div class="juice-header">Kuvings Cold Pressed Juice</div>
-                <div class="juice-name">${weeklySchedule[dayIndex].j}</div>
+                <div class="juice-name">${schedule.j}</div>
+                <div class="juice-benefit">${j.b}</div>
+                <div class="juice-macros">P: ${j.p}g | C: ${j.c}g | Kcal: ${j.k}</div>
+                <div class="juice-ing">${j.q}</div>
             </div>`;
     }
 
@@ -196,7 +238,7 @@
         document.getElementById('profileModal').style.display = 'block';
     }
 
-    function openRecipe(cat, idx) { const r = recipeDB[cat][idx]; document.getElementById('modalTitle').innerText = r.name; document.getElementById('modalIng').innerHTML = r.ing.map(i => `• ${i}<br>`).join(''); document.getElementById('modalSteps').innerHTML = r.steps.map(s => `<p>${s}</p>`).join(''); document.getElementById('recipeModal').style.display = 'block'; }
+    function openRecipe(cat, idx) { const r = recipeDB[cat][idx]; document.getElementById('modalTitle').innerText = r.name; document.getElementById('modalSteps').innerHTML = r.steps.map(s => `<p>${s}</p>`).join(''); document.getElementById('recipeModal').style.display = 'block'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
     window.onload = resetToCurrent;
 </script>
