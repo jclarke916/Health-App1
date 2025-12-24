@@ -197,16 +197,16 @@ const mDB = {
         "Beef Heart Roast|Heart,Thyme,Ghee|sear|Serve with horseradish to aid in fat digestion."
     ],
     s: [
-        "Greek Yogurt Bowl|Berries,Honey,Walnuts|raw|Probiotic boost for gut health.",
-        "Hard Boiled Eggs|Sea Salt,Pepper|boil|Perfect amino acid profile.",
-        "Apple & Almonds|Sliced Apple,Raw Almonds|raw|Fiber and healthy fat combo.",
-        "Beef Jerky|Grass-fed Beef|raw|High sodium for workout recovery.",
-        "Cottage Cheese|Pineapple,Chia Seeds|raw|Casein protein for slow release.",
-        "Protein Shake|Whey Isolate,Water|shake|Fast absorption post-lift.",
-        "Hummus & Veg|Hummus,Carrots,Celery|raw|Fiber to sustain energy levels.",
-        "Bone Broth|Beef Bone Broth|simmer|Collagen for joint repair.",
-        "Sardines|Olive Oil,Crackers|raw|Massive Omega-3 hit.",
-        "Dark Chocolate|90% Cacao,Almonds|raw|Polyphenol antioxidant booster."
+        "Greek Yogurt Bowl|Berries,Honey,Walnuts|raw|Probiotic boost for gut health.|22|18|240",
+        "Hard Boiled Eggs|Sea Salt,Pepper|boil|Perfect amino acid profile.|12|1|140",
+        "Apple & Almonds|Sliced Apple,Raw Almonds|raw|Fiber and healthy fat combo.|6|24|200",
+        "Beef Jerky|Grass-fed Beef|raw|High sodium for workout recovery.|25|4|180",
+        "Cottage Cheese|Pineapple,Chia Seeds|raw|Casein protein for slow release.|24|14|210",
+        "Protein Shake|Whey Isolate,Water|shake|Fast absorption post-lift.|25|2|120",
+        "Hummus & Veg|Hummus,Carrots,Celery|raw|Fiber to sustain energy levels.|8|20|180",
+        "Bone Broth|Beef Bone Broth|simmer|Collagen for joint repair.|10|1|50",
+        "Sardines|Olive Oil,Crackers|raw|Massive Omega-3 hit.|22|0|190",
+        "Dark Chocolate|90% Cacao,Almonds|raw|Polyphenol antioxidant booster.|4|12|160"
     ]
 };
 
@@ -244,7 +244,7 @@ function render(){
 function showDay(dObj, idx){
     const id=Math.floor(dObj.getTime()/864e5);
     
-    // 1. GET DATA
+    // 1. GET DATA (Now splits into 7 parts for snacks to get macros)
     const b = (mDB.b[Math.abs(id) % mDB.b.length]).split('|');
     const l = (mDB.l[Math.abs(id) % mDB.l.length]).split('|');
     const dn = (mDB.d[Math.abs(id) % mDB.d.length]).split('|');
@@ -256,9 +256,13 @@ function showDay(dObj, idx){
     const j=jDB[jcs[idx]], g=(user==='J')?{P:165,C:(idx%2===0?130:85),K:1950}:{P:105,C:55,K:1300};
     const rT = (idx===0||idx===5)?'Aqua Chair':(idx===1||idx===3)?'Sauna':'Normatec';
     
-    let p=98+j[2], c=45+j[3], k=1180+j[4];
+    // 2. CALCULATE MACROS (Meals Base + Juice + Snack 1 + Snack 2)
+    // Base Meals Avg: 98g Pro, 45g Carb, 1180 Cal. We add snacks on top.
+    let p = 98 + j[2] + parseInt(s1[4]) + parseInt(s2[4]);
+    let c = 45 + j[3] + parseInt(s1[5]) + parseInt(s2[5]);
+    let k = 1180 + j[4] + parseInt(s1[6]) + parseInt(s2[6]);
     
-    // 2. RENDER
+    // 3. RENDER
     document.getElementById('dayContent').innerHTML = `
         <div style="font-weight:800;cursor:pointer;color:var(--blue);border-bottom:1px solid #222;padding-bottom:10px;margin-bottom:15px" onclick="openRecoveryPhase('${sch[idx]}')">${sch[idx]} (VIEW PHASE GUIDE)</div>
         
@@ -266,13 +270,13 @@ function showDay(dObj, idx){
         <div class="label">🥗 Lunch</div><div class="value" onclick="openR('${l[0]}','${l[1]}','${l[2]}','${l[3]}')">${l[0]} 💼</div>
         <div class="label">🍽️ Dinner</div><div class="value" onclick="openR('${dn[0]}','${dn[1]}','${dn[2]}','${dn[3]}')">${dn[0]}</div>
         
-        <div class="label">🥜 Snack I</div><div class="value" onclick="openR('${s1[0]}','${s1[1]}','${s1[2]}','${s1[3]}')">${s1[0]}</div>
-        <div class="label">🥜 Snack II</div><div class="value" onclick="openR('${s2[0]}','${s2[1]}','${s2[2]}','${s2[3]}')">${s2[0]}</div>
+        <div class="label">🥜 Snack I (+${s1[4]}g Pro)</div><div class="value" onclick="openR('${s1[0]}','${s1[1]}','${s1[2]}','${s1[3]}')">${s1[0]}</div>
+        <div class="label">🥜 Snack II (+${s2[4]}g Pro)</div><div class="value" onclick="openR('${s2[0]}','${s2[1]}','${s2[2]}','${s2[3]}')">${s2[0]}</div>
 
         <div class="proto-grid">
-            <div class="proto-box active" onclick="openSnackMenu()" style="border-color:var(--gold);color:var(--gold)"><span class="p-qty">SELECT</span>PICK SNACK</div>
-
-
+            <div class="proto-box active" onclick="openSnackMenu()" style="border-color:var(--gold);color:var(--gold)"><span class="p-qty">SELECT</span>PICK OPTION</div>
+            <div class="proto-box rec" onclick="openM('${rT}')"><span class="p-qty">RECOV</span>${rT.split(' ')[0]}</div>
+            <div class="proto-box rec" onclick="openM('Theragun')"><span class="p-qty">GUN</span>Thera</div>
         </div>
 
         <div class="macro-dashboard">
