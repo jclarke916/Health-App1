@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Centurion | v187 Clinical Goals</title>
+    <title>The Centurion | v188 Recovery Integration</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-dark: #000000; --card-bg: #111111; --text-main: #E5E4E2; --text-dim: #888888;
             --accent-gold: #D4AF37; --accent-silver: #444444; --glute-pink: #d63384;
             --carb-high: #ff9100; --carb-low: #00b0ff; --target-green: #2ecc71;
-            --recovery-purple: #9b59b6;
+            --recovery-purple: #9b59b6; --heat-red: #e74c3c; --ice-blue: #3498db;
         }
         body { font-family: 'Inter', sans-serif; background-color: var(--bg-dark); color: var(--text-main); margin: 0; padding: 20px; -webkit-tap-highlight-color: transparent; }
         .container { max-width: 1000px; width: 100%; margin: 0 auto; position: relative; }
@@ -35,6 +35,12 @@
         .value { font-size: 1.1rem; margin-bottom: 15px; color: #fff; cursor: pointer; border-bottom: 1px solid transparent; display: flex; align-items: center; gap: 8px; }
         .carb-pill { padding: 4px 12px; border-radius: 4px; font-size: 0.7rem; font-weight: 900; color: #fff; text-transform: uppercase; float: right; }
         
+        /* Workout Title Styles */
+        .workout-header { display:flex; justify-content:space-between; margin-bottom:20px; font-weight:800; text-transform:uppercase; color:var(--accent-gold); align-items: center; }
+        .workout-title-btn { cursor: pointer; border: 1px solid transparent; padding: 5px 10px; border-radius: 6px; margin-left: -10px; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
+        .workout-title-btn:hover { border-color: var(--accent-gold); background: rgba(212, 175, 55, 0.1); }
+        .info-icon { font-size: 0.8rem; opacity: 0.6; }
+
         .protocol-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px; border-top: 1px solid #222; padding-top: 15px; }
         .proto-btn { background: #151515; border: 1px solid #333; color: #aaa; padding: 8px 12px; border-radius: 4px; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: 0.2s; }
         .proto-btn:hover { border-color: var(--accent-gold); color: #fff; transform: translateY(-2px); }
@@ -65,13 +71,24 @@
         .modal-content { background: #050505; margin: 0 auto; padding: 35px; border: 1px solid #333; width: 92%; max-width: 750px; border-radius: 12px; }
         .chef-steps p { margin-bottom: 18px; color: #ccc; font-size: 0.95rem; line-height: 1.6; position: relative; padding-left: 38px; }
         .chef-steps p::before { counter-increment: step; content: counter(step); position: absolute; left: 0; top: 2px; background: var(--accent-gold); color: #000; width: 24px; height: 24px; border-radius: 50%; font-size: 0.75rem; display: flex; align-items: center; justify-content: center; font-weight: 900; }
+        
+        /* Recovery Modal Specifics */
+        .rec-section { margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #222; }
+        .rec-header { font-size: 0.8rem; font-weight: 800; text-transform: uppercase; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+        .rec-header.warmup { color: var(--heat-red); }
+        .rec-header.gym { color: var(--ice-blue); }
+        .rec-header.home { color: var(--recovery-purple); }
+        .rec-item { background: #111; padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #222; }
+        .rec-tool { color: #fff; font-weight: 700; font-size: 0.9rem; margin-bottom: 4px; }
+        .rec-detail { color: #888; font-size: 0.8rem; }
+        .rec-note { color: var(--accent-gold); font-size: 0.7rem; margin-top: 6px; font-style: italic; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <header>
-        <div class="version-tag">VER 187.0</div>
+        <div class="version-tag">VER 188.0</div>
         <h1>THE CENTURION</h1>
         <div class="profile-badges">
             <div class="badge" onclick="openModal('jermaineModal')">🧔🏾‍♂️ JERMAINE</div>
@@ -93,7 +110,6 @@
     <div class="modal-content">
         <span onclick="closeModal('jermaineModal')" style="float:right; cursor:pointer; font-size:24px;">&times;</span>
         <h2 style="color:var(--accent-gold);">🧔🏾‍♂️ JERMAINE: CLINICAL DATA</h2>
-        
         <div class="stat-grid">
             <div class="stat-box"><div class="stat-val">217.1</div><div class="stat-lbl">Weight (lbs)</div></div>
             <div class="stat-box"><div class="stat-val">98.8</div><div class="stat-lbl">Muscle Mass (lbs)</div></div>
@@ -102,10 +118,8 @@
             <div class="stat-box"><div class="stat-val">1996</div><div class="stat-lbl">BMR (kcal)</div></div>
             <div class="stat-box"><div class="stat-val">28.6</div><div class="stat-lbl">BMI</div></div>
         </div>
-
         <div class="goal-section">
             <div class="goal-title">90-DAY CENTURION TARGET</div>
-            
             <div class="bar-container">
                 <div class="bar-label-row"><span>Body Fat % Goal</span><span style="color:var(--target-green);">15.0%</span></div>
                 <div class="bar-bg">
@@ -113,17 +127,13 @@
                     <div class="marker marker-goal" style="left: 15.0%;"><span class="marker-label" style="color:var(--target-green);">TARGET</span></div>
                 </div>
             </div>
-
             <div class="bar-container">
                 <div class="bar-label-row"><span>Muscle Mass Goal</span><span style="color:var(--target-green);">102.0 lbs</span></div>
                 <div class="bar-bg">
                     <div class="bar-curr" style="width: 96.8%; background: var(--accent-gold);"></div> <div class="marker marker-goal" style="left: 99%;"><span class="marker-label" style="color:var(--target-green);">TARGET</span></div>
                 </div>
             </div>
-            
-            <div style="font-size:0.8rem; color:#888; margin-top:15px; text-align:center;">
-                Strategy: 20m Sauna post-lift to spike GH. High-carb days fueled by Plasma Flush.
-            </div>
+            <div style="font-size:0.8rem; color:#888; margin-top:15px; text-align:center;">Strategy: 20m Sauna post-lift to spike GH. High-carb days fueled by Plasma Flush.</div>
         </div>
     </div>
 </div>
@@ -132,7 +142,6 @@
     <div class="modal-content">
         <span onclick="closeModal('sophiaModal')" style="float:right; cursor:pointer; font-size:24px;">&times;</span>
         <h2 style="color:var(--glute-pink);">👩🏾‍🦱 SOPHIA: CLINICAL DATA</h2>
-        
         <div class="stat-grid">
             <div class="stat-box"><div class="stat-val">141.5</div><div class="stat-lbl">Weight (lbs)</div></div>
             <div class="stat-box"><div class="stat-val">49.2</div><div class="stat-lbl">Muscle Mass (lbs)</div></div>
@@ -141,10 +150,8 @@
             <div class="stat-box"><div class="stat-val">1332</div><div class="stat-lbl">BMR (kcal)</div></div>
             <div class="stat-box"><div class="stat-val">25.1</div><div class="stat-lbl">BMI</div></div>
         </div>
-
         <div class="goal-section">
             <div class="goal-title">90-DAY CENTURION TARGET</div>
-            
             <div class="bar-container">
                 <div class="bar-label-row"><span>Body Fat % Goal</span><span style="color:var(--target-green);">28.0%</span></div>
                 <div class="bar-bg">
@@ -152,7 +159,6 @@
                     <div class="marker marker-goal" style="left: 28.0%;"><span class="marker-label" style="color:var(--target-green);">TARGET</span></div>
                 </div>
             </div>
-
             <div class="bar-container">
                 <div class="bar-label-row"><span>Muscle Mass Goal</span><span style="color:var(--target-green);">52.0 lbs</span></div>
                 <div class="bar-bg">
@@ -160,10 +166,7 @@
                     <div class="marker marker-goal" style="left: 99%;"><span class="marker-label" style="color:var(--target-green);">TARGET</span></div>
                 </div>
             </div>
-            
-            <div style="font-size:0.8rem; color:#888; margin-top:15px; text-align:center;">
-                Strategy: Heavy metal flush (Zenith Green) on rest days. High protein breakfasts.
-            </div>
+            <div style="font-size:0.8rem; color:#888; margin-top:15px; text-align:center;">Strategy: Heavy metal flush (Zenith Green) on rest days. High protein breakfasts.</div>
         </div>
     </div>
 </div>
@@ -172,6 +175,29 @@
 <div id="juiceModal" class="modal"><div class="modal-content"><span onclick="closeModal('juiceModal')" style="float:right; cursor:pointer;">&times;</span><h2 id="jTitle" style="color:var(--accent-gold);"></h2><div id="jPrep" class="chef-steps" style="counter-reset: step;"></div></div></div>
 <div id="protocolModal" class="modal"><div class="modal-content"><span onclick="closeModal('protocolModal')" style="float:right; cursor:pointer;">&times;</span><h2 id="protoTitle" style="color:var(--accent-gold);"></h2><div id="protoBody" style="font-size:0.95rem; color:#ccc; line-height:1.7;"></div></div></div>
 <div id="groceryModal" class="modal"><div class="modal-content"><span onclick="closeModal('groceryModal')" style="float:right; cursor:pointer;">&times;</span><h2 style="color:var(--target-green); margin-bottom:20px;">🛒 WEEKLY SHOPPING LIST</h2><div id="groceryList" style="color:#ccc; line-height:1.6; font-size:0.9rem;"></div></div></div>
+
+<div id="recoveryModal" class="modal">
+    <div class="modal-content">
+        <span onclick="closeModal('recoveryModal')" style="float:right; cursor:pointer;">&times;</span>
+        <h2 id="recTitle" style="color:#fff; margin-bottom:5px;"></h2>
+        <p style="color:#888; font-size:0.8rem; margin-bottom:25px; font-style:italic;">Daily Recovery Protocol</p>
+        
+        <div class="rec-section">
+            <div class="rec-header warmup">🔥 PRE-WORKOUT (HOME/CAR)</div>
+            <div id="recWarmup"></div>
+        </div>
+
+        <div class="rec-section">
+            <div class="rec-header gym">💧 GYM AMENITIES (IN-SHAPE)</div>
+            <div id="recGym"></div>
+        </div>
+
+        <div class="rec-section" style="border-bottom:none;">
+            <div class="rec-header home">🏠 HOME RESTORATION</div>
+            <div id="recHome"></div>
+        </div>
+    </div>
+</div>
 
 <script>
     const juiceData = {
@@ -281,14 +307,110 @@
         "Paella (Seafood Only)": { ing: ["Shrimp", "Mussels", "Saffron"], steps: ["Simmer."], mod: "Sophia: 1 cup." }
     };
 
+    // Data for Daily Display
     const weeklySchedule = [
-        { w: "REST & RECOVERY", c: "LOW CARB", j: "APOLLO GOLD", rec: ["🔫 THERABODY", "🧘 STATIC"] }, // Sun
-        { w: "HEAVY LIFT", c: "HIGH CARB", j: "PLASMA FLUSH", rec: ["🧖‍♂️ SAUNA", "👢 NORMATEC"] }, // Mon
-        { w: "BOXING (TRAINER)", c: "HIGH CARB", j: "TITAN RED", rec: ["🛏️ MASSAGE", "🔫 THERABODY"] }, // Tue
-        { w: "REFORM & LOW LIFT", c: "LOW CARB", j: "ZENITH GREEN", rec: ["🧖‍♂️ SAUNA"] }, // Wed
-        { w: "BOXING (TRAINER)", c: "HIGH CARB", j: "TITAN RED", rec: ["🛏️ MASSAGE", "👢 NORMATEC"] }, // Thu
-        { w: "YOGA & REFORM", c: "LOW CARB", j: "ZENITH GREEN", rec: ["🧖‍♂️ SAUNA", "🔫 THERABODY"] }, // Fri
-        { w: "CS4 HIIT", c: "HIGH CARB", j: "TITAN RED", rec: ["👢 NORMATEC"] } // Sat
+        { w: "REST & RECOVERY", c: "LOW CARB", j: "APOLLO GOLD", rec: ["🔫 THERABODY", "🧘 STATIC"] }, // Sun (0)
+        { w: "HEAVY LIFT", c: "HIGH CARB", j: "PLASMA FLUSH", rec: ["🧖‍♂️ SAUNA", "👢 NORMATEC"] }, // Mon (1)
+        { w: "BOXING (TRAINER)", c: "HIGH CARB", j: "TITAN RED", rec: ["🛏️ MASSAGE", "🔫 THERABODY"] }, // Tue (2)
+        { w: "REFORM & LOW LIFT", c: "LOW CARB", j: "ZENITH GREEN", rec: ["🧖‍♂️ SAUNA"] }, // Wed (3)
+        { w: "BOXING (TRAINER)", c: "HIGH CARB", j: "TITAN RED", rec: ["🛏️ MASSAGE", "👢 NORMATEC"] }, // Thu (4)
+        { w: "YOGA & REFORM", c: "LOW CARB", j: "ZENITH GREEN", rec: ["🧖‍♂️ SAUNA", "🔫 THERABODY"] }, // Fri (5)
+        { w: "CS4 HIIT", c: "HIGH CARB", j: "TITAN RED", rec: ["👢 NORMATEC"] } // Sat (6)
+    ];
+
+    // Detailed Recovery Logic (Mapped to Day Index 0=Sun)
+    const recoveryData = [
+        // SUN: Rest
+        {
+            warmup: [{t:"None", d:"", n:"Rest Day"}],
+            gym: [{t:"None", d:"", n:"Rest Day"}],
+            home: [
+                {t:"Normatec", d:"30 min", n:"HIPS Attachment (Level 5) - Back maintenance"},
+                {t:"Thera Knee", d:"Contrast", n:"Cycle Hot/Cold for joint health"},
+                {t:"Theragun Pro", d:"Supersoft", n:"Neck/Traps gentle massage"}
+            ]
+        },
+        // MON: Heavy Lift
+        {
+            warmup: [
+                {t:"Thera Knee", d:"15 min", n:"Heat + Vibration (Commute) - Liquefy synovial fluid"},
+                {t:"Theragun Pro", d:"2 min", n:"Heat Head - Glutes/Quads activation"}
+            ],
+            gym: [
+                {t:"Cryotherapy", d:"3 min", n:"(Optional) Use if RPE > 9/10"},
+                {t:"Sauna", d:"20 min", n:"HGH Release phase"},
+                {t:"Aqua Massage", d:"10 min", n:"Mental reset"}
+            ],
+            home: [
+                {t:"Normatec", d:"45 min", n:"HIPS Attachment (Level 7) - Decompress spine"},
+                {t:"Theragun Pro", d:"Thumb", n:"Release glute trigger points"}
+            ]
+        },
+        // TUE: Boxing
+        {
+            warmup: [
+                {t:"Theragun Pro", d:"2 min", n:"Heat Head - Shoulders/Calves (Rotation prep)"}
+            ],
+            gym: [
+                {t:"Aqua Massage", d:"15 min", n:"Upper Back setting - Fix boxer's hunch"},
+                {t:"Sauna", d:"15 min", n:"Cardio Flush"}
+            ],
+            home: [
+                {t:"Normatec", d:"30 min", n:"LEGS Attachment (Level 6) - Zone 1 Boost"},
+                {t:"Theragun Pro", d:"Cold", n:"Spot treat wrists/knuckles"}
+            ]
+        },
+        // WED: Reform
+        {
+            warmup: [
+                {t:"Theragun Pro", d:"Full Body", n:"Standard Ball - Gentle Sweep"}
+            ],
+            gym: [
+                {t:"Sauna", d:"15 min", n:"Circulation only"}
+            ],
+            home: [
+                {t:"Normatec", d:"30 min", n:"LEGS Attachment (Level 4) - Maintenance"}
+            ]
+        },
+        // THU: Boxing
+        {
+            warmup: [
+                {t:"Thera Knee", d:"10 min", n:"Heat - If knees stiff"},
+                {t:"Theragun Pro", d:"Dampener", n:"Obliques - Prep core rotation"}
+            ],
+            gym: [
+                {t:"Aqua Massage", d:"15 min", n:"Neck/Traps focus"}
+            ],
+            home: [
+                {t:"Normatec", d:"30 min", n:"HIPS Attachment (Level 6) - Relieve back torque"}
+            ]
+        },
+        // FRI: Yoga
+        {
+            warmup: [
+                {t:"Theragun Pro", d:"Heat", n:"Hamstrings - Warm fascia for depth"}
+            ],
+            gym: [
+                {t:"Sauna", d:"20 min", n:"Deep heat for mobility"}
+            ],
+            home: [
+                {t:"Thera Knee", d:"20 min", n:"Contrast Mode - Flush joints"}
+            ]
+        },
+        // SAT: CS4
+        {
+            warmup: [
+                {t:"Thera Knee", d:"15 min", n:"Heat + Vibration - Mandatory Prep"}
+            ],
+            gym: [
+                {t:"Cryotherapy", d:"Recommended", n:"Systemic inflammation flush"},
+                {t:"Aqua Massage", d:"10 min", n:"Cool down"}
+            ],
+            home: [
+                {t:"Normatec", d:"60 min", n:"LEGS Attachment (Level 7) - The Big Flush"},
+                {t:"Thera Knee", d:"Cold", n:"If knees are puffy"}
+            ]
+        }
     ];
 
     const bKeys = Object.keys(recipeDB).slice(0, 30);
@@ -310,23 +432,27 @@
             const isToday = tabDate.toDateString() === new Date().toDateString();
             btn.className = 'tab-btn' + (isToday && weekOffset === 0 ? ' active' : '');
             btn.innerHTML = `${day}<span>${tabDate.getDate()}</span>`;
-            btn.onclick = () => { document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); showDay(tabDate); };
-            tabs.appendChild(btn); if(btn.className.includes('active')) showDay(tabDate);
+            // Calculate actual day index (0=Sun...6=Sat) for data mapping
+            let dIndex = (i + 1) % 7; 
+            btn.onclick = () => { document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); showDay(tabDate, dIndex); };
+            tabs.appendChild(btn); if(btn.className.includes('active')) showDay(tabDate, dIndex);
         });
     }
 
-    function showDay(dateObj) {
+    function showDay(dateObj, dayIndex) {
         const start = new Date(2025, 0, 1);
         const dayId = Math.floor((dateObj - start) / 86400000);
-        const dayOfWeek = dateObj.getDay(); 
-        const schedule = weeklySchedule[dayOfWeek];
+        const schedule = weeklySchedule[dayIndex];
         const meal = masterSchedule[dayId % 30]; 
         const juice = juiceData[schedule.j];
 
         document.getElementById('dayContent').innerHTML = `
             <div class="card">
-                <div style="display:flex; justify-content:space-between; margin-bottom:20px; font-weight:800; text-transform:uppercase; color:var(--accent-gold);">
-                    <span>${schedule.w}</span><span class="carb-pill" style="background:${schedule.c==='HIGH CARB'?'var(--carb-high)':'var(--carb-low)'}">${schedule.c}</span>
+                <div class="workout-header">
+                    <div class="workout-title-btn" onclick="openRecovery(${dayIndex})">
+                        <span>${schedule.w}</span> <span class="info-icon">ⓘ</span>
+                    </div>
+                    <span class="carb-pill" style="background:${schedule.c==='HIGH CARB'?'var(--carb-high)':'var(--carb-low)'}">${schedule.c}</span>
                 </div>
                 <div class="label">🍳 Breakfast</div>
                 <div class="value" onclick="openRecipe('${meal.b}')"><span style="color:#fff">🧔🏾‍♂️ J</span> <span style="color:var(--glute-pink)">👩🏾‍🦱 S</span> : ${meal.b}</div>
@@ -378,6 +504,27 @@
         html += "</ul>";
         document.getElementById('groceryList').innerHTML = html;
         document.getElementById('groceryModal').style.display = 'block';
+    }
+
+    // New Recovery Modal Function
+    function openRecovery(idx) {
+        const data = recoveryData[idx];
+        const title = weeklySchedule[idx].w;
+        document.getElementById('recTitle').innerText = title + " RECOVERY";
+
+        // Helper to build list
+        const buildList = (arr) => arr.map(item => `
+            <div class="rec-item">
+                <div class="rec-tool">${item.t} ${item.d ? `<span style="float:right; opacity:0.7; font-size:0.8em">${item.d}</span>` : ''}</div>
+                <div class="rec-detail">${item.n}</div>
+            </div>
+        `).join('');
+
+        document.getElementById('recWarmup').innerHTML = buildList(data.warmup);
+        document.getElementById('recGym').innerHTML = buildList(data.gym);
+        document.getElementById('recHome').innerHTML = buildList(data.home);
+
+        openModal('recoveryModal');
     }
 
     function openRecipe(n) { 
