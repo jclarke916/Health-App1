@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v222.56 Core</title>
+    <title>The Centurion | v222.57 Core</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505;--card:#141414;--gold:#D4AF37;--green:#00E676;--blue:#00B0FF;--purple:#D500F9;--text:#fff;--g-pro:linear-gradient(90deg,#FF5252,#D50000);--g-carb:linear-gradient(90deg,#FFAB40,#FF6D00);--g-cal:linear-gradient(90deg,#B388FF,#6200EA)}
@@ -106,10 +106,10 @@
     <div id="dayContent"></div>
 </div>
 <div id="masterModal" class="modal"><div class="modal-content"><span onclick="closeM()" style="float:right;cursor:pointer">&times;</span><h2 id="mTitle"></h2><div id="mSub" style="color:var(--gold);font-size:0.7rem;margin:10px 0"></div><div id="mBody" class="chef-steps" style="counter-reset:step"></div><div id="mTip" class="chef-tip"></div></div></div>
-
 <script>
 let user='J', offset=0, selDate=new Date();
 let dailySnack = null; 
+
 // GLOBAL PROTOCOL DATABASE
 const pDB = {
     "HEAVY LIFT": [
@@ -143,6 +143,7 @@ const pDB = {
         { t: "POST", h: "Massage", d: "Chair or Thera Knee Heat." }
     ]
 };
+
 const rDB = {
     "Sea Moss": ["92 Minerals","2 TBSP Fasted.","Thyroid & Gut support."],
     "Kombucha": ["Probiotic","4 OZ post-Lunch.","Enzyme support."],
@@ -268,7 +269,7 @@ const mDB = {
         "Bone Broth|Beef Bone Broth|simmer|Sip warm, not scalding, to preserve gelatin structure. Benefit: Bioavailable collagen repairs gut lining and joints.|10|1|50",
         "Sardines|Olive Oil,Crackers|raw|Mash bone-in for calcium; eat with oil. Benefit: Highest natural source of Calcium + Vitamin D pairing.|22|0|190",
         "Dark Chocolate|90% Cacao,Almonds|raw|Let melt on tongue; do not chew. Max absorption. Benefit: Flavanols stimulate nitric oxide for blood flow.|4|12|160"
-    ],
+    ]
 };
 
 const uH = {
@@ -361,27 +362,35 @@ function showDay(dObj, idx){
     const jcs=["PLASMA FLUSH","TITAN RED","ZENITH GREEN","TITAN RED","ZENITH GREEN","TITAN RED","APOLLO GOLD"];
     const j=jDB[jcs[idx]], g=(user==='J')?{P:165,C:(idx%2===0?130:85),K:1950}:{P:105,C:55,K:1300};
     
-    // SCALE MACROS
+    // SCALE MACROS BASED ON USER
     const sc = (user==='J') ? 1 : 0.6; 
+    
     let sPro = dailySnack ? parseInt(dailySnack[4]) : 0;
     let sCarb = dailySnack ? parseInt(dailySnack[5]) : 0;
     let sCal = dailySnack ? parseInt(dailySnack[6]) : 0;
 
+    // Apply scaler to meals only
     let p = Math.round((parseInt(b[4]) + parseInt(l[4]) + parseInt(dn[4]))*sc) + j[2] + sPro;
     let c = Math.round((parseInt(b[5]) + parseInt(l[5]) + parseInt(dn[5]))*sc) + j[3] + sCarb;
     let k = Math.round((parseInt(b[6]) + parseInt(l[6]) + parseInt(dn[6]))*sc) + j[4] + sCal;
 
-    // PORTIONS
-    const ptn = (user==='J') ? { b: '4 Eggs', l: '8oz', d: '8oz' } : { b: '2 Eggs', l: '5oz', d: '5oz' };
+    // Define Portions
+    const ptn = (user==='J') 
+        ? { b: '4 Eggs', l: '8oz', d: '8oz' } 
+        : { b: '2 Eggs', l: '5oz', d: '5oz' };
 
+    let snackHTML = '';
+    if(!dailySnack) {
+        // SMALL SNACK BOX (60% WIDTH)
+        snackHTML = `<div onclick="openSnackSelector()" style="background:#0a0a0a; border:1px dashed #333; border-radius:20px; padding:8px; width:60%; margin:0 auto 15px auto; text-align:center; color:#666; font-size:0.6rem; font-weight:700; cursor:pointer;">➕ TAP TO SELECT SNACK</div>`;
+    } else {
+        snackHTML = `<div class="value" onclick="openSnackSelector()">${dailySnack[0]} <span style="font-size:0.6rem;color:var(--green);float:right">+${sPro}g Pro</span></div>`;
+    }
+    
     // WORKOUT FLOW LOGIC
     const wName = sch[idx];
     const proto = pDB[wName] || pDB["RELAX"];
-    
-    let snackHTML = dailySnack 
-        ? `<div class="value" onclick="openSnackSelector()">${dailySnack[0]} <span style="font-size:0.6rem;color:var(--green);float:right">+${sPro}g Pro</span></div>`
-        : `<div onclick="openSnackSelector()" style="background:#0a0a0a; border:1px dashed #333; border-radius:20px; padding:8px; width:60%; margin:0 auto 15px auto; text-align:center; color:#666; font-size:0.6rem; font-weight:700; cursor:pointer;">➕ TAP TO SELECT SNACK</div>`;
-    
+
     document.getElementById('dayContent').innerHTML = `
         <div style="background:#0a0a0a; border:1px solid #222; border-bottom:4px solid var(--blue); padding:15px; border-radius:12px; margin-bottom:25px; cursor:pointer;" onclick="openRecoveryPhase('${wName}')">
             <div style="display:flex; justify-content:space-between; align-items:center; text-align:center;">
@@ -467,8 +476,13 @@ function applySnack(idx) {
 function openR(n,i,a,t){
     document.getElementById('mTitle').innerText=n; document.getElementById('mSub').innerText="Prep: "+i;
     let s = (a==='sear')?["Temper 15m.","High sear 4m/side.","Rest 5m."]:(a==='roll')?["Whisk eggs.","Roll tightly."]:["Prep components.","Assemble.","Serve fresh."];
-    document.getElementById('mBody').innerHTML=s.map(x=>`<p>${x}</p>`).join('');
-    document.getElementById('mTip').innerText = t ? "CHEF TIP: " + t : "";
+    
+    // Handle the prep/benefit text (index 3)
+    // If it's a long string, we just display it.
+    document.getElementById('mBody').innerHTML = `<p>${t}</p>`;
+    
+    // Clear the specific chef tip box since we merged it into the body
+    document.getElementById('mTip').innerText = ""; 
     document.getElementById('masterModal').style.display='block';
 }
 
@@ -491,7 +505,7 @@ function openRecoveryPhase(workout) {
     document.getElementById('mTitle').innerText = workout + " PROTOCOL";
     document.getElementById('mSub').innerText = "V222.56 FLOW LOGIC";
     
-    // Use the global pDB we defined at the top
+    // Use the global pDB
     const active = pDB[workout] || pDB["RELAX"];
     
     let html = '<div class="rec-phase-list">';
@@ -503,23 +517,6 @@ function openRecoveryPhase(workout) {
     // 2: POST
     html += `<div class="phase-item"><span class="phase-time" style="color:var(--purple)">RECOVERY</span><span class="phase-title">${active[2].h}</span><span class="phase-detail">${active[2].d}</span></div>`;
 
-    html += '</div>';
-
-    m.innerHTML = html;
-    document.getElementById('mTip').innerText = "TIP: Hydrate with minerals before Sauna sessions.";
-    document.getElementById('masterModal').style.display = 'block';
-};
-
-    const active = protocols[workout] || protocols["RELAX"];
-    let html = '<div class="rec-phase-list">';
-    active.forEach(step => {
-        html += `
-            <div class="phase-item">
-                <span class="phase-time">${step.t}</span>
-                <span class="phase-title">${step.h}</span>
-                <span class="phase-detail">${step.d}</span>
-            </div>`;
-    });
     html += '</div>';
 
     m.innerHTML = html;
