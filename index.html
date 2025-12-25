@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v222.58 Core</title>
+    <title>The Centurion | v222.60 Core</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505;--card:#141414;--gold:#D4AF37;--green:#00E676;--blue:#00B0FF;--purple:#D500F9;--text:#fff;--g-pro:linear-gradient(90deg,#FF5252,#D50000);--g-carb:linear-gradient(90deg,#FFAB40,#FF6D00);--g-cal:linear-gradient(90deg,#B388FF,#6200EA)}
@@ -49,9 +49,9 @@
         .tab.active{background:#222;color:#fff;border-color:444}
         .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.98);padding:20px;z-index:1000;overflow-y:auto}
         .modal-content{background:#0a0a0a;margin:10px auto;padding:25px;border:1px solid #333;border-radius:20px;max-width:450px}
-        .chef-steps p{position:relative;padding-left:30px;color:#ccc;margin:10px 0;font-size:0.8rem;line-height:1.4}
-        .chef-steps p::before{counter-increment:step;content:counter(step);position:absolute;left:0;width:18px;height:18px;background:#222;color:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:800}
-        .chef-tip{color:var(--gold);font-size:0.75rem;font-weight:700;margin-top:15px;padding:10px;border:1px dashed var(--gold);border-radius:10px}
+        .chef-steps ol{padding-left:20px; color:#ccc; margin:10px 0; font-size:0.8rem; line-height:1.6;}
+        .chef-steps li{margin-bottom:8px;}
+        .chef-steps strong{color:var(--gold); display:block; margin-top:15px; font-size:0.75rem; border-top:1px dashed #333; padding-top:10px;}
         .juice-name{font-size:1.1rem;font-weight:900;color:#fff;text-align:center;text-transform:uppercase;cursor:pointer;border:1px dashed #333;padding:10px;border-radius:12px}
         
         .bio-section{margin-bottom:25px;padding:15px;background:rgba(255,255,255,0.03);border-radius:15px;border:1px solid rgba(255,255,255,0.05)}
@@ -162,7 +162,6 @@ const jDB = {
     "APOLLO GOLD": ["Anti-Inflammatory","2 Pears, Turmeric",1,45,195]
 };
 
-// THIS WAS MISSING IN PREVIOUS VERSION - RESTORED NOW
 const uH = {
     'J': { 
         past: { bf: 17.9, m: 99.4, w: 210.8, vf: 11, bmr: 1950, age: 38 }, 
@@ -176,7 +175,6 @@ const uH = {
     }
 };
 
-// CHEF-LEVEL RECIPE DATABASE
 const mDB = {
     b: [
         "Japanese Tamagoyaki|Eggs,Dashi,Zucchini|roll|<ol><li>Whisk 3 large eggs with 2 tbsp dashi stock and 1 tsp soy sauce.</li><li>Strain mixture through a fine-mesh sieve for uniform texture.</li><li>Heat a rectangular tamago pan over medium heat.</li><li>Dip a paper towel in oil and wipe the pan interior lightly.</li><li>Pour a thin layer of egg; pop any bubbles immediately.</li><li>Roll the set egg tightly toward the handle.</li><li>Slide roll to the far end; re-oil the empty space.</li><li>Pour next layer, lifting the roll to let egg flow underneath.</li><li>Repeat until all egg is used. Rest 2 mins before slicing.</li></ol><strong>Benefit:</strong> Egg choline supports cognitive function and cell membranes.|22|4|210",
@@ -363,7 +361,17 @@ function showDay(dObj, idx){
 
     const sch=["HEAVY LIFT","BOXING","REFORM","BOXING","REFORM/YOGA","CS4","RELAX"];
     const jcs=["PLASMA FLUSH","TITAN RED","ZENITH GREEN","TITAN RED","ZENITH GREEN","TITAN RED","APOLLO GOLD"];
-    const j=jDB[jcs[idx]], g=(user==='J')?{P:165,C:(idx%2===0?130:85),K:1950}:{P:105,C:55,K:1300};
+    
+    // UPDATED CARB CYCLING LOGIC
+    // High Output Days = Higher Macros
+    const isHighOutput = ["HEAVY LIFT", "BOXING", "CS4"].includes(sch[idx]);
+    
+    let baseP = 165;
+    let baseC = isHighOutput ? 160 : 85;  // Higher carbs for heavy/boxing days
+    let baseK = isHighOutput ? 2200 : 1800;
+
+    const j=jDB[jcs[idx]];
+    const g=(user==='J') ? {P:baseP, C:baseC, K:baseK} : {P:105, C:55, K:1300};
     
     // SCALE MACROS BASED ON USER
     const sc = (user==='J') ? 1 : 0.6; 
@@ -487,7 +495,7 @@ function openR(n,i,a,t){
     let s = (a==='sear')?["Temper 15m.","High sear 4m/side.","Rest 5m."]:(a==='roll')?["Whisk eggs.","Roll tightly."]:["Prep components.","Assemble.","Serve fresh."];
     
     // Handle the prep/benefit text (index 3)
-    document.getElementById('mBody').innerHTML = `<p>${t}</p>`;
+    document.getElementById('mBody').innerHTML = `${t}`;
     document.getElementById('mTip').innerText = ""; 
     document.getElementById('masterModal').style.display='block';
 }
@@ -509,7 +517,7 @@ function openJ(n){
 function openRecoveryPhase(workout) {
     const m = document.getElementById('mBody');
     document.getElementById('mTitle').innerText = workout + " PROTOCOL";
-    document.getElementById('mSub').innerText = "V222.57 FLOW LOGIC";
+    document.getElementById('mSub').innerText = "V222.58 FLOW LOGIC";
     
     // Use the global pDB
     const active = pDB[workout] || pDB["RELAX"];
