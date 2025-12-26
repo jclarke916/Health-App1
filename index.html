@@ -257,16 +257,16 @@ const jDB={"PLASMA FLUSH Juice":["Recovery","3c Watermelon, 1 Lime",1,32,140],"T
 // --- UPGRADED LEARNING HUB DATABASE ---
 // --- UPGRADED DIAGNOSTIC ENGINE ---
 // --- COMBINED MASTER DATABASE (AUTOIMMUNE + LONGEVITY) ---
-var uH = {
+v// --- 1. MASTER DEFAULT DATA (Scientific Baseline) ---
+var defaultUH = {
     'J': {
-        // ADDED 'bmr: 2150' TO GOAL
         now: {bf:19.0, m:99.0, w:217.0, vf:10, bmr:2050},
-        goal: {bf:15.0, m:105.0, w:212.0, vf:7, bmr:2150},
+        goal: {bf:15.0, m:105.0, w:212.0, vf:7},
         info: {
             bf: {d:"Adipose tissue percentage.", f:"Rx: Caloric Deficit + Zone 2."},
             m: {d:"Skeletal muscle tissue.", f:"Rx: Hypertrophy (8-12 reps)."},
             vf: {d:"Visceral Fat (Organ Fat).", f:"Rx: No Fructose."},
-            bmr: {d:"Basal Metabolic Rate.", f:"Rx: Build muscle to increase burn."}
+            bmr: {d:"Basal Metabolic Rate.", f:"Rx: Build muscle."}
         },
         labs: {
             apob: {val:95, goal:60, unit:"mg/dL", name:"ApoB", lowerIsBetter:true, desc:"Plaque particles.", fix:"Rx: Fiber >40g."},
@@ -284,9 +284,8 @@ var uH = {
         }
     },
     'S': {
-        // ADDED 'bmr: 1350' TO GOAL
         now: {bf:36.1, m:49.2, w:141.5, vf:9, bmr:1250},
-        goal: {bf:28.0, m:55.0, w:138.0, vf:5, bmr:1350},
+        goal: {bf:28.0, m:55.0, w:138.0, vf:5},
         info: {
             bf: {d:"Adipose tissue releases cytokines.", f:"Rx: Anti-inflammatory deficit."},
             m: {d:"Muscle acts as a 'glucose sink'.", f:"Rx: Slow Resistance Training."},
@@ -311,6 +310,37 @@ var uH = {
         }
     }
 };
+
+// --- 2. LOAD LOGIC (Persistence) ---
+// Checks if data exists in phone storage. If not, uses defaultUH.
+var uH = JSON.parse(localStorage.getItem('centurion_bio_v2')) || JSON.parse(JSON.stringify(defaultUH));
+
+// --- 3. SAVE FUNCTION (Triggered on Update) ---
+function updateBioVal(section, key, name) {
+    event.stopPropagation(); 
+    var current = uH[user][section][key].val;
+    var newVal = prompt("LOG NEW RESULT for " + name + ":", current);
+    
+    if(newVal !== null && newVal !== "" && !isNaN(newVal)) {
+        // Update the active object
+        uH[user][section][key].val = parseFloat(newVal);
+        
+        // SAVE to phone storage
+        localStorage.setItem('centurion_bio_v2', JSON.stringify(uH));
+        
+        // Re-render to see changes instantly
+        renderBioTab(section); 
+    }
+}
+
+// --- 4. RESET FUNCTION (Optional Utility) ---
+function resetBioData() {
+    if(confirm("Reset all biometric data to defaults? This cannot be undone.")) {
+        uH = JSON.parse(JSON.stringify(defaultUH));
+        localStorage.setItem('centurion_bio_v2', JSON.stringify(uH));
+        renderBioTab('phys');
+    }
+}
 
 // --- SAFE CALCULATOR (NO MODERN SYNTAX) ---
 // --- UPDATED CALCULATOR (GOAL LOCKED TO 100) ---
@@ -927,13 +957,16 @@ function generateGroceryList() {
 // --- UPGRADED BIO-SCAN ---
 // --- RESTORED 3-TAB BIO SYSTEM ---
 function openBio() {
-    const modalBody = document.getElementById('mBody');
-    const u = uH[user];
-    document.getElementById('mTitle').innerText = (user === 'J' ? "JERMAINE" : "SOPHIA") + " LONGEVITY PANEL";
+    var modalBody = document.getElementById('mBody');
+    var u = uH[user];
+    
+    // Header with Reset Button
+    document.getElementById('mTitle').innerHTML = (user === 'J' ? "JERMAINE" : "SOPHIA") + 
+        " <span onclick='resetBioData()' style='font-size:0.6rem; color:#444; border:1px solid #333; padding:4px 8px; border-radius:4px; vertical-align:middle; cursor:pointer; float:right;'>RESET DATA</span>";
+        
     document.getElementById('mSub').innerText = "Clinical & Functional Metrics";
-    document.getElementById('mImgContainer').innerHTML = ''; // Clear images if any
+    document.getElementById('mImgContainer').innerHTML = ''; 
 
-    // Restore the Tab Structure
     modalBody.innerHTML = `
         <div class="tabs" style="margin-bottom:20px;">
             <div id="btPhys" class="tab active" onclick="renderBioTab('phys')">BODY</div>
@@ -942,10 +975,9 @@ function openBio() {
         </div>
         <div id="bioContentArea"></div>
     `;
-    renderBioTab('phys'); // Default to Body tab
+    renderBioTab('phys'); 
     document.getElementById('masterModal').style.display = 'block';
 }
-
 function renderBioTab(tab) {
     var u = uH[user];
     var target = document.getElementById('bioContentArea');
