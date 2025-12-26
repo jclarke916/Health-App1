@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v222.72 Core</title>
+    <title>The Centurion | v222.73 Core</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
-    .meal-img { width: 100%; height: 250px; object-fit: cover; border-radius: 12px; margin-bottom: 20px; border: 1px solid #333; }
         :root{--bg:#050505;--card:#141414;--gold:#D4AF37;--green:#00E676;--blue:#00B0FF;--purple:#D500F9;--text:#fff;--g-pro:linear-gradient(90deg,#FF5252,#D50000);--g-carb:linear-gradient(90deg,#FFAB40,#FF6D00);--g-cal:linear-gradient(90deg,#B388FF,#6200EA)}
         *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
         body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);margin:0;padding:15px;font-size:14px}
@@ -152,6 +151,8 @@
             transition: all 0.2s ease;
         }
         .remove-snack:hover { background: #444; color: #fff; border-color:#333; }
+        
+        .meal-img { width: 100%; height: 250px; object-fit: cover; border-radius: 12px; margin-bottom: 20px; border: 1px solid #333; background:#111; }
 
         .hist-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.7rem; color: #ccc; }
         .hist-table th { text-align: left; color: #666; border-bottom: 1px solid #333; padding: 5px; font-weight: 800; }
@@ -180,7 +181,7 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v222.72 (CA Time Locked)</span>
+        <span class="version-tag">v222.73 (CA Time + AI Images)</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -215,7 +216,6 @@ let snackLog = {};
 let currentSlot = 0;
 
 // CALIFORNIA TIME HELPER - FIXED
-// Explicitly forces 12:00 PM Noon to avoid midnight rollover issues
 function getCaDate() {
     let d = new Date(new Date().toLocaleString("en-US", {timeZone: "America/Los_Angeles"}));
     d.setHours(12, 0, 0, 0); 
@@ -223,7 +223,6 @@ function getCaDate() {
 }
 
 // DATE KEY HELPER - FIXED
-// Uses local getter methods to prevent UTC conversion logic errors
 function getDateKey(d) {
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -390,6 +389,10 @@ const uH={
 };
 
 // --- CORE FUNCTIONS ---
+
+function getDateKey(d) {
+    return d.toISOString().split('T')[0];
+}
 
 function getHoliday(d) {
     const m = d.getMonth(); // 0-11
@@ -613,13 +616,10 @@ function openR(n,i,a,t){
     document.getElementById('mTitle').innerText=n; 
     document.getElementById('mSub').innerText=""; 
     
-    // SMART IMAGE ENGINE
-    // Converts "Turmeric Scramble" -> "turmeric_scramble"
-    // Removes special chars like ' & ' to avoid file naming issues
-    let fileName = n.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '_');
-    
-    // Generates HTML. 'onerror' hides the image tag if you haven't taken the photo yet.
-    let imgHTML = `<img src="images/${fileName}.jpg" class="meal-img" onerror="this.style.display='none'">`;
+    // SMART IMAGE ENGINE: Pollinations.ai
+    // Generates an image on the fly based on the recipe name
+    let prompt = n.replace(/[^a-zA-Z ]/g, "") + " cooked food meal high quality";
+    let imgHTML = `<img src="https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=800&height=600&nologo=true" class="meal-img" loading="lazy">`;
 
     // Render the Full HTML instructions we created
     document.getElementById('mBody').innerHTML = imgHTML + `${t}`;
@@ -659,7 +659,7 @@ function openRecoveryPhase(workout) {
 function generateGroceryList() {
     const modalBody = document.getElementById('mBody');
     document.getElementById('mTitle').innerText = "WEEKLY GROCERY LIST";
-    document.getElementById('mSub').innerText = "V222.72 • FULL SPECTRUM SCAN";
+    document.getElementById('mSub').innerText = "V222.73 • FULL SPECTRUM SCAN";
     
     let mainList = [];
     let pantryList = [];
