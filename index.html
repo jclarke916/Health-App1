@@ -646,68 +646,43 @@ function removeSnack(slotIdx) {
         render(); 
     }
 }
-
-function openR(n,i,a,t){
-    document.getElementById('mTitle').innerText=n; 
-    document.getElementById('mSub').innerText=""; 
-    
-    // SMART IMAGE ENGINE: Pollinations.ai
-    // Generates an image on the fly based on the recipe name
-    let prompt = n.replace(/[^a-zA-Z ]/g, "") + " cooked food meal high quality";
-    let imgHTML = `<img src="https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=800&height=600&nologo=true" class="meal-img" loading="lazy">`;
-
-    // Render the Full HTML instructions we created
-    document.getElementById('mBody').innerHTML = imgHTML + `${t}`;
-    document.getElementById('mTip').innerText = ""; 
-    document.getElementById('masterModal').style.display='block';
-}
-
-function openM(n){
-    const d=rDB[n]; document.getElementById('mTitle').innerText=n; document.getElementById('mSub').innerText=d[0];
-    document.getElementById('mBody').innerHTML=d.slice(1).map(x=>`<p>${x}</p>`).join('');
-    document.getElementById('mTip').innerText = "PRO TIP: Consistency beats intensity for recovery protocols.";
-    document.getElementById('masterModal').style.display='block';
-}
-
 function openJ(n){
     const d=jDB[n]; document.getElementById('mTitle').innerText=n; document.getElementById('mSub').innerText=d[0];
     document.getElementById('mBody').innerHTML=`<p><strong>Ingredients:</strong> ${d[1]}</p><p>P: ${d[2]}g | C: ${d[3]}g | Kcal: ${d[4]}</p>`;
     document.getElementById('mTip').innerText = "PRO TIP: Drink slowly to allow enzymes to activate digestion.";
     document.getElementById('masterModal').style.display='block';
 }
-
 function openR(n,i,a,t){
     // 1. Set Title
     document.getElementById('mTitle').innerText = n; 
     document.getElementById('mSub').innerText = ""; 
 
-    // 2. Prepare the AI Prompt
-    // We remove special characters to keep the URL clean
+    // 2. Clean the name
     let cleanName = n.replace(/[^a-zA-Z ]/g, "");
-    let prompt = cleanName + " cooked michelin star food photography 4k lighting";
     
-    // 3. Generate Random Seed (Crucial for AI stability)
-    let seed = Math.floor(Math.random() * 1000);
+    // 3. Random Seed (Forces new image)
+    let seed = Math.floor(Math.random() * 9999);
 
-    // 4. Construct the Smart URL
-    // We add 'model=flux' for better quality and 'seed' to prevent caching errors
-    let imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=800&height=600&nologo=true&seed=${seed}&model=flux`;
+    // 4. FAST URL (Removed 'flux' to fix the blank screen)
+    let prompt = encodeURIComponent(cleanName + " cooked food delicious michelin");
+    // We use the standard model (fast) instead of flux (slow/timing out)
+    let imgUrl = `https://image.pollinations.ai/prompt/${prompt}?width=800&height=600&nologo=true&seed=${seed}`;
 
-    // 5. Backup Image (If AI fails, this generic placeholder loads)
-    let fallbackUrl = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80";
+    // 5. Generic Fallback (Empty Kitchen, NOT a Chicken Salad)
+    // If the AI fails, this generic kitchen background loads
+    let fallbackUrl = "https://images.unsplash.com/photo-1556910103-1c02745a30bf?w=800&q=80";
 
-    // 6. Build the Image HTML with Error Handling
+    // 6. Build HTML
     let imgHTML = `<img src="${imgUrl}" class="meal-img" 
-                        alt="${cleanName}" 
-                        loading="lazy"
+                        loading="lazy" 
+                        alt="${cleanName}"
                         onerror="this.onerror=null;this.src='${fallbackUrl}';">`;
 
-    // 7. Inject into Modal
+    // 7. Inject
     document.getElementById('mBody').innerHTML = imgHTML + `<br>${t}`;
     document.getElementById('mTip').innerText = ""; 
     document.getElementById('masterModal').style.display = 'block';
 }
-
 function generateGroceryList() {
     const modalBody = document.getElementById('mBody');
     document.getElementById('mTitle').innerText = "WEEKLY GROCERY LIST";
