@@ -456,76 +456,74 @@ function stableSeed(s) {
 // ===============================
 // AI IMAGE LOADING – HARDENED FIX
 // ===============================
+// ===============================
+// AI IMAGE LOADING – 10 MINUTE WAIT
+// ===============================
 function openR(n, i, a, t) {
-    document.getElementById('mTitle').innerText = n;
-    document.getElementById('mSub').innerText = "";
-    
+    document.getElementById('mTitle').innerText = n;
+    document.getElementById('mSub').innerText = "";
+    
     // SETUP CONTAINER FOR LOADER
     const body = document.getElementById('mBody');
-    body.innerHTML = '<div class="img-loader">✨ Chef is plating...</div>'; // Show loader immediately
+    body.innerHTML = '<div class="img-loader">✨ Chef is plating...</div>'; 
 
-    const cleanName = n.replace(/[^a-zA-Z ]/g, "").trim();
-    const seed = stableSeed(cleanName); // Use the helper
-    
-    // Short, fast prompt
-    const prompt = encodeURIComponent(`delicious ${cleanName} plated food photo`);
-    const imgUrl = `https://image.pollinations.ai/prompt/${prompt}?width=800&height=600&seed=${seed}&nologo=true&model=turbo`; // Added model=turbo for speed
+    const cleanName = n.replace(/[^a-zA-Z ]/g, "").trim();
+    const seed = stableSeed(cleanName); 
+    
+    const prompt = encodeURIComponent(`delicious ${cleanName} plated food photo`);
+    const imgUrl = `https://image.pollinations.ai/prompt/${prompt}?width=800&height=600&seed=${seed}&nologo=true&model=turbo`; 
 
-    const img = document.createElement("img");
-    img.className = "meal-img";
-    img.loading = "eager"; // Force immediate load
-    img.alt = cleanName;
+    const img = document.createElement("img");
+    img.className = "meal-img";
+    img.loading = "eager"; 
+    img.alt = cleanName;
     img.referrerPolicy = "no-referrer";
     
-    // START HIDDEN FOR CINEMATIC REVEAL
+    // START HIDDEN
     img.style.opacity = "0";
     img.style.filter = "blur(10px)";
     img.style.transition = "opacity 0.4s ease, filter 0.4s ease";
-    
-    // Timeout Safety
-    const safeFallback = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80";
-    
-    const timer = setTimeout(() => {
-        if (!img.complete || img.naturalWidth === 0) { 
+    
+    const safeFallback = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80";
+    
+    // --- THIS IS THE LINE YOU CHANGED ---
+    const timer = setTimeout(() => {
+        if (!img.complete || img.naturalWidth === 0) { 
             console.log("AI timed out, switching to fallback.");
-            img.src = safeFallback; 
-        }
-    }, 15000); // INCREASED TO 15 SECONDS
+            img.src = safeFallback; 
+        }
+    }, 600000); // 600,000 ms = 10 Minutes
+    // ------------------------------------
 
-    img.onload = () => {
+    img.onload = () => {
         clearTimeout(timer);
-        // Clear loader and show image
         body.innerHTML = ""; 
         body.appendChild(img);
         
-        // REVEAL IMAGE (Small delay to ensure DOM paint)
         setTimeout(() => {
             img.style.opacity = "1";
             img.style.filter = "blur(0)";
         }, 50);
         
-        // Append text
         const txt = document.createElement("div");
         txt.innerHTML = `<br>${t}`;
         body.appendChild(txt);
     };
     
-    img.onerror = () => { 
-        clearTimeout(timer); 
-        img.src = safeFallback; 
-        // Ensure fallback is revealed too
-        img.onload = null; // Prevent infinite loop if fallback fails (rare)
+    img.onerror = () => { 
+        clearTimeout(timer); 
+        img.src = safeFallback; 
+        img.onload = null; 
         img.style.opacity = "1";
         img.style.filter = "blur(0)";
-    };
-    
-    // IMPORTANT: Delay assignment (Safari quirk)
-    setTimeout(() => {
-        img.src = imgUrl;
-    }, 30);
+    };
+    
+    setTimeout(() => {
+        img.src = imgUrl;
+    }, 30);
 
-    document.getElementById('mTip').innerText = "";
-    document.getElementById('masterModal').style.display = 'block';
+    document.getElementById('mTip').innerText = "";
+    document.getElementById('masterModal').style.display = 'block';
 }
 
 function openSnackSelector(slotIdx) {
