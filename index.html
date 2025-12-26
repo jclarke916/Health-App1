@@ -567,10 +567,11 @@ function openRecoveryPhase(workout) {
 }
 
 // --- UPGRADED SMART GROCERY LIST ---
+// --- UPDATED GROCERY LOGIC (Meat Filter Fix) ---
 function generateGroceryList() {
     const modalBody = document.getElementById('mBody');
     document.getElementById('mTitle').innerText = "WEEKLY GROCERY LIST";
-    document.getElementById('mSub').innerText = "V222.73 • FULL SPECTRUM SCAN";
+    document.getElementById('mSub').innerText = "V226.75 • SMART FILTER";
     
     let mainList = [];
     let pantryList = [];
@@ -601,20 +602,24 @@ function generateGroceryList() {
 
         meals.forEach(mealStr => {
             const parts = mealStr.split('|');
+            // Extract Main Ingredients from HTML (The Fresh Stuff)
             const htmlMatch = parts[3].match(/INGREDIENTS<\/strong><br>([\s\S]*?)<br><br>/);
             if(htmlMatch && htmlMatch[1]) {
                 mainList.push(...htmlMatch[1].split('•').map(s => s.trim()));
             }
+            // Extract Pantry Tags (Index 1)
             if(!holidayName && parts[1]) {
                 pantryList.push(...parts[1].split(',').map(s => s.trim()));
             }
         });
 
+        // Add Juices
         let juiceName = jcs[i];
         if(jDB[juiceName]) {
              mainList.push(...jDB[juiceName][1].split(',').map(s => s.trim()));
         }
 
+        // Add Snacks
         if(snackLog[dateKey]) {
             snackLog[dateKey].forEach(sIdx => {
                 if(sIdx !== null) {
@@ -631,7 +636,22 @@ function generateGroceryList() {
 
     let uniqueMain = [...new Set(mainList.filter(i => i))].sort();
     let uniquePantry = [...new Set(pantryList.filter(i => i))].sort();
-    let finalPantry = uniquePantry.filter(pItem => !uniqueMain.some(mItem => mItem.includes(pItem)));
+    
+    // --- MEAT FILTER FIX ---
+    // Explicitly define meats to block from Pantry section
+    const meatKeywords = ["Chicken", "Steak", "Bison", "Beef", "Turkey", "Salmon", "Tuna", "Cod", "Lamb", "Pork", "Boar", "Venison", "Duck", "Shrimp", "Fish", "Scallops", "Mackerel", "Sardines", "Octopus", "Liver", "Heart", "Ribeye", "Sirloin", "Flank", "Filet", "Burger", "Sausage", "Meatball"];
+    
+    let finalPantry = uniquePantry.filter(pItem => {
+        // 1. Remove if it's already in the main list
+        const inMain = uniqueMain.some(mItem => mItem.toLowerCase().includes(pItem.toLowerCase()));
+        if(inMain) return false;
+
+        // 2. Remove if it matches a known meat keyword (Fixes the bug)
+        const isMeat = meatKeywords.some(meat => pItem.toLowerCase().includes(meat.toLowerCase()));
+        if(isMeat) return false;
+
+        return true;
+    });
 
     let html = `<div style="padding-bottom:50px;">`;
     
@@ -648,7 +668,7 @@ function generateGroceryList() {
     html += `</div>`;
     
     modalBody.innerHTML = html;
-    document.getElementById('mTip').innerText = "TIP: Check your pantry for the bottom section before buying.";
+    document.getElementById('mTip').innerText = "TIP: Meats are automatically filtered to the top section.";
     document.getElementById('masterModal').style.display = 'block';
 }
 
