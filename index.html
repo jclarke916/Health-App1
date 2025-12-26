@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v224.00 Ultra Stable</title>
+    <title>The Centurion | v224.20 Ultimate</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505;--card:#141414;--gold:#D4AF37;--green:#00E676;--blue:#00B0FF;--purple:#D500F9;--text:#fff;--g-pro:linear-gradient(90deg,#FF5252,#D50000);--g-carb:linear-gradient(90deg,#FFAB40,#FF6D00);--g-cal:linear-gradient(90deg,#B388FF,#6200EA);--g-fib:linear-gradient(90deg,#00E676,#00C853)}
@@ -20,6 +20,7 @@
         .nav-btn{background:#111;border:1px solid #222;color:#888;padding:10px;flex:1;border-radius:8px;font-size:0.55rem;font-weight:800;cursor:pointer}
         .card, .macro-dashboard{background:var(--card);border-radius:20px;padding:20px;margin-bottom:15px;border:1px solid rgba(255,255,255,0.03);position:relative}
         .card::before{content:"";position:absolute;left:0;top:20px;bottom:20px;width:3px;background:var(--gold);border-radius:0 4px 4px 0}
+        .label{color:#666;font-size:0.5rem;text-transform:uppercase;font-weight:900;margin-bottom:4px; display: flex; justify-content: space-between;}
         .value{ font-size: 0.95rem; margin-bottom: 12px; font-weight: 500; cursor: pointer; border-bottom: 1px solid #222; padding-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
         .macro-row{margin-bottom:10px}
         .macro-label{display:flex;justify-content:space-between;font-size:0.55rem;font-weight:800;color:#777;margin-bottom:3px}
@@ -28,25 +29,41 @@
         .tabs{display:flex;gap:4px;margin-bottom:15px}
         .tab{flex:1;padding:10px 0;background:#111;border:1px solid #222;color:#444;border-radius:8px;font-size:0.55rem;font-weight:800;text-align:center;cursor:pointer}
         .tab.active{background:#222;color:#fff;border-color:444}
-        .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#0a0a0a;z-index:2000;overflow-y:auto;}
-        .modal-content{background:#0a0a0a;padding:25px;min-height:100%;}
+        .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#0a0a0a;z-index:2000;overflow-y:auto;padding:0;}
+        .modal-content{background:#0a0a0a;margin:0;padding:25px;border:none;border-radius:0;width:100%;min-height:100%;max-width:none;}
         .close-btn-float { position: fixed; top: 20px; right: 20px; width: 40px; height: 40px; background: rgba(30,30,30,0.8); border-radius: 50%; border: 1px solid #333; color: #fff; font-size: 24px; text-align: center; line-height: 38px; cursor: pointer; z-index: 2001; }
-        .meal-img { display: block; width: 100%; height: auto; min-height: 220px; object-fit: cover; border-radius: 14px; background-color: #111; transition: opacity 0.5s ease, filter 0.5s ease; opacity: 0; filter: blur(10px); }
-        .img-loader { height: 220px; display: flex; align-items: center; justify-content: center; color: var(--gold); font-size: 0.8rem; font-weight: 700; background: rgba(255,255,255,0.02); border-radius: 14px; border: 1px dashed #333; animation: pulse 1.5s infinite; position: absolute; width: 100%; top: 0; left: 0; z-index: 1; }
-        @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
+        .bio-section{margin-bottom:25px;padding:15px;background:rgba(255,255,255,0.03);border-radius:15px;border:1px solid rgba(255,255,255,0.05)}
+        .bio-title{display:flex;justify-content:space-between;font-size:0.75rem;font-weight:800;color:#fff;margin-bottom:12px;text-transform:uppercase}
+        .bar-group{display:flex;flex-direction:column;gap:8px}
+        .bar-row{display:flex;align-items:center}
+        .bar-lbl{width:45px;font-size:0.55rem;color:#666;font-weight:900;text-transform:uppercase}
+        .bar-track{flex:1;height:8px;background:#111;border-radius:10px;margin:0 10px;border:1px solid #222;overflow:hidden}
+        .bar-fill{height:100%;border-radius:10px;transition:width 1s cubic-bezier(0.4,0,0.2,1)}
+        .bar-fill.past{background:#333}
+        .bar-fill.now{background:var(--gold);box-shadow:0 0 10px rgba(212,175,55,0.3)}
+        .rec-phase-list { position: relative; padding-left: 25px; margin-top: 20px; }
+        .rec-phase-list::before { content: ''; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: linear-gradient(to bottom, var(--blue), var(--purple)); }
+        .phase-item { position: relative; margin-bottom: 25px; }
+        .phase-item::after { content: ''; position: absolute; left: -22px; top: 5px; width: 10px; height: 10px; background: var(--bg); border: 2px solid var(--blue); border-radius: 50%; }
+        .phase-time { font-size: 0.6rem; font-weight: 900; color: var(--blue); text-transform: uppercase; letter-spacing: 1px; }
+        .phase-title { display: block; font-size: 0.9rem; font-weight: 700; color: #fff; margin: 2px 0; }
+        .phase-detail { font-size: 0.75rem; color: #999; line-height: 1.4; display: block; }
         .snack-grid { display: flex; gap: 10px; margin-bottom: 15px; }
         .snack-slot { flex: 1; border: 1px dashed #333; border-radius: 12px; padding: 12px 5px; text-align: center; cursor: pointer; position: relative; min-height: 60px; background: rgba(255,255,255,0.02); display: flex; flex-direction: column; justify-content: center; }
         .snack-slot.filled { border: 1px solid var(--gold); background: #111; }
         .remove-snack { position: absolute; top: -5px; right: -5px; background: #333; color: #aaa; border: 1px solid #222; border-radius: 50%; width: 16px; height: 16px; font-size: 9px; line-height: 14px; text-align: center; font-weight: 800; }
-        .label{color:#666;font-size:0.5rem;text-transform:uppercase;font-weight:900;margin-bottom:4px; display: flex; justify-content: space-between;}
-        .snack-label { font-size: 0.65rem; color: #fff; font-weight: 700; }
-        .snack-macro { font-size: 0.5rem; color: #666; margin-top: 4px; }
+        .meal-img { display: block; width: 100%; height: auto; min-height: 220px; object-fit: cover; border-radius: 14px; background-color: #111; transition: opacity 0.6s ease, filter 0.6s ease; opacity: 0; filter: blur(10px); }
+        .img-loader { height: 220px; display: flex; align-items: center; justify-content: center; color: var(--gold); font-size: 0.8rem; font-weight: 700; background: rgba(255,255,255,0.02); border-radius: 14px; border: 1px dashed #333; animation: pulse 1.5s infinite; position: absolute; width: 100%; top: 0; left: 0; z-index: 1; }
+        @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
+        .hist-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.7rem; color: #ccc; }
+        .hist-table th { text-align: left; color: #666; border-bottom: 1px solid #333; padding: 5px; font-weight: 800; }
+        .hist-table td { border-bottom: 1px solid #222; padding: 8px 5px; }
     </style>
 </head>
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v224.00 Stable Flow</span>
+        <span class="version-tag">v224.20 Ultimate Edition</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -75,79 +92,63 @@
 </div>
 
 <script>
+// --- CORE STATE ---
 let user='J', offset=0, snackLog = {}, currentSlot = 0, selDate = new Date();
 selDate.setHours(12,0,0,0);
 
+// --- FULL DATABASE ---
 const mDB = {
-    b: ["Turmeric Scramble|Eggs,Spinach,Garlic,Turmeric|scramble|Prep: 5m|22|2|240", "Za'atar Avocado|Eggs,Avocado,Radish,Za'atar|raw|Prep: 5m|24|18|380", "Bison & Rainbow|Ground Bison,Peppers,Onion,Garlic|sear|Prep: 10m|45|8|480", "Ginger Poach|Bone Broth,Eggs,Bok Choy,Ginger|poach|Prep: 5m|20|4|220", "Turkey Sage Pan|Turkey,Fennel,Apple,Sage|sear|Prep: 10m|35|12|360", "Salmon Omelet|Smoked Salmon,Asparagus,Eggs|flat|Prep: 5m|38|2|410", "Purple Toast|Sardines,Cabbage,Avocado,Sourdough|raw|Prep: 10m|25|22|450"],
-    l: ["Pepperfin Molino|Albacore Tuna,Jalapeno,Ponzu|raw|Prep: 10m|30|4|260", "Thai Beef Salad|Sirloin,Cucumber,Lime,Fish Sauce|sear|Prep: 15m|45|16|480", "Chicken Chimichurri|Chicken Breast,Parsley,Garlic|poach|Prep: 15m|40|4|420", "Sardine Bowl|Sardines,Radish,Fennel,Lemon|raw|Prep: 10m|28|6|320", "Cold Flank|Flank,Asparagus,Tomato,Dijon|sear|Prep: 10m|42|6|450"],
-    d: ["Sea Steak Mikuni|Red Tuna,Daikon,Soy Sauce|sear|Prep: 10m|38|6|320", "Whole Branzino|Branzino,Fennel,Lemon,Garlic|bake|Prep: 10m|40|0|450", "Miso Glazed Cod|Cod,Miso,Ginger,Bok Choy|bake|Prep: 15m|35|8|340", "Harissa Shrimp|Shrimp,Harissa,Cauliflower|sear|Prep: 10m|30|6|290", "Ginger Beef Stir|Flank Steak,Ginger,Peppers|sear|Prep: 15m|45|10|460"],
-    s: ["Double Scoop Shake|Whey,Water|shake|Prep: 2m|50|2|240", "Turkey Roll-Ups|Turkey,Swiss,Pickle|raw|Prep: 5m|40|2|240", "Skyr Bowl|Skyr,Blueberries|raw|Prep: 2m|28|12|160", "Beef Jerky|Grass-fed Jerky|raw|Prep: 0m|25|4|180"]
+    b: ["Turmeric Scramble|Eggs,Spinach,Garlic,Turmeric,Pepper|scramble|Whisk eggs with turmeric and black pepper. Sauté spinach and garlic. Mix until soft.|22|2|240", "Za'atar Avocado|Eggs,Avocado,Radish,Sprouted Bread|raw|Toast bread. Mash avocado with lemon. Top with eggs and Za'atar spice.|24|18|380", "Bison & Rainbow|Bison,Peppers,Onion,Garlic|sear|Sear bison. Sauté peppers/onions in fats. Mix.|45|8|480", "Ginger Poach|Broth,Eggs,Bok Choy,Ginger|poach|Simmer broth with ginger. Poach bok choy and eggs gently.|20|4|220", "Turkey Sage Pan|Turkey,Fennel,Apple,Sage|sear|Form patties with sage. Sear. Serve with shaved fennel.|35|12|360", "Salmon Omelet|Salmon,Asparagus,Dill,Eggs|flat|Sauté asparagus. Whisk eggs with dill. Fill with salmon.|38|2|410", "Purple Toast|Sardines,Cabbage,Avocado,Sourdough|raw|Toast bread. Mash avocado. Top with sardines and purple slaw.|25|22|450", "Steak & Greens|Sirloin,Arugula,Tomato,Garlic|sear|Sear steak tips. Serve on arugula with garlic vinaigrette.|48|4|520", "Mushroom Frittata|Egg Whites,Mushrooms,Kale,Thyme|bake|Sauté veg. Pour egg whites. Bake at 375 until set.|25|6|280", "Zucchini Hash|Zucchini,Carrot,Garlic,Eggs|crisp|Grate zucchini. Squeeze dry. Crisp in pan. Top with eggs.|20|8|260"],
+    l: ["Pepperfin Molino|Tuna,Jalapeno,Ponzu,Sesame|raw|Slice cold tuna thin. Top with jalapeño and ponzu.|30|4|260", "Thai Beef Salad|Sirloin,Cucumber,Peppers,Lime|sear|Sear steak and chill. Julienne veg. Dress with lime.|45|16|480", "Chicken Chimichurri|Chicken,Parsley,Garlic,Vinegar|poach|Poach chicken and shred. Toss in heavy garlic-parsley sauce.|40|4|420", "Sardine Bowl|Sardines,Radish,Fennel,Lemon|raw|Shave fennel/radish. Toss with lemon. Top with sardines.|28|6|320", "Cold Flank|Flank,Asparagus,Tomato,Dijon|sear|Sear flank and chill. Serve with blanched asparagus.|42|6|450", "Bison Kofta|Bison,Cucumber,Yogurt,Cumin|bake|Form meatballs with cumin. Bake. Serve with tzatziki.|38|6|410", "Sumac Chicken|Chicken,Red Onion,Sumac|poach|Poach and shred. Mix with onion, sumac, and lemon.|35|4|390", "Salmon Boats|Salmon,Cucumber,Yogurt,Dill|raw|Stuff canned salmon salad into hollowed cucumber boats.|35|6|410", "Arugula Jar|Sirloin,Beets,Walnuts,Arugula|sear|Layer steak, beets, and walnuts. Dress with balsamic.|40|14|460", "Lemon Broccoli|Chicken,Broccoli,Garlic,Lemon|poach|Massage raw broccoli with lemon. Add poached chicken chunks.|38|10|390"],
+    d: ["Sea Steak Mikuni|Tuna,Daikon,Soy Sauce,Togarashi|sear|Sear tuna with spice crust. Slice. Serve over daikon.|38|6|320", "Whole Branzino|Branzino,Fennel,Lemon,Thyme|bake|Stuff with herbs. Roast at 400F for 20m.|40|0|450", "Miso Glazed Cod|Cod,Miso,Ginger,Bok Choy|bake|Glaze cod. Broil. Serve with steamed bok choy.|35|8|340", "Harissa Shrimp|Shrimp,Harissa,Cauliflower|sear|Sear shrimp. Serve over garlic riced cauliflower.|30|6|290", "Ginger Beef Stir|Flank,Ginger,Peppers,Snow Peas|sear|Quick sear beef. Stir fry high volume of peppers.|45|10|460", "Saffron Halibut|Halibut,Saffron,Tomatoes,Broth|poach|Poach halibut in saffron bone broth with tomatoes.|38|6|370", "Wild Salmon|Salmon,Asparagus,Garlic,Lemon|fish|Pan sear salmon. Roast asparagus in same pan.|42|6|480", "Clams Garlic|Clams,Garlic,Parsley,Broth|clams|Steam clams. Top with 1 cup of fresh chopped parsley.|30|8|320", "Bison Chili|Bison,Tomato,Peppers,Onion|stew|Slow simmer ground bison with peppers and onions.|48|18|560", "Steak Ribbons|Sirloin,Zucchini,Garlic|sear|Sear steak. Flash fry massive pile of zucchini noodles.|50|6|580"],
+    s: ["Double Scoop Shake|Whey,Water|shake|Mix post-workout.|50|2|240", "Turkey Roll-Ups|Turkey,Swiss,Pickle|raw|Roll turkey around swiss and pickle.|40|2|240", "Skyr Bowl|Skyr,Blueberries|raw|Mix densest yogurt with berries.|28|12|160", "Tuna Cup|Tuna,Celery|raw|Mix tuna with mustard. Scoop with celery.|40|2|180", "Steak Bites|Cooked Sirloin|raw|Cube cold leftover steak. Top with sea salt.|30|0|220"]
 };
 
-const jDB={"PLASMA FLUSH Juice":["Recovery","3c Watermelon, 1 Lime",1,32,140],"TITAN RED Juice":["Endurance","2 Beets, 2 Carrots, Pom",3,42,185],"ZENITH GREEN Juice":["Alkalizer","4 Kale, 1 Cucumber",4,18,90],"APOLLO GOLD Juice":["Anti-Inflammatory","2 Pears, Turmeric",1,45,195]};
+const rDB={"Sea Moss":["92 Minerals","2 TBSP Fasted.","Thyroid & Gut support."],"Kombucha":["Probiotic","4 OZ post-Lunch.","Enzyme support."],"Aqua Chair":["Hydro-Massage","Align body to zero-gravity.","Jets to glutes and lats.","20 Min Duration."],"Sauna":["HSP Induction","185°F Range.","20 Mins total.","Heavy metal detox sweat."],"Theragun":["Percussive","Float over muscles.","2m per limb.","Target Lats/Hips."],"Normatec":["Compression","Level 4 Intensity.","Full leg cycle.","30m Lymphatic flush."]}
+const pDB={"HEAVY LIFT":[{t:"PRE",h:"Theragun",d:"Glutes, Quads, Hams. 30s each."},{t:"GYM",h:"Heavy Lift",d:"Main compound movement."},{t:"POST",h:"Chair+Sauna",d:"20m Zero-Grav + 20m Sauna."}],"BOXING":[{t:"PRE",h:"Mobility",d:"Rotator cuffs & Calves."},{t:"GYM",h:"Boxing",d:"High intensity rounds."},{t:"POST",h:"Normatec",d:"Flush legs. NO SAUNA."}],"REFORM":[{t:"PRE",h:"Sweep",d:"Light full body percussion."},{t:"GYM",h:"Reform",d:"Time under tension."},{t:"POST",h:"Sauna",d:"20m HGH Boost."}],"RELAX":[{t:"PRE",h:"Walk",d:"Light movement."},{t:"GYM",h:"Relax",d:"Active recovery."},{t:"POST",h:"Massage",d:"Chair or Thera Knee Heat."}]}
 
-function stableSeed(s) {
-    let h = 0;
-    for(let i = 0; i < s.length; i++) h = Math.imul(31, h) + s.charCodeAt(i) | 0;
-    return Math.abs(h);
-}
-
-function saveData() {
-    localStorage.setItem('centurion_data', JSON.stringify({user, snackLog, selDate: selDate.toISOString()}));
-}
-
+// --- PERSISTENCE ---
+function saveData() { localStorage.setItem('centurion_v3_data', JSON.stringify({user, snackLog, selDate: selDate.toISOString()})); }
 function loadData() {
-    const raw = localStorage.getItem('centurion_data');
+    const raw = localStorage.getItem('centurion_v3_data');
     if (raw) {
         const data = JSON.parse(raw);
-        user = data.user || 'J';
-        snackLog = data.snackLog || {};
+        user = data.user || 'J'; snackLog = data.snackLog || {};
         if(data.selDate) selDate = new Date(data.selDate);
     }
 }
 
-function switchU(uID, save=true) {
-    user=uID;
-    document.querySelectorAll('.u-badge').forEach(b=>b.classList.remove('active'));
-    document.getElementById('b'+uID.toLowerCase()).classList.add('active');
-    render();
-    if(save) saveData();
-}
+// --- UTILS ---
+function stableSeed(s) { let h = 0; for(let i = 0; i < s.length; i++) h = Math.imul(31, h) + s.charCodeAt(i) | 0; return Math.abs(h); }
+function getCaDate() { let d = new Date(); d.setHours(12,0,0,0); return d; }
 
+// --- UI LOGIC ---
+function switchU(uID, save=true) {
+    user=uID; document.querySelectorAll('.u-badge').forEach(b=>b.classList.remove('active'));
+    document.getElementById('b'+uID.toLowerCase()).classList.add('active');
+    render(); if(save) saveData();
+}
 function changeW(d){ selDate.setDate(selDate.getDate() + (d*7)); render(); saveData(); }
-function resetD(){ selDate = new Date(); selDate.setHours(12,0,0,0); render(); saveData(); }
+function resetD(){ selDate = getCaDate(); render(); saveData(); }
 
 function openR(n, i, a, t) {
     document.getElementById('mTitle').innerText = n;
     const wrapper = document.getElementById('mImgWrapper');
     wrapper.innerHTML = '<div class="img-loader">✨ Chef is plating...</div>';
     
-    const cleanName = n.replace(/[^a-zA-Z ]/g, "").trim();
+    const cleanName = n.split('|')[0].replace(/[^a-zA-Z ]/g, "").trim();
     const seed = stableSeed(cleanName);
-    const prompt = encodeURIComponent(`food photo of ${cleanName}, plated, restaurant lighting`);
+    const prompt = encodeURIComponent(`high end food photography of ${cleanName}, plated, restaurant lighting`);
     const imgUrl = `https://image.pollinations.ai/prompt/${prompt}?width=800&height=600&seed=${seed}&nologo=true&model=turbo`;
 
     const img = document.createElement("img");
     img.className = "meal-img";
-    img.alt = cleanName;
-    img.decoding = "async";
     img.loading = "eager";
     
-    const kill = setTimeout(() => {
-        if (!img.complete) img.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80";
-    }, 4200000); // 70 Minutes
+    const kill = setTimeout(() => { if (!img.complete) img.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80"; }, 4200000); // 70m
 
-    img.onload = () => {
-        clearTimeout(kill);
-        img.style.opacity = "1";
-        img.style.filter = "blur(0)";
-    };
-    img.onerror = () => {
-        img.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80";
-        img.style.opacity = "1";
-        img.style.filter = "blur(0)";
-    };
+    img.onload = () => { clearTimeout(kill); img.style.opacity = "1"; img.style.filter = "blur(0)"; };
+    img.onerror = () => { img.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80"; img.style.opacity = "1"; img.style.filter = "blur(0)"; };
 
     wrapper.appendChild(img);
     setTimeout(() => img.src = imgUrl, 50);
@@ -156,15 +157,40 @@ function openR(n, i, a, t) {
     document.getElementById('masterModal').style.display = 'block';
 }
 
+function openRecovery(workout) {
+    const active = pDB[workout] || pDB["RELAX"];
+    let h = '<div class="rec-phase-list">';
+    active.forEach(p => {
+        h += `<div class="phase-item"><span class="phase-time">${p.t}</span><span class="phase-title">${p.h}</span><span class="phase-detail">${p.d}</span></div>`;
+    });
+    h += '</div>';
+    document.getElementById('mTitle').innerText = workout + " PROTOCOL";
+    document.getElementById('mImgWrapper').innerHTML = '';
+    document.getElementById('mBody').innerHTML = h;
+    document.getElementById('masterModal').style.display = 'block';
+}
+
+function openBio() {
+    const data = (user === 'J') ? {bf:19.0, m:99.0, w:217.0} : {bf:36.1, m:49.2, w:141.5};
+    const goals = (user === 'J') ? {bf:15.0, m:105.0} : {bf:28.0, m:55.0};
+    let h = `
+        <div class="bio-section"><div class="bio-title"><span>Body Fat %</span><span style="color:var(--green)">Goal: ${goals.bf}%</span></div>
+        <div class="bar-group"><div class="bar-track"><div class="bar-fill now" style="width:${(goals.bf/data.bf)*100}%"></div></div></div></div>
+        <div class="bio-section"><div class="bio-title"><span>Muscle Mass</span><span style="color:var(--green)">Goal: ${goals.m}lb</span></div>
+        <div class="bar-group"><div class="bar-track"><div class="bar-fill now" style="width:${(data.m/goals.m)*100}%"></div></div></div></div>
+    `;
+    document.getElementById('mTitle').innerText = "CLINICAL DATA";
+    document.getElementById('mImgWrapper').innerHTML = '';
+    document.getElementById('mBody').innerHTML = h;
+    document.getElementById('masterModal').style.display = 'block';
+}
+
 function render() {
     const start = new Date(selDate);
     start.setDate(selDate.getDate() - (selDate.getDay() === 0 ? 6 : selDate.getDay() - 1));
     const days = ["MON","TUE","WED","THU","FRI","SAT","SUN"];
     const tabs = document.getElementById('dayTabs'); tabs.innerHTML = '';
-    
-    document.getElementById('dateDisplay').innerText = start.toLocaleDateString('en-US', {month:'short', day:'numeric'}) + " - " + 
-        new Date(start.getTime() + 6*864e5).toLocaleDateString('en-US', {month:'short', day:'numeric'});
-
+    document.getElementById('dateDisplay').innerText = start.toLocaleDateString('en-US', {month:'short', day:'numeric'}) + " - " + new Date(start.getTime() + 6*864e5).toLocaleDateString('en-US', {month:'short', day:'numeric'});
     for(let i=0; i<7; i++) {
         let d = new Date(start.getTime() + i*864e5);
         const active = d.toDateString() === selDate.toDateString();
@@ -182,36 +208,32 @@ function showDay(dObj, idx) {
     const dateKey = dObj.toDateString();
     if(!snackLog[dateKey]) snackLog[dateKey] = [null, null];
     const snacks = snackLog[dateKey];
-
     const b = mDB.b[id % mDB.b.length].split('|');
     const l = mDB.l[id % mDB.l.length].split('|');
     const dn = mDB.d[id % mDB.d.length].split('|');
-    const jcs = ["PLASMA FLUSH Juice","TITAN RED Juice","ZENITH GREEN Juice","TITAN RED Juice","ZENITH GREEN Juice","TITAN RED Juice","APOLLO GOLD Juice"];
-    const j = jDB[jcs[idx]];
-
+    const workouts = ["HEAVY LIFT","BOXING","REFORM","BOXING","REFORM","CS4","RELAX"];
+    const w = workouts[idx];
     const sc = (user==='J') ? 1 : 0.6;
-    let p = Math.round((parseInt(b[4])+parseInt(l[4])+parseInt(dn[4]))*sc) + j[2];
-    let c = Math.round((parseInt(b[5])+parseInt(l[5])+parseInt(dn[5]))*sc) + j[3];
-    let k = Math.round((parseInt(b[6])+parseInt(l[6])+parseInt(dn[6]))*sc) + j[4];
+    let p = Math.round((parseInt(b[4])+parseInt(l[4])+parseInt(dn[4]))*sc);
+    let c = Math.round((parseInt(b[5])+parseInt(l[5])+parseInt(dn[5]))*sc);
+    let k = Math.round((parseInt(b[6])+parseInt(l[6])+parseInt(dn[6]))*sc);
     
     let snackHTML = '<div class="snack-grid">';
     snacks.forEach((sIdx, i) => {
-        if(sIdx === null) {
-            snackHTML += `<div class="snack-slot" onclick="openSnackSelector(${i})">＋ ADD</div>`;
-        } else {
+        if(sIdx === null) { snackHTML += `<div class="snack-slot" onclick="openSnackSelector(${i})">＋ SNACK</div>`; }
+        else {
             const s = mDB.s[sIdx].split('|');
             p += parseInt(s[4]); c += parseInt(s[5]); k += parseInt(s[6]);
-            snackHTML += `<div class="snack-slot filled" onclick="openR('${s[0]}','${s[1]}','','${s[3]}')">
-                <div class="remove-snack" onclick="event.stopPropagation(); removeSnack(${i})">✕</div>
-                <div class="snack-label">${s[0]}</div></div>`;
+            snackHTML += `<div class="snack-slot filled" onclick="openR('${s[0]}','${s[1]}','','${s[3]}')"><div class="remove-snack" onclick="event.stopPropagation(); removeSnack(${i})">✕</div><div class="snack-label">${s[0]}</div></div>`;
         }
     });
     snackHTML += '</div>';
 
     const g = (user==='J') ? {P:165, C:160, K:2200, F:35} : {P:105, C:55, K:1300, F:25};
-    let f = Math.round(c * 0.2);
-
     document.getElementById('dayContent').innerHTML = `
+        <div class="card" style="border-color:var(--blue); cursor:pointer" onclick="openRecovery('${w}')">
+            <div class="label">WORKOUT PROTOCOL</div><div class="value">${w} ➜</div>
+        </div>
         <div class="card">
             <div class="label">🍳 Breakfast</div><div class="value" onclick="openR('${b[0]}','${b[1]}','','${b[3]}')">${b[0]}</div>
             <div class="label">🥗 Lunch</div><div class="value" onclick="openR('${l[0]}','${l[1]}','','${l[3]}')">${l[0]}</div>
@@ -220,15 +242,13 @@ function showDay(dObj, idx) {
         </div>
         <div class="macro-dashboard">
             <div class="macro-row"><div class="macro-label"><span>PROTEIN</span><span>${p}g/${g.P}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min(p/g.P*100,100)}%; background:var(--g-pro)"></div></div></div>
-            <div class="macro-row"><div class="macro-label"><span>FIBER</span><span>${f}g/${g.F}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min(f/g.F*100,100)}%; background:var(--g-fib)"></div></div></div>
+            <div class="macro-row"><div class="macro-label"><span>FIBER</span><span>${Math.round(c*0.2)}g/${g.F}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((c*0.2)/g.F*100,100)}%; background:var(--g-fib)"></div></div></div>
             <div class="macro-row"><div class="macro-label"><span>CALORIES</span><span>${k}/${g.K}</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min(k/g.K*100,100)}%; background:var(--g-cal)"></div></div></div>
-        </div>
-        <div class="card" style="text-align:center"><div class="label">JUICE</div><div class="juice-name">${jcs[idx]}</div></div>`;
+        </div>`;
 }
 
 function openSnackSelector(slot) {
-    currentSlot = slot;
-    let h = '';
+    currentSlot = slot; let h = '';
     mDB.s.forEach((s, idx) => { h += `<div class="value" onclick="applySnack(${idx})">${s.split('|')[0]}</div>`; });
     document.getElementById('mTitle').innerText = "SELECT SNACK";
     document.getElementById('mImgWrapper').innerHTML = '';
@@ -240,7 +260,7 @@ function applySnack(idx) { snackLog[selDate.toDateString()][currentSlot] = idx; 
 function removeSnack(slot) { snackLog[selDate.toDateString()][slot] = null; render(); saveData(); }
 function closeM() { document.getElementById('masterModal').style.display = 'none'; }
 
-window.onload = () => { loadData(); render(); };
+window.onload = () => { loadData(); switchU(user, false); };
 </script>
 </body>
 </html>
