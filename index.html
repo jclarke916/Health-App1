@@ -438,6 +438,8 @@ function resetD(){ offset=0; selDate=getCaDate(); render(); }
 
 // --- PASTE THIS REPLACEMENT CODE ---
 
+// --- PASTE THIS REPLACEMENT CODE ---
+
 function render(){
     const mon=getMon(offset); const days=["MON","TUE","WED","THU","FRI","SAT","SUN"];
     const tabs=document.getElementById('dayTabs'); tabs.innerHTML='';
@@ -484,7 +486,7 @@ function showDay(dObj, idx){
     let wName = holidayName ? "RELAX" : sch[idx];
     
     const isHighOutput = ["HEAVY LIFT", "BOXING", "CS4"].includes(wName);
-    let baseP = 165, baseC = isHighOutput ? 160 : 85, baseK = isHighOutput ? 2200
+    let baseP = 165, baseC = isHighOutput ? 160 : 85, baseK = isHighOutput ? 2200 : 1800;
     const g=(user==='J') ? {P:baseP, C:baseC, K:baseK} : {P:105, C:55, K:1300};
     const sc = (user==='J') ? 1 : 0.6; 
 
@@ -516,7 +518,8 @@ function showDay(dObj, idx){
             </div>`;
         } else {
             let s = mDB.s[snacks[i]].split('|');
-            snackHTML += `<div class="snack-slot filled" onclick="openR('${s[0]}','${s[1]}','${s[2]}','${s[3]}')">
+            // FIX: Added .replace here to prevent "Za'atar" crash in snacks
+            snackHTML += `<div class="snack-slot filled" onclick="openR('${s[0].replace(/'/g, "\\'")}', '${s[1]}', '${s[2]}', '${s[3].replace(/'/g, "\\'")}')">
                 <div class="remove-snack" onclick="event.stopPropagation(); removeSnack(${i})">✕</div>
                 <span class="snack-label">${s[0]}</span>
                 <span class="snack-macro">${s[4]}P ${s[5]}C ${s[6]}K</span>
@@ -529,6 +532,7 @@ function showDay(dObj, idx){
     let cardClass = holidayName ? 'card holiday-card' : 'card';
 
     // RENDER
+    // FIX: Added .replace(/'/g, "\\'") to all openR calls below
     document.getElementById('dayContent').innerHTML = `
         ${holidayBannerHTML}
         <div style="background:#0a0a0a; border:1px solid #222; border-bottom:4px solid var(--blue); padding:15px; border-radius:12px; margin-bottom:25px; cursor:pointer;" onclick="openRecoveryPhase('${wName}')">
@@ -554,17 +558,17 @@ function showDay(dObj, idx){
         </div>
 
         <div class="label">🍳 Breakfast <span class="portion-tag">• ${ptn.b}</span></div>
-        <div class="value" <div class="value" onclick="openR('${b[0].replace(/'/g, "\\'")}', '${b[1]}', '${b[2]}', '${b[3].replace(/'/g, "\\'")}')">
+        <div class="value" onclick="openR('${b[0].replace(/'/g, "\\'")}', '${b[1]}', '${b[2]}', '${b[3].replace(/'/g, "\\'")}')">
             <span>${b[0]}</span> <span class="macro-pill">${Math.round(b[4]*sc)}P ${Math.round(b[5]*sc)}C ${Math.round(b[6]*sc)}K</span>
         </div>
         
         <div class="label">🥗 Lunch <span class="portion-tag">• ${ptn.l}</span></div>
-        <div class="value" <div class="value" onclick="openR('${l[0].replace(/'/g, "\\'")}', '${l[1]}', '${l[2]}', '${l[3].replace(/'/g, "\\'")}')">
+        <div class="value" onclick="openR('${l[0].replace(/'/g, "\\'")}', '${l[1]}', '${l[2]}', '${l[3].replace(/'/g, "\\'")}')">
             <span>${l[0]} 💼</span> <span class="macro-pill">${Math.round(l[4]*sc)}P ${Math.round(l[5]*sc)}C ${Math.round(l[6]*sc)}K</span>
         </div>
         
         <div class="label">🍽️ Dinner <span class="portion-tag">• ${ptn.d}</span></div>
-        <div class="value" <div class="value" onclick="openR('${dn[0].replace(/'/g, "\\'")}', '${dn[1]}', '${dn[2]}', '${dn[3].replace(/'/g, "\\'")}')">
+        <div class="value" onclick="openR('${dn[0].replace(/'/g, "\\'")}', '${dn[1]}', '${dn[2]}', '${dn[3].replace(/'/g, "\\'")}')">
             <span>${dn[0]}</span> <span class="macro-pill">${Math.round(dn[4]*sc)}P ${Math.round(dn[5]*sc)}C ${Math.round(dn[6]*sc)}K</span>
         </div>
         
@@ -577,6 +581,27 @@ function showDay(dObj, idx){
             <div class="macro-row"><div class="macro-label"><span>CALORIES</span><span>${k} / ${g.K}</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((k/g.K)*100,100)}%; background:var(--g-cal)"></div></div></div>
         </div>
         <div class="${cardClass}" style="text-align:center"><div class="label" style="color:var(--gold)">Cold Pressed Juice</div><div class="juice-name" onclick="openJ('${jcs[idx]}')">${jcs[idx]}</div></div>`;
+}
+
+// FIX: New robust openR function with AI seed and error handling
+function openR(n,i,a,t){
+    document.getElementById('mTitle').innerText = n; 
+    document.getElementById('mSub').innerText = ""; 
+
+    let cleanName = n.replace(/[^a-zA-Z ]/g, "");
+    let seed = Math.floor(Math.random() * 9999);
+    
+    // Using a reliable AI generation link with a seed
+    let imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanName + " cooked food michelin star photography")}?width=800&height=600&seed=${seed}&nologo=true&model=flux`;
+    let fallbackUrl = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80";
+
+    let imgHTML = `<img src="${imgUrl}" class="meal-img" 
+                        loading="lazy" 
+                        onerror="this.onerror=null;this.src='${fallbackUrl}';">`;
+
+    document.getElementById('mBody').innerHTML = imgHTML + `<br>${t}`;
+    document.getElementById('mTip').innerText = ""; 
+    document.getElementById('masterModal').style.display = 'block';
 }
 
 function openSnackSelector(slotIdx) {
