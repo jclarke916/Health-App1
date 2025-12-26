@@ -202,7 +202,8 @@ const jDB={"PLASMA FLUSH Juice":["Recovery","3c Watermelon, 1 Lime",1,32,140],"T
 // --- UPGRADED USER DATABASE (LONGEVITY PANEL) ---
 // --- UPGRADED LEARNING HUB DATABASE ---
 // --- UPGRADED DIAGNOSTIC ENGINE ---
-const uH = {
+// --- COMBINED MASTER DATABASE (AUTOIMMUNE + LONGEVITY) ---
+var uH = {
     'J': {
         now: {bf:19.0, m:99.0, w:217.0, vf:10, bmr:2050},
         goal: {bf:15.0, m:105.0, w:212.0, vf:7},
@@ -249,7 +250,8 @@ const uH = {
             
             // --- SUPPORTING ---
             crp: {val:1.8, goal:0.5, unit:" mg/L", name:"hs-CRP", lowerIsBetter:true, desc:"Inflammation level.", fix:"Rx: Curcumin + Cold Plunge."},
-            vitd: {val:35, goal:60, unit:" ng/mL", name:"Vitamin D3", lowerIsBetter:false, desc:"Immune regulation.", fix:"Rx: 5000IU D3 w/ fat."}
+            vitd: {val:35, goal:60, unit:" ng/mL", name:"Vitamin D3", lowerIsBetter:false, desc:"Immune regulation.", fix:"Rx: 5000IU D3 w/ fat."},
+            ferr: {val:30, goal:70, unit:" ng/mL", name:"Ferritin", lowerIsBetter:false, desc:"Iron storage status.", fix:"Rx: Heme Iron + Vit C."}
         },
         tests: {
             hang: {val:40, goal:60, unit:"s", name:"Dead Hang", desc:"Grip strength.", fix:"Rx: Daily hang practice."},
@@ -258,32 +260,36 @@ const uH = {
         }
     }
 };
-// Helper for life expectancy (keep this)
-function function calculateLifeExpectancy(uID) {
-    const u = uH[uID]; 
-    const l = u.labs; 
-    let baseAge = 78;
 
-    // Safety checks added (?.) to prevent crashing if data is missing
-    if(l.vo2?.val > 50) baseAge += 5; 
-    else if(l.vo2?.val > 40) baseAge += 2; 
-    else if(l.vo2?.val < 30) baseAge -= 3;
+// --- SAFE CALCULATOR (NO MODERN SYNTAX) ---
+function calculateLifeExpectancy(uID) {
+    var u = uH[uID];
+    if (!u) return { current: 0, potential: 0 };
+    
+    var l = u.labs;
+    var baseAge = 78;
 
-    if(l.apob?.val < 70) baseAge += 3; 
-    else if(l.apob?.val > 100) baseAge -= 3;
+    // Safety Checks: Check if metric exists AND value exists
+    if (l.vo2 && l.vo2.val > 50) baseAge += 5; 
+    else if (l.vo2 && l.vo2.val > 40) baseAge += 2; 
+    else if (l.vo2 && l.vo2.val < 30) baseAge -= 3;
 
-    if(l.hba1c?.val < 5.1) baseAge += 2; 
-    else if(l.hba1c?.val > 5.7) baseAge -= 4;
+    if (l.apob && l.apob.val < 70) baseAge += 3; 
+    else if (l.apob && l.apob.val > 100) baseAge -= 3;
 
-    if(u.now.vf < 6) baseAge += 2; 
-    else if(u.now.vf > 10) baseAge -= 3;
+    if (l.hba1c && l.hba1c.val < 5.1) baseAge += 2; 
+    else if (l.hba1c && l.hba1c.val > 5.7) baseAge -= 4;
+
+    if (u.now.vf < 6) baseAge += 2; 
+    else if (u.now.vf > 10) baseAge -= 3;
 
     // Autoimmune modifier for Sophia
-    if(l.ana?.val > 80) baseAge -= 2;
+    if (l.ana && l.ana.val > 80) baseAge -= 2;
 
-    let potential = baseAge + 8;
+    var potential = baseAge + 8;
     return { current: baseAge, potential: potential };
 }
+
 const hDB={b:"Festive Brunch|Protein Waffles, Turkey Bacon, Eggs, Berries|griddle|<strong>Prep:</strong> 15m • <strong>Cook:</strong> 15m<hr><strong>INGREDIENTS</strong><br>1 Scoop Whey (in batter) • 2 Eggs • 2 Slices Turkey Bacon • 1/2 Cup Berries<br><br><strong>1. ENJOY</strong><br>Prioritize the protein first, then enjoy the treats. Happy Holidays!|35|40|500",l:"The Holiday Feast|Lean Roast Meat, Green Beans, Sweet Potato|roast|<strong>Prep:</strong> 20m • <strong>Cook:</strong> 3h<hr><strong>INGREDIENTS</strong><br>8oz Roast Turkey or Beef • 1 Cup Green Beans • 1/2 Cup Sweet Potato<br><br><strong>1. FEAST</strong><br>Load up on the roast meat and green veggies. Go easy on the gravy.|50|40|600",d:"Leftovers Plate|Lean Protein, Veggies|raw|<strong>Prep:</strong> 5m<hr><strong>INGREDIENTS</strong><br>6oz Leftover Protein • Vegetable Side<br><br><strong>1. RECOVER</strong><br>Keep it light to help digestion before sleep.|30|10|300"};
 // --- FUNCTIONS ---
 
