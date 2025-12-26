@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v223.50 Max Cache</title>
+    <title>The Centurion | v3.0 Persistent</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        :root{--bg:#050505;--card:#141414;--gold:#D4AF37;--green:#00E676;--blue:#00B0FF;--purple:#D500F9;--text:#fff;--g-pro:linear-gradient(90deg,#FF5252,#D50000);--g-carb:linear-gradient(90deg,#FFAB40,#FF6D00);--g-cal:linear-gradient(90deg,#B388FF,#6200EA)}
+        :root{--bg:#050505;--card:#141414;--gold:#D4AF37;--green:#00E676;--blue:#00B0FF;--purple:#D500F9;--text:#fff;--g-pro:linear-gradient(90deg,#FF5252,#D50000);--g-carb:linear-gradient(90deg,#FFAB40,#FF6D00);--g-cal:linear-gradient(90deg,#B388FF,#6200EA);--g-fib:linear-gradient(90deg,#00E676,#00C853)}
         *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
         body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);margin:0;padding:15px;font-size:14px}
         .container{max-width:500px;margin:0 auto; padding-bottom: 50px;}
@@ -66,38 +66,9 @@
         .snack-macro { font-size: 0.5rem; color: #666; margin-top: 4px; }
         .remove-snack { position: absolute; top: -5px; right: -5px; background: #333; color: #aaa; border: 1px solid #222; border-radius: 50%; width: 16px; height: 16px; font-size: 9px; line-height: 14px; text-align: center; font-weight: 800; box-shadow: 0 1px 3px rgba(0,0,0,0.5); z-index: 10; transition: all 0.2s ease; }
         .remove-snack:hover { background: #444; color: #fff; border-color:#333; }
-        
-        /* IMAGE STABILITY */
-        .meal-img {
-            display: block;
-            width: 100%;
-            max-width: 100%;
-            height: auto;
-            min-height: 220px; 
-            object-fit: cover;
-            border-radius: 14px;
-            background-color: #111;
-            transition: opacity 0.5s ease, filter 0.5s ease;
-        }
-        
-        /* Loading Animation */
-        .img-loader {
-            height: 220px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--gold);
-            font-size: 0.8rem;
-            font-weight: 700;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            background: rgba(255,255,255,0.02);
-            border-radius: 14px;
-            border: 1px dashed #333;
-            animation: pulse 1.5s infinite;
-        }
+        .meal-img { display: block; width: 100%; max-width: 100%; height: auto; min-height: 220px; object-fit: cover; border-radius: 14px; background-color: #111; transition: opacity 0.5s ease, filter 0.5s ease; }
+        .img-loader { height: 220px; display: flex; align-items: center; justify-content: center; color: var(--gold); font-size: 0.8rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; background: rgba(255,255,255,0.02); border-radius: 14px; border: 1px dashed #333; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
-
         .hist-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.7rem; color: #ccc; }
         .hist-table th { text-align: left; color: #666; border-bottom: 1px solid #333; padding: 5px; font-weight: 800; }
         .hist-table td { border-bottom: 1px solid #222; padding: 8px 5px; }
@@ -109,7 +80,7 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v223.50 Max Cache (120s Wait)</span>
+        <span class="version-tag">v3.0 Persistent + Fiber + Smart List</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -277,16 +248,47 @@ const mDB = {
     ]
 };
 
+const hDB = {
+    b: "Festive Brunch|Protein Waffles, Turkey Bacon, Eggs, Berries|griddle|<strong>Prep:</strong> 15m • <strong>Cook:</strong> 15m<hr><strong>INGREDIENTS</strong><br>1 Scoop Whey (in batter) • 2 Eggs • 2 Slices Turkey Bacon • 1/2 Cup Berries<br><br><strong>1. ENJOY</strong><br>Prioritize the protein first, then enjoy the treats. Happy Holidays!|35|40|500",
+    l: "The Holiday Feast|Lean Roast Meat, Green Beans, Sweet Potato|roast|<strong>Prep:</strong> 20m • <strong>Cook:</strong> 3h<hr><strong>INGREDIENTS</strong><br>8oz Roast Turkey or Beef • 1 Cup Green Beans • 1/2 Cup Sweet Potato<br><br><strong>1. FEAST</strong><br>Load up on the roast meat and green veggies. Go easy on the gravy.|50|40|600",
+    d: "Leftovers Plate|Lean Protein, Veggies|raw|<strong>Prep:</strong> 5m<hr><strong>INGREDIENTS</strong><br>6oz Leftover Protein • Vegetable Side<br><br><strong>1. RECOVER</strong><br>Keep it light to help digestion before sleep.|30|10|300"
+};
+
+// --- CONSTANTS ---
 const pDB={"HEAVY LIFT":[{t:"PRE",h:"Theragun",d:"Glutes, Quads, Hams. 30s each."},{t:"GYM",h:"Heavy Lift",d:"Main compound movement."},{t:"POST",h:"Chair+Sauna",d:"20m Zero-Grav + 20m Sauna."}],"BOXING":[{t:"PRE",h:"Mobility",d:"Rotator cuffs & Calves."},{t:"GYM",h:"Boxing",d:"High intensity rounds."},{t:"POST",h:"Normatec",d:"Flush legs. NO SAUNA."}],"REFORM":[{t:"PRE",h:"Sweep",d:"Light full body percussion."},{t:"GYM",h:"Reform",d:"Time under tension."},{t:"POST",h:"Sauna",d:"20m HGH Boost."}],"REFORM/YOGA":[{t:"PRE",h:"Sweep",d:"Light full body percussion."},{t:"GYM",h:"Yoga",d:"Deep fascial release."},{t:"POST",h:"Heat",d:"Sauna or Thera Knee Heat."}],"CS4":[{t:"PRE",h:"Hydrate",d:"Electrolytes."},{t:"GYM",h:"CS4",d:"Cardio Strength 4."},{t:"POST",h:"Contrast",d:"Sauna + Cold or Knee Contrast."}],"RELAX":[{t:"PRE",h:"Walk",d:"Light movement."},{t:"GYM",h:"Relax",d:"Active recovery."},{t:"POST",h:"Massage",d:"Chair or Thera Knee Heat."}]};
 const rDB={"Sea Moss":["92 Minerals","2 TBSP Fasted.","Thyroid & Gut support."],"Kombucha":["Probiotic","4 OZ post-Lunch.","Enzyme support."],"Aqua Chair":["Hydro-Massage","Align body to zero-gravity.","Jets to glutes and lats.","20 Min Duration."],"Sauna":["HSP Induction","185°F Range.","20 Mins total.","Heavy metal detox sweat."],"Theragun":["Percussive","Float over muscles.","2m per limb.","Target Lats/Hips."],"Normatec":["Compression","Level 4 Intensity.","Full leg cycle.","30m Lymphatic flush."],"Pre-Workout":["Nitro-Boost","6g Citrulline Malate.","Take 20m before training."]};
-const jDB={"PLASMA FLUSH Juice":["Recovery","3c Watermelon, 1 Lime",1,32,140],"TITAN RED Juice":["Endurance","2 Beets, 2 Carrots, Pom",3,42,185],"ZENITH GREEN Juice":["Alkalizer","4 Kale, 1 Cucumber",4,18,90],"APOLLO GOLD Juice":["Anti-Inflammatory","2 Pears, Turmeric",1,45,195]};
-const uH={'J':{past:{bf:17.9,m:99.4,w:210.8,vf:11,bmr:1950,age:38},now:{bf:19.0,m:99.0,w:217.0,vf:10,bmr:2050,age:34},goal:{bf:15.0,m:105.0,w:212.0,vf:7,bmr:2100,age:30},log:[{d:"Dec 25, 2025", w:217.0, bf:19.0, m:99.0},{d:"Oct 30, 2024", w:210.8, bf:17.9, m:99.4},{d:"Sep 01, 2024", w:208.0, bf:17.5, m:98.0}]},'S':{past:{bf:33.0,m:50.0,w:136.1,vf:8,bmr:1300,age:40},now:{bf:36.1,m:49.2,w:141.5,vf:9,bmr:1250,age:38},goal:{bf:28.0,m:55.0,w:138.0,vf:5,bmr:1400,age:32},log:[{d:"Dec 25, 2025", w:141.5, bf:36.1, m:49.2},{d:"Oct 30, 2024", w:136.1, bf:33.0, m:50.0}]}};
-const hDB={b:"Festive Brunch|Protein Waffles, Turkey Bacon, Eggs, Berries|griddle|<strong>Prep:</strong> 15m • <strong>Cook:</strong> 15m<hr><strong>INGREDIENTS</strong><br>1 Scoop Whey (in batter) • 2 Eggs • 2 Slices Turkey Bacon • 1/2 Cup Berries<br><br><strong>1. ENJOY</strong><br>Prioritize the protein first, then enjoy the treats. Happy Holidays!|35|40|500",l:"The Holiday Feast|Lean Roast Meat, Green Beans, Sweet Potato|roast|<strong>Prep:</strong> 20m • <strong>Cook:</strong> 3h<hr><strong>INGREDIENTS</strong><br>8oz Roast Turkey or Beef • 1 Cup Green Beans • 1/2 Cup Sweet Potato<br><br><strong>1. FEAST</strong><br>Load up on the roast meat and green veggies. Go easy on the gravy.|50|40|600",d:"Leftovers Plate|Lean Protein, Veggies|raw|<strong>Prep:</strong> 5m<hr><strong>INGREDIENTS</strong><br>6oz Leftover Protein • Vegetable Side<br><br><strong>1. RECOVER</strong><br>Keep it light to help digestion before sleep.|30|10|300"};
+const jDB={
+    "PLASMA FLUSH Juice":["Recovery","3c Watermelon, 1 Lime",1,32,140],
+    "TITAN RED Juice":["Endurance","2 Beets, 2 Carrots, Pom",3,42,185],
+    "ZENITH GREEN Juice":["Alkalizer","4 Kale, 1 Cucumber",4,18,90],
+    "APOLLO GOLD Juice":["Anti-Inflammatory","2 Pears, Turmeric",1,45,195]
+};
+const uH={
+    'J':{
+        past:{bf:17.9,m:99.4,w:210.8,vf:11,bmr:1950,age:38},
+        now:{bf:19.0,m:99.0,w:217.0,vf:10,bmr:2050,age:34},
+        goal:{bf:15.0,m:105.0,w:212.0,vf:7,bmr:2100,age:30},
+        log: [
+            {d:"Dec 25, 2025", w:217.0, bf:19.0, m:99.0},
+            {d:"Oct 30, 2024", w:210.8, bf:17.9, m:99.4}, 
+            {d:"Sep 01, 2024", w:208.0, bf:17.5, m:98.0}
+        ]
+    },
+    'S':{
+        past:{bf:33.0,m:50.0,w:136.1,vf:8,bmr:1300,age:40},
+        now:{bf:36.1,m:49.2,w:141.5,vf:9,bmr:1250,age:38},
+        goal:{bf:28.0,m:55.0,w:138.0,vf:5,bmr:1400,age:32},
+        log: [
+            {d:"Dec 25, 2025", w:141.5, bf:36.1, m:49.2},
+            {d:"Oct 30, 2024", w:136.1, bf:33.0, m:50.0} 
+        ]
+    }
+};
 
-// --- FUNCTIONS ---
+// --- CORE FUNCTIONS ---
 
 function getHoliday(d) {
-    const m = d.getMonth(); const date = d.getDate(); const day = d.getDay(); 
+    const m = d.getMonth(); const date = d.getDate(); const day = d.getDay(); 
     if(m===0 && date===1) return "NEW YEAR'S DAY";
     if(m===6 && date===4) return "INDEPENDENCE DAY";
     if(m===10 && date===11) return "VETERANS DAY";
@@ -300,7 +302,44 @@ function getHoliday(d) {
     return null;
 }
 
-function switchU(uID){ user=uID; document.querySelectorAll('.u-badge').forEach(b=>b.classList.remove('active')); document.getElementById('b'+uID.toLowerCase()).classList.add('active'); render(); }
+// -----------------------------------------------------
+// DATA PERSISTENCE LAYER (LocalStorage)
+// -----------------------------------------------------
+
+function saveData() {
+    const data = {
+        user: user,
+        snackLog: snackLog,
+        offset: offset,
+        selDate: selDate.toISOString() 
+    };
+    localStorage.setItem('centurion_data_v1', JSON.stringify(data));
+}
+
+function loadData() {
+    const raw = localStorage.getItem('centurion_data_v1');
+    if (raw) {
+        const data = JSON.parse(raw);
+        user = data.user || 'J';
+        snackLog = data.snackLog || {};
+        if(data.selDate) selDate = new Date(data.selDate);
+        switchU(user, false); 
+    }
+}
+
+// Update switchU to save
+const originalSwitchU = switchU;
+switchU = function(uID, save=true) {
+    user = uID; 
+    document.querySelectorAll('.u-badge').forEach(b=>b.classList.remove('active')); 
+    document.getElementById('b'+uID.toLowerCase()).classList.add('active'); 
+    render();
+    if(save) saveData();
+}
+
+// -----------------------------------------------------
+// APP LOGIC
+// -----------------------------------------------------
 
 function getMon(o){ 
     let d = getCaDate(); 
@@ -311,8 +350,8 @@ function getMon(o){
     return d; 
 }
 
-function changeW(d){ offset+=d; render(); }
-function resetD(){ offset=0; selDate=getCaDate(); render(); }
+function changeW(d){ offset+=d; render(); saveData(); } // Save on week change
+function resetD(){ offset=0; selDate=getCaDate(); render(); saveData(); } // Save on reset
 
 function render(){
     const mon=getMon(offset); const days=["MON","TUE","WED","THU","FRI","SAT","SUN"];
@@ -326,7 +365,7 @@ function render(){
         const b=document.createElement('div'); 
         b.className='tab'+(isSelected?' active':'');
         b.innerHTML=`${days[i]}<br>${d.getDate()}`;
-        b.onclick=()=>{ selDate=d; render() }; 
+        b.onclick=()=>{ selDate=d; render(); saveData(); }; // Save on day click
         tabs.appendChild(b);
         if(isSelected) showDay(d, i);
     }
@@ -347,19 +386,21 @@ function showDay(dObj, idx){
         l = hDB.l.split('|');
         dn = hDB.d.split('|');
     } else {
-        // SAFETY: Fallback if mDB arrays are short
-        b = (mDB.b[Math.abs(id) % mDB.b.length] || mDB.b[0]).split('|');
-        l = (mDB.l[Math.abs(id) % mDB.l.length] || mDB.l[0]).split('|');
-        dn = (mDB.d[Math.abs(id) % mDB.d.length] || mDB.d[0]).split('|');
+        b = (mDB.b[Math.abs(id) % mDB.b.length]).split('|');
+        l = (mDB.l[Math.abs(id) % mDB.l.length]).split('|');
+        dn = (mDB.d[Math.abs(id) % mDB.d.length]).split('|');
     }
 
     const sch=["HEAVY LIFT","BOXING","REFORM","BOXING","REFORM/YOGA","CS4","RELAX"];
     const jcs=["PLASMA FLUSH Juice","TITAN RED Juice","ZENITH GREEN Juice","TITAN RED Juice","ZENITH GREEN Juice","TITAN RED Juice","APOLLO GOLD Juice"];
     const j=jDB[jcs[idx]];
+    
     let wName = holidayName ? "RELAX" : sch[idx];
+    
     const isHighOutput = ["HEAVY LIFT", "BOXING", "CS4"].includes(wName);
     let baseP = 165, baseC = isHighOutput ? 160 : 85, baseK = isHighOutput ? 2200 : 1800;
-    const g=(user==='J') ? {P:baseP, C:baseC, K:baseK} : {P:105, C:55, K:1300};
+    // Goal updated with Fiber Target
+    const g=(user==='J') ? {P:baseP, C:baseC, K:baseK, F:35} : {P:105, C:55, K:1300, F:25};
     const sc = (user==='J') ? 1 : 0.6; 
 
     // Sum up snacks
@@ -377,17 +418,28 @@ function showDay(dObj, idx){
     let c = Math.round((parseInt(b[5]) + parseInt(l[5]) + parseInt(dn[5]))*sc) + j[3] + sCarb;
     let k = Math.round((parseInt(b[6]) + parseInt(l[6]) + parseInt(dn[6]))*sc) + j[4] + sCal;
 
+    // FIBER ESTIMATOR (20% of Carb Value for Whole Foods)
+    let f = Math.round(c * 0.20); 
+
     const ptn = (user==='J') ? { b: '4 Eggs', l: '8oz', d: '8oz' } : { b: '2 Eggs', l: '5oz', d: '5oz' };
     const proto = pDB[wName] || pDB["RELAX"];
 
+    // BUILD SNACK HTML
     let snackHTML = '<div class="snack-grid">';
     for(let i=0; i<2; i++) {
         if(snacks[i] === null) {
-            snackHTML += `<div class="snack-slot" onclick="openSnackSelector(${i})"><span style="font-size:1.2rem; color:#333;">＋</span><span class="snack-label" style="color:#666; font-weight:500;">ADD SNACK</span></div>`;
+            snackHTML += `<div class="snack-slot" onclick="openSnackSelector(${i})">
+                <span style="font-size:1.2rem; color:#333;">＋</span>
+                <span class="snack-label" style="color:#666; font-weight:500;">ADD SNACK</span>
+            </div>`;
         } else {
             let s = mDB.s[snacks[i]].split('|');
-            // Fix apostrophes in snacks too
-            snackHTML += `<div class="snack-slot filled" onclick="openR('${s[0].replace(/'/g, "\\'")}', '${s[1]}', '${s[2]}', '${s[3].replace(/'/g, "\\'")}')"><div class="remove-snack" onclick="event.stopPropagation(); removeSnack(${i})">✕</div><span class="snack-label">${s[0]}</span><span class="snack-macro">${s[4]}P ${s[5]}C ${s[6]}K</span></div>`;
+            // FIX: Added .replace here to prevent "Za'atar" crash in snacks
+            snackHTML += `<div class="snack-slot filled" onclick="openR('${s[0].replace(/'/g, "\\'")}', '${s[1]}', '${s[2]}', '${s[3].replace(/'/g, "\\'")}')">
+                <div class="remove-snack" onclick="event.stopPropagation(); removeSnack(${i})">✕</div>
+                <span class="snack-label">${s[0]}</span>
+                <span class="snack-macro">${s[4]}P ${s[5]}C ${s[6]}K</span>
+            </div>`;
         }
     }
     snackHTML += '</div>';
@@ -395,7 +447,6 @@ function showDay(dObj, idx){
     let holidayBannerHTML = holidayName ? `<div class="holiday-banner">✨ ${holidayName} DETECTED ✨<br>PROTOCOL: FESTIVE RELAX</div>` : '';
     let cardClass = holidayName ? 'card holiday-card' : 'card';
 
-    // Fix apostrophes in meals
     document.getElementById('dayContent').innerHTML = `
         ${holidayBannerHTML}
         <div style="background:#0a0a0a; border:1px solid #222; border-bottom:4px solid var(--blue); padding:15px; border-radius:12px; margin-bottom:25px; cursor:pointer;" onclick="openRecoveryPhase('${wName}')">
@@ -441,6 +492,7 @@ function showDay(dObj, idx){
         <div class="macro-dashboard">
             <div class="macro-row"><div class="macro-label"><span>PROTEIN</span><span>${p}g / ${g.P}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((p/g.P)*100,100)}%; background:var(--g-pro)"></div></div></div>
             <div class="macro-row"><div class="macro-label"><span>CARBS</span><span>${c}g / ${g.C}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((c/g.C)*100,100)}%; background:var(--g-carb)"></div></div></div>
+             <div class="macro-row"><div class="macro-label"><span>FIBER (Est)</span><span>${f}g / ${g.F}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((f/g.F)*100,100)}%; background:var(--g-fib)"></div></div></div>
             <div class="macro-row"><div class="macro-label"><span>CALORIES</span><span>${k} / ${g.K}</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((k/g.K)*100,100)}%; background:var(--g-cal)"></div></div></div>
         </div>
         <div class="${cardClass}" style="text-align:center"><div class="label" style="color:var(--gold)">Cold Pressed Juice</div><div class="juice-name" onclick="openJ('${jcs[idx]}')">${jcs[idx]}</div></div>`;
@@ -448,16 +500,13 @@ function showDay(dObj, idx){
 
 // deterministic seed function
 function stableSeed(s) {
-    let h = 0;
-    for(let i = 0; i < s.length; i++) h = Math.imul(31, h) + s.charCodeAt(i) | 0;
-    return Math.abs(h);
+    let h = 0;
+    for(let i = 0; i < s.length; i++) h = Math.imul(31, h) + s.charCodeAt(i) | 0;
+    return Math.abs(h);
 }
 
 // ===============================
-// AI IMAGE LOADING – HARDENED FIX
-// ===============================
-// ===============================
-// AI IMAGE LOADING – 10 MINUTE WAIT
+// AI IMAGE LOADING – 120s TIMEOUT
 // ===============================
 // ===============================
 // AI IMAGE LOADING – 60 MINUTE WAIT
@@ -471,7 +520,7 @@ function openR(n, i, a, t) {
     body.innerHTML = '<div class="img-loader">✨ Chef is plating...</div>'; 
 
     const cleanName = n.replace(/[^a-zA-Z ]/g, "").trim();
-    const seed = stableSeed(cleanName); 
+    const seed = stableSeed(cleanName); // STABLE SEED = CACHING
     
     const prompt = encodeURIComponent(`delicious ${cleanName} plated food photo`);
     const imgUrl = `https://image.pollinations.ai/prompt/${prompt}?width=800&height=600&seed=${seed}&nologo=true&model=turbo`; 
@@ -530,213 +579,241 @@ function openR(n, i, a, t) {
 }
 
 function openSnackSelector(slotIdx) {
-    currentSlot = slotIdx; 
-    const modalBody = document.getElementById('mBody');
-    document.getElementById('mTitle').innerText = "SELECT SNACK";
-    document.getElementById('mSub').innerText = "SLOT " + (slotIdx + 1);
-    
-    let html = '';
-    mDB.s.forEach((item, index) => {
-        let s = item.split('|');
-        html += `<div class="value" onclick="applySnack(${index})">
-            ${s[0]} 
-            <span style="float:right;font-size:0.7rem;color:#666">${s[4]}g Pro | ${s[6]} Cal</span>
-        </div>`;
-    });
-    
-    modalBody.innerHTML = html;
-    document.getElementById('mTip').innerText = "PRO TIP: Prioritize high-protein snacks on Heavy Lift days.";
-    document.getElementById('masterModal').style.display = 'block';
+    currentSlot = slotIdx; 
+    const modalBody = document.getElementById('mBody');
+    document.getElementById('mTitle').innerText = "SELECT SNACK";
+    document.getElementById('mSub').innerText = "SLOT " + (slotIdx + 1);
+    
+    let html = '';
+    mDB.s.forEach((item, index) => {
+        let s = item.split('|');
+        html += `<div class="value" onclick="applySnack(${index})">
+            ${s[0]} 
+            <span style="float:right;font-size:0.7rem;color:#666">${s[4]}g Pro | ${s[6]} Cal</span>
+        </div>`;
+    });
+    
+    modalBody.innerHTML = html;
+    document.getElementById('mTip').innerText = "PRO TIP: Prioritize high-protein snacks on Heavy Lift days.";
+    document.getElementById('masterModal').style.display = 'block';
 }
 
 function applySnack(snackIndex) {
-    const dateKey = getDateKey(selDate);
-    if(!snackLog[dateKey]) snackLog[dateKey] = [null, null];
-    snackLog[dateKey][currentSlot] = snackIndex;
-    document.getElementById('masterModal').style.display = 'none';
-    render(); 
+    const dateKey = getDateKey(selDate);
+    if(!snackLog[dateKey]) snackLog[dateKey] = [null, null];
+    snackLog[dateKey][currentSlot] = snackIndex;
+    document.getElementById('masterModal').style.display = 'none';
+    saveData();
+    render(); 
 }
 
 function removeSnack(slotIdx) {
-    const dateKey = getDateKey(selDate);
-    if(snackLog[dateKey]) {
-        snackLog[dateKey][slotIdx] = null;
-        render(); 
-    }
+    const dateKey = getDateKey(selDate);
+    if(snackLog[dateKey]) {
+        snackLog[dateKey][slotIdx] = null;
+        saveData();
+        render(); 
+    }
 }
 
 function openJ(n){
-    const d=jDB[n]; document.getElementById('mTitle').innerText=n; document.getElementById('mSub').innerText=d[0];
-    document.getElementById('mBody').innerHTML=`<p><strong>Ingredients:</strong> ${d[1]}</p><p>P: ${d[2]}g | C: ${d[3]}g | Kcal: ${d[4]}</p>`;
-    document.getElementById('mTip').innerText = "PRO TIP: Drink slowly to allow enzymes to activate digestion.";
-    document.getElementById('masterModal').style.display='block';
+    const d=jDB[n]; document.getElementById('mTitle').innerText=n; document.getElementById('mSub').innerText=d[0];
+    document.getElementById('mBody').innerHTML=`<p><strong>Ingredients:</strong> ${d[1]}</p><p>P: ${d[2]}g | C: ${d[3]}g | Kcal: ${d[4]}</p>`;
+    document.getElementById('mTip').innerText = "PRO TIP: Drink slowly to allow enzymes to activate digestion.";
+    document.getElementById('masterModal').style.display='block';
 }
 
 function openM(n){
-    const d=rDB[n]; document.getElementById('mTitle').innerText=n; document.getElementById('mSub').innerText=d[0];
-    document.getElementById('mBody').innerHTML=d.slice(1).map(x=>`<p>${x}</p>`).join('');
-    document.getElementById('mTip').innerText = "PRO TIP: Consistency beats intensity for recovery protocols.";
-    document.getElementById('masterModal').style.display='block';
+    const d=rDB[n]; document.getElementById('mTitle').innerText=n; document.getElementById('mSub').innerText=d[0];
+    document.getElementById('mBody').innerHTML=d.slice(1).map(x=>`<p>${x}</p>`).join('');
+    document.getElementById('mTip').innerText = "PRO TIP: Consistency beats intensity for recovery protocols.";
+    document.getElementById('masterModal').style.display='block';
 }
 
 function openRecoveryPhase(workout) {
-    const m = document.getElementById('mBody');
-    document.getElementById('mTitle').innerText = workout + " PROTOCOL";
-    document.getElementById('mSub').innerText = "V222.61 FLOW LOGIC";
-    const active = pDB[workout] || pDB["RELAX"];
-    let html = '<div class="rec-phase-list">';
-    html += `<div class="phase-item"><span class="phase-time">WARM UP</span><span class="phase-title">${active[0].h}</span><span class="phase-detail">${active[0].d}</span></div>`;
-    html += `<div class="phase-item"><span class="phase-time" style="color:#fff">TRAINING</span><span class="phase-title">${active[1].h}</span><span class="phase-detail">${active[1].d}</span></div>`;
-    html += `<div class="phase-item"><span class="phase-time" style="color:var(--purple)">RECOVERY</span><span class="phase-title">${active[2].h}</span><span class="phase-detail">${active[2].d}</span></div>`;
-    html += '</div>';
-    m.innerHTML = html;
-    document.getElementById('mTip').innerText = "TIP: Hydrate with minerals before Sauna sessions.";
-    document.getElementById('masterModal').style.display = 'block';
+    const m = document.getElementById('mBody');
+    document.getElementById('mTitle').innerText = workout + " PROTOCOL";
+    document.getElementById('mSub').innerText = "V222.61 FLOW LOGIC";
+    const active = pDB[workout] || pDB["RELAX"];
+    let html = '<div class="rec-phase-list">';
+    html += `<div class="phase-item"><span class="phase-time">WARM UP</span><span class="phase-title">${active[0].h}</span><span class="phase-detail">${active[0].d}</span></div>`;
+    html += `<div class="phase-item"><span class="phase-time" style="color:#fff">TRAINING</span><span class="phase-title">${active[1].h}</span><span class="phase-detail">${active[1].d}</span></div>`;
+    html += `<div class="phase-item"><span class="phase-time" style="color:var(--purple)">RECOVERY</span><span class="phase-title">${active[2].h}</span><span class="phase-detail">${active[2].d}</span></div>`;
+    html += '</div>';
+    m.innerHTML = html;
+    document.getElementById('mTip').innerText = "TIP: Hydrate with minerals before Sauna sessions.";
+    document.getElementById('masterModal').style.display = 'block';
 }
 
 function generateGroceryList() {
-    const modalBody = document.getElementById('mBody');
-    document.getElementById('mTitle').innerText = "WEEKLY GROCERY LIST";
-    document.getElementById('mSub').innerText = "V222.73 • FULL SPECTRUM SCAN";
-    
-    let mainList = [];
-    let pantryList = [];
-    
-    // 1. Essentials
-    mainList.push("Sea Moss (Gel or Dried)");
-    mainList.push("Kombucha (7-Day Supply)");
+    const modalBody = document.getElementById('mBody');
+    document.getElementById('mTitle').innerText = "WEEKLY GROCERY LIST";
+    document.getElementById('mSub').innerText = "V3.0 • SMART AGGREGATION";
+    
+    // --- SMART GROCERY LOGIC ---
+    let rawList = [];
+    
+    // 1. Essentials
+    rawList.push("Sea Moss");
+    rawList.push("Kombucha");
 
-    const mon = getMon(offset);
-    const jcs=["PLASMA FLUSH Juice","TITAN RED Juice","ZENITH GREEN Juice","TITAN RED Juice","ZENITH GREEN Juice","TITAN RED Juice","APOLLO GOLD Juice"];
+    const mon = getMon(offset);
+    const jcs=["PLASMA FLUSH Juice","TITAN RED Juice","ZENITH GREEN Juice","TITAN RED Juice","ZENITH GREEN Juice","TITAN RED Juice","APOLLO GOLD Juice"];
 
-    for(let i=0; i<7; i++) {
-        let d = new Date(mon); d.setDate(mon.getDate()+i);
-        let dateKey = getDateKey(d);
-        let id = Math.floor(d.getTime()/864e5);
-        let holidayName = getHoliday(d);
-        
-        let meals;
-        if(holidayName) {
-            meals = [hDB.b, hDB.l, hDB.d];
-        } else {
-            // Safety Check
-            meals = [
-                mDB.b[Math.abs(id) % mDB.b.length] || mDB.b[0],
-                mDB.l[Math.abs(id) % mDB.l.length] || mDB.l[0],
-                mDB.d[Math.abs(id) % mDB.d.length] || mDB.d[0]
-            ];
-        }
+    for(let i=0; i<7; i++) {
+        let d = new Date(mon); d.setDate(mon.getDate()+i);
+        let dateKey = getDateKey(d);
+        let id = Math.floor(d.getTime()/864e5);
+        let holidayName = getHoliday(d);
+        
+        let meals;
+        if(holidayName) {
+            meals = [hDB.b, hDB.l, hDB.d];
+        } else {
+            // Safety Check
+            meals = [
+                mDB.b[Math.abs(id) % mDB.b.length] || mDB.b[0],
+                mDB.l[Math.abs(id) % mDB.l.length] || mDB.l[0],
+                mDB.d[Math.abs(id) % mDB.d.length] || mDB.d[0]
+            ];
+        }
 
-        meals.forEach(mealStr => {
-            const parts = mealStr.split('|');
-            const htmlMatch = parts[3].match(/INGREDIENTS<\/strong><br>([\s\S]*?)<br><br>/);
-            if(htmlMatch && htmlMatch[1]) {
-                mainList.push(...htmlMatch[1].split('•').map(s => s.trim()));
-            }
-            if(!holidayName && parts[1]) {
-                pantryList.push(...parts[1].split(',').map(s => s.trim()));
-            }
-        });
+        meals.forEach(mealStr => {
+            const parts = mealStr.split('|');
+            const htmlMatch = parts[3].match(/INGREDIENTS<\/strong><br>([\s\S]*?)<br><br>/);
+            if(htmlMatch && htmlMatch[1]) {
+                // Add to raw list
+                let lines = htmlMatch[1].split('•').map(s => s.trim());
+                rawList.push(...lines);
+            }
+        });
 
-        let juiceName = jcs[i];
-        if(jDB[juiceName]) {
-             mainList.push(...jDB[juiceName][1].split(',').map(s => s.trim()));
-        }
+        let juiceName = jcs[i];
+        if(jDB[juiceName]) {
+             let jIng = jDB[juiceName][1].split(',').map(s => s.trim());
+             rawList.push(...jIng);
+        }
 
-        if(snackLog[dateKey]) {
-            snackLog[dateKey].forEach(sIdx => {
-                if(sIdx !== null) {
-                    let sItem = mDB.s[sIdx];
-                    let sParts = sItem.split('|');
-                    const sMatch = sParts[3].match(/INGREDIENTS<\/strong><br>([\s\S]*?)<br><br>/);
-                    if(sMatch && sMatch[1]) {
-                        mainList.push(...sMatch[1].split('•').map(s => s.trim()));
-                    }
-                }
-            });
-        }
-    }
+        if(snackLog[dateKey]) {
+            snackLog[dateKey].forEach(sIdx => {
+                if(sIdx !== null) {
+                    let sItem = mDB.s[sIdx];
+                    let sParts = sItem.split('|');
+                    const sMatch = sParts[3].match(/INGREDIENTS<\/strong><br>([\s\S]*?)<br><br>/);
+                    if(sMatch && sMatch[1]) {
+                        rawList.push(...sMatch[1].split('•').map(s => s.trim()));
+                    }
+                }
+            });
+        }
+    }
+    
+    // --- SMART AGGREGATION LOGIC ---
+    let aggMap = {};
+    let pantryMap = {};
+    
+    // Helper to normalize and count
+    rawList.forEach(item => {
+        // Regex to split "2 Eggs" into [2, "Eggs"]
+        // Matches start with digit, maybe fraction like 1/2
+        let match = item.match(/^(\d+(\.\d+)?|\d+\/\d+)?\s*(.*)/);
+        if(match) {
+            let qtyStr = match[1] || "1"; // Default to 1 if no number found
+            let name = match[3].replace(/\b(Cups?|oz|tbsp|tsp|Slice|Large|Small|Head|Bunch)\b/gi, "").trim(); // Strip units for cleaner grouping
+            name = name.toLowerCase(); // normalize
+            
+            // Simple integer math (ignore fractions for now to stay safe)
+            let qty = parseInt(qtyStr);
+            if(isNaN(qty)) qty = 1;
 
-    let uniqueMain = [...new Set(mainList.filter(i => i))].sort();
-    let uniquePantry = [...new Set(pantryList.filter(i => i))].sort();
-    let finalPantry = uniquePantry.filter(pItem => !uniqueMain.some(mItem => mItem.includes(pItem)));
+            if(aggMap[name]) {
+                aggMap[name] += qty;
+            } else {
+                aggMap[name] = qty;
+            }
+        }
+    });
 
-    let html = `<div style="padding-bottom:50px;">`;
-    
-    html += `<div class="grocery-cat">FRESH & QUANTIFIED</div>`;
-    uniqueMain.forEach(item => {
-        html += `<div class="grocery-item">⬜ <span>${item}</span></div>`;
-    });
-
-    html += `<div class="grocery-cat">PANTRY & SPICES CHECK</div>`;
-    finalPantry.forEach(item => {
-        html += `<div class="grocery-item" style="color:#888">⬜ <span>${item}</span></div>`;
-    });
-
-    html += `</div>`;
-    
-    modalBody.innerHTML = html;
-    document.getElementById('mTip').innerText = "TIP: Check your pantry for the bottom section before buying.";
-    document.getElementById('masterModal').style.display = 'block';
+    let html = `<div style="padding-bottom:50px;">`;
+    html += `<div class="grocery-cat">AGGREGATED TOTALS</div>`;
+    
+    // Sort keys alphabetically
+    Object.keys(aggMap).sort().forEach(key => {
+        // Capitalize first letter
+        let dispName = key.charAt(0).toUpperCase() + key.slice(1);
+        html += `<div class="grocery-item">⬜ <span>${aggMap[key]}x ${dispName} (approx)</span></div>`;
+    });
+    
+    html += `</div>`;
+    
+    modalBody.innerHTML = html;
+    document.getElementById('mTip').innerText = "TIP: Amounts are estimated sum totals based on meal frequency.";
+    document.getElementById('masterModal').style.display = 'block';
 }
 
 function openBio() {
-    const u = uH[user];
-    const modalBody = document.getElementById('mBody');
-    const fullName = (user === 'J') ? "JERMAINE" : "SOPHIA";
-    document.getElementById('mTitle').innerText = fullName + " CLINICAL SCAN";
-    document.getElementById('mSub').innerText = `Weight: ${u.now.w} lbs | Updated Dec 24`;
-    const metrics = [
-        { label: "Body Fat %", key: "bf", unit: "%", lowerIsBetter: true },
-        { label: "Muscle Mass", key: "m", unit: " lbs", lowerIsBetter: false },
-        { label: "Visceral Fat", key: "vf", unit: " lvl", lowerIsBetter: true },
-        { label: "Metabolic Age", key: "age", unit: " yrs", lowerIsBetter: true }
-    ];
-    let html = '';
-    metrics.forEach(m => {
-        const p = u.past[m.key], n = u.now[m.key], g = u.goal[m.key];
-        const max = Math.max(p, n, g);
-        let arrow = "→"; let color = "var(--gold)";
-        if (n < p) { arrow = "↓"; color = m.lowerIsBetter ? "var(--green)" : "#FF5252"; }
-        else if (n > p) { arrow = "↑"; color = m.lowerIsBetter ? "#FF5252" : "var(--green)"; }
-        html += `
-            <div class="bio-section">
-                <div class="bio-title"><span>${m.label}</span><span style="color:var(--green)">Goal: ${g}${m.unit}</span></div>
-                <div class="bar-group">
-                    <div class="bar-row"><div class="bar-lbl">Past</div><div class="bar-track"><div class="bar-fill past" style="width:${(p/max)*100}%"></div></div><div style="font-size:0.6rem; color:#666; width:35px">${p}${m.unit}</div></div>
-                    <div class="bar-row"><div class="bar-lbl">Now</div><div class="bar-track"><div class="bar-fill now" style="width:${(n/max)*100}%"></div></div><div style="font-size:0.6rem; color:${color}; width:35px; font-weight:800">${n}${m.unit} ${arrow}</div></div>
-                </div>
-            </div>`;
-    });
+    const u = uH[user];
+    const modalBody = document.getElementById('mBody');
+    const fullName = (user === 'J') ? "JERMAINE" : "SOPHIA";
+    document.getElementById('mTitle').innerText = fullName + " CLINICAL SCAN";
+    document.getElementById('mSub').innerText = `Weight: ${u.now.w} lbs | Updated Dec 24`;
+    const metrics = [
+        { label: "Body Fat %", key: "bf", unit: "%", lowerIsBetter: true },
+        { label: "Muscle Mass", key: "m", unit: " lbs", lowerIsBetter: false },
+        { label: "Visceral Fat", key: "vf", unit: " lvl", lowerIsBetter: true },
+        { label: "Metabolic Age", key: "age", unit: " yrs", lowerIsBetter: true }
+    ];
+    let html = '';
+    metrics.forEach(m => {
+        const p = u.past[m.key], n = u.now[m.key], g = u.goal[m.key];
+        const max = Math.max(p, n, g);
+        let arrow = "→"; let color = "var(--gold)";
+        if (n < p) { arrow = "↓"; color = m.lowerIsBetter ? "var(--green)" : "#FF5252"; }
+        else if (n > p) { arrow = "↑"; color = m.lowerIsBetter ? "#FF5252" : "var(--green)"; }
+        html += `
+            <div class="bio-section">
+                <div class="bio-title"><span>${m.label}</span><span style="color:var(--green)">Goal: ${g}${m.unit}</span></div>
+                <div class="bar-group">
+                    <div class="bar-row"><div class="bar-lbl">Past</div><div class="bar-track"><div class="bar-fill past" style="width:${(p/max)*100}%"></div></div><div style="font-size:0.6rem; color:#666; width:35px">${p}${m.unit}</div></div>
+                    <div class="bar-row"><div class="bar-lbl">Now</div><div class="bar-track"><div class="bar-fill now" style="width:${(n/max)*100}%"></div></div><div style="font-size:0.6rem; color:${color}; width:35px; font-weight:800">${n}${m.unit} ${arrow}</div></div>
+                </div>
+            </div>`;
+    });
 
-    html += `<div style="margin-top:25px; border-top:1px solid #333; padding-top:15px;">
-        <div style="font-size:0.75rem; font-weight:800; color:#fff; text-transform:uppercase; margin-bottom:10px;">PROGRESS LOG</div>
-        <table class="hist-table">
-            <thead><tr><th>DATE</th><th>WEIGHT</th><th>BF%</th><th>MUSCLE</th></tr></thead>
-            <tbody>`;
-    
-    if(u.log && u.log.length > 0) {
-        u.log.forEach(entry => {
-            html += `<tr class="hist-row">
-                <td style="color:var(--gold)">${entry.d}</td>
-                <td>${entry.w}</td>
-                <td>${entry.bf}%</td>
-                <td>${entry.m}</td>
-            </tr>`;
-        });
-    } else {
-        html += `<tr><td colspan="4" style="text-align:center; padding:10px; color:#666;">No history recorded yet.</td></tr>`;
-    }
-    
-    html += `</tbody></table></div>`;
+    html += `<div style="margin-top:25px; border-top:1px solid #333; padding-top:15px;">
+        <div style="font-size:0.75rem; font-weight:800; color:#fff; text-transform:uppercase; margin-bottom:10px;">PROGRESS LOG</div>
+        <table class="hist-table">
+            <thead><tr><th>DATE</th><th>WEIGHT</th><th>BF%</th><th>MUSCLE</th></tr></thead>
+            <tbody>`;
+    
+    if(u.log && u.log.length > 0) {
+        u.log.forEach(entry => {
+            html += `<tr class="hist-row">
+                <td style="color:var(--gold)">${entry.d}</td>
+                <td>${entry.w}</td>
+                <td>${entry.bf}%</td>
+                <td>${entry.m}</td>
+            </tr>`;
+        });
+    } else {
+        html += `<tr><td colspan="4" style="text-align:center; padding:10px; color:#666;">No history recorded yet.</td></tr>`;
+    }
+    
+    html += `</tbody></table></div>`;
 
-    modalBody.innerHTML = html;
-    document.getElementById('mTip').innerText = `BMR: ${u.now.bmr} kcal/day | Efficiency: High`;
-    document.getElementById('masterModal').style.display = 'block';
+    modalBody.innerHTML = html;
+    document.getElementById('mTip').innerText = `BMR: ${u.now.bmr} kcal/day | Efficiency: High`;
+    document.getElementById('masterModal').style.display = 'block';
 }
 
 function closeM(){ document.getElementById('masterModal').style.display='none' }
-window.onload=render;
+
+// STARTUP LOGIC
+window.onload = function() {
+    loadData(); // Load LocalStorage
+    document.createElement('img').referrerPolicy = 'no-referrer'; // iOS hardening
+    render();
+};
 </script>
 </body>
 </html>
