@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v223.11 Flux Force</title>
+    <title>The Centurion | v223.30 Speed Core</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505;--card:#141414;--gold:#D4AF37;--green:#00E676;--blue:#00B0FF;--purple:#D500F9;--text:#fff;--g-pro:linear-gradient(90deg,#FF5252,#D50000);--g-carb:linear-gradient(90deg,#FFAB40,#FF6D00);--g-cal:linear-gradient(90deg,#B388FF,#6200EA)}
@@ -66,7 +66,19 @@
         .snack-macro { font-size: 0.5rem; color: #666; margin-top: 4px; }
         .remove-snack { position: absolute; top: -5px; right: -5px; background: #333; color: #aaa; border: 1px solid #222; border-radius: 50%; width: 16px; height: 16px; font-size: 9px; line-height: 14px; text-align: center; font-weight: 800; box-shadow: 0 1px 3px rgba(0,0,0,0.5); z-index: 10; transition: all 0.2s ease; }
         .remove-snack:hover { background: #444; color: #fff; border-color:#333; }
-        .meal-img { width: 100%; height: 250px; object-fit: cover; border-radius: 12px; margin-bottom: 20px; border: 1px solid #333; background:#111; }
+        
+        /* IMAGE STABILITY */
+        .meal-img {
+            display: block;
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+            min-height: 220px; 
+            object-fit: cover;
+            border-radius: 14px;
+            background-color: #111;
+        }
+
         .hist-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.7rem; color: #ccc; }
         .hist-table th { text-align: left; color: #666; border-bottom: 1px solid #333; padding: 5px; font-weight: 800; }
         .hist-table td { border-bottom: 1px solid #222; padding: 8px 5px; }
@@ -78,7 +90,7 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v223.11 Flux Force</span>
+        <span class="version-tag">v223.30 Speed Core</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -254,7 +266,7 @@ const hDB={b:"Festive Brunch|Protein Waffles, Turkey Bacon, Eggs, Berries|griddl
 // --- FUNCTIONS ---
 
 function getHoliday(d) {
-    const m = d.getMonth(); const date = d.getDate(); const day = d.getDay(); 
+    const m = d.getMonth(); const date = d.getDate(); const day = d.getDay(); 
     if(m===0 && date===1) return "NEW YEAR'S DAY";
     if(m===6 && date===4) return "INDEPENDENCE DAY";
     if(m===10 && date===11) return "VETERANS DAY";
@@ -413,264 +425,286 @@ function showDay(dObj, idx){
         <div class="${cardClass}" style="text-align:center"><div class="label" style="color:var(--gold)">Cold Pressed Juice</div><div class="juice-name" onclick="openJ('${jcs[idx]}')">${jcs[idx]}</div></div>`;
 }
 
+// deterministic seed function
+function stableSeed(s) {
+    let h = 0;
+    for(let i = 0; i < s.length; i++) h = Math.imul(31, h) + s.charCodeAt(i) | 0;
+    return Math.abs(h);
+}
+
 // ===============================
 // AI IMAGE LOADING – HARDENED FIX
 // ===============================
+function openR(n, i, a, t) {
+    document.getElementById('mTitle').innerText = n;
+    document.getElementById('mSub').innerText = "";
+    
+    const cleanName = n.replace(/[^a-zA-Z ]/g, "").trim();
+    const seed = stableSeed(cleanName); // Use the helper
+    
+    // Short, fast prompt
+    const prompt = encodeURIComponent(`delicious ${cleanName} plated food photo`);
+    const imgUrl = `https://image.pollinations.ai/prompt/${prompt}?width=800&height=600&seed=${seed}&nologo=true&model=turbo`; // Added model=turbo for speed
 
-function openR(n,i,a,t){
-    document.getElementById('mTitle').innerText = n; 
-    document.getElementById('mSub').innerText = ""; 
+    const body = document.getElementById('mBody');
+    body.innerHTML = ""; // Clear previous
 
-    let cleanName = n.replace(/[^a-zA-Z ]/g, "");
+    const img = document.createElement("img");
+    img.className = "meal-img";
+    img.loading = "eager"; // Force immediate load
+    img.alt = cleanName;
+    img.referrerPolicy = "no-referrer";
+    
+    // START HIDDEN FOR CINEMATIC REVEAL
+    img.style.opacity = "0";
+    img.style.filter = "blur(10px)";
+    img.style.transition = "opacity 0.4s ease, filter 0.4s ease";
+    
+    // Timeout Safety
+    const safeFallback = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80";
+    
+    const timer = setTimeout(() => {
+        if (!img.complete || img.naturalWidth === 0) { 
+            img.src = safeFallback; 
+        }
+    }, 7000); // 7s timeout
 
-    // Strong food-specific prompt (CRITICAL FIX)
-    let prompt = encodeURIComponent(
-        `professional food photography of ${cleanName}, plated, realistic, high detail, restaurant lighting, no text`
-    );
+    img.onload = () => {
+        clearTimeout(timer);
+        // REVEAL IMAGE
+        img.style.opacity = "1";
+        img.style.filter = "blur(0)";
+    };
+    
+    img.onerror = () => { 
+        clearTimeout(timer); 
+        img.src = safeFallback; 
+        // Ensure fallback is revealed too
+        img.style.opacity = "1";
+        img.style.filter = "blur(0)";
+    };
+    
+    // IMPORTANT: Delay assignment (Safari quirk)
+    setTimeout(() => {
+        img.src = imgUrl;
+    }, 30);
+    
+    body.appendChild(img);
+    
+    // Append text safely without breaking image loading
+    const txt = document.createElement("div");
+    txt.innerHTML = `<br>${t}`;
+    body.appendChild(txt);
 
-    // Random seed to avoid cache collisions
-    let seed = Math.floor(Math.random() * 99999);
-
-    // Using Pollinations (Fastest free generative API)
-    let imgUrl = `https://image.pollinations.ai/prompt/${prompt}?width=800&height=600&nologo=true&seed=${seed}&enhance=false`;
-
-    // Food-safe fallback pool
-    const foodFallbacks = [
-        "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80", // Salad
-        "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&q=80", // Steak
-        "https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=800&q=80"  // Veggies
-    ];
-    let fallbackUrl = foodFallbacks[Math.floor(Math.random() * foodFallbacks.length)];
-
-    // Retry-once logic + fallback
-    let imgHTML = `
-        <img src="${imgUrl}"
-             class="meal-img"
-             loading="lazy"
-             referrerpolicy="no-referrer"
-             alt="${cleanName}"
-             data-retry="0"
-             onerror="
-                if(this.dataset.retry === '0'){
-                    this.dataset.retry = '1';
-                    this.src = 'https://image.pollinations.ai/prompt/${prompt}?width=800&height=600&nologo=true&seed=${seed + 1}&enhance=false';
-                } else {
-                    this.onerror=null;
-                    this.src='${fallbackUrl}';
-                }
-             ">
-    `;
-
-    document.getElementById('mBody').innerHTML = imgHTML + `<br>${t}`;
-    document.getElementById('mTip').innerText = ""; 
-    document.getElementById('masterModal').style.display = 'block';
+    document.getElementById('mTip').innerText = "";
+    document.getElementById('masterModal').style.display = 'block';
 }
 
 function openSnackSelector(slotIdx) {
-    currentSlot = slotIdx; 
-    const modalBody = document.getElementById('mBody');
-    document.getElementById('mTitle').innerText = "SELECT SNACK";
-    document.getElementById('mSub').innerText = "SLOT " + (slotIdx + 1);
-    
-    let html = '';
-    mDB.s.forEach((item, index) => {
-        let s = item.split('|');
-        html += `<div class="value" onclick="applySnack(${index})">
-            ${s[0]} 
-            <span style="float:right;font-size:0.7rem;color:#666">${s[4]}g Pro | ${s[6]} Cal</span>
-        </div>`;
-    });
-    
-    modalBody.innerHTML = html;
-    document.getElementById('mTip').innerText = "PRO TIP: Prioritize high-protein snacks on Heavy Lift days.";
-    document.getElementById('masterModal').style.display = 'block';
+    currentSlot = slotIdx; 
+    const modalBody = document.getElementById('mBody');
+    document.getElementById('mTitle').innerText = "SELECT SNACK";
+    document.getElementById('mSub').innerText = "SLOT " + (slotIdx + 1);
+    
+    let html = '';
+    mDB.s.forEach((item, index) => {
+        let s = item.split('|');
+        html += `<div class="value" onclick="applySnack(${index})">
+            ${s[0]} 
+            <span style="float:right;font-size:0.7rem;color:#666">${s[4]}g Pro | ${s[6]} Cal</span>
+        </div>`;
+    });
+    
+    modalBody.innerHTML = html;
+    document.getElementById('mTip').innerText = "PRO TIP: Prioritize high-protein snacks on Heavy Lift days.";
+    document.getElementById('masterModal').style.display = 'block';
 }
 
 function applySnack(snackIndex) {
-    const dateKey = getDateKey(selDate);
-    if(!snackLog[dateKey]) snackLog[dateKey] = [null, null];
-    snackLog[dateKey][currentSlot] = snackIndex;
-    document.getElementById('masterModal').style.display = 'none';
-    render(); 
+    const dateKey = getDateKey(selDate);
+    if(!snackLog[dateKey]) snackLog[dateKey] = [null, null];
+    snackLog[dateKey][currentSlot] = snackIndex;
+    document.getElementById('masterModal').style.display = 'none';
+    render(); 
 }
 
 function removeSnack(slotIdx) {
-    const dateKey = getDateKey(selDate);
-    if(snackLog[dateKey]) {
-        snackLog[dateKey][slotIdx] = null;
-        render(); 
-    }
+    const dateKey = getDateKey(selDate);
+    if(snackLog[dateKey]) {
+        snackLog[dateKey][slotIdx] = null;
+        render(); 
+    }
 }
 
 function openJ(n){
-    const d=jDB[n]; document.getElementById('mTitle').innerText=n; document.getElementById('mSub').innerText=d[0];
-    document.getElementById('mBody').innerHTML=`<p><strong>Ingredients:</strong> ${d[1]}</p><p>P: ${d[2]}g | C: ${d[3]}g | Kcal: ${d[4]}</p>`;
-    document.getElementById('mTip').innerText = "PRO TIP: Drink slowly to allow enzymes to activate digestion.";
-    document.getElementById('masterModal').style.display='block';
+    const d=jDB[n]; document.getElementById('mTitle').innerText=n; document.getElementById('mSub').innerText=d[0];
+    document.getElementById('mBody').innerHTML=`<p><strong>Ingredients:</strong> ${d[1]}</p><p>P: ${d[2]}g | C: ${d[3]}g | Kcal: ${d[4]}</p>`;
+    document.getElementById('mTip').innerText = "PRO TIP: Drink slowly to allow enzymes to activate digestion.";
+    document.getElementById('masterModal').style.display='block';
 }
 
 function openM(n){
-    const d=rDB[n]; document.getElementById('mTitle').innerText=n; document.getElementById('mSub').innerText=d[0];
-    document.getElementById('mBody').innerHTML=d.slice(1).map(x=>`<p>${x}</p>`).join('');
-    document.getElementById('mTip').innerText = "PRO TIP: Consistency beats intensity for recovery protocols.";
-    document.getElementById('masterModal').style.display='block';
+    const d=rDB[n]; document.getElementById('mTitle').innerText=n; document.getElementById('mSub').innerText=d[0];
+    document.getElementById('mBody').innerHTML=d.slice(1).map(x=>`<p>${x}</p>`).join('');
+    document.getElementById('mTip').innerText = "PRO TIP: Consistency beats intensity for recovery protocols.";
+    document.getElementById('masterModal').style.display='block';
 }
 
 function openRecoveryPhase(workout) {
-    const m = document.getElementById('mBody');
-    document.getElementById('mTitle').innerText = workout + " PROTOCOL";
-    document.getElementById('mSub').innerText = "V222.61 FLOW LOGIC";
-    const active = pDB[workout] || pDB["RELAX"];
-    let html = '<div class="rec-phase-list">';
-    html += `<div class="phase-item"><span class="phase-time">WARM UP</span><span class="phase-title">${active[0].h}</span><span class="phase-detail">${active[0].d}</span></div>`;
-    html += `<div class="phase-item"><span class="phase-time" style="color:#fff">TRAINING</span><span class="phase-title">${active[1].h}</span><span class="phase-detail">${active[1].d}</span></div>`;
-    html += `<div class="phase-item"><span class="phase-time" style="color:var(--purple)">RECOVERY</span><span class="phase-title">${active[2].h}</span><span class="phase-detail">${active[2].d}</span></div>`;
-    html += '</div>';
-    m.innerHTML = html;
-    document.getElementById('mTip').innerText = "TIP: Hydrate with minerals before Sauna sessions.";
-    document.getElementById('masterModal').style.display = 'block';
+    const m = document.getElementById('mBody');
+    document.getElementById('mTitle').innerText = workout + " PROTOCOL";
+    document.getElementById('mSub').innerText = "V222.61 FLOW LOGIC";
+    const active = pDB[workout] || pDB["RELAX"];
+    let html = '<div class="rec-phase-list">';
+    html += `<div class="phase-item"><span class="phase-time">WARM UP</span><span class="phase-title">${active[0].h}</span><span class="phase-detail">${active[0].d}</span></div>`;
+    html += `<div class="phase-item"><span class="phase-time" style="color:#fff">TRAINING</span><span class="phase-title">${active[1].h}</span><span class="phase-detail">${active[1].d}</span></div>`;
+    html += `<div class="phase-item"><span class="phase-time" style="color:var(--purple)">RECOVERY</span><span class="phase-title">${active[2].h}</span><span class="phase-detail">${active[2].d}</span></div>`;
+    html += '</div>';
+    m.innerHTML = html;
+    document.getElementById('mTip').innerText = "TIP: Hydrate with minerals before Sauna sessions.";
+    document.getElementById('masterModal').style.display = 'block';
 }
 
 function generateGroceryList() {
-    const modalBody = document.getElementById('mBody');
-    document.getElementById('mTitle').innerText = "WEEKLY GROCERY LIST";
-    document.getElementById('mSub').innerText = "V222.73 • FULL SPECTRUM SCAN";
-    
-    let mainList = [];
-    let pantryList = [];
-    
-    // 1. Essentials
-    mainList.push("Sea Moss (Gel or Dried)");
-    mainList.push("Kombucha (7-Day Supply)");
+    const modalBody = document.getElementById('mBody');
+    document.getElementById('mTitle').innerText = "WEEKLY GROCERY LIST";
+    document.getElementById('mSub').innerText = "V222.73 • FULL SPECTRUM SCAN";
+    
+    let mainList = [];
+    let pantryList = [];
+    
+    // 1. Essentials
+    mainList.push("Sea Moss (Gel or Dried)");
+    mainList.push("Kombucha (7-Day Supply)");
 
-    const mon = getMon(offset);
-    const jcs=["PLASMA FLUSH Juice","TITAN RED Juice","ZENITH GREEN Juice","TITAN RED Juice","ZENITH GREEN Juice","TITAN RED Juice","APOLLO GOLD Juice"];
+    const mon = getMon(offset);
+    const jcs=["PLASMA FLUSH Juice","TITAN RED Juice","ZENITH GREEN Juice","TITAN RED Juice","ZENITH GREEN Juice","TITAN RED Juice","APOLLO GOLD Juice"];
 
-    for(let i=0; i<7; i++) {
-        let d = new Date(mon); d.setDate(mon.getDate()+i);
-        let dateKey = getDateKey(d);
-        let id = Math.floor(d.getTime()/864e5);
-        let holidayName = getHoliday(d);
-        
-        let meals;
-        if(holidayName) {
-            meals = [hDB.b, hDB.l, hDB.d];
-        } else {
-            // Safety Check
-            meals = [
-                mDB.b[Math.abs(id) % mDB.b.length] || mDB.b[0],
-                mDB.l[Math.abs(id) % mDB.l.length] || mDB.l[0],
-                mDB.d[Math.abs(id) % mDB.d.length] || mDB.d[0]
-            ];
-        }
+    for(let i=0; i<7; i++) {
+        let d = new Date(mon); d.setDate(mon.getDate()+i);
+        let dateKey = getDateKey(d);
+        let id = Math.floor(d.getTime()/864e5);
+        let holidayName = getHoliday(d);
+        
+        let meals;
+        if(holidayName) {
+            meals = [hDB.b, hDB.l, hDB.d];
+        } else {
+            // Safety Check
+            meals = [
+                mDB.b[Math.abs(id) % mDB.b.length] || mDB.b[0],
+                mDB.l[Math.abs(id) % mDB.l.length] || mDB.l[0],
+                mDB.d[Math.abs(id) % mDB.d.length] || mDB.d[0]
+            ];
+        }
 
-        meals.forEach(mealStr => {
-            const parts = mealStr.split('|');
-            const htmlMatch = parts[3].match(/INGREDIENTS<\/strong><br>([\s\S]*?)<br><br>/);
-            if(htmlMatch && htmlMatch[1]) {
-                mainList.push(...htmlMatch[1].split('•').map(s => s.trim()));
-            }
-            if(!holidayName && parts[1]) {
-                pantryList.push(...parts[1].split(',').map(s => s.trim()));
-            }
-        });
+        meals.forEach(mealStr => {
+            const parts = mealStr.split('|');
+            const htmlMatch = parts[3].match(/INGREDIENTS<\/strong><br>([\s\S]*?)<br><br>/);
+            if(htmlMatch && htmlMatch[1]) {
+                mainList.push(...htmlMatch[1].split('•').map(s => s.trim()));
+            }
+            if(!holidayName && parts[1]) {
+                pantryList.push(...parts[1].split(',').map(s => s.trim()));
+            }
+        });
 
-        let juiceName = jcs[i];
-        if(jDB[juiceName]) {
-             mainList.push(...jDB[juiceName][1].split(',').map(s => s.trim()));
-        }
+        let juiceName = jcs[i];
+        if(jDB[juiceName]) {
+             mainList.push(...jDB[juiceName][1].split(',').map(s => s.trim()));
+        }
 
-        if(snackLog[dateKey]) {
-            snackLog[dateKey].forEach(sIdx => {
-                if(sIdx !== null) {
-                    let sItem = mDB.s[sIdx];
-                    let sParts = sItem.split('|');
-                    const sMatch = sParts[3].match(/INGREDIENTS<\/strong><br>([\s\S]*?)<br><br>/);
-                    if(sMatch && sMatch[1]) {
-                        mainList.push(...sMatch[1].split('•').map(s => s.trim()));
-                    }
-                }
-            });
-        }
-    }
+        if(snackLog[dateKey]) {
+            snackLog[dateKey].forEach(sIdx => {
+                if(sIdx !== null) {
+                    let sItem = mDB.s[sIdx];
+                    let sParts = sItem.split('|');
+                    const sMatch = sParts[3].match(/INGREDIENTS<\/strong><br>([\s\S]*?)<br><br>/);
+                    if(sMatch && sMatch[1]) {
+                        mainList.push(...sMatch[1].split('•').map(s => s.trim()));
+                    }
+                }
+            });
+        }
+    }
 
-    let uniqueMain = [...new Set(mainList.filter(i => i))].sort();
-    let uniquePantry = [...new Set(pantryList.filter(i => i))].sort();
-    let finalPantry = uniquePantry.filter(pItem => !uniqueMain.some(mItem => mItem.includes(pItem)));
+    let uniqueMain = [...new Set(mainList.filter(i => i))].sort();
+    let uniquePantry = [...new Set(pantryList.filter(i => i))].sort();
+    let finalPantry = uniquePantry.filter(pItem => !uniqueMain.some(mItem => mItem.includes(pItem)));
 
-    let html = `<div style="padding-bottom:50px;">`;
-    html += `<div class="grocery-cat">FRESH & QUANTIFIED</div>`;
-    uniqueMain.forEach(item => {
-        html += `<div class="grocery-item">⬜ <span>${item}</span></div>`;
-    });
-    html += `<div class="grocery-cat">PANTRY & SPICES CHECK</div>`;
-    finalPantry.forEach(item => {
-        html += `<div class="grocery-item" style="color:#888">⬜ <span>${item}</span></div>`;
-    });
-    html += `</div>`;
-    
-    modalBody.innerHTML = html;
-    document.getElementById('mTip').innerText = "TIP: Check your pantry for the bottom section before buying.";
-    document.getElementById('masterModal').style.display = 'block';
+    let html = `<div style="padding-bottom:50px;">`;
+    
+    html += `<div class="grocery-cat">FRESH & QUANTIFIED</div>`;
+    uniqueMain.forEach(item => {
+        html += `<div class="grocery-item">⬜ <span>${item}</span></div>`;
+    });
+
+    html += `<div class="grocery-cat">PANTRY & SPICES CHECK</div>`;
+    finalPantry.forEach(item => {
+        html += `<div class="grocery-item" style="color:#888">⬜ <span>${item}</span></div>`;
+    });
+
+    html += `</div>`;
+    
+    modalBody.innerHTML = html;
+    document.getElementById('mTip').innerText = "TIP: Check your pantry for the bottom section before buying.";
+    document.getElementById('masterModal').style.display = 'block';
 }
 
 function openBio() {
-    const u = uH[user];
-    const modalBody = document.getElementById('mBody');
-    const fullName = (user === 'J') ? "JERMAINE" : "SOPHIA";
-    document.getElementById('mTitle').innerText = fullName + " CLINICAL SCAN";
-    document.getElementById('mSub').innerText = `Weight: ${u.now.w} lbs | Updated Dec 24`;
-    const metrics = [
-        { label: "Body Fat %", key: "bf", unit: "%", lowerIsBetter: true },
-        { label: "Muscle Mass", key: "m", unit: " lbs", lowerIsBetter: false },
-        { label: "Visceral Fat", key: "vf", unit: " lvl", lowerIsBetter: true },
-        { label: "Metabolic Age", key: "age", unit: " yrs", lowerIsBetter: true }
-    ];
-    let html = '';
-    metrics.forEach(m => {
-        const p = u.past[m.key], n = u.now[m.key], g = u.goal[m.key];
-        const max = Math.max(p, n, g);
-        let arrow = "→"; let color = "var(--gold)";
-        if (n < p) { arrow = "↓"; color = m.lowerIsBetter ? "var(--green)" : "#FF5252"; }
-        else if (n > p) { arrow = "↑"; color = m.lowerIsBetter ? "#FF5252" : "var(--green)"; }
-        html += `
-            <div class="bio-section">
-                <div class="bio-title"><span>${m.label}</span><span style="color:var(--green)">Goal: ${g}${m.unit}</span></div>
-                <div class="bar-group">
-                    <div class="bar-row"><div class="bar-lbl">Past</div><div class="bar-track"><div class="bar-fill past" style="width:${(p/max)*100}%"></div></div><div style="font-size:0.6rem; color:#666; width:35px">${p}${m.unit}</div></div>
-                    <div class="bar-row"><div class="bar-lbl">Now</div><div class="bar-track"><div class="bar-fill now" style="width:${(n/max)*100}%"></div></div><div style="font-size:0.6rem; color:${color}; width:35px; font-weight:800">${n}${m.unit} ${arrow}</div></div>
-                </div>
-            </div>`;
-    });
+    const u = uH[user];
+    const modalBody = document.getElementById('mBody');
+    const fullName = (user === 'J') ? "JERMAINE" : "SOPHIA";
+    document.getElementById('mTitle').innerText = fullName + " CLINICAL SCAN";
+    document.getElementById('mSub').innerText = `Weight: ${u.now.w} lbs | Updated Dec 24`;
+    const metrics = [
+        { label: "Body Fat %", key: "bf", unit: "%", lowerIsBetter: true },
+        { label: "Muscle Mass", key: "m", unit: " lbs", lowerIsBetter: false },
+        { label: "Visceral Fat", key: "vf", unit: " lvl", lowerIsBetter: true },
+        { label: "Metabolic Age", key: "age", unit: " yrs", lowerIsBetter: true }
+    ];
+    let html = '';
+    metrics.forEach(m => {
+        const p = u.past[m.key], n = u.now[m.key], g = u.goal[m.key];
+        const max = Math.max(p, n, g);
+        let arrow = "→"; let color = "var(--gold)";
+        if (n < p) { arrow = "↓"; color = m.lowerIsBetter ? "var(--green)" : "#FF5252"; }
+        else if (n > p) { arrow = "↑"; color = m.lowerIsBetter ? "#FF5252" : "var(--green)"; }
+        html += `
+            <div class="bio-section">
+                <div class="bio-title"><span>${m.label}</span><span style="color:var(--green)">Goal: ${g}${m.unit}</span></div>
+                <div class="bar-group">
+                    <div class="bar-row"><div class="bar-lbl">Past</div><div class="bar-track"><div class="bar-fill past" style="width:${(p/max)*100}%"></div></div><div style="font-size:0.6rem; color:#666; width:35px">${p}${m.unit}</div></div>
+                    <div class="bar-row"><div class="bar-lbl">Now</div><div class="bar-track"><div class="bar-fill now" style="width:${(n/max)*100}%"></div></div><div style="font-size:0.6rem; color:${color}; width:35px; font-weight:800">${n}${m.unit} ${arrow}</div></div>
+                </div>
+            </div>`;
+    });
 
-    html += `<div style="margin-top:25px; border-top:1px solid #333; padding-top:15px;">
-        <div style="font-size:0.75rem; font-weight:800; color:#fff; text-transform:uppercase; margin-bottom:10px;">PROGRESS LOG</div>
-        <table class="hist-table">
-            <thead><tr><th>DATE</th><th>WEIGHT</th><th>BF%</th><th>MUSCLE</th></tr></thead>
-            <tbody>`;
-    
-    if(u.log && u.log.length > 0) {
-        u.log.forEach(entry => {
-            html += `<tr class="hist-row">
-                <td style="color:var(--gold)">${entry.d}</td>
-                <td>${entry.w}</td>
-                <td>${entry.bf}%</td>
-                <td>${entry.m}</td>
-            </tr>`;
-        });
-    } else {
-        html += `<tr><td colspan="4" style="text-align:center; padding:10px; color:#666;">No history recorded yet.</td></tr>`;
-    }
-    
-    html += `</tbody></table></div>`;
+    html += `<div style="margin-top:25px; border-top:1px solid #333; padding-top:15px;">
+        <div style="font-size:0.75rem; font-weight:800; color:#fff; text-transform:uppercase; margin-bottom:10px;">PROGRESS LOG</div>
+        <table class="hist-table">
+            <thead><tr><th>DATE</th><th>WEIGHT</th><th>BF%</th><th>MUSCLE</th></tr></thead>
+            <tbody>`;
+    
+    if(u.log && u.log.length > 0) {
+        u.log.forEach(entry => {
+            html += `<tr class="hist-row">
+                <td style="color:var(--gold)">${entry.d}</td>
+                <td>${entry.w}</td>
+                <td>${entry.bf}%</td>
+                <td>${entry.m}</td>
+            </tr>`;
+        });
+    } else {
+        html += `<tr><td colspan="4" style="text-align:center; padding:10px; color:#666;">No history recorded yet.</td></tr>`;
+    }
+    
+    html += `</tbody></table></div>`;
 
-    modalBody.innerHTML = html;
-    document.getElementById('mTip').innerText = `BMR: ${u.now.bmr} kcal/day | Efficiency: High`;
-    document.getElementById('masterModal').style.display = 'block';
+    modalBody.innerHTML = html;
+    document.getElementById('mTip').innerText = `BMR: ${u.now.bmr} kcal/day | Efficiency: High`;
+    document.getElementById('masterModal').style.display = 'block';
 }
-
-// Mobile Safari hardening (run once on load)
-document.createElement('img').referrerPolicy = 'no-referrer';
 
 function closeM(){ document.getElementById('masterModal').style.display='none' }
 window.onload=render;
