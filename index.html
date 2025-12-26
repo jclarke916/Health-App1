@@ -722,59 +722,78 @@ function generateGroceryList() {
 }
 
 // --- UPGRADED BIO-SCAN ---
+// --- RESTORED 3-TAB BIO SYSTEM ---
 function openBio() {
-    const u = uH[user];
     const modalBody = document.getElementById('mBody');
-    const fullName = (user === 'J') ? "JERMAINE" : "SOPHIA";
-    document.getElementById('mTitle').innerText = fullName + " CLINICAL SCAN";
-    document.getElementById('mSub').innerText = `Weight: ${u.now.w} lbs | Updated Dec 24`;
-    const metrics = [
-        { label: "Body Fat %", key: "bf", unit: "%", lowerIsBetter: true },
-        { label: "Muscle Mass", key: "m", unit: " lbs", lowerIsBetter: false },
-        { label: "Visceral Fat", key: "vf", unit: " lvl", lowerIsBetter: true },
-        { label: "Metabolic Age", key: "age", unit: " yrs", lowerIsBetter: true }
-    ];
+    const u = uH[user];
+    document.getElementById('mTitle').innerText = (user === 'J' ? "JERMAINE" : "SOPHIA") + " LONGEVITY PANEL";
+    document.getElementById('mSub').innerText = "Clinical & Functional Metrics";
+    document.getElementById('mImgContainer').innerHTML = ''; // Clear images if any
+
+    // Restore the Tab Structure
+    modalBody.innerHTML = `
+        <div class="tabs" style="margin-bottom:20px;">
+            <div id="btPhys" class="tab active" onclick="renderBioTab('phys')">BODY</div>
+            <div id="btLabs" class="tab" onclick="renderBioTab('labs')">LABS</div>
+            <div id="btTests" class="tab" onclick="renderBioTab('tests')">TESTS</div>
+        </div>
+        <div id="bioContentArea"></div>
+    `;
+    renderBioTab('phys'); // Default to Body tab
+    document.getElementById('masterModal').style.display = 'block';
+}
+
+function renderBioTab(tab) {
+    const u = uH[user];
+    const target = document.getElementById('bioContentArea');
+    
+    // Update Tab Styles
+    document.querySelectorAll('[id^="bt"]').forEach(t => t.classList.remove('active'));
+    document.getElementById('bt' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+
+    let items = [];
+    
+    // 1. BODY TAB (Extracts from u.now/u.goal)
+    if (tab === 'phys') {
+        items = [
+            {name: "Body Fat", val: u.now.bf, goal: u.goal.bf, unit: "%", lowerIsBetter: true},
+            {name: "Muscle Mass", val: u.now.m, goal: u.goal.m, unit: "lbs", lowerIsBetter: false},
+            {name: "Visceral Fat", val: u.now.vf, goal: u.goal.vf, unit: "lvl", lowerIsBetter: true},
+            {name: "BMR", val: u.now.bmr, goal: u.goal.bmr, unit: "kcal", lowerIsBetter: false}
+        ];
+    } 
+    // 2. LABS & TESTS TABS (Extracts from u.labs or u.tests)
+    else {
+        items = Object.values(u[tab]); // Auto-extracts your new bloodwork data
+    }
+
     let html = '';
-    metrics.forEach(m => {
-        const p = u.past[m.key], n = u.now[m.key], g = u.goal[m.key];
-        const max = Math.max(p, n, g);
-        let arrow = "→"; let color = "var(--gold)";
-        if (n < p) { arrow = "↓"; color = m.lowerIsBetter ? "var(--green)" : "#FF5252"; }
-        else if (n > p) { arrow = "↑"; color = m.lowerIsBetter ? "#FF5252" : "var(--green)"; }
+    items.forEach(m => {
+        // Calculate Bar Width
+        // If lower is better (e.g. Inflammation), we inverse the logic slightly for the visual
+        let pct = (m.val / m.goal) * 100;
+        if (m.lowerIsBetter) pct = (m.goal / m.val) * 100; 
+        pct = Math.min(Math.max(pct, 10), 100); // Clamp between 10% and 100%
+
+        // Color Logic
+        let color = 'var(--gold)';
+        const onTrack = m.lowerIsBetter ? (m.val <= m.goal * 1.1) : (m.val >= m.goal * 0.9);
+        if (onTrack) color = 'var(--green)';
+        if (!onTrack && tab === 'labs') color = '#FF5252'; // Red for out-of-range labs
+
         html += `
-            <div class="bio-section">
-                <div class="bio-title"><span>${m.label}</span><span style="color:var(--green)">Goal: ${g}${m.unit}</span></div>
-                <div class="bar-group">
-                    <div class="bar-row"><div class="bar-lbl">Past</div><div class="bar-track"><div class="bar-fill past" style="width:${(p/max)*100}%"></div></div><div style="font-size:0.6rem; color:#666; width:35px">${p}${m.unit}</div></div>
-                    <div class="bar-row"><div class="bar-lbl">Now</div><div class="bar-track"><div class="bar-fill now" style="width:${(n/max)*100}%"></div></div><div style="font-size:0.6rem; color:${color}; width:35px; font-weight:800">${n}${m.unit} ${arrow}</div></div>
+            <div class="bio-section" style="margin-bottom:12px; padding:12px;">
+                <div class="bio-title" style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                    <span>${m.name}</span>
+                    <span style="color:${color}; font-weight:900;">${m.val} <span style="color:#666; font-size:0.6em;">/ ${m.goal}${m.unit}</span></span>
+                </div>
+                <div class="bar-track">
+                    <div class="bar-fill" style="width:${pct}%; background:${color}; box-shadow:0 0 10px ${color}40;"></div>
                 </div>
             </div>`;
     });
 
-    html += `<div style="margin-top:25px; border-top:1px solid #333; padding-top:15px;">
-        <div style="font-size:0.75rem; font-weight:800; color:#fff; text-transform:uppercase; margin-bottom:10px;">PROGRESS LOG</div>
-        <table class="hist-table">
-            <thead><tr><th>DATE</th><th>WEIGHT</th><th>BF%</th><th>MUSCLE</th></tr></thead>
-            <tbody>`;
-    
-    if(u.log && u.log.length > 0) {
-        u.log.forEach(entry => {
-            html += `<tr class="hist-row">
-                <td style="color:var(--gold)">${entry.d}</td>
-                <td>${entry.w}</td>
-                <td>${entry.bf}%</td>
-                <td>${entry.m}</td>
-            </tr>`;
-        });
-    } else {
-        html += `<tr><td colspan="4" style="text-align:center; padding:10px; color:#666;">No history recorded yet.</td></tr>`;
-    }
-    
-    html += `</tbody></table></div>`;
-
-    modalBody.innerHTML = html;
-    document.getElementById('mTip').innerText = `BMR: ${u.now.bmr} kcal/day | Efficiency: High`;
-    document.getElementById('masterModal').style.display = 'block';
+    target.innerHTML = html;
 }
 
 function closeM(){ document.getElementById('masterModal').style.display='none' }
