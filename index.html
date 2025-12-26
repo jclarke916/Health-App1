@@ -259,32 +259,147 @@ var uH = {
 };
 
 // --- SAFE CALCULATOR (NO MODERN SYNTAX) ---
+// --- UPDATED CALCULATOR (GOAL LOCKED TO 100) ---
 function calculateLifeExpectancy(uID) {
     var u = uH[uID];
     if (!u) return { current: 0, potential: 0 };
     
     var l = u.labs;
-    var t = u.tests; // New reference
-    var baseAge = 78;
+    var t = u.tests;
+    var baseAge = 78; // Baseline
 
-    // Updated: Look in u.tests for VO2
+    // --- BIOLOGICAL AGE CALCULATION (Where you are NOW) ---
+    // 1. VO2 Max (The Engine)
     if (t.vo2 && t.vo2.val > 50) baseAge += 5; 
     else if (t.vo2 && t.vo2.val > 40) baseAge += 2; 
     else if (t.vo2 && t.vo2.val < 30) baseAge -= 3;
 
+    // 2. ApoB (The Arteries)
     if (l.apob && l.apob.val < 70) baseAge += 3; 
     else if (l.apob && l.apob.val > 100) baseAge -= 3;
 
+    // 3. Metabolic Health (Sugar/Fat)
     if (l.hba1c && l.hba1c.val < 5.1) baseAge += 2; 
     else if (l.hba1c && l.hba1c.val > 5.7) baseAge -= 4;
 
     if (u.now.vf < 6) baseAge += 2; 
     else if (u.now.vf > 10) baseAge -= 3;
 
+    // 4. Autoimmune Penalty (Sophia Specific)
     if (l.ana && l.ana.val > 80) baseAge -= 2;
 
-    var potential = baseAge + 8;
+    // --- THE GOAL IS FIXED ---
+    var potential = 100; 
+
     return { current: baseAge, potential: potential };
+}
+
+// --- UPDATED RENDERER (CENTURION LABEL) ---
+function renderBioTab(tab) {
+    var u = uH[user];
+    var target = document.getElementById('bioContentArea');
+    
+    document.querySelectorAll('[id^="bt"]').forEach(function(t){ t.classList.remove('active') });
+    document.getElementById('bt' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+
+    var html = '';
+
+    // LIFE EXPECTANCY (Phys Tab Only)
+    if(tab === 'phys') {
+        var le = calculateLifeExpectancy(user);
+        // GAP CALCULATION
+        var gap = le.potential - le.current;
+        var gapColor = gap > 15 ? '#FF5252' : (gap > 5 ? 'var(--gold)' : 'var(--green)');
+
+        html += '<div style="background:linear-gradient(135deg, #1a1a1a, #000); border:1px solid #333; border-radius:12px; padding:15px; margin-bottom:20px; text-align:center;">';
+        html += '<div style="font-size:0.6rem; color:#888; font-weight:900; letter-spacing:2px; text-transform:uppercase; margin-bottom:5px;">Biological Age vs Centurion Goal</div>';
+        html += '<div style="display:flex; justify-content:center; align-items:baseline; gap:10px;">';
+        
+        // Current Bio Age
+        html += '<div style="text-align:center"><div style="font-size:2.5rem; font-weight:800; color:#fff">' + le.current + '</div><div style="font-size:0.5rem; color:#666; font-weight:900">CURRENT</div></div>';
+        
+        html += '<div style="font-size:1rem; color:#444; font-weight:700; padding-bottom:15px">➔</div>';
+        
+        // The 100 Goal
+        html += '<div style="text-align:center"><div style="font-size:2.5rem; color:var(--gold); font-weight:700;">' + le.potential + '</div><div style="font-size:0.5rem; color:var(--gold); font-weight:900">GOAL</div></div>';
+        
+        html += '</div>';
+        html += '<div style="font-size:0.55rem; color:'+gapColor+'; margin-top:5px; font-weight:700;">GAP: ' + gap + ' YEARS TO CLOSE</div>';
+        html += '</div>';
+    }
+
+    var keys = [];
+    if (tab === 'phys') {
+        keys = ['bf', 'm', 'vf', 'bmr'];
+    } else {
+        keys = Object.keys(u[tab]);
+    }
+
+    keys.forEach(function(key, idx) {
+        var m;
+        if (tab === 'phys') {
+            m = { 
+                id: key,
+                name: (key==='bf'?'Body Fat':key==='m'?'Muscle':key==='vf'?'Visceral Fat':'BMR'), 
+                val: u.now[key], 
+                goal: u.goal[key], 
+                unit: (key==='bf'?'%':key==='m'?'lbs':key==='vf'?'lvl':'kcal'), 
+                lowerIsBetter: (key!=='m' && key!=='bmr')
+            };
+            if(u.info[key]) { m.desc = u.info[key].d; m.fix = u.info[key].f; }
+        } else {
+            m = u[tab][key];
+        }
+
+        var maxRef = Math.max(m.val, m.goal) * 1.2;
+        var pctNow = (m.val / maxRef) * 100;
+        var pctGoal = (m.goal / maxRef) * 100;
+        var colorNow = 'var(--gold)';
+        var onTrack = m.lowerIsBetter ? (m.val <= m.goal * 1.05) : (m.val >= m.goal * 0.95);
+        if (onTrack) colorNow = 'var(--green)';
+        if (!onTrack && tab === 'labs') colorNow = '#FF5252'; 
+
+        var itemId = 'bio_item_' + idx;
+        var label1 = (tab === 'tests') ? "EXECUTION" : "WHAT";
+        var label2 = (tab === 'tests') ? "TRAINING" : "FIX";
+        
+        var editHTML = '';
+        if(tab === 'tests') {
+            editHTML = ' <span onclick="updateBioVal(\''+tab+'\',\''+key+'\',\''+m.name+'\')" style="font-size:0.6rem; color:var(--blue); border:1px solid var(--blue); padding:2px 6px; border-radius:4px; margin-left:8px; cursor:pointer;">TAP TO UPDATE</span>';
+        }
+
+        html += '<div class="bio-section" onclick="toggleBioItem(\'' + itemId + '\')" style="margin-bottom:12px; padding:15px; cursor:pointer; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05);">';
+        html += '<div style="display:flex; justify-content:space-between; margin-bottom:10px;">';
+        html += '<span style="font-size:0.8rem; font-weight:800; color:#fff;">' + m.name + '</span>';
+        html += '<span style="font-size:0.6rem; color:#555; vertical-align:middle; font-weight:700">▼ INFO</span>';
+        html += '</div>';
+
+        html += '<div style="display:flex; align-items:center; margin-bottom:6px;">';
+        html += '<div style="width:40px; font-size:0.55rem; color:#888; font-weight:900;">NOW</div>';
+        html += '<div style="flex:1; height:6px; background:#111; border-radius:4px; overflow:hidden; margin-right:8px;">';
+        html += '<div style="width:' + pctNow + '%; height:100%; background:' + colorNow + '; border-radius:4px;"></div>';
+        html += '</div>';
+        html += '<div style="text-align:right; font-size:0.7rem; color:' + colorNow + '; font-weight:700;">' + m.val + editHTML + '</div>';
+        html += '</div>';
+
+        html += '<div style="display:flex; align-items:center;">';
+        html += '<div style="width:40px; font-size:0.55rem; color:var(--blue); font-weight:900;">GOAL</div>';
+        html += '<div style="flex:1; height:6px; background:#111; border-radius:4px; overflow:hidden; margin-right:8px;">';
+        html += '<div style="width:' + pctGoal + '%; height:100%; background:var(--blue); border-radius:4px; opacity:0.6;"></div>';
+        html += '</div>';
+        html += '<div style="width:40px; text-align:right; font-size:0.7rem; color:var(--blue); font-weight:700;">' + m.goal + '</div>';
+        html += '</div>';
+
+        html += '<div id="' + itemId + '" style="display:none; margin-top:15px; padding-top:10px; border-top:1px dashed #333;">';
+        html += '<div style="font-size:0.75rem; color:#ccc; margin-bottom:8px; line-height:1.4">';
+        html += '<strong style="color:var(--blue)">' + label1 + ':</strong> <br>' + (m.desc || 'Metric description unavailable.');
+        html += '</div>';
+        html += '<div style="font-size:0.75rem; color:#ccc; line-height:1.4">';
+        html += '<strong style="color:var(--green)">' + label2 + ':</strong> ' + (m.fix || 'Consult your protocol.');
+        html += '</div></div></div>';
+    });
+
+    target.innerHTML = html;
 }
 
 const hDB={b:"Festive Brunch|Protein Waffles, Turkey Bacon, Eggs, Berries|griddle|<strong>Prep:</strong> 15m • <strong>Cook:</strong> 15m<hr><strong>INGREDIENTS</strong><br>1 Scoop Whey (in batter) • 2 Eggs • 2 Slices Turkey Bacon • 1/2 Cup Berries<br><br><strong>1. ENJOY</strong><br>Prioritize the protein first, then enjoy the treats. Happy Holidays!|35|40|500",l:"The Holiday Feast|Lean Roast Meat, Green Beans, Sweet Potato|roast|<strong>Prep:</strong> 20m • <strong>Cook:</strong> 3h<hr><strong>INGREDIENTS</strong><br>8oz Roast Turkey or Beef • 1 Cup Green Beans • 1/2 Cup Sweet Potato<br><br><strong>1. FEAST</strong><br>Load up on the roast meat and green veggies. Go easy on the gravy.|50|40|600",d:"Leftovers Plate|Lean Protein, Veggies|raw|<strong>Prep:</strong> 5m<hr><strong>INGREDIENTS</strong><br>6oz Leftover Protein • Vegetable Side<br><br><strong>1. RECOVER</strong><br>Keep it light to help digestion before sleep.|30|10|300"};
