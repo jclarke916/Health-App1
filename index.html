@@ -311,25 +311,61 @@ function getMon(o){
     return d; 
 }
 
-function changeW(d){ offset+=d; render(); }
-function resetD(){ offset=0; selDate=getCaDate(); render(); }
+// ===============================
+// CALENDAR NAVIGATION LOGIC
+// ===============================
 
-function render(){
-    const mon=getMon(offset); const days=["MON","TUE","WED","THU","FRI","SAT","SUN"];
-    const tabs=document.getElementById('dayTabs'); tabs.innerHTML='';
-    const end=new Date(mon); end.setDate(mon.getDate()+6);
-    document.getElementById('dateDisplay').innerText=`${mon.toLocaleDateString('en-US',{month:'short',day:'numeric'})} - ${end.toLocaleDateString('en-US',{month:'short',day:'numeric'})}`;
+function changeW(direction) {
+    // 1. Calculate the start of the current week (Monday)
+    let currentMon = getMon(0); 
     
-    for(let i=0; i<7; i++){
-        let d=new Date(mon); d.setDate(mon.getDate()+i);
-        const isSelected = getDateKey(d) === getDateKey(selDate);
-        const b=document.createElement('div'); 
-        b.className='tab'+(isSelected?' active':'');
-        b.innerHTML=`${days[i]}<br>${d.getDate()}`;
-        b.onclick=()=>{ selDate=d; render() }; 
-        tabs.appendChild(b);
-        if(isSelected) showDay(d, i);
+    if (direction > 0) {
+        // NEXT pressed: Move to Monday of the next week
+        selDate = new Date(currentMon.getTime() + (7 * 864e5));
+    } else {
+        // PREV pressed: Move to Sunday of the previous week
+        selDate = new Date(currentMon.getTime() - 864e5);
     }
+    
+    // Reset hours to noon to avoid DST/Timezone bleed
+    selDate.setHours(12, 0, 0, 0);
+    
+    // Sync the week offset for the tab rendering
+    updateOffsetFromSelection();
+    
+    render();
+    saveData();
+}
+
+// Helper to keep the week view (offset) in sync with your manual date selection
+function updateOffsetFromSelection() {
+    let today = getCaDate();
+    today.setHours(0, 0, 0, 0);
+    
+    // Find the Monday of the week today is in
+    let todayMon = new Date(today);
+    todayMon.setDate(today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
+    
+    // Find the Monday of the selected date
+    let selMon = new Date(selDate);
+    selMon.setDate(selDate.getDate() - (selDate.getDay() === 0 ? 6 : selDate.getDay() - 1));
+    selMon.setHours(0,0,0,0);
+    todayMon.setHours(0,0,0,0);
+
+    // Calculate how many weeks difference there is
+    let diffDays = Math.round((selMon - todayMon) / 864e5);
+    offset = Math.floor(diffDays / 7);
+}
+
+// Optimized getMon to strictly follow the 'offset' variable
+function getMon(o) {
+    let d = getCaDate();
+    // Move to current week's Monday
+    d.setDate(d.getDate() - (d.getDay() === 0 ? 6 : d.getDay() - 1));
+    // Apply week offset
+    d.setDate(d.getDate() + (o * 7));
+    d.setHours(12, 0, 0, 0);
+    return d;
 }
 
 function showDay(dObj, idx){
