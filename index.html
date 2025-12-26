@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v222.90 FINAL</title>
+    <title>The Centurion | v222.95 Seeded Fix</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505;--card:#141414;--gold:#D4AF37;--green:#00E676;--blue:#00B0FF;--purple:#D500F9;--text:#fff;--g-pro:linear-gradient(90deg,#FF5252,#D50000);--g-carb:linear-gradient(90deg,#FFAB40,#FF6D00);--g-cal:linear-gradient(90deg,#B388FF,#6200EA)}
@@ -78,7 +78,7 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v222.90 FINAL</span>
+        <span class="version-tag">v222.95 Seeded Fix</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -353,6 +353,7 @@ function showDay(dObj, idx){
             snackHTML += `<div class="snack-slot" onclick="openSnackSelector(${i})"><span style="font-size:1.2rem; color:#333;">＋</span><span class="snack-label" style="color:#666; font-weight:500;">ADD SNACK</span></div>`;
         } else {
             let s = mDB.s[snacks[i]].split('|');
+            // Fix apostrophes in snacks too
             snackHTML += `<div class="snack-slot filled" onclick="openR('${s[0].replace(/'/g, "\\'")}', '${s[1]}', '${s[2]}', '${s[3].replace(/'/g, "\\'")}')"><div class="remove-snack" onclick="event.stopPropagation(); removeSnack(${i})">✕</div><span class="snack-label">${s[0]}</span><span class="snack-macro">${s[4]}P ${s[5]}C ${s[6]}K</span></div>`;
         }
     }
@@ -361,6 +362,7 @@ function showDay(dObj, idx){
     let holidayBannerHTML = holidayName ? `<div class="holiday-banner">✨ ${holidayName} DETECTED ✨<br>PROTOCOL: FESTIVE RELAX</div>` : '';
     let cardClass = holidayName ? 'card holiday-card' : 'card';
 
+    // Fix apostrophes in meals
     document.getElementById('dayContent').innerHTML = `
         ${holidayBannerHTML}
         <div style="background:#0a0a0a; border:1px solid #222; border-bottom:4px solid var(--blue); padding:15px; border-radius:12px; margin-bottom:25px; cursor:pointer;" onclick="openRecoveryPhase('${wName}')">
@@ -411,20 +413,22 @@ function showDay(dObj, idx){
         <div class="${cardClass}" style="text-align:center"><div class="label" style="color:var(--gold)">Cold Pressed Juice</div><div class="juice-name" onclick="openJ('${jcs[idx]}')">${jcs[idx]}</div></div>`;
 }
 
-// --- FIX: NO RANDOM SEED (CACHED IMAGES) & NO FLUX MODEL ---
+// --- FIX: Random Seed + Fast Model (Prevents Stucking) ---
 function openR(n,i,a,t){
     document.getElementById('mTitle').innerText = n; 
     document.getElementById('mSub').innerText = ""; 
 
     let cleanName = n.replace(/[^a-zA-Z ]/g, "");
     
-    // NO RANDOM SEED = INSTANT CACHE
-    let prompt = encodeURIComponent(cleanName + " cooked food delicious michelin");
+    // RANDOM SEED IS BACK to force new images on error
+    let seed = Math.floor(Math.random() * 99999);
     
-    // FAST URL
-    let imgUrl = `https://image.pollinations.ai/prompt/${prompt}?width=800&height=600&nologo=true`;
+    let prompt = encodeURIComponent(cleanName + " cooked food delicious michelin style");
+    
+    // Using default model (faster) + Seed
+    let imgUrl = `https://image.pollinations.ai/prompt/${prompt}?width=800&height=600&nologo=true&seed=${seed}&model=turbo`;
 
-    // FALLBACK TO GENERIC MEAL PHOTO (Not Kitchen, Not Salad)
+    // High quality fallback
     let fallbackUrl = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80";
 
     let imgHTML = `<img src="${imgUrl}" class="meal-img" 
