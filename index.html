@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v222.70 Core</title>
+    <title>The Centurion | v222.71 Core</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505;--card:#141414;--gold:#D4AF37;--green:#00E676;--blue:#00B0FF;--purple:#D500F9;--text:#fff;--g-pro:linear-gradient(90deg,#FF5252,#D50000);--g-carb:linear-gradient(90deg,#FFAB40,#FF6D00);--g-cal:linear-gradient(90deg,#B388FF,#6200EA)}
@@ -179,7 +179,7 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v222.70 (CA Time)</span>
+        <span class="version-tag">v222.71 (CA Time Locked)</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -214,7 +214,7 @@ let snackLog = {};
 let currentSlot = 0;
 
 // CALIFORNIA TIME HELPER
-// Forces "Today" to always be America/Los_Angeles time
+// Forces "Today" to always be America/Los_Angeles time, preventing UTC mismatch
 function getCaDate() {
     let caStr = new Date().toLocaleString("en-US", {timeZone: "America/Los_Angeles"});
     return new Date(caStr);
@@ -412,7 +412,17 @@ function getHoliday(d) {
 }
 
 function switchU(uID){ user=uID; document.querySelectorAll('.u-badge').forEach(b=>b.classList.remove('active')); document.getElementById('b'+uID.toLowerCase()).classList.add('active'); render(); }
-function getMon(o){ let d=new Date(); d.setHours(0,0,0,0); let day=d.getDay(); let diff=d.getDate()-day+(day===0?-6:1); d.setDate(diff+(o*7)); return d; }
+
+// Corrected getMon to use getCaDate() instead of new Date()
+function getMon(o){ 
+    let d = getCaDate(); 
+    d.setHours(0,0,0,0); 
+    let day = d.getDay(); 
+    let diff = d.getDate() - day + (day === 0 ? -6 : 1); 
+    d.setDate(diff + (o * 7)); 
+    return d; 
+}
+
 function changeW(d){ offset+=d; render(); }
 function resetD(){ offset=0; selDate=getCaDate(); render(); }
 
@@ -632,7 +642,7 @@ function openRecoveryPhase(workout) {
 function generateGroceryList() {
     const modalBody = document.getElementById('mBody');
     document.getElementById('mTitle').innerText = "WEEKLY GROCERY LIST";
-    document.getElementById('mSub').innerText = "V222.69 • FULL SPECTRUM SCAN";
+    document.getElementById('mSub').innerText = "V222.71 • FULL SPECTRUM SCAN";
     
     let mainList = [];
     let pantryList = [];
@@ -652,10 +662,8 @@ function generateGroceryList() {
         
         let meals;
         if(holidayName) {
-            // If Holiday, use Festive Menu
             meals = [hDB.b, hDB.l, hDB.d];
         } else {
-            // Standard Rotation
             meals = [
                 mDB.b[Math.abs(id) % mDB.b.length],
                 mDB.l[Math.abs(id) % mDB.l.length],
@@ -670,7 +678,6 @@ function generateGroceryList() {
             if(htmlMatch && htmlMatch[1]) {
                 mainList.push(...htmlMatch[1].split('•').map(s => s.trim()));
             }
-            // Pantry items only for standard meals (Index 1)
             if(!holidayName && parts[1]) {
                 pantryList.push(...parts[1].split(',').map(s => s.trim()));
             }
