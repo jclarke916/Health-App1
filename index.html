@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v223.30 Speed Core</title>
+    <title>The Centurion | v223.40 Patience Upgrade</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505;--card:#141414;--gold:#D4AF37;--green:#00E676;--blue:#00B0FF;--purple:#D500F9;--text:#fff;--g-pro:linear-gradient(90deg,#FF5252,#D50000);--g-carb:linear-gradient(90deg,#FFAB40,#FF6D00);--g-cal:linear-gradient(90deg,#B388FF,#6200EA)}
@@ -67,7 +67,6 @@
         .remove-snack { position: absolute; top: -5px; right: -5px; background: #333; color: #aaa; border: 1px solid #222; border-radius: 50%; width: 16px; height: 16px; font-size: 9px; line-height: 14px; text-align: center; font-weight: 800; box-shadow: 0 1px 3px rgba(0,0,0,0.5); z-index: 10; transition: all 0.2s ease; }
         .remove-snack:hover { background: #444; color: #fff; border-color:#333; }
         
-        /* IMAGE STABILITY */
         .meal-img {
             display: block;
             width: 100%;
@@ -77,7 +76,26 @@
             object-fit: cover;
             border-radius: 14px;
             background-color: #111;
+            transition: opacity 0.5s ease-in; /* Smooth fade in */
         }
+        
+        /* NEW: Loading State Animation */
+        .img-loader {
+            height: 220px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--gold);
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            background: rgba(255,255,255,0.02);
+            border-radius: 14px;
+            border: 1px dashed #333;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
 
         .hist-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.7rem; color: #ccc; }
         .hist-table th { text-align: left; color: #666; border-bottom: 1px solid #333; padding: 5px; font-weight: 800; }
@@ -90,7 +108,7 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v223.30 Speed Core</span>
+        <span class="version-tag">v223.40 Patience Upgrade</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -112,7 +130,7 @@
     <div class="modal-content">
         <h2 id="mTitle" style="font-size:1.5rem; margin-top:10px;"></h2>
         <div id="mSub" style="color:var(--gold);font-size:0.85rem;margin:10px 0; text-transform:uppercase; letter-spacing:1px; font-weight:700;"></div>
-        <div id="mBody" class="chef-steps" style="counter-reset:step"></div>
+        <div id="mImgContainer"></div> <div id="mBody" class="chef-steps" style="counter-reset:step"></div>
         <div id="mTip" class="chef-tip" style="margin-top:30px; padding:15px; border:1px solid #222; background:#111; border-radius:10px; color:#888; font-style:italic;"></div>
         <br><br><br>
     </div>
@@ -327,9 +345,10 @@ function showDay(dObj, idx){
         l = hDB.l.split('|');
         dn = hDB.d.split('|');
     } else {
-        b = (mDB.b[Math.abs(id) % mDB.b.length]).split('|');
-        l = (mDB.l[Math.abs(id) % mDB.l.length]).split('|');
-        dn = (mDB.d[Math.abs(id) % mDB.d.length]).split('|');
+        // SAFETY: Fallback if mDB arrays are short
+        b = (mDB.b[Math.abs(id) % mDB.b.length] || mDB.b[0]).split('|');
+        l = (mDB.l[Math.abs(id) % mDB.l.length] || mDB.l[0]).split('|');
+        dn = (mDB.d[Math.abs(id) % mDB.d.length] || mDB.d[0]).split('|');
     }
 
     const sch=["HEAVY LIFT","BOXING","REFORM","BOXING","REFORM/YOGA","CS4","RELAX"];
@@ -439,15 +458,16 @@ function openR(n, i, a, t) {
     document.getElementById('mTitle').innerText = n;
     document.getElementById('mSub').innerText = "";
     
+    // SETUP CONTAINER FOR LOADER
+    const body = document.getElementById('mBody');
+    body.innerHTML = '<div class="img-loader">✨ Chef is plating...</div>'; // Show loader immediately
+
     const cleanName = n.replace(/[^a-zA-Z ]/g, "").trim();
     const seed = stableSeed(cleanName); // Use the helper
     
     // Short, fast prompt
     const prompt = encodeURIComponent(`delicious ${cleanName} plated food photo`);
     const imgUrl = `https://image.pollinations.ai/prompt/${prompt}?width=800&height=600&seed=${seed}&nologo=true&model=turbo`; // Added model=turbo for speed
-
-    const body = document.getElementById('mBody');
-    body.innerHTML = ""; // Clear previous
 
     const img = document.createElement("img");
     img.className = "meal-img";
@@ -465,21 +485,34 @@ function openR(n, i, a, t) {
     
     const timer = setTimeout(() => {
         if (!img.complete || img.naturalWidth === 0) { 
+            console.log("AI timed out, switching to fallback.");
             img.src = safeFallback; 
         }
-    }, 7000); // 7s timeout
+    }, 15000); // INCREASED TO 15 SECONDS
 
     img.onload = () => {
         clearTimeout(timer);
-        // REVEAL IMAGE
-        img.style.opacity = "1";
-        img.style.filter = "blur(0)";
+        // Clear loader and show image
+        body.innerHTML = ""; 
+        body.appendChild(img);
+        
+        // REVEAL IMAGE (Small delay to ensure DOM paint)
+        setTimeout(() => {
+            img.style.opacity = "1";
+            img.style.filter = "blur(0)";
+        }, 50);
+        
+        // Append text
+        const txt = document.createElement("div");
+        txt.innerHTML = `<br>${t}`;
+        body.appendChild(txt);
     };
     
     img.onerror = () => { 
         clearTimeout(timer); 
         img.src = safeFallback; 
         // Ensure fallback is revealed too
+        img.onload = null; // Prevent infinite loop if fallback fails (rare)
         img.style.opacity = "1";
         img.style.filter = "blur(0)";
     };
@@ -488,13 +521,6 @@ function openR(n, i, a, t) {
     setTimeout(() => {
         img.src = imgUrl;
     }, 30);
-    
-    body.appendChild(img);
-    
-    // Append text safely without breaking image loading
-    const txt = document.createElement("div");
-    txt.innerHTML = `<br>${t}`;
-    body.appendChild(txt);
 
     document.getElementById('mTip').innerText = "";
     document.getElementById('masterModal').style.display = 'block';
