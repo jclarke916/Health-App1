@@ -796,47 +796,77 @@ function renderBioTab(tab) {
 
     let items = [];
     
-    // 1. BODY TAB (Extracts from u.now/u.goal)
+    // 1. BODY TAB
     if (tab === 'phys') {
+        // Map raw stats to learning objects
         items = [
-            {name: "Body Fat", val: u.now.bf, goal: u.goal.bf, unit: "%", lowerIsBetter: true},
-            {name: "Muscle Mass", val: u.now.m, goal: u.goal.m, unit: "lbs", lowerIsBetter: false},
-            {name: "Visceral Fat", val: u.now.vf, goal: u.goal.vf, unit: "lvl", lowerIsBetter: true},
-            {name: "BMR", val: u.now.bmr, goal: u.goal.bmr, unit: "kcal", lowerIsBetter: false}
+            {id:'bf', name: "Body Fat", val: u.now.bf, goal: u.goal.bf, unit: "%", lowerIsBetter: true},
+            {id:'m', name: "Muscle Mass", val: u.now.m, goal: u.goal.m, unit: "lbs", lowerIsBetter: false},
+            {id:'vf', name: "Visceral Fat", val: u.now.vf, goal: u.goal.vf, unit: "lvl", lowerIsBetter: true},
+            {id:'bmr', name: "BMR", val: u.now.bmr, goal: u.goal.bmr, unit: "kcal", lowerIsBetter: false}
         ];
+        // Inject info from u.info
+        items.forEach(i => {
+            if(u.info[i.id]) {
+                i.desc = u.info[i.id].d;
+                i.fix = u.info[i.id].f;
+            }
+        });
     } 
-    // 2. LABS & TESTS TABS (Extracts from u.labs or u.tests)
+    // 2. LABS & TESTS TABS
     else {
-        items = Object.values(u[tab]); // Auto-extracts your new bloodwork data
+        items = Object.values(u[tab]);
     }
 
     let html = '';
-    items.forEach(m => {
-        // Calculate Bar Width
-        // If lower is better (e.g. Inflammation), we inverse the logic slightly for the visual
+    items.forEach((m, idx) => {
+        // Bar Calculation
         let pct = (m.val / m.goal) * 100;
         if (m.lowerIsBetter) pct = (m.goal / m.val) * 100; 
-        pct = Math.min(Math.max(pct, 10), 100); // Clamp between 10% and 100%
+        pct = Math.min(Math.max(pct, 10), 100);
 
         // Color Logic
         let color = 'var(--gold)';
         const onTrack = m.lowerIsBetter ? (m.val <= m.goal * 1.1) : (m.val >= m.goal * 0.9);
         if (onTrack) color = 'var(--green)';
-        if (!onTrack && tab === 'labs') color = '#FF5252'; // Red for out-of-range labs
+        if (!onTrack && tab === 'labs') color = '#FF5252';
+
+        // Unique ID for accordion
+        const itemId = `bio_item_${idx}`;
 
         html += `
-            <div class="bio-section" style="margin-bottom:12px; padding:12px;">
+            <div class="bio-section" onclick="toggleBioItem('${itemId}')" style="margin-bottom:12px; padding:15px; cursor:pointer; transition:all 0.2s">
                 <div class="bio-title" style="display:flex; justify-content:space-between; margin-bottom:8px;">
-                    <span>${m.name}</span>
+                    <span>${m.name} <span style="font-size:0.6rem; color:#555; vertical-align:middle">▼</span></span>
                     <span style="color:${color}; font-weight:900;">${m.val} <span style="color:#666; font-size:0.6em;">/ ${m.goal}${m.unit}</span></span>
                 </div>
+                
                 <div class="bar-track">
                     <div class="bar-fill" style="width:${pct}%; background:${color}; box-shadow:0 0 10px ${color}40;"></div>
+                </div>
+
+                <div id="${itemId}" style="display:none; margin-top:15px; border-top:1px dashed #333; padding-top:10px; animation:fadeIn 0.3s">
+                    <div style="font-size:0.75rem; color:#ccc; margin-bottom:8px; line-height:1.4">
+                        <strong style="color:var(--blue)">WHAT:</strong> ${m.desc || 'Metric description unavailable.'}
+                    </div>
+                    <div style="font-size:0.75rem; color:#ccc; line-height:1.4">
+                        <strong style="color:var(--green)">FIX:</strong> ${m.fix || 'Consult your protocol.'}
+                    </div>
                 </div>
             </div>`;
     });
 
     target.innerHTML = html;
+}
+
+function toggleBioItem(id) {
+    const el = document.getElementById(id);
+    // Simple toggle
+    if(el.style.display === 'none') {
+        el.style.display = 'block';
+    } else {
+        el.style.display = 'none';
+    }
 }
 
 function closeM(){ document.getElementById('masterModal').style.display='none' }
