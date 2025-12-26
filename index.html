@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v225.00 Master</title>
+    <title>The Centurion | v225.60 Final</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505;--card:#141414;--gold:#D4AF37;--green:#00E676;--blue:#00B0FF;--purple:#D500F9;--text:#fff;--g-pro:linear-gradient(90deg,#FF5252,#D50000);--g-carb:linear-gradient(90deg,#FFAB40,#FF6D00);--g-cal:linear-gradient(90deg,#B388FF,#6200EA);--g-fib:linear-gradient(90deg,#00E676,#00C853)}
@@ -20,7 +20,6 @@
         .nav-btn{background:#111;border:1px solid #222;color:#888;padding:10px;flex:1;border-radius:8px;font-size:0.55rem;font-weight:800;cursor:pointer}
         .card, .macro-dashboard{background:var(--card);border-radius:20px;padding:20px;margin-bottom:15px;border:1px solid rgba(255,255,255,0.03);position:relative}
         .card::before{content:"";position:absolute;left:0;top:20px;bottom:20px;width:3px;background:var(--gold);border-radius:0 4px 4px 0}
-        .card.holiday-card::before{background:var(--purple);box-shadow: 0 0 15px rgba(213, 0, 249, 0.4);}
         .label{color:#666;font-size:0.5rem;text-transform:uppercase;font-weight:900;margin-bottom:4px; display: flex; justify-content: space-between;}
         .value{ font-size: 0.95rem; margin-bottom: 12px; font-weight: 500; cursor: pointer; border-bottom: 1px solid #222; padding-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
         .macro-row{margin-bottom:10px}
@@ -32,7 +31,7 @@
         .tab.active{background:#222;color:#fff;border-color:444}
         .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#0a0a0a;z-index:2000;overflow-y:auto;padding:0;}
         .modal-content{background:#0a0a0a;margin:0;padding:25px;border:none;border-radius:0;width:100%;min-height:100%;max-width:none;}
-        .close-btn-float { position: fixed; top: 20px; right: 20px; width: 40px; height: 40px; background: rgba(30,30,30,0.8); backdrop-filter: blur(5px); border-radius: 50%; border: 1px solid #333; color: #fff; font-size: 24px; text-align: center; line-height: 38px; cursor: pointer; z-index: 2001; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .close-btn-float { position: fixed; top: 20px; right: 20px; width: 40px; height: 40px; background: rgba(30,30,30,0.8); backdrop-filter: blur(5px); border-radius: 50%; border: 1px solid #333; color: #fff; font-size: 24px; text-align: center; line-height: 38px; cursor: pointer; z-index: 2001; }
         #mImgContainer { position: relative; width: 100%; min-height: 220px; margin-bottom: 15px; border-radius: 14px; overflow: hidden; background: #111; }
         .meal-img { display: block; width: 100%; height: auto; min-height: 220px; object-fit: cover; position: relative; z-index: 2; opacity: 0; filter: blur(10px); transition: opacity 0.5s ease-in, filter 0.5s ease-in; }
         .img-loader { height: 100%; display: flex; align-items: center; justify-content: center; color: var(--gold); font-size: 0.8rem; font-weight: 700; background: rgba(255,255,255,0.02); animation: pulse 1.5s infinite; position: absolute; width: 100%; top: 0; left: 0; z-index: 1; }
@@ -59,7 +58,7 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v225.00 Master • segments 2/10</span>
+        <span class="version-tag">v225.60 Master • segments 2/6</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -82,12 +81,13 @@
         <h2 id="mTitle" style="font-size:1.5rem; margin-top:10px;"></h2>
         <div id="mSub" style="color:var(--gold);font-size:0.85rem;margin:10px 0; text-transform:uppercase; letter-spacing:1px; font-weight:700;"></div>
         <div id="mImgContainer"></div>
-        <div id="mBody" class="chef-steps"></div>
-        <div id="mTip" style="margin-top:30px; padding:15px; border:1px solid #222; background:#111; border-radius:10px; color:#888; font-style:italic;"></div>
+        <div id="mBody" class="chef-steps" style="counter-reset:step"></div>
+        <div id="mTip" class="chef-tip" style="margin-top:30px; padding:15px; border:1px solid #222; background:#111; border-radius:10px; color:#888; font-style:italic;"></div>
         <br><br><br>
     </div>
 </div>
 <script>
+// --- FULL NUTRITION DATABASE ---
 const mDB = {
     b: [
         "Turmeric Scramble|Eggs,Spinach,Garlic,Olive Oil,Turmeric,Black Pepper|scramble|Whisk 3 eggs with 1tsp turmeric and black pepper. Sauté 3 cups spinach/garlic. Mix.|22|2|240",
@@ -200,46 +200,21 @@ const mDB = {
 };
 
 const pDB = {
-    "HEAVY LIFT": [
-        {t:"PRE", h:"Theragun", d:"Glutes, Quads, Hams. 30s each."},
-        {t:"GYM", h:"Heavy Lift", d:"Main compound movement (Squat/Deadlift)."},
-        {t:"POST", h:"Chair+Sauna", d:"20m Zero-Grav + 20m Sauna."}
-    ],
-    "BOXING": [
-        {t:"PRE", h:"Mobility", d:"Rotator cuffs & Calves."},
-        {t:"GYM", h:"Boxing", d:"High intensity rounds."},
-        {t:"POST", h:"Normatec", d:"Flush legs. NO SAUNA."}
-    ],
-    "REFORM": [
-        {t:"PRE", h:"Sweep", d:"Light full body percussion."},
-        {t:"GYM", h:"Reform", d:"Time under tension / Core focus."},
-        {t:"POST", h:"Sauna", d:"20m HGH Boost."}
-    ],
-    "REFORM/YOGA": [
-        {t:"PRE", h:"Sweep", d:"Light full body percussion."},
-        {t:"GYM", h:"Yoga", d:"Deep fascial release."},
-        {t:"POST", h:"Heat", d:"Sauna or Thera Knee Heat."}
-    ],
-    "CS4": [
-        {t:"PRE", h:"Hydrate", d:"Electrolytes & Mobility."},
-        {t:"GYM", h:"CS4", d:"Cardio Strength 4 intervals."},
-        {t:"POST", h:"Contrast", d:"Sauna + Cold or Knee Contrast."}
-    ],
-    "RELAX": [
-        {t:"PRE", h:"Walk", d:"Light movement."},
-        {t:"GYM", h:"Relax", d:"Active recovery / Stretching."},
-        {t:"POST", h:"Massage", d:"Chair or Thera Knee Heat."}
-    ]
+    "HEAVY LIFT": [{t:"PRE",h:"Theragun",d:"Glutes, Quads, Hams. 30s each."},{t:"GYM",h:"Heavy Lift",d:"Main compound movement."},{t:"POST",h:"Chair+Sauna",d:"20m Zero-Grav + 20m Sauna."}],
+    "BOXING": [{t:"PRE",h:"Mobility",d:"Rotator cuffs & Calves."},{t:"GYM",h:"Boxing",d:"High intensity rounds."},{t:"POST",h:"Normatec",d:"Flush legs. NO SAUNA."}],
+    "REFORM": [{t:"PRE",h:"Sweep",d:"Light full body percussion."},{t:"GYM",h:"Reform",d:"Time under tension."},{t:"POST",h:"Sauna",d:"20m HGH Boost."}],
+    "REFORM/YOGA": [{t:"PRE",h:"Sweep",d:"Light full body percussion."},{t:"GYM",h:"Yoga",d:"Deep fascial release."},{t:"POST",h:"Heat",d:"Sauna or Thera Knee Heat."}],
+    "CS4": [{t:"PRE",h:"Hydrate",d:"Electrolytes."},{t:"GYM",h:"CS4",d:"Cardio Strength 4."},{t:"POST",h:"Contrast",d:"Sauna + Cold or Knee Contrast."}],
+    "RELAX": [{t:"PRE",h:"Walk",d:"Light movement."},{t:"GYM",h:"Relax",d:"Active recovery."},{t:"POST",h:"Massage",d:"Chair or Thera Knee Heat."}]
 };
 
 const rDB = {
     "Sea Moss": ["92 Minerals", "2 TBSP Fasted.", "Thyroid & Gut support."],
     "Kombucha": ["Probiotic", "4 OZ post-Lunch.", "Enzyme support."],
     "Aqua Chair": ["Hydro-Massage", "Align body to zero-gravity.", "Jets to glutes and lats.", "20 Min Duration."],
-    "Sauna": ["HSP Induction", "185°F Range.", "20 Mins total.", "Heavy metal detox sweat."],
-    "Theragun": ["Percussive", "Float over muscles.", "2m per limb.", "Target Lats/Hips."],
-    "Normatec": ["Compression", "Level 4 Intensity.", "Full leg cycle.", "30m Lymphatic flush."],
-    "Pre-Workout": ["Nitro-Boost", "6g Citrulline Malate.", "Take 20m before training."]
+    "Sauna": ["HSP Induction", "185°F Range.", "20 Mins total. "],
+    "Theragun": ["Percussive", "Float over muscles.", "2m per limb."],
+    "Normatec": ["Compression", "Level 4 Intensity.", "30m Lymphatic flush."]
 };
 
 const jDB = {
@@ -292,12 +267,12 @@ const uH = {
 
 const hDB = {
     b: "Festive Brunch|Protein Waffles, Turkey Bacon, Eggs, Berries|griddle|Prioritize protein first, then enjoy the treats. Happy Holidays!|35|40|500",
-    l: "The Holiday Feast|Lean Roast Meat, Green Beans, Sweet Potato|roast|Load up on the roast meat and green veggies. Go easy on the gravy.|50|40|600",
+    l: "The Holiday Feast|Lean Roast Meat, Green Beans, Sweet Potato|roast|Load up on roast meat and green veggies. Go easy on the gravy.|50|40|600",
     d: "Leftovers Plate|Lean Protein, Veggies|raw|Keep it light to help digestion before sleep.|30|10|300"
 };
 
 let user = 'J', offset = 0, snackLog = {}, currentSlot = 0, selDate = getCaDate();
-// --- UTILITIES ---
+
 function getCaDate() { 
     let d = new Date(new Date().toLocaleString("en-US", {timeZone: "America/Los_Angeles"})); 
     d.setHours(12, 0, 0, 0); 
@@ -317,13 +292,9 @@ function stableSeed(s) {
     return Math.abs(h);
 }
 
-// --- PERSISTENCE ---
 function saveData() { 
     localStorage.setItem('centurion_v6_data', JSON.stringify({
-        user, 
-        snackLog, 
-        selDate: selDate.toISOString(),
-        offset
+        user, snackLog, selDate: selDate.toISOString(), offset
     })); 
 }
 
@@ -338,7 +309,6 @@ function loadData() {
         syncOffsetToSelection();
     }
 }
-
 // --- CALENDAR LOGIC ---
 function getMon(o) {
     let d = getCaDate();
@@ -353,108 +323,55 @@ function syncOffsetToSelection() {
     today.setHours(0,0,0,0);
     let todayMon = new Date(today);
     todayMon.setDate(today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
-    
     let selMon = new Date(selDate);
     selMon.setDate(selDate.getDate() - (selDate.getDay() === 0 ? 6 : selDate.getDay() - 1));
     selMon.setHours(0,0,0,0);
-
     offset = Math.round((selMon - todayMon) / (7 * 864e5));
 }
 
 function changeW(direction) {
-    let currentMon = getMon(offset); 
-    if (direction > 0) {
-        // NEXT: Jump to Monday of NEXT week
-        selDate = new Date(currentMon.getTime() + (7 * 864e5));
-    } else {
-        // PREV: Jump to Sunday of PREVIOUS week
-        selDate = new Date(currentMon.getTime() - 864e5);
-    }
+    let viewMon = getMon(offset); 
+    if (direction > 0) selDate = new Date(viewMon.getTime() + (7 * 864e5)); 
+    else selDate = new Date(viewMon.getTime() - 864e5);
     selDate.setHours(12, 0, 0, 0);
     syncOffsetToSelection();
     render();
     saveData();
 }
 
-function resetD() { 
-    offset = 0; 
-    selDate = getCaDate(); 
-    render(); 
-    saveData(); 
-}
-
-function switchU(uID) { 
-    user = uID; 
-    document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active')); 
-    document.getElementById('b' + uID.toLowerCase()).classList.add('active'); 
-    render(); 
-    saveData();
-}// --- SMART GROCERY AGGREGATOR ---
+// --- GROCERY & BIO LOGIC ---
 function generateGroceryList() {
     const modalBody = document.getElementById('mBody');
     document.getElementById('mImgContainer').innerHTML = ''; 
     document.getElementById('mTitle').innerText = "SMART GROCERY SCAN";
-    document.getElementById('mSub').innerText = "v225.00 Consolidated Logic";
-    
     let rawItems = [];
     const mon = getMon(offset);
-    const jcs=["PLASMA FLUSH Juice","TITAN RED Juice","ZENITH GREEN Juice","TITAN RED Juice","ZENITH GREEN Juice","TITAN RED Juice","APOLLO GOLD Juice"];
-
     for(let i=0; i<7; i++) {
         let d = new Date(mon.getTime() + i*864e5);
-        let id = Math.floor(d.getTime()/864e5);
-        let holidayName = getHoliday(d);
-        let meals = holidayName ? [hDB.b, hDB.l, hDB.d] : [
-            mDB.b[Math.abs(id) % mDB.b.length], 
-            mDB.l[Math.abs(id) % mDB.l.length], 
-            mDB.d[Math.abs(id) % mDB.d.length]
-        ];
-        
+        let id = Math.abs(stableSeed(d.toDateString()));
+        let meals = [mDB.b[id % 30], mDB.l[id % 30], mDB.d[id % 30]];
         meals.forEach(m => rawItems.push(...m.split('|')[1].split(',')));
-        if(jDB[jcs[i]]) rawItems.push(...jDB[jcs[i]][1].split(','));
-        
-        let dateKey = getDateKey(d);
-        if(snackLog[dateKey]) {
-            snackLog[dateKey].forEach(sIdx => {
-                if(sIdx !== null) rawItems.push(...mDB.s[sIdx].split('|')[1].split(','));
-            });
-        }
     }
-
     let meatList = {}, freshList = {};
-    const meatKeys = ['Bison', 'Steak', 'Beef', 'Chicken', 'Turkey', 'Salmon', 'Cod', 'Tuna', 'Sardines', 'Mackerel', 'Lamb', 'Boar', 'Trout', 'Duck', 'Octopus', 'Clams', 'Scallops', 'Halibut', 'Swordfish', 'Venison', 'Liver', 'Bacon'];
-
+    const meatKeys = ['Bison', 'Steak', 'Beef', 'Chicken', 'Turkey', 'Salmon', 'Cod', 'Tuna', 'Sardines', 'Lamb', 'Boar', 'Trout', 'Duck'];
     rawItems.forEach(item => {
         let name = item.trim();
-        if (meatKeys.some(k => name.includes(k))) meatList[name] = (meatList[name] || 0) + 1;
-        else freshList[name] = (freshList[name] || 0) + 1;
+        let target = meatKeys.some(k => name.includes(k)) ? meatList : freshList;
+        target[name] = (target[name] || 0) + 1;
     });
-
-    let html = `<div class="grocery-cat">🥩 PROTEIN & MEATS</div>`;
+    let html = `<div class="grocery-cat">🥩 PROTEINS</div>`;
     Object.keys(meatList).sort().forEach(k => html += `<div class="grocery-item">⬜ <span>${k} (x${meatList[k]})</span></div>`);
-    html += `<div class="grocery-cat">🥦 PRODUCE & PANTRY</div>`;
+    html += `<div class="grocery-cat">🥦 PRODUCE & FRESH</div>`;
     Object.keys(freshList).sort().forEach(k => html += `<div class="grocery-item">⬜ <span>${k} (x${freshList[k]})</span></div>`);
-    
     modalBody.innerHTML = html;
-    document.getElementById('mTip').innerText = "LONGEVITY TIP: Quality over quantity. Prioritize grass-fed and wild-caught sources.";
     document.getElementById('masterModal').style.display = 'block';
 }
 
-// --- BIO-SCAN SYSTEM ---
 function openBio() {
     const modalBody = document.getElementById('mBody');
-    document.getElementById('mTitle').innerText = (user === 'J' ? "JERMAINE" : "SOPHIA") + " CLINICAL SCAN";
+    document.getElementById('mTitle').innerText = "LONGEVITY SCAN";
     document.getElementById('mImgContainer').innerHTML = '';
-    document.getElementById('mSub').innerText = "Biological Integrity Scan";
-
-    modalBody.innerHTML = `
-        <div class="tabs" style="margin-bottom:20px;">
-            <div id="btPhys" class="tab active" onclick="renderBioTab('phys')">BODY</div>
-            <div id="btLabs" class="tab" onclick="renderBioTab('labs')">LABS</div>
-            <div id="btTests" class="tab" onclick="renderBioTab('tests')">TESTS</div>
-        </div>
-        <div id="bioContentArea"></div>
-    `;
+    modalBody.innerHTML = `<div class="tabs" style="margin-bottom:20px;"><div id="btPhys" class="tab active" onclick="renderBioTab('phys')">BODY</div><div id="btLabs" class="tab" onclick="renderBioTab('labs')">LABS</div><div id="btTests" class="tab" onclick="renderBioTab('tests')">TESTS</div></div><div id="bioContentArea"></div>`;
     renderBioTab('phys');
     document.getElementById('masterModal').style.display = 'block';
 }
@@ -464,81 +381,41 @@ function renderBioTab(tab) {
     const target = document.getElementById('bioContentArea');
     document.querySelectorAll('[id^="bt"]').forEach(t => t.classList.remove('active'));
     document.getElementById('bt' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
-
     let html = '';
-    const items = tab === 'phys' ? 
-        [{name:"Body Fat",k:"bf",unit:"%"}, {name:"Muscle Mass",k:"m",unit:" lbs"}, {name:"Visceral Fat",k:"vf",unit:" lvl"}] : 
-        Object.values(u[tab]);
-
+    const items = tab === 'phys' ? [{name:"Body Fat",k:"bf",unit:"%"},{name:"Muscle",k:"m",unit:"lb"}] : Object.values(u[tab]);
     items.forEach(m => {
         const val = tab === 'phys' ? u.now[m.k] : m.val;
         const goal = tab === 'phys' ? u.goal[m.k] : m.goal;
-        const unit = tab === 'phys' ? m.unit : m.unit;
-        const name = tab === 'phys' ? m.name : m.name;
-        const pct = Math.min((val / goal) * 100, 100);
-        
-        html += `
-            <div class="bio-section" style="margin-bottom:15px">
-                <div class="bio-title"><span>${name}</span><span style="color:var(--green)">Goal: ${goal}${unit}</span></div>
-                <div class="bar-track"><div class="bar-fill now" style="width:${pct}%; background:${pct > 90 ? 'var(--green)' : 'var(--gold)'}"></div></div>
-                <div style="font-size:0.7rem; margin-top:5px; color:#888">Current: ${val}${unit}</div>
-            </div>`;
+        const pct = Math.min((val/goal)*100, 100);
+        html += `<div class="bio-section"><div class="bio-title"><span>${m.name}</span><span>Goal: ${goal}${m.unit||''}</span></div><div class="bar-track"><div class="bar-fill now" style="width:${pct}%"></div></div></div>`;
     });
     target.innerHTML = html;
-}// --- UI RENDERING ENGINE ---
+}
+
+// --- RENDER & IMAGES ---
 function openR(n, i, a, t) {
     document.getElementById('mTitle').innerText = n;
     const container = document.getElementById('mImgContainer');
-    container.innerHTML = '<div class="img-loader">✨ Chef is plating...</div>'; 
-
-    const cleanName = n.split('|')[0].replace(/[^a-zA-Z ]/g, "").trim();
-    const seed = stableSeed(cleanName);
-    const prompt = encodeURIComponent(`high end food photography of ${cleanName}, plated, dark lighting, 8k`);
-    const imgUrl = `https://image.pollinations.ai/prompt/${prompt}?width=800&height=600&seed=${seed}&nologo=true&model=turbo`;
-
+    container.innerHTML = '<div class="img-loader">✨ Plating...</div>';
+    const clean = n.split('|')[0].replace(/[^a-zA-Z ]/g, "").trim();
     const img = document.createElement("img");
     img.className = "meal-img";
-    
-    // Safety Fallback if AI fails or takes too long
-    const timer = setTimeout(() => {
-        if (!img.complete) img.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80";
-    }, 3600000); // 60 MINUTE WAIT PER REQUEST
-
-    img.onload = () => {
-        clearTimeout(timer);
-        container.innerHTML = ""; 
-        container.appendChild(img);
-        setTimeout(() => { 
-            img.style.opacity = "1"; 
-            img.style.filter = "blur(0)"; 
-        }, 50);
-    };
-    
-    img.onerror = () => { 
-        img.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80"; 
-        img.style.opacity = "1"; 
-        img.style.filter = "blur(0)"; 
-    };
-    
-    img.src = imgUrl;
-    document.getElementById('mBody').innerHTML = `<p>${t}</p><br><strong>Ingredients:</strong><br>${i.replace(/,/g, ' • ')}`;
+    const timer = setTimeout(() => { if (!img.complete) img.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80"; }, 3600000); 
+    img.onload = () => { clearTimeout(timer); container.innerHTML = ""; container.appendChild(img); setTimeout(() => { img.style.opacity = "1"; img.style.filter = "blur(0)"; }, 50); };
+    img.src = `https://image.pollinations.ai/prompt/${encodeURIComponent(clean)}?width=800&height=600&seed=${stableSeed(clean)}&nologo=true`;
+    document.getElementById('mBody').innerHTML = `<p>${t}</p>`;
     document.getElementById('masterModal').style.display = 'block';
 }
 
 function render() {
     const start = getMon(offset);
     const tabs = document.getElementById('dayTabs'); tabs.innerHTML = '';
-    const days = ["MON","TUE","WED","THU","FRI","SAT","SUN"];
-    
-    const end = new Date(start); end.setDate(start.getDate() + 6);
-    document.getElementById('dateDisplay').innerText = `${start.toLocaleDateString('en-US',{month:'short',day:'numeric'})} - ${end.toLocaleDateString('en-US',{month:'short',day:'numeric'})}`;
-
     for(let i=0; i<7; i++) {
         let d = new Date(start.getTime() + i*864e5);
         const active = getDateKey(d) === getDateKey(selDate);
         const tab = document.createElement('div');
         tab.className = 'tab' + (active ? ' active' : '');
-        tab.innerHTML = `${days[i]}<br>${d.getDate()}`;
+        tab.innerHTML = `${["MON","TUE","WED","THU","FRI","SAT","SUN"][i]}<br>${d.getDate()}`;
         tab.onclick = () => { selDate = d; render(); saveData(); };
         tabs.appendChild(tab);
         if(active) showDay(d, i);
@@ -546,40 +423,18 @@ function render() {
 }
 
 function showDay(dObj, idx) {
-    const id = Math.floor(dObj.getTime()/864e5);
-    const dateKey = getDateKey(dObj);
-    const holiday = getHoliday(dObj);
-    const snacks = snackLog[dateKey] || [null, null];
-    
-    let b = (holiday ? hDB.b : mDB.b[Math.abs(id) % mDB.b.length]).split('|');
-    let l = (holiday ? hDB.l : mDB.l[Math.abs(id) % mDB.l.length]).split('|');
-    let dn = (holiday ? hDB.d : mDB.d[Math.abs(id) % mDB.d.length]).split('|');
-
+    const id = Math.abs(stableSeed(dObj.toDateString()));
+    const snacks = snackLog[getDateKey(dObj)] || [null, null];
+    const b = mDB.b[id % 30].split('|'), l = mDB.l[id % 30].split('|'), dn = mDB.d[id % 30].split('|');
     const sc = user==='J'?1:0.6;
     let p = Math.round((parseInt(b[4])+parseInt(l[4])+parseInt(dn[4]))*sc);
     let c = Math.round((parseInt(b[5])+parseInt(l[5])+parseInt(dn[5]))*sc);
-    let k = Math.round((parseInt(b[6])+parseInt(l[6])+parseInt(dn[6]))*sc);
-    
     let sH = '<div class="snack-grid">';
     snacks.forEach((sIdx, i) => {
         if(sIdx === null) sH += `<div class="snack-slot" onclick="openSnackSelector(${i})">＋ ADD</div>`;
-        else { 
-            const s = mDB.s[sIdx].split('|'); 
-            p += parseInt(s[4]); c += parseInt(s[5]); k += parseInt(s[6]);
-            sH += `<div class="snack-slot filled" onclick="openR('${s[0]}','${s[1]}','','${s[3]}')"><div class="remove-snack" onclick="event.stopPropagation(); removeSnack('${dateKey}',${i})">✕</div><div class="snack-label">${s[0]}</div></div>`; 
-        }
+        else { const s = mDB.s[sIdx].split('|'); p += parseInt(s[4]); c += parseInt(s[5]); sH += `<div class="snack-slot filled"><span>${s[0]}</span></div>`; }
     });
-
-    const goal = user==='J'?{p:165,f:35,k:2200}:{p:105,f:25,k:1300};
-
-    document.getElementById('dayContent').innerHTML = `
-        <div class="card"><div class="label">🍳 Breakfast</div><div class="value" onclick="openR('${b[0]}','${b[1]}','','${b[3]}')">${b[0]}</div><div class="label">🥗 Lunch</div><div class="value" onclick="openR('${l[0]}','${l[1]}','','${l[3]}')">${l[0]}</div><div class="label">🍽️ Dinner</div><div class="value" onclick="openR('${dn[0]}','${dn[1]}','','${dn[3]}')">${dn[0]}</div><div class="label">🥜 Snacks</div>${sH}</div>
-        <div class="macro-dashboard">
-            <div class="macro-row"><div class="macro-label"><span>PROTEIN</span><span>${p}g / ${goal.p}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min(p/goal.p*100,100)}%; background:var(--g-pro)"></div></div></div>
-            <div class="macro-row"><div class="macro-label"><span>FIBER (Est)</span><span>${Math.round(c*0.2)}g / ${goal.f}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((c*0.2)/goal.f*100,100)}%; background:var(--g-fib)"></div></div></div>
-            <div class="macro-row"><div class="macro-label"><span>CALORIES</span><span>${k} / ${goal.k}</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min(k/goal.k*100,100)}%; background:var(--g-cal)"></div></div></div>
-        </div>
-        <button class="nav-btn" style="width:100%; margin-top:10px; color:var(--gold); font-size:0.7rem;" onclick="generateGroceryList()">🛒 GENERATE WEEKLY GROCERY SCAN</button>`;
+    document.getElementById('dayContent').innerHTML = `<div class="card"><div class="label">🍳 Breakfast</div><div class="value" onclick="openR('${b[0]}','${b[1]}','','${b[3]}')">${b[0]}</div><div class="label">🥗 Lunch</div><div class="value" onclick="openR('${l[0]}','${l[1]}','','${l[3]}')">${l[0]}</div><div class="label">🍽️ Dinner</div><div class="value" onclick="openR('${dn[0]}','${dn[1]}','','${dn[3]}')">${dn[0]}</div><div class="label">🥜 Snacks</div>${sH}</div><div class="macro-dashboard"><div class="macro-row"><div class="macro-label"><span>PROTEIN</span><span>${p}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${p/1.65}%; background:var(--g-pro)"></div></div></div><div class="macro-row"><div class="macro-label"><span>FIBER (Est)</span><span>${Math.round(c*0.2)}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${c*0.8}%; background:var(--g-fib)"></div></div></div></div><button class="nav-btn" style="width:100%; color:var(--gold)" onclick="generateGroceryList()">🛒 VIEW WEEKLY GROCERY LIST</button>`;
 }
 
 function openSnackSelector(slot) {
@@ -594,13 +449,11 @@ function openSnackSelector(slot) {
 function applySnack(idx) { 
     const dk = getDateKey(selDate);
     if(!snackLog[dk]) snackLog[dk]=[null,null]; 
-    snackLog[dk][currentSlot] = idx; 
-    closeM(); render(); saveData(); 
+    snackLog[dk][currentSlot] = idx; closeM(); render(); saveData(); 
 }
-
-function removeSnack(day, slot) { snackLog[day][slot] = null; render(); saveData(); }
-function closeM() { document.getElementById('masterModal').style.display = 'none'; }
-function openM(n){ const d=rDB[n]; document.getElementById('mTitle').innerText=n; document.getElementById('mImgContainer').innerHTML = ''; document.getElementById('mBody').innerHTML=d.slice(1).map(x=>`<p>${x}</p>`).join(''); document.getElementById('masterModal').style.display='block'; }
+function resetD() { offset=0; selDate=getCaDate(); render(); saveData(); }
+function switchU(uID){ user=uID; document.querySelectorAll('.u-badge').forEach(b=>b.classList.remove('active')); document.getElementById('b'+uID.toLowerCase()).classList.add('active'); render(); saveData(); }
+function closeM(){ document.getElementById('masterModal').style.display='none' }
 
 window.onload = () => { loadData(); render(); };
 </script>
