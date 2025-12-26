@@ -260,41 +260,62 @@ var uH = {
 
 // --- SAFE CALCULATOR (NO MODERN SYNTAX) ---
 // --- UPDATED CALCULATOR (GOAL LOCKED TO 100) ---
+// --- SCIENTIFIC LONGEVITY CALCULATOR ---
+// Based on hazard ratios from Mandsager (VO2), Ference (ApoB), and Leong (Strength)
 function calculateLifeExpectancy(uID) {
     var u = uH[uID];
     if (!u) return { current: 0, potential: 0 };
     
     var l = u.labs;
     var t = u.tests;
-    var baseAge = 78; // Baseline
+    var f = u.now;
+    
+    // BASELINE: The average American life expectancy is ~76-78.
+    // We start at 78 and punish/reward based on deviation from "Centurion Standards".
+    var baseAge = 78; 
 
-    // --- BIOLOGICAL AGE CALCULATION (Where you are NOW) ---
-    // 1. VO2 Max (The Engine)
-    if (t.vo2 && t.vo2.val > 50) baseAge += 5; 
-    else if (t.vo2 && t.vo2.val > 40) baseAge += 2; 
-    else if (t.vo2 && t.vo2.val < 30) baseAge -= 3;
+    // 1. VO2 MAX (Weight: HIGH)
+    // Source: Mandsager et al. (2018) - Elite fitness = 5x reduction in mortality risk.
+    if (t.vo2 && t.vo2.val >= 50) baseAge += 8;      // Elite
+    else if (t.vo2 && t.vo2.val >= 40) baseAge += 4; // High
+    else if (t.vo2 && t.vo2.val < 30) baseAge -= 5;  // Low (Significant Risk)
 
-    // 2. ApoB (The Arteries)
-    if (l.apob && l.apob.val < 70) baseAge += 3; 
-    else if (l.apob && l.apob.val > 100) baseAge -= 3;
+    // 2. APOB / VASCULAR HEALTH (Weight: HIGH)
+    // Source: Ference et al. (2017) - Long term exposure to low LDL/ApoB reduces event risk.
+    // Centurion Target: <60 mg/dL
+    if (l.apob && l.apob.val <= 60) baseAge += 6;    // Arterial Protection
+    else if (l.apob && l.apob.val <= 80) baseAge += 2;
+    else if (l.apob && l.apob.val > 100) baseAge -= 4; // Atherogenic Zone
 
-    // 3. Metabolic Health (Sugar/Fat)
-    if (l.hba1c && l.hba1c.val < 5.1) baseAge += 2; 
-    else if (l.hba1c && l.hba1c.val > 5.7) baseAge -= 4;
+    // 3. METABOLIC HEALTH (HbA1c) (Weight: MEDIUM)
+    // Source: Caerphilly Cohort - HbA1c predicts all-cause mortality.
+    // Centurion Target: <5.0%
+    if (l.hba1c && l.hba1c.val <= 5.0) baseAge += 4;
+    else if (l.hba1c && l.hba1c.val >= 5.7) baseAge -= 4; // Prediabetic Range
 
-    if (u.now.vf < 6) baseAge += 2; 
-    else if (u.now.vf > 10) baseAge -= 3;
+    // 4. INFLAMMATION & VISCERAL FAT (Weight: MEDIUM)
+    // Chronic inflammation (Inflammaging) accelerates telomere shortening.
+    if (f.vf <= 6) baseAge += 3;
+    else if (f.vf >= 10) baseAge -= 3;
+    
+    // 5. STRENGTH / FRAILTY (Dead Hang) (Weight: MEDIUM)
+    // Source: Leong et al. (2015) - Grip strength predicts mortality.
+    // J Target: 120s | S Target: 60s
+    var hangGoal = (uID === 'J') ? 90 : 45;
+    if (t.hang && t.hang.val >= hangGoal) baseAge += 3;
 
-    // 4. Autoimmune Penalty (Sophia Specific)
-    if (l.ana && l.ana.val > 80) baseAge -= 2;
+    // 6. AUTOIMMUNE PENALTY (Sophia Specific)
+    // Uncontrolled autoimmunity increases systemic inflammatory burden.
+    if (l.ana && l.ana.val > 80) baseAge -= 4; 
+    // If she fixes it (AIP protocol), she reclaims these years.
 
-    // --- THE GOAL IS FIXED ---
-    var potential = 100; 
+    // Cap at 100 for the visual "Gap"
+    if (baseAge > 100) baseAge = 100;
 
-    return { current: baseAge, potential: potential };
+    return { current: baseAge, potential: 100 };
 }
 
-// --- UPDATED RENDERER (CENTURION LABEL) ---
+// --- RENDERER WITH "GAP TO 100" VISUAL ---
 function renderBioTab(tab) {
     var u = uH[user];
     var target = document.getElementById('bioContentArea');
@@ -307,24 +328,41 @@ function renderBioTab(tab) {
     // LIFE EXPECTANCY (Phys Tab Only)
     if(tab === 'phys') {
         var le = calculateLifeExpectancy(user);
-        // GAP CALCULATION
         var gap = le.potential - le.current;
-        var gapColor = gap > 15 ? '#FF5252' : (gap > 5 ? 'var(--gold)' : 'var(--green)');
+        
+        // Color coding the gap urgency
+        var gapColor = 'var(--green)'; // On track
+        if (gap > 20) gapColor = '#FF5252'; // Critical
+        else if (gap > 10) gapColor = 'var(--gold)'; // Warning
 
-        html += '<div style="background:linear-gradient(135deg, #1a1a1a, #000); border:1px solid #333; border-radius:12px; padding:15px; margin-bottom:20px; text-align:center;">';
-        html += '<div style="font-size:0.6rem; color:#888; font-weight:900; letter-spacing:2px; text-transform:uppercase; margin-bottom:5px;">Biological Age vs Centurion Goal</div>';
-        html += '<div style="display:flex; justify-content:center; align-items:baseline; gap:10px;">';
+        html += '<div style="background:linear-gradient(135deg, #111, #000); border:1px solid #333; border-radius:12px; padding:20px; margin-bottom:20px; text-align:center;">';
         
-        // Current Bio Age
-        html += '<div style="text-align:center"><div style="font-size:2.5rem; font-weight:800; color:#fff">' + le.current + '</div><div style="font-size:0.5rem; color:#666; font-weight:900">CURRENT</div></div>';
+        html += '<div style="font-size:0.6rem; color:#666; font-weight:900; letter-spacing:3px; text-transform:uppercase; margin-bottom:10px;">Biological Age Projection</div>';
         
-        html += '<div style="font-size:1rem; color:#444; font-weight:700; padding-bottom:15px">➔</div>';
+        html += '<div style="display:flex; justify-content:center; align-items:center; gap:15px; margin-bottom:10px;">';
         
-        // The 100 Goal
-        html += '<div style="text-align:center"><div style="font-size:2.5rem; color:var(--gold); font-weight:700;">' + le.potential + '</div><div style="font-size:0.5rem; color:var(--gold); font-weight:900">GOAL</div></div>';
+        // CURRENT
+        html += '<div><div style="font-size:3rem; line-height:1; font-weight:800; color:#fff">' + le.current + '</div><div style="font-size:0.55rem; color:#888; font-weight:900; margin-top:5px;">CURRENT TRAJECTORY</div></div>';
+        
+        // ARROW
+        html += '<div style="font-size:1.2rem; color:#444;">➔</div>';
+        
+        // GOAL
+        html += '<div><div style="font-size:3rem; line-height:1; font-weight:800; color:var(--gold); text-shadow:0 0 15px rgba(212,175,55,0.3)">' + le.potential + '</div><div style="font-size:0.55rem; color:var(--gold); font-weight:900; margin-top:5px;">CENTURION GOAL</div></div>';
         
         html += '</div>';
-        html += '<div style="font-size:0.55rem; color:'+gapColor+'; margin-top:5px; font-weight:700;">GAP: ' + gap + ' YEARS TO CLOSE</div>';
+        
+        // GAP TEXT
+        if(gap > 0) {
+            html += '<div style="background:rgba(255,255,255,0.05); border-radius:8px; padding:8px; display:inline-block;">';
+            html += '<span style="font-size:0.7rem; color:#ccc;">GAP: </span>';
+            html += '<span style="font-size:0.8rem; font-weight:800; color:' + gapColor + ';">-' + gap + ' YEARS</span>';
+            html += '<div style="font-size:0.5rem; color:#666; margin-top:4px;">OPTIMIZE APOB & VO2 MAX TO CLOSE GAP</div>';
+            html += '</div>';
+        } else {
+            html += '<div style="font-size:0.8rem; font-weight:800; color:var(--green);">CENTURION STATUS UNLOCKED 🏆</div>';
+        }
+        
         html += '</div>';
     }
 
