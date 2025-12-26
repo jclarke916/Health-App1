@@ -315,28 +315,25 @@ function getMon(o){
 // CALENDAR NAVIGATION LOGIC
 // ===============================
 
-function changeW(direction) {
-    // 1. Calculate the start of the current week (Monday)
-    let currentMon = getMon(0); 
-    
-    if (direction > 0) {
-        // NEXT pressed: Move to Monday of the next week
+function changeW(d) {
+    // direction 1 = Next, -1 = Prev
+    let currentMon = getMon(offset); 
+    if (d > 0) {
+        // Jump to Monday of NEXT week
         selDate = new Date(currentMon.getTime() + (7 * 864e5));
     } else {
-        // PREV pressed: Move to Sunday of the previous week
+        // Jump to Sunday of PREVIOUS week
         selDate = new Date(currentMon.getTime() - 864e5);
     }
-    
-    // Reset hours to noon to avoid DST/Timezone bleed
     selDate.setHours(12, 0, 0, 0);
     
-    // Sync the week offset for the tab rendering
-    updateOffsetFromSelection();
+    // Sync the global 'offset' to match the new selection
+    let today = getCaDate();
+    let diff = Math.round((selDate - today) / 864e5);
+    offset = Math.floor((diff + today.getDay()) / 7);
     
     render();
-    saveData();
 }
-
 // Helper to keep the week view (offset) in sync with your manual date selection
 function updateOffsetFromSelection() {
     let today = getCaDate();
