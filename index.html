@@ -986,19 +986,15 @@ function toggleBioItem(id) {
 
 function closeM(){ document.getElementById('masterModal').style.display='none' }
 
-// --- OURA AUTO-SYNC LOGIC v5.1 (Dual User + RESET Button) ---
+// --- OURA AUTO-SYNC LOGIC v6.0 (Cache-Busting Edition) ---
 async function connectOura() {
     let currentToken = getActiveToken();
     let name = (user === 'J') ? "JERMAINE" : "SOPHIA";
-    
-    // Explicitly ask for the token of the CURRENT user
     const token = prompt(`Paste OURA TOKEN for ${name}:`, currentToken);
     
     if (token && token !== currentToken) {
         if (user === 'J') localStorage.setItem('centurion_oura_token_J', token.trim());
         if (user === 'S') localStorage.setItem('centurion_oura_token_S', token.trim());
-        
-        // Force immediate reload of data
         document.getElementById('dateDisplay').innerHTML = "💍 SAVING...";
         setTimeout(fetchOuraData, 500);
     } else {
@@ -1009,7 +1005,9 @@ async function connectOura() {
 async function fetchOuraData() {
     let activeToken = getActiveToken();
     
-    // If Sophia has no token, show button to add it
+    // DEBUG: Verify which token is being used in the console
+    console.log(`Syncing ${user} with token start: ${activeToken.substring(0, 5)}...`);
+
     if (!activeToken) {
         document.getElementById('dateDisplay').innerHTML = `<span style="color:var(--blue); font-weight:800; cursor:pointer;" onclick="connectOura()">💍 TAP TO ADD ${user}'s RING</span>`;
         return;
@@ -1021,13 +1019,25 @@ async function fetchOuraData() {
     document.getElementById('dateDisplay').innerHTML = `💍 SYNCING...`;
 
     const PROXY_URL = "https://corsproxy.io/?";
-    const headers = { 'Authorization': `Bearer ${activeToken}` };
+    const headers = { 
+        'Authorization': `Bearer ${activeToken}` 
+    };
+
+    // --- CACHE BUSTER ---
+    // We add a random number to the URL to force the browser/proxy to treat it as new
+    const buster = `&cb=${Date.now()}`;
 
     try {
         const rawUrl = `https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${lookback}&end_date=${today}`;
-        const proxyUrl = PROXY_URL + encodeURIComponent(rawUrl);
+        // We append the buster to the PROXY URL, not the Oura URL (to avoid API errors), 
+        // or we use cache: 'no-store' in the fetch options.
         
-        const response = await fetch(proxyUrl, { headers });
+        const proxyUrl = PROXY_URL + encodeURIComponent(rawUrl) + buster;
+        
+        // Force network request
+        const fetchOpts = { headers, cache: "no-store" };
+
+        const response = await fetch(proxyUrl, fetchOpts);
 
         if (!response.ok) throw new Error("401"); 
 
@@ -1038,8 +1048,8 @@ async function fetchOuraData() {
             const activityUrl = `https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${lookback}&end_date=${today}`;
             
             const [sleepRes, activityRes] = await Promise.all([
-                fetch(PROXY_URL + encodeURIComponent(sleepUrl), { headers }),
-                fetch(PROXY_URL + encodeURIComponent(activityUrl), { headers })
+                fetch(PROXY_URL + encodeURIComponent(sleepUrl) + buster, fetchOpts),
+                fetch(PROXY_URL + encodeURIComponent(activityUrl) + buster, fetchOpts)
             ]);
 
             const sData = await sleepRes.json();
@@ -1062,12 +1072,10 @@ async function fetchOuraData() {
             let rhr = (sleep && sleep.lowest_heart_rate) ? sleep.lowest_heart_rate : "Syncing...";
             let steps = (activity && activity.steps) ? activity.steps : "Tracking...";
             
-            // The popup now explicitly confirms WHICH token is active (J vs S)
-            let displayHTML = `<span style="color:${color}; cursor:pointer;" onclick="alert('Viewing: ${user === 'J' ? 'Jermaine' : 'Sophia'}\\nDate: ${targetDate}\\nRHR: ${rhr}\\nSteps: ${steps}')">💍 ${user === 'J' ? "JERMAINE" : "SOPHIA"}: ${score} (${status})</span>`;
+            let displayHTML = `<span style="color:${color}; cursor:pointer;" onclick="alert('Viewing: ${user === 'J' ? 'Jermaine' : 'Sophia'}\\nDate: ${targetDate}\\nRHR: ${rhr}\\nSteps: ${steps}\\nToken: ...${activeToken.slice(-4)}')">💍 ${user === 'J' ? "JERMAINE" : "SOPHIA"}: ${score} (${status})</span>`;
             
-            // "Reset Token" button appears in popup for easy fixing
             if(user === 'S') {
-                 displayHTML += ` <span style="font-size:0.55rem; color:#666; margin-left:5px; cursor:pointer; text-decoration:underline;" onclick="connectOura()">↻ RESET TOKEN</span>`;
+                 displayHTML += ` <span style="font-size:0.55rem; color:#666; margin-left:5px; cursor:pointer; text-decoration:underline;" onclick="connectOura()">↻ RESET</span>`;
             }
 
             if(user === 'S' && typeof rhr === 'number' && rhr > 60) {
@@ -1081,7 +1089,6 @@ async function fetchOuraData() {
         }
     } catch (e) {
         console.error(e);
-        // If error is 401 (Unauthorized), it means the token belongs to the wrong person
         document.getElementById('dateDisplay').innerHTML = `<span style="color:#FF5252; cursor:pointer;" onclick="connectOura()">💍 WRONG TOKEN (Tap to Fix)</span>`;
     }
 }
