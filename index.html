@@ -116,10 +116,95 @@ let user='J', offset=0;
 let snackLog = {}; 
 let currentSlot = 0;
 
-// --- OURA TOKEN (Hardcoded for Auto-Sync) ---
-const HARDCODED_TOKEN = "WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y";
+// --- OURA AUTO-SYNC LOGIC v2.0 (Debug Mode) ---
+const HARDCODED_TOKEN = "WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y"; 
 let ouraToken = localStorage.getItem('centurion_oura_token') || HARDCODED_TOKEN;
 
+async function connectOura() {
+    const token = prompt("Current Oura Token:", ouraToken);
+    if (token && token !== ouraToken) {
+        localStorage.setItem('centurion_oura_token', token.trim()); // Trim removes hidden spaces
+        ouraToken = token.trim();
+        await fetchOuraData();
+    } else {
+        await fetchOuraData();
+    }
+}
+
+async function fetchOuraData() {
+    if (!ouraToken) return;
+    
+    // 1. WIDEN THE SEARCH WINDOW (Look back 3 days to ensure we find data)
+    const today = new Date().toISOString().split('T')[0];
+    const lookback = new Date(Date.now() - (86400000 * 3)).toISOString().split('T')[0];
+    
+    document.getElementById('dateDisplay').innerHTML = `💍 CONNECTING...`;
+
+    try {
+        const headers = { 'Authorization': `Bearer ${ouraToken}` };
+        
+        // 2. FETCH READINESS ONLY FIRST (To test connection)
+        const response = await fetch(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${lookback}&end_date=${today}`, { headers });
+
+        // 3. SPECIFIC ERROR HANDLING
+        if (!response.ok) {
+            if(response.status === 401) throw new Error("401 AUTH ERROR (Token Wrong)");
+            if(response.status === 429) throw new Error("TOO MANY REQUESTS");
+            throw new Error(`API ERROR ${response.status}`);
+        }
+
+        const rData = await response.json();
+
+        // 4. CHECK FOR DATA HOLES
+        if (rData.data && rData.data.length > 0) {
+            // Success! Now get Sleep & Activity
+            const [sleepRes, activityRes] = await Promise.all([
+                fetch(`https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${lookback}&end_date=${today}`, { headers }),
+                fetch(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${lookback}&end_date=${today}`, { headers })
+            ]);
+
+            const sData = await sleepRes.json();
+            const aData = await activityRes.json();
+
+            // Get the absolute latest entry
+            const ready = rData.data[rData.data.length - 1];
+            const sleep = sData.data[sData.data.length - 1];
+            const activity = aData.data[aData.data.length - 1];
+            
+            const score = ready.score;
+            let status = "OPTIMAL";
+            let color = "var(--green)";
+            
+            if(score < 85) { status = "MAINTENANCE"; color = "var(--gold)"; }
+            if(score < 70) { status = "⚠️ RECOVER"; color = "#FF5252"; }
+            
+            let rhr = sleep.lowest_heart_rate;
+            
+            let displayHTML = `<span style="color:${color}; cursor:pointer;" onclick="alert('Score: ${score}\\nRHR: ${rhr}\\nSteps: ${activity.steps}\\nDate: ${ready.day}')">💍 OURA: ${score} (${status})</span>`;
+
+            // SOPHIA INFLAMMATION CHECK
+            if(user === 'S' && rhr > 60) {
+                displayHTML += ` <span style="font-size:0.6rem; color:#FF5252; border:1px solid #FF5252; padding:2px 4px; border-radius:4px;">🔥 RHR SPIKE (${rhr})</span>`;
+            }
+            
+            document.getElementById('dateDisplay').innerHTML = displayHTML;
+            
+        } else {
+            // Token worked, but no data found (Sync Issue)
+            document.getElementById('dateDisplay').innerHTML = `<span style="color:orange" onclick="alert('Token is valid, but Oura Cloud has no data for the last 3 days. Open your Oura App on your phone and verify it has synced.')">💍 NO DATA FOUND (Tap for Help)</span>`;
+        }
+    } catch (e) {
+        console.error(e);
+        // Show the ACTUAL error on screen
+        document.getElementById('dateDisplay').innerHTML = `<span style="color:#FF5252" onclick="connectOura()">💍 FAILED: ${e.message} (Tap to Fix)</span>`;
+    }
+}
+
+// Auto-run logic
+window.onload = function() {
+    render();
+    if(ouraToken) setTimeout(fetchOuraData, 1500);
+};
 function getCaDate() {
     let d = new Date(new Date().toLocaleString("en-US", {timeZone: "America/Los_Angeles"}));
     d.setHours(12, 0, 0, 0); 
