@@ -112,18 +112,24 @@
 </div>
 <script>
 // --- GLOBAL STATE ---
-let user='J', offset=0;
+// Load the last selected user, default to 'J'
+let user = localStorage.getItem('centurion_active_user') || 'J';
+let offset = 0;
 let snackLog = {}; 
 let currentSlot = 0;
 
 // --- DUAL OURA CONFIGURATION ---
-const TOKEN_J = "WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y"; // Jermaine's Hardcoded Key
+const TOKEN_J = "WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y"; // Jermaine's Key
+const TOKEN_S = "4QSDWYJJUZFHRWRH727NCK7WH4COQJF4"; // Sophia's Key
 
 function getActiveToken() {
     if (user === 'J') {
         return localStorage.getItem('centurion_oura_token_J') || TOKEN_J;
     } else {
-        return localStorage.getItem('centurion_oura_token_S') || "";
+        // --- THE FIX ---
+        // We force the script to use the TOKEN_S variable directly
+        // This bypasses the "bad" token your browser might have saved
+        return TOKEN_S; 
     }
 }
 
@@ -403,7 +409,9 @@ function getHoliday(d) {
 
 // --- UPDATED USER SWITCHER ---
 function switchU(uID){ 
-    user=uID; 
+    user=uID;
+    localStorage.setItem('centurion_active_user', uID); // SAVE SELECTION
+    
     document.querySelectorAll('.u-badge').forEach(b=>b.classList.remove('active')); 
     document.getElementById('b'+uID.toLowerCase()).classList.add('active'); 
     
@@ -1055,7 +1063,7 @@ async function fetchOuraData() {
             let steps = (activity && activity.steps) ? activity.steps : "Tracking...";
             
             // The popup now explicitly confirms WHICH token is active (J vs S)
-            let displayHTML = `<span style="color:${color}; cursor:pointer;" onclick="alert('Viewing: ${user === 'J' ? 'Jermaine' : 'Sophia'}\\nDate: ${targetDate}\\nRHR: ${rhr}\\nSteps: ${steps}')">💍 ${user}: ${score} (${status})</span>`;
+            let displayHTML = `<span style="color:${color}; cursor:pointer;" onclick="alert('Viewing: ${user === 'J' ? 'Jermaine' : 'Sophia'}\\nDate: ${targetDate}\\nRHR: ${rhr}\\nSteps: ${steps}')">💍 ${user === 'J' ? "JERMAINE" : "SOPHIA"}: ${score} (${status})</span>`;
             
             // "Reset Token" button appears in popup for easy fixing
             if(user === 'S') {
@@ -1081,6 +1089,11 @@ async function fetchOuraData() {
 // Auto-run logic
 window.onload = function() {
     render();
+    
+    // Force UI to match current user state on load
+    document.querySelectorAll('.u-badge').forEach(b=>b.classList.remove('active')); 
+    document.getElementById('b'+user.toLowerCase()).classList.add('active'); 
+
     if(getActiveToken()) setTimeout(fetchOuraData, 1000);
 };
 </script>
