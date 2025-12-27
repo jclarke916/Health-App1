@@ -958,7 +958,7 @@ function toggleBioItem(id) {
 
 function closeM(){ document.getElementById('masterModal').style.display='none' }
 
-// --- OURA AUTO-SYNC LOGIC v3.0 (CORS PROXY FIX) ---
+// -// --- OURA AUTO-SYNC LOGIC v4.0 (Smart Date Matching) ---
 async function connectOura() {
     const token = prompt("Oura Token:", ouraToken);
     if (token && token !== ouraToken) {
@@ -973,6 +973,7 @@ async function connectOura() {
 async function fetchOuraData() {
     if (!ouraToken) return;
     
+    // Look back 3 days to ensure we catch data even if sync is delayed
     const today = new Date().toISOString().split('T')[0];
     const lookback = new Date(Date.now() - (86400000 * 3)).toISOString().split('T')[0];
     
@@ -989,15 +990,12 @@ async function fetchOuraData() {
         
         const response = await fetch(proxyUrl, { headers });
 
-        if (!response.ok) {
-            // This will show the ACTUAL error code (401, 403, 500, etc)
-            throw new Error(`API ERROR ${response.status}`); 
-        }
+        if (!response.ok) throw new Error(`API ERROR ${response.status}`); 
 
         const rData = await response.json();
 
         if (rData.data && rData.data.length > 0) {
-            // Success! Fetch other metrics in parallel via Proxy
+            // Success! Fetch Sleep & Activity in parallel
             const sleepUrl = `https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${lookback}&end_date=${today}`;
             const activityUrl = `https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${lookback}&end_date=${today}`;
             
@@ -1009,11 +1007,16 @@ async function fetchOuraData() {
             const sData = await sleepRes.json();
             const aData = await activityRes.json();
 
-            // Get most recent data points
+            // 1. Get the LATEST Readiness Score (The "Anchor")
             const ready = rData.data[rData.data.length - 1];
-            const sleep = sData.data[sData.data.length - 1];
-            const activity = aData.data[aData.data.length - 1];
+            const targetDate = ready.day; // e.g. "2025-12-27"
+
+            // 2. Find matching Sleep & Activity data for THAT EXACT DATE
+            // (This fixes the "undefined" bug if lists are different lengths)
+            const sleep = sData.data.find(item => item.day === targetDate);
+            const activity = aData.data.find(item => item.day === targetDate);
             
+            // 3. Extract Values Safely
             const score = ready.score;
             let status = "OPTIMAL";
             let color = "var(--green)";
@@ -1021,12 +1024,14 @@ async function fetchOuraData() {
             if(score < 85) { status = "MAINTENANCE"; color = "var(--gold)"; }
             if(score < 70) { status = "⚠️ RECOVER"; color = "#FF5252"; }
             
-            let rhr = sleep.lowest_heart_rate;
+            // If sleep data isn't found yet (sync delay), show "Waiting..." instead of undefined
+            let rhr = (sleep && sleep.lowest_heart_rate) ? sleep.lowest_heart_rate : "Syncing...";
+            let steps = (activity && activity.steps) ? activity.steps : "Tracking...";
             
-            let displayHTML = `<span style="color:${color}; cursor:pointer;" onclick="alert('Score: ${score}\\nRHR: ${rhr}\\nSteps: ${activity.steps}\\nDate: ${ready.day}')">💍 OURA: ${score} (${status})</span>`;
+            let displayHTML = `<span style="color:${color}; cursor:pointer;" onclick="alert('Score: ${score}\\nRHR: ${rhr}\\nSteps: ${steps}\\nDate: ${targetDate}')">💍 OURA: ${score} (${status})</span>`;
 
-            // SOPHIA INFLAMMATION CHECK
-            if(user === 'S' && rhr > 60) {
+            // SOPHIA INFLAMMATION CHECK (Only alerts if RHR is actually a number)
+            if(user === 'S' && typeof rhr === 'number' && rhr > 60) {
                 displayHTML += ` <span style="font-size:0.6rem; color:#FF5252; border:1px solid #FF5252; padding:2px 4px; border-radius:4px;">🔥 RHR SPIKE (${rhr})</span>`;
             }
             
@@ -1037,7 +1042,6 @@ async function fetchOuraData() {
         }
     } catch (e) {
         console.error(e);
-        // CRITICAL FIX: We print the REAL error now, not "Invalid Token"
         let errorMsg = e.message;
         if(e.message.includes("Failed to fetch")) errorMsg = "NETWORK/CORS BLOCK";
         document.getElementById('dateDisplay').innerHTML = `<span style="color:#FF5252" onclick="connectOura()">💍 ERROR: ${errorMsg}</span>`;
