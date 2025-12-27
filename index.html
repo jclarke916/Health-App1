@@ -116,9 +116,14 @@ let user='J', offset=0;
 let snackLog = {}; 
 let currentSlot = 0;
 
-// --- OURA CONFIGURATION ---
-const HARDCODED_TOKEN = "WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y"; 
-let ouraToken = localStorage.getItem('centurion_oura_token') || HARDCODED_TOKEN;
+// --- DUAL OURA CONFIGURATION ---
+// We now store two separate tokens in the browser's memory
+const HARDCODED_TOKEN_J = "WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y"; // Jermaine's (Default)
+
+function getActiveToken() {
+    if (user === 'J') return localStorage.getItem('centurion_oura_token_J') || HARDCODED_TOKEN_J;
+    if (user === 'S') return localStorage.getItem('centurion_oura_token_S') || ""; // Sophia needs to add hers
+}
 
 // --- UTILITIES ---
 function getCaDate() {
@@ -233,24 +238,6 @@ const mDB = {
         "Chicken & Pepper/Bean|Chicken,Peppers,Black Beans|sear|<strong>Prep:</strong> 12m • <strong>Cook:</strong> 10m<hr><strong>INGREDIENTS</strong><br>6oz Chicken • Peppers • 1/2 Cup Beans<br><br><strong>1. PREP</strong><br>Fajita mix with beans.<br><br><strong>2. COOK</strong><br>Sear all.<br><br><strong>Longevity Win:</strong> Tex-Mex style. Beans provide the fiber backbone (10g Total).|38|18|400|10",
         "Bison & Radish/Greens|Bison,Radishes,Turnip Greens|sear|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 15m<hr><strong>INGREDIENTS</strong><br>6oz Bison • Radishes • Turnip Greens<br><br><strong>1. PREP</strong><br>Roast root veg.<br><br><strong>2. COOK</strong><br>Sauté greens (high fiber).<br><br><strong>Longevity Win:</strong> Turnip greens are underrated—5g fiber per cup. Meal Total: 9g.|40|10|420|9",
         "Tuna & Bean Salad|Tuna Steak,White Beans,Arugula|sear|<strong>Prep:</strong> 8m • <strong>Cook:</strong> 5m<hr><strong>INGREDIENTS</strong><br>6oz Tuna • 1/2 Cup White Beans • Greens<br><br><strong>1. PREP</strong><br>Toss beans with arugula/lemon.<br><br><strong>2. COOK</strong><br>Sear tuna. Place on salad.<br><br><strong>Longevity Win:</strong> A Tuscan classic. White beans are the fiber engine (10g Total).|42|18|410|10"
-    ],
-    s: [
-        "Beef Isolate Shake|Beef Isolate Protein,Water,Ice|shake|<strong>Prep:</strong> 2m<hr><strong>INGREDIENTS</strong><br>1 Scoop Beef Isolate • Water<br><br><strong>THE PROTOCOL</strong><br>Mix in shaker bottle.<br><br><strong>Longevity Win:</strong> Provides collagen and amino acids without the dairy inflammatory response of Whey.|25|0|110|0",
-        "Sardines (Water)|Sardines,Lemon,Hot Sauce|raw|<strong>Prep:</strong> 1m<hr><strong>INGREDIENTS</strong><br>1 Tin Sardines (Water)<br><br><strong>THE PROTOCOL</strong><br>Drain and eat straight from tin.<br><br><strong>Longevity Win:</strong> The most convenient source of Omega-3s on earth. Low mercury, high benefit.|22|0|190|0",
-        "Hard Boiled Eggs|2 Eggs,Sea Salt|boil|<strong>Prep:</strong> 12m<hr><strong>INGREDIENTS</strong><br>2 Pasture-Raised Eggs<br><br><strong>THE PROTOCOL</strong><br>Boil 8 mins. Ice bath. Peel.<br><br><strong>Longevity Win:</strong> Eggs provide Choline, essential for cell membrane structure and neurotransmitter synthesis.|12|1|140|0",
-        "Avocado Cup|1/2 Avocado,Sea Salt|raw|<strong>Prep:</strong> 1m<hr><strong>INGREDIENTS</strong><br>1/2 Avocado<br><br><strong>THE PROTOCOL</strong><br>Sprinkle with salt and eat with spoon.<br><br><strong>Longevity Win:</strong> Monounsaturated fats aid in the absorption of fat-soluble vitamins.|2|8|160|7",
-        "Turkey Slices|Roasted Turkey Breast|raw|<strong>Prep:</strong> 1m<hr><strong>INGREDIENTS</strong><br>4oz Roasted Turkey<br><br><strong>THE PROTOCOL</strong><br>Roll up slices.<br><br><strong>Longevity Win:</strong> Pure lean protein to hit macro targets without added fats or carbs.|25|0|150|0",
-        "Bone Broth|Beef Bone Broth,Salt,Turmeric|heat|<strong>Prep:</strong> 3m<hr><strong>INGREDIENTS</strong><br>1 Cup Broth • Turmeric<br><br><strong>THE PROTOCOL</strong><br>Heat and sip like tea.<br><br><strong>Longevity Win:</strong> Glycine in broth helps repair the gut lining (leaky gut) and improves sleep quality.|10|0|45|0",
-        "Biltong / Jerky|Air Dried Beef,Vinegar|raw|<strong>Prep:</strong> 0m<hr><strong>INGREDIENTS</strong><br>2oz Sugar-Free Biltong<br><br><strong>THE PROTOCOL</strong><br>Chew slowly.<br><br><strong>Longevity Win:</strong> Air-drying preserves more heat-sensitive nutrients than cooking. High protein snack.|30|1|150|0",
-        "Shrimp Cocktail|Shrimp,Lemon|cold|<strong>Prep:</strong> 2m<hr><strong>INGREDIENTS</strong><br>6 Cooked Shrimp<br><br><strong>THE PROTOCOL</strong><br>Keep cold. Dip in lemon.<br><br><strong>Longevity Win:</strong> Shrimp are high in Iodine, essential for thyroid hormone production and metabolism.|18|2|100|0",
-        "Collagen Coffee|Black Coffee,Collagen Peptides|mix|<strong>Prep:</strong> 2m<hr><strong>INGREDIENTS</strong><br>1 Cup Coffee • 1 Scoop Collagen<br><br><strong>THE PROTOCOL</strong><br>Stir well.<br><br><strong>Longevity Win:</strong> Supports skin elasticity and joint health. Caffeine activates sirtuins.|10|0|40|0",
-        "Steak Bites|Cold Leftover Steak|raw|<strong>Prep:</strong> 2m<hr><strong>INGREDIENTS</strong><br>3oz Cold Steak<br><br><strong>THE PROTOCOL</strong><br>Cube steak. Dip in mustard.<br><br><strong>Longevity Win:</strong> Cold meat has a high satiety factor, preventing overeating later.|20|0|180|0",
-        "Chia Gel|Chia Seeds,Water,Lemon|soak|<strong>Prep:</strong> 10m<hr><strong>INGREDIENTS</strong><br>2 tbsp Chia • 1 Cup Water<br><br><strong>THE PROTOCOL</strong><br>Soak until gel forms. Drink.<br><br><strong>Longevity Win:</strong> Provides hydration and mucilaginous fiber to soothe the digestive tract.|4|10|120|10",
-        "Raspberries|1 Cup Raspberries|raw|<strong>Prep:</strong> 1m<hr><strong>INGREDIENTS</strong><br>1 Cup Berries<br><br><strong>THE PROTOCOL</strong><br>Wash and eat.<br><br><strong>Longevity Win:</strong> Highest fiber-to-sugar ratio of any fruit. Powerful polyphenol content.|1|8|60|8",
-        "Pumpkin Seeds|Pepitas,Sea Salt|raw|<strong>Prep:</strong> 0m<hr><strong>INGREDIENTS</strong><br>1/4 Cup Seeds<br><br><strong>THE PROTOCOL</strong><br>Eat raw.<br><br><strong>Longevity Win:</strong> One of the best natural sources of Zinc and Magnesium.|9|4|180|2",
-        "Cucumber Spears|Cucumber,Vinegar,Salt|raw|<strong>Prep:</strong> 3m<hr><strong>INGREDIENTS</strong><br>1 Cucumber<br><br><strong>THE PROTOCOL</strong><br>Slice and dip.<br><br><strong>Longevity Win:</strong> High water content aids hydration. Vinegar blunts glucose spikes.|1|4|30|1",
-        "Liver Crisps|Dried Beef Liver|raw|<strong>Prep:</strong> 0m<hr><strong>INGREDIENTS</strong><br>1oz Dried Liver<br><br><strong>THE PROTOCOL</strong><br>Eat like chips.<br><br><strong>Longevity Win:</strong> A convenient way to get Vitamin A and Copper without cooking organ meat.|18|2|90|0",
-        "Golden Milk|Coconut Milk,Turmeric,Collagen|heat|<strong>Prep:</strong> 5m<hr><strong>INGREDIENTS</strong><br>1 Cup Coconut Milk • 1 tsp Turmeric • 1 Scoop Collagen<br><br><strong>THE PROTOCOL</strong><br>Heat milk. Whisk in turmeric and ginger. Sip warm.<br><br><strong>Longevity Win:</strong> Curcumin reduces inflammation without the cortisol spike of caffeine.|8|5|160|1"
     ]
 };
 
@@ -394,7 +381,19 @@ function getHoliday(d) {
     return null;
 }
 
-function switchU(uID){ user=uID; document.querySelectorAll('.u-badge').forEach(b=>b.classList.remove('active')); document.getElementById('b'+uID.toLowerCase()).classList.add('active'); render(); }
+function switchU(uID){ 
+    user=uID; 
+    document.querySelectorAll('.u-badge').forEach(b=>b.classList.remove('active')); 
+    document.getElementById('b'+uID.toLowerCase()).classList.add('active'); 
+    
+    // Clear old Oura display to show it's switching
+    document.getElementById('dateDisplay').innerHTML = "...";
+    
+    render(); 
+    
+    // Auto-fetch for the new user
+    setTimeout(fetchOuraData, 500);
+}
 
 function syncOffsetToSelection() {
     let today = getCaDate(); today.setHours(0,0,0,0);
@@ -958,12 +957,17 @@ function toggleBioItem(id) {
 
 function closeM(){ document.getElementById('masterModal').style.display='none' }
 
-// -// --- OURA AUTO-SYNC LOGIC v4.0 (Smart Date Matching) ---
+// --- OURA AUTO-SYNC LOGIC v5.0 (Dual User Support + Date Matching) ---
 async function connectOura() {
-    const token = prompt("Oura Token:", ouraToken);
-    if (token && token !== ouraToken) {
-        localStorage.setItem('centurion_oura_token', token.trim()); 
-        ouraToken = token.trim();
+    let currentToken = getActiveToken();
+    let promptMsg = (user === 'J') ? "Jermaine's Oura Token:" : "Sophia's Oura Token:";
+    
+    const token = prompt(promptMsg, currentToken);
+    
+    if (token && token !== currentToken) {
+        // Save to specific user slot
+        if (user === 'J') localStorage.setItem('centurion_oura_token_J', token.trim());
+        if (user === 'S') localStorage.setItem('centurion_oura_token_S', token.trim());
         await fetchOuraData();
     } else {
         await fetchOuraData();
@@ -971,23 +975,25 @@ async function connectOura() {
 }
 
 async function fetchOuraData() {
-    if (!ouraToken) return;
+    // Dynamically get the token for the active user
+    let activeToken = getActiveToken();
     
-    // Look back 3 days to ensure we catch data even if sync is delayed
+    if (!activeToken) {
+        document.getElementById('dateDisplay').innerHTML = `<span style="color:#666" onclick="connectOura()">💍 CONNECT RING</span>`;
+        return;
+    }
+    
     const today = new Date().toISOString().split('T')[0];
     const lookback = new Date(Date.now() - (86400000 * 3)).toISOString().split('T')[0];
     
-    document.getElementById('dateDisplay').innerHTML = `💍 CONNECTING...`;
+    document.getElementById('dateDisplay').innerHTML = `💍 SYNCING...`;
 
-    // PROXY WRAPPER: Routes request through corsproxy.io to bypass browser security
     const PROXY_URL = "https://corsproxy.io/?";
-    const headers = { 'Authorization': `Bearer ${ouraToken}` };
+    const headers = { 'Authorization': `Bearer ${activeToken}` };
 
     try {
-        // Fetch Daily Readiness (Using Proxy)
         const rawUrl = `https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${lookback}&end_date=${today}`;
         const proxyUrl = PROXY_URL + encodeURIComponent(rawUrl);
-        
         const response = await fetch(proxyUrl, { headers });
 
         if (!response.ok) throw new Error(`API ERROR ${response.status}`); 
@@ -995,7 +1001,6 @@ async function fetchOuraData() {
         const rData = await response.json();
 
         if (rData.data && rData.data.length > 0) {
-            // Success! Fetch Sleep & Activity in parallel
             const sleepUrl = `https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${lookback}&end_date=${today}`;
             const activityUrl = `https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${lookback}&end_date=${today}`;
             
@@ -1007,16 +1012,14 @@ async function fetchOuraData() {
             const sData = await sleepRes.json();
             const aData = await activityRes.json();
 
-            // 1. Get the LATEST Readiness Score (The "Anchor")
+            // 1. Get LATEST Score
             const ready = rData.data[rData.data.length - 1];
-            const targetDate = ready.day; // e.g. "2025-12-27"
+            const targetDate = ready.day; 
 
-            // 2. Find matching Sleep & Activity data for THAT EXACT DATE
-            // (This fixes the "undefined" bug if lists are different lengths)
+            // 2. Find matching Sleep Data
             const sleep = sData.data.find(item => item.day === targetDate);
             const activity = aData.data.find(item => item.day === targetDate);
             
-            // 3. Extract Values Safely
             const score = ready.score;
             let status = "OPTIMAL";
             let color = "var(--green)";
@@ -1024,13 +1027,12 @@ async function fetchOuraData() {
             if(score < 85) { status = "MAINTENANCE"; color = "var(--gold)"; }
             if(score < 70) { status = "⚠️ RECOVER"; color = "#FF5252"; }
             
-            // If sleep data isn't found yet (sync delay), show "Waiting..." instead of undefined
             let rhr = (sleep && sleep.lowest_heart_rate) ? sleep.lowest_heart_rate : "Syncing...";
             let steps = (activity && activity.steps) ? activity.steps : "Tracking...";
             
-            let displayHTML = `<span style="color:${color}; cursor:pointer;" onclick="alert('Score: ${score}\\nRHR: ${rhr}\\nSteps: ${steps}\\nDate: ${targetDate}')">💍 OURA: ${score} (${status})</span>`;
+            let displayHTML = `<span style="color:${color}; cursor:pointer;" onclick="alert('User: ${user === 'J' ? 'Jermaine' : 'Sophia'}\\nScore: ${score}\\nRHR: ${rhr}\\nSteps: ${steps}\\nDate: ${targetDate}')">💍 OURA: ${score} (${status})</span>`;
 
-            // SOPHIA INFLAMMATION CHECK (Only alerts if RHR is actually a number)
+            // INFLAMMATION CHECK (Sophia Only)
             if(user === 'S' && typeof rhr === 'number' && rhr > 60) {
                 displayHTML += ` <span style="font-size:0.6rem; color:#FF5252; border:1px solid #FF5252; padding:2px 4px; border-radius:4px;">🔥 RHR SPIKE (${rhr})</span>`;
             }
@@ -1038,7 +1040,7 @@ async function fetchOuraData() {
             document.getElementById('dateDisplay').innerHTML = displayHTML;
             
         } else {
-            document.getElementById('dateDisplay').innerHTML = `<span style="color:orange" onclick="alert('Connection successful, but no data found for the last 3 days. Sync your ring to your phone.')">💍 NO DATA (Tap)</span>`;
+            document.getElementById('dateDisplay').innerHTML = `<span style="color:orange" onclick="alert('No data found for the last 3 days. Open Oura App to sync.')">💍 NO DATA (Tap)</span>`;
         }
     } catch (e) {
         console.error(e);
@@ -1051,7 +1053,7 @@ async function fetchOuraData() {
 // Auto-run logic
 window.onload = function() {
     render();
-    if(ouraToken) setTimeout(fetchOuraData, 1500);
+    setTimeout(fetchOuraData, 1000); // Small delay to let user state settle
 };
 </script>
 </body>
