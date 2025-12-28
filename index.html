@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v228.20 Silent Fix</title>
+    <title>The Centurion | v228.21 Force Open</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --text:#fff;
@@ -81,7 +81,7 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v228.20 Silent Fix</span>
+        <span class="version-tag">v228.21 Force Open</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -92,7 +92,7 @@
         <button class="nav-btn" onclick="changeW(-1)">PREV</button>
         <button class="nav-btn" onclick="resetD()">TODAY</button>
         <button class="nav-btn" onclick="changeW(1)">NEXT</button>
-        <button class="nav-btn" onclick="safeOpenBio()" style="color:var(--green)">MY DATA</button>
+        <button class="nav-btn" onclick="openBio()" style="color:var(--green)">MY DATA</button>
     </div>
     <div id="dayTabs" class="tabs"></div>
     <div id="dayContent"></div>
@@ -156,7 +156,7 @@ const jDB = {
 
 const mDB = {
     b: [
-        "Ancestral Beef Sausage ⚡|80/20 Beef-Liver Blend,Sage,Thyme|sear|<strong>The 'Ancestral Sausage'</strong><hr><strong>INGREDIENTS</strong><br>6oz Beef/Liver Blend (80/20) • 1 tsp Sage • 1/2 tsp Thyme<br><br><strong>1. MIX</strong><br>Mix herbs into the ground blend. Form into small patties or links.<br><br><strong>2. COOK</strong><br>Pan fry until browned and cooked through. Serve with a side of berries.<br><br><strong>Longevity Win:</strong> The 20% liver content is masked by the savory herbs, providing massive Vitamin A.|25|2|280|0",
+        "Ancestral Beef Sausage ⚡|80/20 Beef-Liver Blend,Sage,Thyme|sear|<strong>The 'Ancestral Sausage'</strong><hr><strong>INGREDIENTS</strong><br>6oz Beef/Liver Blend (80/20) • 1 tsp Sage • 1/2 tsp Thyme<br><br><strong>1. MIX</strong><br>Mix herbs into the ground blend. Form into small patties or links.<br><br><strong>2. COOK</strong><br>Pan fry until browned and cooked through. Serve with a side of berries.|25|2|280|0",
         "Centurion Avocado Toast|Ezekiel Bread,Avocado,Egg Whites,Hemp Seeds|toast|<strong>The 'Centurion Toast'</strong><hr><strong>INGREDIENTS</strong><br>2 Slices Sprouted Bread • 1/2 Avocado • 1 Cup Egg Whites • 1 tbsp Hemp Seeds<br><br><strong>1. PREP</strong><br>Toast bread. Mash avocado with lemon.<br><br><strong>2. COOK</strong><br>Scramble egg whites separately. Serve toast topped with avo mash.|35|30|450|12",
         "Fluffy Protein Pancakes|Oat Flour,Whey Isolate,Blueberries,Almond Milk|griddle|<strong>'Fluffy Pro-Cakes'</strong><hr><strong>INGREDIENTS</strong><br>1/2 Cup Oat Flour • 1 Scoop Vanilla Protein • 1/2 tsp Baking Powder • Blueberries<br><br><strong>1. MIX</strong><br>Whisk flour, protein, and baking powder. Stir in milk.<br><br><strong>2. COOK</strong><br>Pour onto hot griddle. Drop fresh blueberries into the wet batter.|35|25|380|6"
     ],
@@ -198,28 +198,53 @@ var defaultUH = {
     }
 };
 
-// --- GLOBAL VAR TO HOLD DATA ---
+// --- DATA MODEL (Initialized) ---
 var uH = null;
 
-// --- SAFE OPEN FUNCTION (SILENT REPAIR) ---
-function safeOpenBio() {
+function openBio() {
     try {
+        // 1. Attempt to load from storage
         var stored = localStorage.getItem('centurion_bio_v2');
-        if(stored) {
+        
+        // 2. FORCE VALIDATION: If corrupt, missing keys, or empty -> RESET
+        if (stored) {
             uH = JSON.parse(stored);
+            if (!uH || !uH['J'] || !uH['J'].labs || !uH['S'] || !uH['S'].labs) {
+                throw new Error("Corrupt Data"); // Trigger catch block
+            }
+        } else {
+            throw new Error("No Data"); // Trigger catch block
         }
-        // Strict Validation Check
-        if (!uH || !uH['J'] || !uH['J'].labs || !uH['J'].tests || !uH['S'] || !uH['S'].labs) {
-            throw new Error("Old data format");
-        }
-        openBio(); // It's safe, open it.
     } catch (e) {
-        // SILENT REPAIR: No prompt, just fix it and open.
-        console.log("Auto-Repairing Data...");
+        // 3. SILENT REPAIR (No Alert)
+        console.log("Repairing Data...");
         uH = JSON.parse(JSON.stringify(defaultUH));
         localStorage.setItem('centurion_bio_v2', JSON.stringify(uH));
-        openBio();
     }
+
+    // 4. Render the modal
+    var modalBody = document.getElementById('mBody');
+    
+    // FIXED: Added margin-right:45px to move it away from the X button
+    document.getElementById('mTitle').innerHTML = (user === 'J' ? "JERMAINE" : "SOPHIA") + 
+        " <span onclick='resetBioData()' style='font-size:0.6rem; color:#444; border:1px solid #333; padding:4px 8px; border-radius:4px; vertical-align:middle; cursor:pointer; float:right; margin-right:45px;'>RESET DATA</span>";
+    
+    document.getElementById('mSub').innerText = "Clinical & Functional Metrics";
+    document.getElementById('mImgContainer').innerHTML = ''; 
+
+    modalBody.innerHTML = `
+        <div class="tabs" style="margin-bottom:20px;">
+            <div id="btPhys" class="tab active" onclick="renderBioTab('phys')">BODY</div>
+            <div id="btLabs" class="tab" onclick="renderBioTab('labs')">LABS</div>
+            <div id="btTests" class="tab" onclick="renderBioTab('tests')">TESTS</div>
+            <div id="btOura" class="tab" onclick="renderOuraTab()">OURA</div>
+        </div>
+        <div id="bioContentArea"></div>
+    `;
+
+    document.getElementById('mTip').innerText = "TIP: Green bars indicate you have reached the 'Centurion' standard for longevity.";
+    renderBioTab('phys'); 
+    document.getElementById('masterModal').style.display = 'block';
 }
 
 function updateStreak(change) {
