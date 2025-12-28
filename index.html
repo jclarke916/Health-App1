@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v228.19 Nuclear Fix</title>
+    <title>The Centurion | v228.20 Silent Fix</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --text:#fff;
@@ -81,7 +81,7 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v228.19 Nuclear Fix</span>
+        <span class="version-tag">v228.20 Silent Fix</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -145,7 +145,7 @@ function getDateKey(d) {
 
 let selDate = getCaDate();
 
-// --- DATABASES (Minimal for Stability) ---
+// --- DATABASES ---
 const jDB = {
     "PINEAPPLE GREEN Vitality": ["Digestion + Detox", "2c Spinach, 1c Pineapple, 1/2 Cucumber, Ginger, Lemon", 1, 28, 120, 1],
     "PLASMA FLUSH Juice": ["Recovery", "3c Watermelon, 1 Lime (Peeled), Mint", 1, 32, 140, 1],
@@ -156,7 +156,7 @@ const jDB = {
 
 const mDB = {
     b: [
-        "Ancestral Beef Sausage ⚡|80/20 Beef-Liver Blend,Sage,Thyme|sear|<strong>The 'Ancestral Sausage'</strong><hr><strong>INGREDIENTS</strong><br>6oz Beef/Liver Blend (80/20) • 1 tsp Sage • 1/2 tsp Thyme<br><br><strong>1. MIX</strong><br>Mix herbs into the ground blend. Form into small patties or links.<br><br><strong>2. COOK</strong><br>Pan fry until browned and cooked through. Serve with a side of berries.|25|2|280|0",
+        "Ancestral Beef Sausage ⚡|80/20 Beef-Liver Blend,Sage,Thyme|sear|<strong>The 'Ancestral Sausage'</strong><hr><strong>INGREDIENTS</strong><br>6oz Beef/Liver Blend (80/20) • 1 tsp Sage • 1/2 tsp Thyme<br><br><strong>1. MIX</strong><br>Mix herbs into the ground blend. Form into small patties or links.<br><br><strong>2. COOK</strong><br>Pan fry until browned and cooked through. Serve with a side of berries.<br><br><strong>Longevity Win:</strong> The 20% liver content is masked by the savory herbs, providing massive Vitamin A.|25|2|280|0",
         "Centurion Avocado Toast|Ezekiel Bread,Avocado,Egg Whites,Hemp Seeds|toast|<strong>The 'Centurion Toast'</strong><hr><strong>INGREDIENTS</strong><br>2 Slices Sprouted Bread • 1/2 Avocado • 1 Cup Egg Whites • 1 tbsp Hemp Seeds<br><br><strong>1. PREP</strong><br>Toast bread. Mash avocado with lemon.<br><br><strong>2. COOK</strong><br>Scramble egg whites separately. Serve toast topped with avo mash.|35|30|450|12",
         "Fluffy Protein Pancakes|Oat Flour,Whey Isolate,Blueberries,Almond Milk|griddle|<strong>'Fluffy Pro-Cakes'</strong><hr><strong>INGREDIENTS</strong><br>1/2 Cup Oat Flour • 1 Scoop Vanilla Protein • 1/2 tsp Baking Powder • Blueberries<br><br><strong>1. MIX</strong><br>Whisk flour, protein, and baking powder. Stir in milk.<br><br><strong>2. COOK</strong><br>Pour onto hot griddle. Drop fresh blueberries into the wet batter.|35|25|380|6"
     ],
@@ -201,31 +201,24 @@ var defaultUH = {
 // --- GLOBAL VAR TO HOLD DATA ---
 var uH = null;
 
-// --- SAFE OPEN FUNCTION ---
+// --- SAFE OPEN FUNCTION (SILENT REPAIR) ---
 function safeOpenBio() {
     try {
-        // 1. Try to load data
         var stored = localStorage.getItem('centurion_bio_v2');
         if(stored) {
             uH = JSON.parse(stored);
         }
-        
-        // 2. Validate Data (Check for new keys)
+        // Strict Validation Check
         if (!uH || !uH['J'] || !uH['J'].labs || !uH['J'].tests || !uH['S'] || !uH['S'].labs) {
             throw new Error("Old data format");
         }
-
-        // 3. Open Modal if safe
-        openBio();
-
+        openBio(); // It's safe, open it.
     } catch (e) {
-        // 4. CATASTROPHIC FAILURE -> AUTO REPAIR
-        if(confirm("Your saved data is from an older version. Update it now?")) {
-            uH = JSON.parse(JSON.stringify(defaultUH));
-            localStorage.setItem('centurion_bio_v2', JSON.stringify(uH));
-            alert("Data Updated! Tap 'MY DATA' again.");
-            location.reload(); 
-        }
+        // SILENT REPAIR: No prompt, just fix it and open.
+        console.log("Auto-Repairing Data...");
+        uH = JSON.parse(JSON.stringify(defaultUH));
+        localStorage.setItem('centurion_bio_v2', JSON.stringify(uH));
+        openBio();
     }
 }
 
@@ -610,6 +603,7 @@ function renderOuraTab() {
     let rawHist = localStorage.getItem(historyKey);
     let history = rawHist ? JSON.parse(rawHist) : [];
     
+    // Sort history by date descending (newest first)
     history.sort((a, b) => new Date(b.date) - new Date(a.date));
     
     if(history.length === 0) {
