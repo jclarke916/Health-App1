@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v228.24 Resurrection</title>
+    <title>The Centurion | v228.25 Full Stack</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --text:#fff;
@@ -81,7 +81,7 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v228.24 Resurrection</span>
+        <span class="version-tag">v228.25 Full Stack</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -110,23 +110,23 @@
     </div>
 </div>
 <script>
-window.onerror = function(message, source, lineno, colno, error) {
-    alert("System Error: " + message);
-};
-
 // --- GLOBAL STATE ---
 let user = localStorage.getItem('centurion_active_user') || 'J';
 let offset = 0;
 let snackLog = {}; 
 let currentSlot = 0;
-window.ouraHistory = [];
+window.ouraHistory = []; // Global history store
 
 // --- DUAL OURA CONFIGURATION ---
-const TOKEN_J = "WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y";
-const TOKEN_S = "4QSDWYJJUZFHRWRH727NCK7WH4COQJF4"; 
+const TOKEN_J = "WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y"; // Jermaine's Key
+const TOKEN_S = "4QSDWYJJUZFHRWRH727NCK7WH4COQJF4"; // Sophia's Key
 
 function getActiveToken() {
-    return (user === 'J') ? (localStorage.getItem('centurion_oura_token_J') || TOKEN_J) : TOKEN_S;
+    if (user === 'J') {
+        return localStorage.getItem('centurion_oura_token_J') || TOKEN_J;
+    } else {
+        return TOKEN_S; 
+    }
 }
 
 // --- UTILITIES ---
@@ -155,77 +155,129 @@ const jDB = {
 };
 
 const mDB = {
-    b: ["Ancestral Beef Sausage ⚡|80/20 Beef-Liver Blend,Sage,Thyme|sear|<strong>The 'Ancestral Sausage'</strong><hr><strong>INGREDIENTS</strong><br>6oz Beef/Liver Blend (80/20) • 1 tsp Sage • 1/2 tsp Thyme<br><br><strong>1. MIX</strong><br>Mix herbs into the ground blend. Form into small patties or links.<br><br><strong>2. COOK</strong><br>Pan fry until browned and cooked through. Serve with a side of berries.|25|2|280|0",
-        "Centurion Avocado Toast|Ezekiel Bread,Avocado,Egg Whites,Hemp Seeds|toast|<strong>The 'Centurion Toast'</strong><hr><strong>INGREDIENTS</strong><br>2 Slices Sprouted Bread • 1/2 Avocado • 1 Cup Egg Whites • 1 tbsp Hemp Seeds<br><br><strong>1. PREP</strong><br>Toast bread. Mash avocado with lemon.<br><br><strong>2. COOK</strong><br>Scramble egg whites separately. Serve toast topped with avo mash.|35|30|450|12"],
-    l: ["Legacy Beef Meatballs ⚡|80/20 Beef-Liver Blend,Carrot Sticks,Cucumber|bake|<strong>'Legacy Meatballs'</strong><hr><strong>INGREDIENTS</strong><br>6oz Beef/Liver Blend (80/20) • Carrots • Cucumbers<br><br><strong>1. PREP</strong><br>Form meatballs. Bake 375°F 15m.<br><br><strong>2. SERVE</strong><br>Eat with raw veggie sticks.|25|15|340|6",
-        "The 'Super Mince' Bowl|96% Lean Beef,Black Lentils,Broccoli,Cauliflower|sear|<strong>The 'Super Mince'</strong><hr><strong>INGREDIENTS</strong><br>8oz Lean Ground Beef • 1/2 Cup Black Lentils • Broccoli<br><br><strong>1. COOK</strong><br>Brown beef. Add lentils and riced veggies.|50|25|550|15"],
-    d: ["Bison & Portobello Stack|Ground Bison,Portobello Caps,Avocado,Lettuce Wrap|sear|<strong>'The Portobello Stack'</strong><hr><strong>INGREDIENTS</strong><br>6oz Bison • 1 Large Portobello Cap • 1/2 Avocado • Lettuce<br><br><strong>1. PREP</strong><br>Clean mushroom. Form bison patty.<br><br><strong>2. COOK</strong><br>Sear bison. Sear mushroom. Stack meat on mushroom bun.|45|8|480|5",
-        "Balsamic Beef & Mushrooms ⚡|80/20 Beef-Liver Blend,Mushrooms,Balsamic|sear|<strong>'Balsamic Beef'</strong><hr><strong>INGREDIENTS</strong><br>6oz Beef/Liver Blend (80/20) • 2 Cups Mushrooms • Balsamic<br><br><strong>1. COOK</strong><br>Sauté mushrooms. Add meat blend. Deglaze with vinegar.|42|12|430|9"],
-    s: ["Beef Isolate Shake|Beef Isolate Protein,Water,Ice|shake|<strong>Prep:</strong> 2m<hr><strong>INGREDIENTS</strong><br>1 Scoop Beef Isolate • Water|25|0|110|0"]
+    b: [
+        "Ancestral Beef Sausage ⚡|80/20 Beef-Liver Blend,Sage,Thyme|sear|<strong>The 'Ancestral Sausage'</strong><hr><strong>INGREDIENTS</strong><br>6oz Beef/Liver Blend (80/20) • 1 tsp Sage • 1/2 tsp Thyme<br><br><strong>1. MIX</strong><br>Mix herbs into the ground blend. Form into small patties or links.<br><br><strong>2. COOK</strong><br>Pan fry until browned and cooked through. Serve with a side of berries.|25|2|280|0",
+        "Centurion Avocado Toast|Ezekiel Bread,Avocado,Egg Whites,Hemp Seeds|toast|<strong>The 'Centurion Toast'</strong><hr><strong>INGREDIENTS</strong><br>2 Slices Sprouted Bread • 1/2 Avocado • 1 Cup Egg Whites • 1 tbsp Hemp Seeds<br><br><strong>1. PREP</strong><br>Toast bread. Mash avocado with lemon.<br><br><strong>2. COOK</strong><br>Scramble egg whites separately. Serve toast topped with avo mash.|35|30|450|12",
+        "Fluffy Protein Pancakes|Oat Flour,Whey Isolate,Blueberries,Almond Milk|griddle|<strong>'Fluffy Pro-Cakes'</strong><hr><strong>INGREDIENTS</strong><br>1/2 Cup Oat Flour • 1 Scoop Vanilla Protein • 1/2 tsp Baking Powder • Blueberries<br><br><strong>1. MIX</strong><br>Whisk flour, protein, and baking powder. Stir in milk.<br><br><strong>2. COOK</strong><br>Pour onto hot griddle. Drop fresh blueberries into the wet batter.|35|25|380|6"
+    ],
+    l: [
+        "Legacy Beef Meatballs ⚡|80/20 Beef-Liver Blend,Carrot Sticks,Cucumber|bake|<strong>'Legacy Meatballs'</strong><hr><strong>INGREDIENTS</strong><br>6oz Beef/Liver Blend (80/20) • Carrots • Cucumbers<br><br><strong>1. PREP</strong><br>Form meatballs. Bake 375°F 15m.<br><br><strong>2. SERVE</strong><br>Eat with raw veggie sticks.|25|15|340|6",
+        "The 'Super Mince' Bowl|96% Lean Beef,Black Lentils,Broccoli,Cauliflower|sear|<strong>The 'Super Mince'</strong><hr><strong>INGREDIENTS</strong><br>8oz Lean Ground Beef • 1/2 Cup Black Lentils • Broccoli<br><br><strong>1. COOK</strong><br>Brown beef. Add lentils and riced veggies.|50|25|550|15",
+        "Chicken & Artichoke|Chicken Breast,Artichoke Hearts,Arugula,Lemon|sear|<strong>'Liver Detox Bowl'</strong><hr><strong>INGREDIENTS</strong><br>6oz Chicken • 1 Cup Artichokes • Arugula<br><br><strong>1. COOK</strong><br>Sear chicken. Toss with artichokes and greens.|40|15|420|10"
+    ],
+    d: [
+        "Bison & Portobello Stack|Ground Bison,Portobello Caps,Avocado,Lettuce Wrap|sear|<strong>'The Portobello Stack'</strong><hr><strong>INGREDIENTS</strong><br>6oz Bison • 1 Large Portobello Cap • 1/2 Avocado • Lettuce<br><br><strong>1. PREP</strong><br>Clean mushroom. Form bison patty.<br><br><strong>2. COOK</strong><br>Sear bison. Sear mushroom. Stack meat on mushroom bun.|45|8|480|5",
+        "Balsamic Beef & Mushrooms ⚡|80/20 Beef-Liver Blend,Mushrooms,Balsamic|sear|<strong>'Balsamic Beef'</strong><hr><strong>INGREDIENTS</strong><br>6oz Beef/Liver Blend (80/20) • 2 Cups Mushrooms • Balsamic<br><br><strong>1. COOK</strong><br>Sauté mushrooms. Add meat blend. Deglaze with vinegar.<br><br><strong>Longevity Win:</strong> The rich balsamic masks the liver flavor perfectly.|42|12|430|9",
+        "Filet & Lentil Side|Filet Mignon,Black Lentils,Asparagus,Lemon|sear|<strong>'Steak & Lentils'</strong><hr><strong>INGREDIENTS</strong><br>6oz Filet • 1/2 Cup Lentils • Asparagus<br><br><strong>1. COOK</strong><br>Sear steak. Warm lentils. Steam asparagus.|45|25|520|14"
+    ],
+    s: [
+        "Beef Isolate Shake|Beef Isolate Protein,Water,Ice|shake|<strong>Prep:</strong> 2m<hr><strong>INGREDIENTS</strong><br>1 Scoop Beef Isolate • Water<br><br><strong>THE PROTOCOL</strong><br>Mix in shaker bottle.<br><br><strong>Longevity Win:</strong> Collagen rich.|25|0|110|0",
+        "Sardines (Water)|Sardines,Lemon,Hot Sauce|raw|<strong>Prep:</strong> 1m<hr><strong>INGREDIENTS</strong><br>1 Tin Sardines (Water)<br><br><strong>THE PROTOCOL</strong><br>Drain and eat.<br><br><strong>Longevity Win:</strong> Omega-3 powerhouse.|22|0|190|0",
+        "Avocado Cup|1/2 Avocado,Sea Salt|raw|<strong>Prep:</strong> 1m<hr><strong>INGREDIENTS</strong><br>1/2 Avocado<br><br><strong>THE PROTOCOL</strong><br>Sprinkle with salt and eat with spoon.<br><br><strong>Longevity Win:</strong> Healthy fats.|2|8|160|7"
+    ]
 };
 
 const pDB={"HEAVY LIFT":[{t:"PRE",h:"Theragun",d:"Glutes, Quads, Hams. 30s each."},{t:"GYM",h:"Heavy Lift",d:"Main compound movement."},{t:"POST",h:"Chair+Sauna",d:"20m Zero-Grav + 20m Sauna."}],"BOXING":[{t:"PRE",h:"Mobility",d:"Rotator cuffs & Calves."},{t:"GYM",h:"Boxing",d:"High intensity rounds."},{t:"POST",h:"Normatec",d:"Flush legs. NO SAUNA."}],"REFORM":[{t:"PRE",h:"Sweep",d:"Light full body percussion."},{t:"GYM",h:"Reform",d:"Time under tension."},{t:"POST",h:"Sauna",d:"20m HGH Boost."}],"REFORM/YOGA":[{t:"PRE",h:"Sweep",d:"Light full body percussion."},{t:"GYM",h:"Yoga",d:"Deep fascial release."},{t:"POST",h:"Heat",d:"Sauna or Thera Knee Heat."}],"CS4":[{t:"PRE",h:"Hydrate",d:"Electrolytes."},{t:"GYM",h:"CS4",d:"Cardio Strength 4."},{t:"POST",h:"Contrast",d:"Sauna + Cold or Knee Contrast."}],"RELAX":[{t:"PRE",h:"Walk",d:"Light movement."},{t:"GYM",h:"Relax",d:"Active recovery."},{t:"POST",h:"Massage",d:"Chair or Thera Knee Heat."}]};
 
 const rDB={"Sea Moss":["92 Minerals","2 TBSP Fasted.","Thyroid & Gut support."],"Kombucha":["Probiotic","4 OZ post-Lunch.","Enzyme support."],"Aloe Vera":["Gut Soother", "2oz Pure Aloe Inner Leaf.", "Heals stomach lining."],"Golden Milk":["Anti-Inflammatory", "Coconut Milk, Turmeric, Black Pepper.", "Calms the immune system."],"Hibiscus Tea":["Blood Pressure", "Dried Hibiscus Flowers.", "Rich in antioxidants (Vitamin C)."],"Aqua Chair":["Hydro-Massage","Align body to zero-gravity.","Jets to glutes and lats.","20 Min Duration."],"Sauna":["HSP Induction","185°F Range.","20 Mins total.","Heavy metal detox sweat."],"Theragun":["Percussive","Float over muscles.","2m per limb.","Target Lats/Hips."],"Normatec":["Compression","Level 4 Intensity.","Full leg cycle.","30m Lymphatic flush."],"Pre-Workout":["Nitro-Boost","6g Citrulline Malate.","Take 20m before training."]};
 
-const hDB={b:"Festive Brunch|Protein Waffles, Turkey Bacon, Eggs, Berries|griddle|<strong>Prep:</strong> 15m|35|40|500",l:"Holiday Feast|Lean Roast Meat, Green Beans, Sweet Potato|roast|<strong>Prep:</strong> 20m|50|40|600",d:"Leftovers|Lean Protein, Veggies|raw|<strong>Prep:</strong> 5m|30|10|300"};
-
+// --- FULL BIOMARKER SUITE ---
 var defaultUH = {
     'J': {
         now: {bf:19.0, m:99.0, w:217.0, vf:10, bmr:2050}, 
         goal: {bf:15.0, m:105.0, w:212.0, vf:7, bmr:2150},
         info: {bf:{d:"Adipose tissue percentage.",f:"Rx: Caloric Deficit."},m:{d:"Skeletal muscle.",f:"Rx: Hypertrophy."},vf:{d:"Visceral Fat.",f:"Rx: No Fructose."},bmr:{d:"Basal Metabolic Rate.",f:"Rx: Build muscle."}},
-        labs: {apob:{val:95,goal:60,unit:"mg/dL",name:"ApoB",lowerIsBetter:true,desc:"Plaque particles.",fix:"Rx: Fiber >40g."},hba1c:{val:5.4,goal:5.0,unit:"%",name:"HbA1c",lowerIsBetter:true,desc:"Avg blood sugar.",fix:"Rx: Walk post-meal."}},
-        tests: {vo2:{val:45,goal:55,unit:"ml/kg",name:"VO2 Max",desc:"Oxygen efficiency.",fix:"Rx: 4x4 Intervals."},hang:{val:85,goal:120,unit:"s",name:"Dead Hang",desc:"Grip strength.",fix:"Rx: Daily hangs."}}
+        labs: {
+            apob:{val:95,goal:60,unit:"mg/dL",name:"ApoB",lowerIsBetter:true,desc:"Plaque particles.",fix:"Rx: Fiber >40g."},
+            hba1c:{val:5.4,goal:5.0,unit:"%",name:"HbA1c",lowerIsBetter:true,desc:"Avg blood sugar.",fix:"Rx: Walk post-meal."},
+            crp:{val:0.9,goal:0.5,unit:"mg/L",name:"hs-CRP",lowerIsBetter:true,desc:"Systemic inflammation.",fix:"Rx: Omega-3 (4g). Sauna."},
+            test:{val:650,goal:850,unit:"ng/dL",name:"Testosterone",lowerIsBetter:false,desc:"Anabolic drive.",fix:"Rx: Heavy Squats."},
+            vitd:{val:42,goal:60,unit:"ng/mL",name:"Vitamin D3",lowerIsBetter:false,desc:"Immune precursor.",fix:"Rx: Morning sun."},
+            homo:{val:11,goal:9,unit:"umol/L",name:"Homocysteine",lowerIsBetter:true,desc:"Methylation status.",fix:"Rx: Methylated B-Complex."}
+        },
+        tests: {
+            vo2:{val:45,goal:55,unit:"ml/kg",name:"VO2 Max",desc:"Oxygen efficiency.",fix:"Rx: 4x4 Intervals."},
+            hang:{val:85,goal:120,unit:"s",name:"Dead Hang",desc:"Grip strength.",fix:"Rx: Daily hangs."},
+            sit:{val:60,goal:120,unit:"s",name:"Wall Sit",desc:"Leg endurance.",fix:"Rx: Weighted Wall Sits."},
+            breath:{val:45,goal:60,unit:"s",name:"CO2 Tolerance",desc:"Breathing efficiency.",fix:"Rx: Box Breathing."}
+        }
     },
     'S': {
         now: {bf:36.1, m:49.2, w:141.5, vf:9, bmr:1250},
         goal: {bf:22.0, m:60.0, w:135.0, vf:4, bmr:1450}, 
         info: {bf:{d:"Adipose tissue.",f:"Rx: Deficit."},m:{d:"Muscle.",f:"Rx: Hypertrophy."},vf:{d:"Visceral fat.",f:"Rx: No seed oils."},bmr:{d:"Metabolism.",f:"Rx: Protein."}},
-        labs: {ana:{val:320,goal:40,unit:" titer",name:"ANA",lowerIsBetter:true,desc:"Autoimmune marker.",fix:"Rx: Sleep/Stress."},gluc:{val:84,goal:75,unit:"mg/dL",name:"Glucose",lowerIsBetter:true,desc:"Fasting sugar.",fix:"Rx: Post-meal walks."}},
-        tests: {vo2:{val:32,goal:50,unit:"ml/kg",name:"VO2 Max",desc:"Cardio health.",fix:"Rx: Zone 2."},hang:{val:40,goal:90,unit:"s",name:"Dead Hang",desc:"Grip.",fix:"Rx: Practice daily."}}
+        labs: {
+            tsh:{val:1.35,goal:1.5,unit:"mIU/L",name:"TSH",lowerIsBetter:true,desc:"Thyroid Function.",fix:"Rx: Selenium."},
+            ana:{val:320,goal:40,unit:"titer",name:"ANA",lowerIsBetter:true,desc:"Autoimmune marker.",fix:"Rx: Sleep/Stress."},
+            rf:{val:9,goal:14,unit:"IU/mL",name:"Rheum. Factor",lowerIsBetter:true,desc:"Autoimmune.",fix:"Rx: Collagen support."},
+            apob:{val:105,goal:70,unit:"mg/dL",name:"ApoB",lowerIsBetter:true,desc:"Vascular particle count.",fix:"Rx: Increase soluble fiber."},
+            hba1c:{val:5.6,goal:5.0,unit:"%",name:"HbA1c",lowerIsBetter:true,desc:"Pre-diabetic marker.",fix:"Rx: Veggies before Carbs."},
+            crp:{val:1.8,goal:0.5,unit:"mg/L",name:"hs-CRP",lowerIsBetter:true,desc:"Inflammation level.",fix:"Rx: Curcumin + Cold Plunge."},
+            vitd:{val:35,goal:60,unit:"ng/mL",name:"Vitamin D3",lowerIsBetter:false,desc:"Immune regulation.",fix:"Rx: 5000IU D3 w/ fat."},
+            ferr:{val:30,goal:70,unit:"ng/mL",name:"Ferritin",lowerIsBetter:false,desc:"Iron storage.",fix:"Rx: Heme Iron + Vit C."}
+        },
+        tests: {
+            vo2:{val:32,goal:50,unit:"ml/kg",name:"VO2 Max",desc:"Cardio health.",fix:"Rx: Zone 2."},
+            hang:{val:40,goal:90,unit:"s",name:"Dead Hang",desc:"Grip.",fix:"Rx: Practice daily."},
+            sit:{val:45,goal:90,unit:"s",name:"Wall Sit",desc:"Leg endurance.",fix:"Rx: Isometric holds."},
+            breath:{val:30,goal:45,unit:"s",name:"CO2 Tolerance",desc:"Breathing.",fix:"Rx: 4-7-8 Breathing."}
+        }
     }
 };
 
-// --- GLOBAL VAR TO HOLD DATA ---
+// --- DATA MODEL (Initialized to Null) ---
 var uH = null;
 
-// --- SAFE OPEN FUNCTION ---
+// --- THE NEW FORCE OPEN FUNCTION ---
 function openBio() {
     try {
+        // 1. Attempt to load from storage
         var stored = localStorage.getItem('centurion_bio_v2');
-        if(stored) {
+        
+        // 2. FORCE VALIDATION: If corrupt, missing keys, or empty -> REWRITE
+        if (stored) {
             uH = JSON.parse(stored);
-            if (!uH || !uH['J'] || !uH['J'].labs) throw new Error("Reset");
+            if (!uH || !uH['J'] || !uH['J'].labs || !uH['J'].tests || !uH['S'] || !uH['S'].labs) {
+                console.log("Data structure outdated. Upgrading...");
+                uH = JSON.parse(JSON.stringify(defaultUH));
+                localStorage.setItem('centurion_bio_v2', JSON.stringify(uH));
+            }
         } else {
-            throw new Error("Reset");
+            console.log("No data found. Creating default...");
+            uH = JSON.parse(JSON.stringify(defaultUH));
+            localStorage.setItem('centurion_bio_v2', JSON.stringify(uH));
         }
+
+        // 3. RENDER (No reloads, no questions)
+        var modalBody = document.getElementById('mBody');
+        document.getElementById('mTitle').innerHTML = (user === 'J' ? "JERMAINE" : "SOPHIA") + 
+            " <span onclick='resetBioData()' style='font-size:0.6rem; color:#444; border:1px solid #333; padding:4px 8px; border-radius:4px; vertical-align:middle; cursor:pointer; float:right; margin-right:45px;'>RESET DATA</span>";
+        
+        document.getElementById('mSub').innerText = "Clinical & Functional Metrics";
+        document.getElementById('mImgContainer').innerHTML = ''; 
+
+        modalBody.innerHTML = `
+            <div class="tabs" style="margin-bottom:20px;">
+                <div id="btPhys" class="tab active" onclick="renderBioTab('phys')">BODY</div>
+                <div id="btLabs" class="tab" onclick="renderBioTab('labs')">LABS</div>
+                <div id="btTests" class="tab" onclick="renderBioTab('tests')">TESTS</div>
+                <div id="btOura" class="tab" onclick="renderOuraTab()">OURA</div>
+            </div>
+            <div id="bioContentArea"></div>
+        `;
+
+        document.getElementById('mTip').innerText = "TIP: Green bars indicate you have reached the 'Centurion' standard for longevity.";
+        renderBioTab('phys'); 
+        document.getElementById('masterModal').style.display = 'block';
+
     } catch (e) {
-        console.log("Repairing Data...");
+        // 4. ABSOLUTE FAILSAFE
+        alert("System Error: " + e + ". Resetting Data.");
+        localStorage.removeItem('centurion_bio_v2');
         uH = JSON.parse(JSON.stringify(defaultUH));
         localStorage.setItem('centurion_bio_v2', JSON.stringify(uH));
+        openBio(); // Try again immediately
     }
-
-    var modalBody = document.getElementById('mBody');
-    document.getElementById('mTitle').innerHTML = (user === 'J' ? "JERMAINE" : "SOPHIA") + 
-        " <span onclick='resetBioData()' style='font-size:0.6rem; color:#444; border:1px solid #333; padding:4px 8px; border-radius:4px; vertical-align:middle; cursor:pointer; float:right; margin-right:45px;'>RESET DATA</span>";
-    
-    document.getElementById('mSub').innerText = "Clinical & Functional Metrics";
-    document.getElementById('mImgContainer').innerHTML = ''; 
-
-    modalBody.innerHTML = `
-        <div class="tabs" style="margin-bottom:20px;">
-            <div id="btPhys" class="tab active" onclick="renderBioTab('phys')">BODY</div>
-            <div id="btLabs" class="tab" onclick="renderBioTab('labs')">LABS</div>
-            <div id="btTests" class="tab" onclick="renderBioTab('tests')">TESTS</div>
-            <div id="btOura" class="tab" onclick="renderOuraTab()">OURA</div>
-        </div>
-        <div id="bioContentArea"></div>
-    `;
-
-    document.getElementById('mTip').innerText = "TIP: Green bars indicate you have reached the 'Centurion' standard for longevity.";
-    renderBioTab('phys'); 
-    document.getElementById('masterModal').style.display = 'block';
 }
 
 function updateStreak(change) {
@@ -456,124 +508,6 @@ function showDay(dObj, idx){
         <div class="card" style="text-align:center"><div class="label" style="color:var(--gold)">Functional Juice</div><div class="juice-name" onclick="openJ('${jcs[idx]}')">${jcs[idx]}</div></div>`;
 }
 
-function stableSeed(s) {
-    let h = 0;
-    for(let i = 0; i < s.length; i++) h = Math.imul(31, h) + s.charCodeAt(i) | 0;
-    return Math.abs(h);
-}
-
-function openR(n, i, a, t) {
-    document.getElementById('mTitle').innerText = n;
-    document.getElementById('mSub').innerText = "";
-    const body = document.getElementById('mBody');
-    body.innerHTML = '<div class="img-loader">✨ Chef is plating...</div>'; 
-    const cleanName = n.replace(/[^a-zA-Z ]/g, "").trim();
-    const seed = stableSeed(cleanName); 
-    const prompt = encodeURIComponent(`delicious ${cleanName} plated food photo`);
-    const imgUrl = `https://image.pollinations.ai/prompt/${prompt}?width=800&height=600&seed=${seed}&nologo=true&model=turbo`; 
-    const img = document.createElement("img");
-    img.className = "meal-img";
-    img.loading = "eager"; 
-    img.alt = cleanName;
-    img.referrerPolicy = "no-referrer";
-    img.style.opacity = "0";
-    img.style.filter = "blur(10px)";
-    img.style.transition = "opacity 0.4s ease, filter 0.4s ease";
-    const safeFallback = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80";
-    const timer = setTimeout(() => {
-        if (!img.complete || img.naturalWidth === 0) { 
-            img.src = safeFallback; 
-        }
-    }, 15000); 
-    img.onload = () => {
-        clearTimeout(timer);
-        body.innerHTML = ""; 
-        body.appendChild(img);
-        setTimeout(() => {
-            img.style.opacity = "1";
-            img.style.filter = "blur(0)";
-        }, 50);
-        const txt = document.createElement("div");
-        txt.innerHTML = `<br>${t}`;
-        body.appendChild(txt);
-    };
-    img.onerror = () => { 
-        clearTimeout(timer); 
-        img.src = safeFallback; 
-        img.onload = null; 
-        img.style.opacity = "1";
-        img.style.filter = "blur(0)";
-    };
-    setTimeout(() => {
-        img.src = imgUrl;
-    }, 30);
-    document.getElementById('mTip').innerText = "";
-    document.getElementById('masterModal').style.display = 'block';
-}
-
-function openSnackSelector(slotIdx) {
-    currentSlot = slotIdx; 
-    const modalBody = document.getElementById('mBody');
-    document.getElementById('mTitle').innerText = "SELECT SNACK";
-    document.getElementById('mSub').innerText = "SLOT " + (slotIdx + 1);
-    let html = '';
-    mDB.s.forEach((item, index) => {
-        let s = item.split('|');
-        html += `<div class="value" onclick="applySnack(${index})">
-            ${s[0]} 
-            <span style="float:right;font-size:0.7rem;color:#666">${s[4]}g Pro | ${s[6]} Cal</span>
-        </div>`;
-    });
-    modalBody.innerHTML = html;
-    document.getElementById('mTip').innerText = "PRO TIP: Prioritize high-protein snacks on Heavy Lift days.";
-    document.getElementById('masterModal').style.display = 'block';
-}
-
-function applySnack(snackIndex) {
-    const dateKey = getDateKey(selDate);
-    if(!snackLog[dateKey]) snackLog[dateKey] = [null, null];
-    snackLog[dateKey][currentSlot] = snackIndex;
-    document.getElementById('masterModal').style.display = 'none';
-    render(); 
-}
-
-function removeSnack(slotIdx) {
-    const dateKey = getDateKey(selDate);
-    if(snackLog[dateKey]) {
-        snackLog[dateKey][slotIdx] = null;
-        render(); 
-    }
-}
-
-function openJ(n){
-    const d=jDB[n]; document.getElementById('mTitle').innerText=n; document.getElementById('mSub').innerText=d[0];
-    document.getElementById('mBody').innerHTML=`<p><strong>Ingredients:</strong> ${d[1]}</p><p>P: ${d[2]}g | C: ${d[3]}g | Kcal: ${d[4]} | Fiber: ${d[5]}g</p>`;
-    document.getElementById('mTip').innerText = "PRO TIP: High-speed blending retains fiber while unlocking nutrients.";
-    document.getElementById('masterModal').style.display='block';
-}
-
-function openM(n){
-    const d=rDB[n]; document.getElementById('mTitle').innerText=n; document.getElementById('mSub').innerText=d[0];
-    document.getElementById('mBody').innerHTML=d.slice(1).map(x=>`<p>${x}</p>`).join('');
-    document.getElementById('mTip').innerText = "PRO TIP: Consistency beats intensity for recovery protocols.";
-    document.getElementById('masterModal').style.display='block';
-}
-
-function openRecoveryPhase(workout) {
-    const m = document.getElementById('mBody');
-    document.getElementById('mTitle').innerText = workout + " PROTOCOL";
-    document.getElementById('mSub').innerText = "V222.61 FLOW LOGIC";
-    const active = pDB[workout] || pDB["RELAX"];
-    let html = '<div class="rec-phase-list">';
-    html += `<div class="phase-item"><span class="phase-time">WARM UP</span><span class="phase-title">${active[0].h}</span><span class="phase-detail">${active[0].d}</span></div>`;
-    html += `<div class="phase-item"><span class="phase-time" style="color:#fff">TRAINING</span><span class="phase-title">${active[1].h}</span><span class="phase-detail">${active[1].d}</span></div>`;
-    html += `<div class="phase-item"><span class="phase-time" style="color:var(--purple)">RECOVERY</span><span class="phase-title">${active[2].h}</span><span class="phase-detail">${active[2].d}</span></div>`;
-    html += '</div>';
-    m.innerHTML = html;
-    document.getElementById('mTip').innerText = "TIP: Hydrate with minerals before Sauna sessions.";
-    document.getElementById('masterModal').style.display = 'block';
-}
-
 function bioBar(label, val, goal, unit, lowerBetter=false) {
     const pct = Math.min(
         lowerBetter ? (goal / val) * 100 : (val / goal) * 100,
@@ -670,6 +604,7 @@ function renderOuraTab() {
     let rawHist = localStorage.getItem(historyKey);
     let history = rawHist ? JSON.parse(rawHist) : [];
     
+    // Sort history by date descending (newest first)
     history.sort((a, b) => new Date(b.date) - new Date(a.date));
     
     if(history.length === 0) {
