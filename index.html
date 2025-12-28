@@ -1,134 +1,221 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Meal Image Loader v400</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Centurion | v400</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
 
 <style>
-:root {
-    --bg:#0b0b0f;
-    --fg:#ffffff;
-    --muted:#888;
-    --accent:#c9a24d;
+:root{
+  --bg:#050505;
+  --card:#141414;
+  --gold:#D4AF37;
+  --text:#fff;
+  --muted:#777;
 }
-body {
-    margin:0;
-    font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont;
-    background:var(--bg);
-    color:var(--fg);
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:Inter,system-ui;
 }
-button {
-    padding:14px 18px;
-    background:var(--accent);
-    border:none;
-    font-weight:800;
-    cursor:pointer;
+
+.app{
+  max-width:520px;
+  margin:auto;
+  padding:16px 14px 80px;
 }
-.modal {
-    position:fixed;
-    inset:0;
-    background:rgba(0,0,0,.7);
-    display:none;
-    align-items:center;
-    justify-content:center;
+
+h1{
+  text-align:center;
+  font-weight:300;
+  letter-spacing:6px;
+  font-size:1.1rem;
+  margin:10px 0 2px;
 }
-.modal-inner {
-    width:90%;
-    max-width:600px;
-    background:#111;
-    padding:20px;
-    border-radius:12px;
+
+.version{
+  text-align:center;
+  font-size:.55rem;
+  letter-spacing:2px;
+  color:#444;
+  margin-bottom:16px;
 }
-.loader {
-    height:300px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    color:var(--muted);
-    font-size:0.9rem;
+
+.card{
+  background:var(--card);
+  border-radius:18px;
+  padding:18px;
+  margin-bottom:14px;
+  border:1px solid rgba(255,255,255,.04);
+  position:relative;
 }
-.meal-img {
-    width:100%;
-    border-radius:10px;
+
+.card::before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:16px;
+  bottom:16px;
+  width:3px;
+  background:var(--gold);
+  border-radius:0 4px 4px 0;
+}
+
+.label{
+  font-size:.55rem;
+  color:var(--muted);
+  letter-spacing:1.5px;
+  font-weight:800;
+  margin-bottom:6px;
+}
+
+.row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.value{
+  font-size:.95rem;
+  font-weight:500;
+}
+
+.pill{
+  font-size:.6rem;
+  padding:4px 8px;
+  border-radius:20px;
+  border:1px solid var(--gold);
+  color:var(--gold);
+  font-weight:800;
+}
+
+.tabs{
+  display:flex;
+  gap:6px;
+  margin-bottom:14px;
+}
+
+.tab{
+  flex:1;
+  padding:10px 0;
+  border-radius:10px;
+  font-size:.6rem;
+  font-weight:800;
+  background:#111;
+  border:1px solid #222;
+  color:#555;
+  text-align:center;
+}
+
+.tab.active{
+  color:#fff;
+  border-color:var(--gold);
+}
+
+.button{
+  width:100%;
+  padding:14px;
+  border-radius:14px;
+  background:var(--gold);
+  color:#000;
+  font-weight:900;
+  letter-spacing:1px;
+  border:none;
+  cursor:pointer;
 }
 </style>
 </head>
 
 <body>
+<div class="app">
 
-<div style="padding:40px">
-    <button onclick="openMeal('Grilled Salmon with Quinoa')">
-        OPEN MEAL
-    </button>
-</div>
+  <h1>THE CENTURION</h1>
+  <div class="version">v400 | SCALABLE CORE</div>
 
-<div id="modal" class="modal" onclick="closeModal(event)">
-    <div class="modal-inner">
-        <h2 id="title"></h2>
-        <div id="body"></div>
-    </div>
+  <div class="tabs" id="dayTabs"></div>
+
+  <div id="content"></div>
+
+  <button class="button" onclick="nextDay()">NEXT DAY</button>
+
 </div>
 
 <script>
-/* ============================
-   UTILITIES
-============================ */
+/* ===============================
+   v400 DATA ENGINE
+================================ */
 
-// stable hash → cache-friendly seed
-function hashSeed(str) {
-    let h = 2166136261;
-    for (let i = 0; i < str.length; i++) {
-        h ^= str.charCodeAt(i);
-        h += (h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24);
-    }
-    return Math.abs(h % 99999);
+const DAYS = ["MON","TUE","WED","THU","FRI","SAT","SUN"]
+
+const MEALS = {
+  lunch:[
+    {name:"Super Mince Bowl", note:"Iron + fiber longevity base", protein:50},
+    {name:"Salmon Greens", note:"Omega-3 brain & heart", protein:38},
+    {name:"Chicken Artichoke", note:"Liver & gut support", protein:42}
+  ],
+  dinner:[
+    {name:"Bison + Lentils", note:"Low glycemic strength meal", protein:45},
+    {name:"Halibut Beans", note:"Lean protein + fiber", protein:36},
+    {name:"Filet + Greens", note:"Iron density", protein:48}
+  ]
 }
 
-// build Pollinations URL
-function buildImageURL(prompt) {
-    const seed = hashSeed(prompt);
-    return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}
-        ?width=900&height=600&nologo=true&seed=${seed}&enhance=false`;
+let dayIndex = new Date().getDay()-1
+if(dayIndex < 0) dayIndex = 6
+
+/* ===============================
+   RENDER ENGINE
+================================ */
+
+function renderTabs(){
+  const el = document.getElementById("dayTabs")
+  el.innerHTML = ""
+  DAYS.forEach((d,i)=>{
+    const t = document.createElement("div")
+    t.className = "tab" + (i===dayIndex?" active":"")
+    t.innerText = d
+    t.onclick = ()=>{dayIndex=i;render()}
+    el.appendChild(t)
+  })
 }
 
-/* ============================
-   CORE LOADER (v400)
-============================ */
-
-function openMeal(name) {
-    const modal = document.getElementById('modal');
-    const body = document.getElementById('body');
-    document.getElementById('title').innerText = name;
-
-    modal.style.display = 'flex';
-    body.innerHTML = `<div class="loader">Generating image… this may take up to 30 seconds on first load.</div>`;
-
-    const prompt = `${name}, professional food photography, michelin plating, natural light`;
-
-    const img = new Image();
-    img.className = 'meal-img';
-    img.loading = 'eager';
-    img.decoding = 'async';
-
-    img.onload = () => {
-        body.innerHTML = '';
-        body.appendChild(img);
-    };
-
-    img.onerror = () => {
-        body.innerHTML = `<div class="loader">Image generation failed. Try again.</div>`;
-    };
-
-    img.src = buildImageURL(prompt);
+function mealCard(label, meal){
+  return `
+  <div class="card">
+    <div class="label">${label}</div>
+    <div class="row">
+      <div>
+        <div class="value">${meal.name}</div>
+        <div class="label">${meal.note}</div>
+      </div>
+      <div class="pill">${meal.protein}P</div>
+    </div>
+  </div>`
 }
 
-function closeModal(e) {
-    if (e.target.id === 'modal') {
-        e.currentTarget.style.display = 'none';
-    }
+function render(){
+  renderTabs()
+
+  const lunch = MEALS.lunch[dayIndex % MEALS.lunch.length]
+  const dinner = MEALS.dinner[dayIndex % MEALS.dinner.length]
+
+  document.getElementById("content").innerHTML = `
+    ${mealCard("LUNCH", lunch)}
+    ${mealCard("DINNER", dinner)}
+  `
 }
+
+function nextDay(){
+  dayIndex = (dayIndex + 1) % 7
+  render()
+}
+
+render()
 </script>
-
 </body>
 </html>
