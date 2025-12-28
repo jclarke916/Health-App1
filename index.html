@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v228.20 Silent Fix</title>
+    <title>The Centurion | v228.14 UX Patch</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --text:#fff;
@@ -33,8 +33,10 @@
         .tabs{display:flex;gap:4px;margin-bottom:15px}
         .tab{flex:1;padding:10px 0;background:#111;border:1px solid #222;color:#444;border-radius:8px;font-size:0.55rem;font-weight:800;text-align:center;cursor:pointer}
         .tab.active{background:#222;color:#fff;border-color:444}
+        /* MODAL FIXES */
         .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:2000;overflow-y:auto;padding:0;backdrop-filter:blur(5px);}
         .modal-content{background:#0a0a0a;margin:0;padding:25px;border:none;border-radius:0;width:100%;min-height:100%;max-width:none;}
+        /* BIGGER CLOSE BUTTON */
         .close-btn-float { position: fixed; top: 25px; right: 25px; width: 50px; height: 50px; background: #FF5252; border-radius: 50%; border: 2px solid #fff; color: #fff; font-size: 30px; text-align: center; line-height: 46px; cursor: pointer; z-index: 3000; box-shadow: 0 4px 15px rgba(0,0,0,0.8); font-weight:bold;}
         .chef-steps ol{padding-left:20px; color:#ccc; margin:10px 0; font-size:0.9rem; line-height:1.6;}
         .chef-steps li{margin-bottom:12px;}
@@ -81,7 +83,7 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v228.20 Silent Fix</span>
+        <span class="version-tag">v228.14 UX Patch (Safe Mode)</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -92,7 +94,7 @@
         <button class="nav-btn" onclick="changeW(-1)">PREV</button>
         <button class="nav-btn" onclick="resetD()">TODAY</button>
         <button class="nav-btn" onclick="changeW(1)">NEXT</button>
-        <button class="nav-btn" onclick="safeOpenBio()" style="color:var(--green)">MY DATA</button>
+        <button class="nav-btn" onclick="openBio()" style="color:var(--green)">MY DATA</button>
     </div>
     <div id="dayTabs" class="tabs"></div>
     <div id="dayContent"></div>
@@ -156,7 +158,7 @@ const jDB = {
 
 const mDB = {
     b: [
-        "Ancestral Beef Sausage ⚡|80/20 Beef-Liver Blend,Sage,Thyme|sear|<strong>The 'Ancestral Sausage'</strong><hr><strong>INGREDIENTS</strong><br>6oz Beef/Liver Blend (80/20) • 1 tsp Sage • 1/2 tsp Thyme<br><br><strong>1. MIX</strong><br>Mix herbs into the ground blend. Form into small patties or links.<br><br><strong>2. COOK</strong><br>Pan fry until browned and cooked through. Serve with a side of berries.<br><br><strong>Longevity Win:</strong> The 20% liver content is masked by the savory herbs, providing massive Vitamin A.|25|2|280|0",
+        "Ancestral Beef Sausage ⚡|80/20 Beef-Liver Blend,Sage,Thyme|sear|<strong>The 'Ancestral Sausage'</strong><hr><strong>INGREDIENTS</strong><br>6oz Beef/Liver Blend (80/20) • 1 tsp Sage • 1/2 tsp Thyme<br><br><strong>1. MIX</strong><br>Mix herbs into the ground blend. Form into small patties or links.<br><br><strong>2. COOK</strong><br>Pan fry until browned and cooked through. Serve with a side of berries.|25|2|280|0",
         "Centurion Avocado Toast|Ezekiel Bread,Avocado,Egg Whites,Hemp Seeds|toast|<strong>The 'Centurion Toast'</strong><hr><strong>INGREDIENTS</strong><br>2 Slices Sprouted Bread • 1/2 Avocado • 1 Cup Egg Whites • 1 tbsp Hemp Seeds<br><br><strong>1. PREP</strong><br>Toast bread. Mash avocado with lemon.<br><br><strong>2. COOK</strong><br>Scramble egg whites separately. Serve toast topped with avo mash.|35|30|450|12",
         "Fluffy Protein Pancakes|Oat Flour,Whey Isolate,Blueberries,Almond Milk|griddle|<strong>'Fluffy Pro-Cakes'</strong><hr><strong>INGREDIENTS</strong><br>1/2 Cup Oat Flour • 1 Scoop Vanilla Protein • 1/2 tsp Baking Powder • Blueberries<br><br><strong>1. MIX</strong><br>Whisk flour, protein, and baking powder. Stir in milk.<br><br><strong>2. COOK</strong><br>Pour onto hot griddle. Drop fresh blueberries into the wet batter.|35|25|380|6"
     ],
@@ -198,28 +200,12 @@ var defaultUH = {
     }
 };
 
-// --- GLOBAL VAR TO HOLD DATA ---
-var uH = null;
-
-// --- SAFE OPEN FUNCTION (SILENT REPAIR) ---
-function safeOpenBio() {
-    try {
-        var stored = localStorage.getItem('centurion_bio_v2');
-        if(stored) {
-            uH = JSON.parse(stored);
-        }
-        // Strict Validation Check
-        if (!uH || !uH['J'] || !uH['J'].labs || !uH['J'].tests || !uH['S'] || !uH['S'].labs) {
-            throw new Error("Old data format");
-        }
-        openBio(); // It's safe, open it.
-    } catch (e) {
-        // SILENT REPAIR: No prompt, just fix it and open.
-        console.log("Auto-Repairing Data...");
-        uH = JSON.parse(JSON.stringify(defaultUH));
-        localStorage.setItem('centurion_bio_v2', JSON.stringify(uH));
-        openBio();
-    }
+// --- DATA SAFE LOADER ---
+var uH = JSON.parse(localStorage.getItem('centurion_bio_v2'));
+if (!uH || !uH['J'].labs || !uH['J'].tests) {
+    // If old data structure is detected, reset to new default to prevent crash
+    uH = JSON.parse(JSON.stringify(defaultUH));
+    localStorage.setItem('centurion_bio_v2', JSON.stringify(uH));
 }
 
 function updateStreak(change) {
@@ -572,9 +558,8 @@ function openBio() {
     var modalBody = document.getElementById('mBody');
     var u = uH[user];
     
-    // FIXED: Added margin-right:45px to move it away from the X button
     document.getElementById('mTitle').innerHTML = (user === 'J' ? "JERMAINE" : "SOPHIA") + 
-        " <span onclick='resetBioData()' style='font-size:0.6rem; color:#444; border:1px solid #333; padding:4px 8px; border-radius:4px; vertical-align:middle; cursor:pointer; float:right; margin-right:45px;'>RESET DATA</span>";
+        " <span onclick='resetBioData()' style='font-size:0.6rem; color:#444; border:1px solid #333; padding:4px 8px; border-radius:4px; vertical-align:middle; cursor:pointer; float:right;'>RESET DATA</span>";
     
     document.getElementById('mSub').innerText = "Clinical & Functional Metrics";
     document.getElementById('mImgContainer').innerHTML = ''; 
@@ -603,7 +588,6 @@ function renderOuraTab() {
     let rawHist = localStorage.getItem(historyKey);
     let history = rawHist ? JSON.parse(rawHist) : [];
     
-    // Sort history by date descending (newest first)
     history.sort((a, b) => new Date(b.date) - new Date(a.date));
     
     if(history.length === 0) {
@@ -612,14 +596,10 @@ function renderOuraTab() {
     }
 
     let todayData = history[0]; 
-    
-    // Goals
-    const deepGoal = 90; // Minutes
-    const remGoal = 90;  // Minutes
-    const actGoal = (user === 'J') ? 900 : 600; // Calories
-    const rhrGoal = 60;  // BPM (Lower is better)
+    const deepGoal = 90; 
+    const remGoal = 90;  
+    const actGoal = (user === 'J') ? 900 : 600; 
 
-    // Helper for Standard Bars (Higher = Better)
     const drawBar = (label, val, goal, unit, lowMsg, highMsg) => {
         let pct = Math.min((val / goal) * 100, 100);
         let color = val >= goal ? 'var(--green)' : '#FF5252';
@@ -633,30 +613,7 @@ function renderOuraTab() {
             <div style="height:8px; background:#111; border-radius:10px; overflow:hidden; margin-bottom:8px;">
                 <div style="width:${pct}%; height:100%; background:${color}; border-radius:10px;"></div>
             </div>
-            <div style="font-size:0.65rem; color:#888; font-style:italic;"><strong>SCIENCE:</strong> ${msg}</div>
-        </div>`;
-    };
-
-    // Helper for RHR Bar (Lower = Better)
-    const drawRHRBar = (val) => {
-        if(!val || val === 0) return `<div class="bio-section" style="padding:15px; text-align:center; color:#666;">RHR Data Waiting...</div>`;
-        
-        let pct = val <= rhrGoal ? 100 : Math.max(0, 100 - ((val - rhrGoal) * 5));
-        let color = val <= rhrGoal ? 'var(--green)' : '#FF5252';
-        let msg = val <= rhrGoal ? 
-            "Parasympathetic state dominant." : 
-            `Sympathetic overdrive. Rx: Breathwork.`;
-
-        return `
-        <div class="bio-section" style="margin-bottom:12px; padding:15px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05);">
-            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
-                <span style="font-size:0.8rem; font-weight:800; color:#fff;">RESTING HR</span>
-                <span style="font-size:0.7rem; color:${color}; font-weight:800;">${val} bpm</span>
-            </div>
-            <div style="height:8px; background:#111; border-radius:10px; overflow:hidden; margin-bottom:8px;">
-                <div style="width:${pct}%; height:100%; background:${color}; border-radius:10px;"></div>
-            </div>
-            <div style="font-size:0.65rem; color:#888; font-style:italic;"><strong>SCIENCE:</strong> ${msg}</div>
+            <div style="font-size:0.65rem; color:#888; font-style:italic;">${msg}</div>
         </div>`;
     };
 
@@ -665,55 +622,130 @@ function renderOuraTab() {
     
     let html = `<div style="margin-bottom:20px; text-align:center; color:#666; font-size:0.7rem;">LATEST SYNC: ${todayData.date}</div>`;
     
-    // 1. Deep Sleep Bar
     html += drawBar("DEEP SLEEP", deepMin, 90, "min", 
-        "Hormone production compromised. Rx: Cool room to 65°F.", 
-        "Anabolic state reached. Max Testosterone & HGH release.");
+        "⚠️ Low: Hormone production compromised. Rx: Cool room to 65°F.", 
+        "✅ Optimal: Anabolic hormone production active.");
         
-    // 2. REM Sleep Bar
     html += drawBar("REM SLEEP", remMin, 90, "min", 
-        "Cognitive delay risk. Rx: No blue light 1h before bed.", 
-        "Brain reset complete. Memory consolidation active.");
-
-    // 3. Resting Heart Rate Bar
-    html += drawRHRBar(todayData.rhr);
+        "⚠️ Low: Cognitive recovery needed. Rx: No blue light 1h before bed.", 
+        "✅ Optimal: Memory consolidation active.");
         
-    // 4. Activity Bar
     html += drawBar("ACTIVE BURN", todayData.cal, actGoal, "kcal", 
-        "Insulin sensitivity risk. Rx: 15m post-meal walk.", 
-        "Metabolic fire high. Insulin sensitivity optimized.");
+        "⚠️ Low: Insulin sensitivity risk. Rx: 15m post-meal walk.", 
+        "✅ Optimal: Metabolic firing rate high.");
 
-    // 5. History Table
     html += `<div style="margin-top:30px; border-top:1px dashed #333; padding-top:15px;">
         <div style="font-size:0.8rem; color:var(--gold); font-weight:900; margin-bottom:10px; letter-spacing:1px;">7-DAY TRENDS</div>
         <div style="display:flex; justify-content:space-between; color:#666; font-size:0.6rem; font-weight:900; margin-bottom:5px; padding:0 4px;">
-            <span style="flex:0.8">DATE</span>
-            <span style="flex:0.8; text-align:center">SCORE</span>
-            <span style="flex:1; text-align:center">DEEP (>90m)</span>
-            <span style="flex:1; text-align:center">REM (>90m)</span>
-            <span style="flex:1; text-align:right">RHR</span>
+            <span style="flex:1">DATE</span>
+            <span style="flex:1; text-align:center">SCORE</span>
+            <span style="flex:1; text-align:center">DEEP</span>
+            <span style="flex:1; text-align:right">BURN</span>
         </div>`;
         
     history.slice(0, 7).forEach(day => {
         let dMin = Math.round(day.deep / 60);
-        let rMin = Math.round(day.rem / 60);
         let dateStr = day.date.slice(5); 
-        
-        let deepColor = dMin >= deepGoal ? 'var(--green)' : '#aaa';
-        let remColor = rMin >= remGoal ? 'var(--green)' : '#aaa';
-        let rhrColor = day.rhr <= rhrGoal ? 'var(--green)' : '#FF5252';
-        let scoreColor = day.score >= 85 ? 'var(--green)' : '#aaa';
-
         html += `<div class="oura-hist-row">
-            <span class="oura-hist-date" style="flex:0.8">${dateStr}</span>
-            <span style="flex:0.8; text-align:center; color:${scoreColor}">${day.score}</span>
-            <span style="flex:1; text-align:center; color:${deepColor}">${dMin}m</span>
-            <span style="flex:1; text-align:center; color:${remColor}">${rMin}m</span>
-            <span style="flex:1; text-align:right; color:${rhrColor}">${day.rhr}</span>
+            <span class="oura-hist-date" style="flex:1">${dateStr}</span>
+            <span style="flex:1; text-align:center; color:${day.score >= 85 ? 'var(--green)' : '#aaa'}">${day.score}</span>
+            <span style="flex:1; text-align:center">${dMin}m</span>
+            <span style="flex:1; text-align:right">${day.cal}</span>
         </div>`;
     });
     
     html += `</div>`;
+    target.innerHTML = html;
+}
+
+function renderBioTab(tab) {
+    var u = uH[user];
+    var target = document.getElementById('bioContentArea');
+    document.querySelectorAll('[id^="bt"]').forEach(function(t){ t.classList.remove('active') });
+    document.getElementById('bt' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+    
+    var html = '';
+
+    if(user === 'S' && tab === 'labs') {
+        if(!u.streak) u.streak = 0;
+        let startCRP = 1.8;
+        let projCRP = Math.max(0.5, (startCRP - (u.streak * 0.1)).toFixed(1));
+        let progress = Math.min(((startCRP - projCRP) / (startCRP - 0.5)) * 100, 100);
+        
+        html += `<div style="background:linear-gradient(180deg, #1a1a2e, #16213e); border:1px solid #30475e; border-radius:12px; padding:20px; margin-bottom:25px; text-align:center; box-shadow:0 4px 20px rgba(0,0,0,0.3);">
+            <div style="font-size:0.6rem; color:#888; letter-spacing:2px; font-weight:900; margin-bottom:10px;">THE TRIAD PROTOCOL</div>
+            <div style="font-size:1.8rem; font-weight:800; color:#fff; margin-bottom:5px;">${u.streak} DAYS CLEAN</div>
+            <div style="font-size:0.65rem; color:#a2a8d3; margin-bottom:20px;">🚫 ALCOHOL • 🚫 CAFFEINE • 🚫 SUGAR</div>
+            
+            <div style="display:flex; justify-content:space-between; align-items:end; margin-bottom:5px; padding:0 10px;">
+                <div style="text-align:left;">
+                    <div style="font-size:0.6rem; color:#ff5252; font-weight:900;">STARTING FIRE</div>
+                    <div style="font-size:1.1rem; color:#fff;">1.8 <span style="font-size:0.6rem">mg/L</span></div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:0.6rem; color:#00e676; font-weight:900;">PROJECTED COOLING</div>
+                    <div style="font-size:1.4rem; color:#00e676; text-shadow:0 0 10px rgba(0,230,118,0.4);">${projCRP} <span style="font-size:0.7rem">mg/L</span></div>
+                </div>
+            </div>
+
+            <div style="height:10px; background:#111; border-radius:10px; overflow:hidden; margin-bottom:20px; border:1px solid #333; position:relative;">
+                 <div style="position:absolute; left:0; top:0; bottom:0; width:${progress}%; background:linear-gradient(90deg, #ff5252, #00e676); transition:width 0.5s ease;"></div>
+            </div>
+
+            <div style="display:flex; gap:10px;">
+                <button onclick="updateStreak(-1)" style="flex:1; background:#222; border:1px solid #333; color:#666; padding:12px; border-radius:8px; font-weight:800; font-size:0.7rem; cursor:pointer;">💔 SLIP UP</button>
+                <button onclick="updateStreak(1)" style="flex:2; background:#00e676; border:none; color:#000; padding:12px; border-radius:8px; font-weight:900; font-size:0.7rem; cursor:pointer; box-shadow:0 0 15px rgba(0,230,118,0.3);">DAY COMPLETE (+1) 🧊</button>
+            </div>
+            <div style="font-size:0.55rem; color:#666; margin-top:15px; font-style:italic;">*Est. 0.1 mg/L drop per clean day based on half-life of inflammation markers.</div>
+        </div>`;
+    }
+
+    if(tab === 'phys') {
+        var le = calculateLifeExpectancy(user);
+        var gap = le.potential - le.current;
+        var gapColor = gap > 20 ? '#FF5252' : (gap > 10 ? 'var(--gold)' : 'var(--green)');
+        html += `<div style="background:linear-gradient(135deg, #111, #000); border:1px solid #333; border-radius:12px; padding:20px; margin-bottom:20px; text-align:center;">
+            <div style="font-size:0.6rem; color:#666; font-weight:900; letter-spacing:3px; text-transform:uppercase; margin-bottom:10px;">Biological Age Projection</div>
+            <div style="display:flex; justify-content:center; align-items:center; gap:15px; margin-bottom:10px;">
+            <div><div style="font-size:3rem; line-height:1; font-weight:800; color:#fff">${le.current}</div><div style="font-size:0.55rem; color:#888; font-weight:900; margin-top:5px;">CURRENT TRAJECTORY</div></div>
+            <div style="font-size:1.2rem; color:#444;">➔</div>
+            <div><div style="font-size:3rem; line-height:1; font-weight:800; color:var(--gold); text-shadow:0 0 15px rgba(212,175,55,0.3)">${le.potential}</div><div style="font-size:0.55rem; color:var(--gold); font-weight:900; margin-top:5px;">CENTURION GOAL</div></div>
+            </div>`;
+            if(gap > 0) {
+            html += `<div style="background:rgba(255,255,255,0.05); border-radius:8px; padding:8px; display:inline-block;">
+            <span style="font-size:0.7rem; color:#ccc;">GAP: </span>
+            <span style="font-size:0.8rem; font-weight:800; color:${gapColor};">-${gap} YEARS</span>
+            <div style="font-size:0.5rem; color:#666; margin-top:4px;">OPTIMIZE APOB & VO2 MAX TO CLOSE GAP</div>
+            </div>`;
+        } else {
+            html += '<div style="font-size:0.8rem; font-weight:800; color:var(--green);">CENTURION STATUS UNLOCKED 🏆</div>';
+        }
+        html += '</div>';
+    }
+    
+    var keys = (tab === 'phys') ? ['bf', 'm', 'vf', 'bmr'] : Object.keys(u[tab]);
+    keys.forEach(function(key, idx) {
+        var m = (tab === 'phys') ? { id: key, name: (key==='bf'?'Body Fat':key==='m'?'Muscle':key==='vf'?'Visceral Fat':'BMR'), val: u.now[key], goal: u.goal[key], unit: (key==='bf'?'%':key==='m'?'lbs':key==='vf'?'lvl':'kcal'), lowerIsBetter: (key!=='m' && key!=='bmr') } : u[tab][key];
+        
+        var maxRef = Math.max(m.val, m.goal) * 1.2;
+        var pctNow = (m.val / maxRef) * 100;
+        var pctGoal = (m.goal / maxRef) * 100;
+        var colorNow = (m.lowerIsBetter ? (m.val <= m.goal * 1.05) : (m.val >= m.goal * 0.95)) ? 'var(--green)' : 'var(--gold)';
+        if (colorNow !== 'var(--green)' && tab === 'labs') colorNow = '#FF5252'; 
+
+        var itemId = 'bio_item_' + idx;
+        var label1 = (tab === 'tests') ? "EXECUTION" : "WHAT";
+        var label2 = (tab === 'tests') ? "TRAINING" : "FIX";
+        var editHTML = '';
+        if(tab === 'tests') {
+            editHTML = ' <span onclick="updateBioVal(\''+tab+'\',\''+key+'\',\''+m.name+'\')" style="font-size:0.6rem; color:var(--blue); border:1px solid var(--blue); padding:2px 6px; border-radius:4px; margin-left:8px; cursor:pointer;">TAP TO UPDATE</span>';
+        }
+        html += `<div class="bio-section" onclick="toggleBioItem('bio_${idx}')" style="margin-bottom:12px; padding:15px; cursor:pointer; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05);">
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px;"><span style="font-size:0.8rem; font-weight:800; color:#fff;">${m.name}</span><span style="font-size:0.6rem; color:#555;">▼ INFO</span></div>
+            <div style="display:flex; align-items:center; margin-bottom:6px;"><div style="width:40px; font-size:0.55rem; color:#888; font-weight:900;">NOW</div><div style="flex:1; height:6px; background:#111; border-radius:4px; overflow:hidden; margin-right:8px;"><div style="width:${pctNow}%; height:100%; background:${colorNow}; border-radius:4px;"></div></div><div style="text-align:right; font-size:0.7rem; color:${colorNow}; font-weight:700;">${m.val + editHTML}</div></div>
+            <div style="display:flex; align-items:center;"><div style="width:40px; font-size:0.55rem; color:var(--blue); font-weight:900;">GOAL</div><div style="flex:1; height:6px; background:#111; border-radius:4px; overflow:hidden; margin-right:8px;"><div style="width:${pctGoal}%; height:100%; background:var(--blue); border-radius:4px; opacity:0.6;"></div></div><div style="width:40px; text-align:right; font-size:0.7rem; color:var(--blue); font-weight:700;">${m.goal}</div></div>
+            <div id="bio_${idx}" style="display:none; margin-top:15px; padding-top:10px; border-top:1px dashed #333;"><div style="font-size:0.75rem; color:#ccc; line-height:1.4"><strong style="color:var(--blue)">${label1}:</strong> <br>${m.desc||''}</div><div style="font-size:0.75rem; color:#ccc; line-height:1.4"><strong style="color:var(--green)">${label2}:</strong> ${m.fix||''}</div></div></div>`;
+    });
     target.innerHTML = html;
 }
 
