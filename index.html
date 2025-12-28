@@ -1,158 +1,72 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v228.2 Oura Master</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --text:#fff;
-        --g-pro:linear-gradient(90deg,#FF5252,#D50000);
-        --g-carb:linear-gradient(90deg,#FFAB40,#FF6D00);
-        --g-cal:linear-gradient(90deg,#B388FF,#6200EA);
-        --g-fib:linear-gradient(90deg,#00E676,#00C853);}
-        *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-        body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);margin:0;padding:15px;font-size:14px}
-        .container{max-width:500px;margin:0 auto; padding-bottom: 50px;}
-        h1{text-align:center;font-weight:200;letter-spacing:5px;text-transform:uppercase;font-size:1.2rem;margin:10px 0}
-        .version-tag { display: block; text-align: center; font-size: 0.5rem; color: #444; margin-top: -8px; margin-bottom: 15px; letter-spacing: 2px; }
-        .badge-row{display:flex;justify-content:center;gap:8px;margin-bottom:15px}
-        .u-badge{background:#000;padding:8px 16px;border-radius:20px;border:1px solid #333;font-size:0.6rem;font-weight:800;cursor:pointer;color:#666}
-        .u-badge.active{border-color:var(--gold);color:var(--gold)}
-        .status-bar{text-align:center;color:#888;font-size:0.65rem;font-weight:800;margin-bottom:10px;text-transform:uppercase}
-        .controls{display:flex;gap:5px;margin-bottom:15px}
-        .nav-btn{background:#111;border:1px solid #222;color:#888;padding:10px;flex:1;border-radius:8px;font-size:0.55rem;font-weight:800;cursor:pointer}
-        .card, .macro-dashboard{background:var(--card);border-radius:20px;padding:20px;margin-bottom:15px;border:1px solid rgba(255,255,255,0.03);position:relative}
-        .card::before{content:"";position:absolute;left:0;top:20px;bottom:20px;width:3px;background:var(--gold);border-radius:0 4px 4px 0}
-        .card.holiday-card::before{background:var(--purple);box-shadow: 0 0 15px rgba(213, 0, 249, 0.4);}
-        .label{color:#666;font-size:0.5rem;text-transform:uppercase;font-weight:900;margin-bottom:4px; display: flex; justify-content: space-between;}
-        .portion-tag { color: var(--blue); }
-        .value{ font-size: 0.95rem; margin-bottom: 12px; font-weight: 500; cursor: pointer; border-bottom: 1px solid #222; padding-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
-        .macro-row{margin-bottom:10px}
-        .macro-label{display:flex;justify-content:space-between;font-size:0.55rem;font-weight:800;color:#777;margin-bottom:3px}
-        .macro-bg{height:5px;background:#222;border-radius:10px;overflow:hidden}
-        .macro-fill{height:100%;border-radius:10px;transition:width 0.8s}
-        .tabs{display:flex;gap:4px;margin-bottom:15px}
-        .tab{flex:1;padding:10px 0;background:#111;border:1px solid #222;color:#444;border-radius:8px;font-size:0.55rem;font-weight:800;text-align:center;cursor:pointer}
-        .tab.active{background:#222;color:#fff;border-color:444}
-        .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#0a0a0a;z-index:2000;overflow-y:auto;padding:0;}
-        .modal-content{background:#0a0a0a;margin:0;padding:25px;border:none;border-radius:0;width:100%;min-height:100%;max-width:none;}
-        .close-btn-float { position: fixed; top: 20px; right: 20px; width: 40px; height: 40px; background: rgba(30,30,30,0.8); backdrop-filter: blur(5px); border-radius: 50%; border: 1px solid #333; color: #fff; font-size: 24px; text-align: center; line-height: 38px; cursor: pointer; z-index: 2001; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-        .chef-steps ol{padding-left:20px; color:#ccc; margin:10px 0; font-size:0.9rem; line-height:1.6;}
-        .chef-steps li{margin-bottom:12px;}
-        .chef-steps strong{color:var(--gold); display:block; margin-top:20px; font-size:0.8rem; border-top:1px dashed #333; padding-top:15px;}
-        .juice-name{font-size:1.1rem;font-weight:900;color:#fff;text-align:center;text-transform:uppercase;cursor:pointer;border:1px dashed #333;padding:10px;border-radius:12px}
-        .bio-section{margin-bottom:25px;padding:15px;background:rgba(255,255,255,0.03);border-radius:15px;border:1px solid rgba(255,255,255,0.05)}
-        .bio-title{display:flex;justify-content:space-between;font-size:0.75rem;font-weight:800;color:#fff;margin-bottom:12px;text-transform:uppercase}
-        .bar-group{display:flex;flex-direction:column;gap:8px}
-        .bar-row{display:flex;align-items:center}
-        .bar-lbl{width:45px;font-size:0.55rem;color:#666;font-weight:900;text-transform:uppercase}
-        .bar-track{flex:1;height:8px;background:#111;border-radius:10px;margin:0 10px;border:1px solid #222;overflow:hidden}
-        .bar-fill{height:100%;border-radius:10px;transition:width 1s cubic-bezier(0.4,0,0.2,1)}
-        .rec-phase-list { position: relative; padding-left: 25px; margin-top: 20px; }
-        .rec-phase-list::before { content: ''; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: linear-gradient(to bottom, var(--blue), var(--purple)); }
-        .phase-item { position: relative; margin-bottom: 25px; }
-        .phase-item::after { content: ''; position: absolute; left: -22px; top: 5px; width: 10px; height: 10px; background: var(--bg); border: 2px solid var(--blue); border-radius: 50%; }
-        .phase-time { font-size: 0.6rem; font-weight: 900; color: var(--blue); text-transform: uppercase; letter-spacing: 1px; }
-        .phase-title { display: block; font-size: 0.9rem; font-weight: 700; color: #fff; margin: 2px 0; }
-        .phase-detail { font-size: 0.75rem; color: #999; line-height: 1.4; display: block; }
-        .macro-pill { background: #1a1a1a; border: 1px solid #333; padding: 3px 8px; border-radius: 12px; font-size: 0.55rem; color: #888; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; white-space: nowrap; }
-        .grocery-cat { font-size: 0.85rem; color: var(--gold); text-transform: uppercase; letter-spacing: 2px; margin-top: 30px; margin-bottom: 15px; font-weight: 900; border-bottom: 1px dashed #333; padding-bottom: 8px; }
-        .grocery-item { padding: 12px 0; color: #ccc; font-size: 0.95rem; display:flex; align-items:center; border-bottom:1px solid #1a1a1a; }
-        .grocery-item span { margin-left: 12px; }
-        .snack-grid { display: flex; gap: 10px; margin-bottom: 15px; }
-        .snack-slot { flex: 1; border: 1px dashed #333; border-radius: 12px; padding: 12px 5px; text-align: center; cursor: pointer; position: relative; min-height: 60px; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(255,255,255,0.02); }
-        .snack-slot.filled { border: 1px solid var(--gold); background: #111; }
-        .snack-label { font-size: 0.65rem; color: #fff; font-weight: 700; line-height: 1.2; }
-        .snack-macro { font-size: 0.5rem; color: #666; margin-top: 4px; }
-        .remove-snack { position: absolute; top: -5px; right: -5px; background: #333; color: #aaa; border: 1px solid #222; border-radius: 50%; width: 16px; height: 16px; font-size: 9px; line-height: 14px; text-align: center; font-weight: 800; box-shadow: 0 1px 3px rgba(0,0,0,0.5); z-index: 10; transition: all 0.2s ease; }
-        .remove-snack:hover { background: #444; color: #fff; border-color:#333; }
-        .meal-img { display: block; width: 100%; max-width: 100%; height: auto; min-height: 220px; object-fit: cover; border-radius: 14px; background-color: #111; transition: opacity 0.5s ease, filter 0.5s ease; }
-        .img-loader { height: 220px; display: flex; align-items: center; justify-content: center; color: var(--gold); font-size: 0.8rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; background: rgba(255,255,255,0.02); border-radius: 14px; border: 1px dashed #333; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
-        .hist-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.7rem; color: #ccc; }
-        .hist-table th { text-align: left; color: #666; border-bottom: 1px solid #333; padding: 5px; font-weight: 800; }
-        .hist-table td { border-bottom: 1px solid #222; padding: 8px 5px; }
-        .hist-row:last-child td { border-bottom: none; }
-        .holiday-banner { background: linear-gradient(90deg, #D4AF37, #FDD835, #D4AF37); background-size: 200% 200%; animation: shine 3s infinite; color: #000; text-align: center; font-weight: 900; font-size: 0.75rem; padding: 10px; border-radius: 12px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px; box-shadow: 0 0 15px rgba(212, 175, 55, 0.3); }
-        @keyframes shine { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
-        .oura-hist-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #222; font-size: 0.7rem; color: #888; }
-        .oura-val { font-weight: 800; color: #fff; }
-    </style>
-</head>
-<body>
-<div class="container">
-    <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v228.2 Oura Master</span>
-        <div class="badge-row">
-            <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
-            <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
-        </div>
-    </header>
-    <div id="dateDisplay" class="status-bar">...</div>
-    <div class="controls">
-        <button class="nav-btn" onclick="changeW(-1)">PREV</button>
-        <button class="nav-btn" onclick="resetD()">TODAY</button>
-        <button class="nav-btn" onclick="changeW(1)">NEXT</button>
-        <button class="nav-btn" onclick="openBio()" style="color:var(--green)">MY DATA</button>
-    </div>
-    <div id="dayTabs" class="tabs"></div>
-    <div id="dayContent"></div>
-</div>
+const hDB={b:"Festive Brunch|Protein Waffles, Turkey Bacon, Eggs, Berries|griddle|<strong>Prep:</strong> 15m • <strong>Cook:</strong> 15m<hr><strong>INGREDIENTS</strong><br>1 Scoop Whey (in batter) • 2 Eggs • 2 Slices Turkey Bacon • 1/2 Cup Berries<br><br><strong>1. ENJOY</strong><br>Prioritize the protein first, then enjoy the treats. Happy Holidays!|35|40|500",l:"The Holiday Feast|Lean Roast Meat, Green Beans, Sweet Potato|roast|<strong>Prep:</strong> 20m • <strong>Cook:</strong> 3h<hr><strong>INGREDIENTS</strong><br>8oz Roast Turkey or Beef • 1 Cup Green Beans • 1/2 Cup Sweet Potato<br><br><strong>1. FEAST</strong><br>Load up on the roast meat and green veggies. Go easy on the gravy.|50|40|600",d:"Leftovers Plate|Lean Protein, Veggies|raw|<strong>Prep:</strong> 5m<hr><strong>INGREDIENTS</strong><br>6oz Leftover Protein • Vegetable Side<br><br><strong>1. RECOVER</strong><br>Keep it light to help digestion before sleep.|30|10|300"};
 
-<div id="masterModal" class="modal">
-    <div class="close-btn-float" onclick="closeM()">&times;</div>
-    <div class="modal-content">
-        <h2 id="mTitle" style="font-size:1.5rem; margin-top:10px;"></h2>
-        <div id="mSub" style="color:var(--gold);font-size:0.85rem;margin:10px 0; text-transform:uppercase; letter-spacing:1px; font-weight:700;"></div>
-        <div id="mImgContainer"></div>
-        <div id="mBody" class="chef-steps" style="counter-reset:step"></div>
-        <div id="mTip" class="chef-tip" style="margin-top:30px; padding:15px; border:1px solid #222; background:#111; border-radius:10px; color:#888; font-style:italic;"></div>
-        <br><br><br>
-    </div>
-</div>
-<script>
-// --- GLOBAL STATE ---
-let user = localStorage.getItem('centurion_active_user') || 'J';
-let offset = 0;
-let snackLog = {}; 
-let currentSlot = 0;
+var defaultUH = {
+    'J': {
+        // JERMAINE'S CURRENT STATS
+        now: {bf:19.0, m:99.0, w:217.0, vf:10, bmr:2050}, 
+        goal: {bf:15.0, m:105.0, w:212.0, vf:7, bmr:2150},
+        info: {
+            bf: {d:"Adipose tissue percentage.", f:"Rx: Caloric Deficit + Zone 2."},
+            m: {d:"Skeletal muscle tissue.", f:"Rx: Hypertrophy (8-12 reps)."},
+            vf: {d:"Visceral Fat (Organ Fat).", f:"Rx: No Fructose."},
+            bmr: {d:"Basal Metabolic Rate.", f:"Rx: Build muscle to increase burn."}
+        },
+        labs: {
+            // JERMAINE'S LABS
+            apob: {val:95, goal:60, unit:"mg/dL", name:"ApoB", lowerIsBetter:true, desc:"Plaque particles.", fix:"Rx: Fiber >40g."},
+            hba1c: {val:5.4, goal:5.0, unit:"%", name:"HbA1c", lowerIsBetter:true, desc:"Avg blood sugar.", fix:"Rx: Walk post-meal."},
+            crp: {val:0.9, goal:0.5, unit:"mg/L", name:"hs-CRP", lowerIsBetter:true, desc:"Systemic inflammation.", fix:"Rx: Omega-3 (4g). Sauna."},
+            test: {val:650, goal:850, unit:"ng/dL", name:"Testosterone", lowerIsBetter:false, desc:"Anabolic drive.", fix:"Rx: Heavy Squats."},
+            vitd: {val:42, goal:60, unit:"ng/mL", name:"Vitamin D3", lowerIsBetter:false, desc:"Immune precursor.", fix:"Rx: Morning sun."},
+            homo: {val:11, goal:9, unit:"umol/L", name:"Homocysteine", lowerIsBetter:true, desc:"Methylation status.", fix:"Rx: Methylated B-Complex."}
+        },
+        tests: {
+            vo2: {val:45, goal:55, unit:"ml/kg", name:"VO2 Max", desc:"1. Use Apple Watch or Gym Test.<br>2. Run/Walk max effort.<br>3. Measure oxygen efficiency.", fix:"Rx: Norwegian 4x4 Intervals."},
+            hang: {val:85, goal:120, unit:"s", name:"Dead Hang", desc:"1. Grip bar (Overhand).<br>2. Arms locked out.<br>3. Feet off floor.<br>4. Hold until failure.", fix:"Rx: Farmer Carries."},
+            sit: {val:60, goal:120, unit:"s", name:"Wall Sit", desc:"1. Back flat against wall.<br>2. Knees at 90°.<br>3. Hands off legs.<br>4. Hold until failure.", fix:"Rx: Weighted Wall Sits."},
+            breath: {val:45, goal:60, unit:"s", name:"CO2 Tolerance", desc:"1. Inhale 100%.<br>2. Start timer.<br>3. Exhale through NOSE as slowly as possible.<br>4. Stop when air runs out.", fix:"Rx: Box Breathing."}
+        }
+    },
+    'S': {
+        // SOPHIA'S CURRENT STATS (Age 38)
+        now: {bf:36.1, m:49.2, w:141.5, vf:9, bmr:1250},
+        // CENTURION GOAL: Leaner, higher muscle mass for metabolic reserve
+        goal: {bf:22.0, m:60.0, w:135.0, vf:4, bmr:1450}, 
+        
+        info: {
+            bf: {d:"Adipose tissue percentage.", f:"Rx: Caloric Deficit + Zone 2."},
+            m: {d:"Skeletal muscle tissue.", f:"Rx: Hypertrophy (8-12 reps)."},
+            vf: {d:"Visceral fat drives inflammation.", f:"Rx: Eliminate seed oils."},
+            bmr: {d:"Base metabolism.", f:"Rx: Protein prioritization."}
+        },
+        labs: {
+            // AUTOIMMUNE: Goal is complete remission (0 symptoms/inflammation)
+            ana: {val:320, goal:40, unit:" titer", name:"ANA (Autoimmune)", lowerIsBetter:true, desc:"Positive. Immune surveillance active.", fix:"Rx: Strict Sleep/Stress Protocol."},
 
-// --- DUAL OURA CONFIGURATION ---
-const TOKEN_J = "WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y"; 
-const TOKEN_S = "4QSDWYJJUZFHRWRH727NCK7WH4COQJF4"; 
+            // METABOLIC: Goal is < 5.0% HbA1c (Hardcore optimization)
+            gluc: {val:84, goal:75, unit:"mg/dL", name:"Fasting Glucose", lowerIsBetter:true, desc:"Current: Excellent. Goal: Elite.", fix:"Rx: Post-meal walks."},
+            hba1c: {val:5.6, goal:5.0, unit:"%", name:"HbA1c", lowerIsBetter:true, desc:"Glycation rate.", fix:"Rx: Berberine or Fiber load."},
 
-function getActiveToken() {
-    if (user === 'J') {
-        return localStorage.getItem('centurion_oura_token_J') || TOKEN_J;
-    } else {
-        return TOKEN_S; 
+            // KIDNEY/LIVER: Maintain perfection
+            egfr: {val:94, goal:100, unit:"mL/min", name:"eGFR (Kidney)", lowerIsBetter:false, desc:"Filtration efficiency.", fix:"Rx: Hydration + Electrolytes."},
+            alt: {val:27, goal:20, unit:"U/L", name:"ALT (Liver)", lowerIsBetter:true, desc:"Liver stress.", fix:"Rx: NAC / Milk Thistle."},
+
+            // LIPIDS: Centurion Level (ApoB < 60 is the longevity gold standard)
+            apob: {val:70, goal:55, unit:"mg/dL", name:"ApoB", lowerIsBetter:true, desc:"Atherogenic particle count.", fix:"Rx: Soluble fiber >50g/day."},
+            
+            // INFLAMMATION: Zero tolerance
+            crp: {val:1.8, goal:0.3, unit:" mg/L", name:"hs-CRP", lowerIsBetter:true, desc:"Systemic fire.", fix:"Rx: Omega-3 Index > 8%."},
+            
+            ferr: {val:75, goal:90, unit:"ng/mL", name:"Ferritin", lowerIsBetter:false, desc:"Iron storage.", fix:"Rx: Heme Iron + Copper."}
+        },
+        tests: {
+            // PHYSICAL BENCHMARKS: Elite Standards
+            vo2: {val:32, goal:50, unit:"ml/kg", name:"VO2 Max", desc:"1. Use Smart Watch.<br>2. Track over 1 week.<br>3. Higher is better.", fix:"Rx: Zone 2 Cardio 150m/wk."},
+            hang: {val:40, goal:90, unit:"s", name:"Dead Hang", desc:"1. Grip bar.<br>2. Hang with straight arms.<br>3. Do not swing.", fix:"Rx: Daily hang practice."},
+            sit: {val:45, goal:150, unit:"s", name:"Wall Sit", desc:"1. Wall Sit position.<br>2. Thighs parallel.<br>3. Hands on chest.", fix:"Rx: Weighted Vest holds."},
+            breath: {val:30, goal:60, unit:"s", name:"CO2 Tolerance", desc:"1. 3 Deep breaths.<br>2. Slow nasal exhale.<br>3. Time the exhale.", fix:"Rx: Apnea Tables."}
+        }
     }
-}
-
-// --- UTILITIES ---
-function getCaDate() {
-    let d = new Date(new Date().toLocaleString("en-US", {timeZone: "America/Los_Angeles"}));
-    d.setHours(12, 0, 0, 0); 
-    return d;
-}
-
-function getDateKey(d) {
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-}
-
-let selDate = getCaDate();
-
-// --- DATABASES ---
-const jDB = {
-    "PINEAPPLE GREEN Vitality": ["Digestion + Detox", "2c Spinach, 1c Pineapple, 1/2 Cucumber, Ginger, Lemon", 1, 28, 120, 1],
-    "PLASMA FLUSH Juice": ["Recovery", "3c Watermelon, 1 Lime (Peeled), Mint", 1, 32, 140, 1],
-    "TITAN RED Juice": ["Endurance", "2 Raw Beets, 2 Carrots, Pomegranate, Ginger", 2, 42, 185, 2],
-    "ZENITH GREEN Juice": ["Alkalizer", "4 Kale Leaves, 1 Cucumber, Celery, Lemon", 2, 18, 120, 1],
-    "APOLLO GOLD Juice": ["Anti-Inflammatory", "2 Pears, Turmeric Root, Ginger, Lemon", 1, 45, 195, 2]
 };
 
 const mDB = {
@@ -229,7 +143,7 @@ const mDB = {
         "Venison & Squash Bowl|Venison,Acorn Squash,Pomegranate,Walnuts|sear|<strong>Prep:</strong> 15m • <strong>Cook:</strong> 25m<hr><strong>INGREDIENTS</strong><br>6oz Venison • 1 Acorn Squash • Seeds<br><br><strong>1. PREP</strong><br>Roast squash rings. <br><br><strong>2. COOK</strong><br>Sear venison. Serve inside squash rings. Top with pomegranate seeds.<br><br><strong>Longevity Win:</strong> Winter squash is dense in fiber (9g per cup). Venison keeps it lean.|40|35|480|11",
         "Bison Stuffed Peppers|Bison,2 Bell Peppers,Lentils,Tomato|bake|<strong>Prep:</strong> 15m • <strong>Cook:</strong> 25m<hr><strong>INGREDIENTS</strong><br>6oz Bison • 2 Peppers • 1/2 Cup Lentils<br><br><strong>1. PREP</strong><br>Mix raw bison with cooked lentils (the secret fiber filler).<br><br><strong>2. COOK</strong><br>Stuff peppers. Bake 375°F. The lentils bulk up the meat.<br><br><strong>Longevity Win:</strong> The 'Meat-stretcher' technique. You get the bison taste but with 12g Fiber from lentils/peppers.|38|25|450|12",
         "Salmon & Artichokes|Salmon,2 Cups Artichokes,Lemon,Dill|bake|<strong>Prep:</strong> 5m • <strong>Cook:</strong> 15m<hr><strong>INGREDIENTS</strong><br>6oz Salmon • 2 Cups Artichoke Hearts<br><br><strong>1. PREP</strong><br>Use canned/jarred artichokes (in water).<br><br><strong>2. COOK</strong><br>Roast salmon and artichokes together on one sheet pan.<br><br><strong>Longevity Win:</strong> Artichokes are the fiber kings (14g Fiber in this meal). They feed gut bacteria better than almost any other veg.|38|15|440|14",
-        "Turkey 'Meat-Za'|Turkey Patty base,Tomato,Spinach,Avocado|bake|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 15m<hr><strong>INGREDIENTS</strong><br>8oz Turkey (Flattened) • Spinach • 1/2 Avocado<br><br><strong>1. PREP</strong><br>Flatten turkey into a 'pizza crust'.<br><br><strong>2. COOK</strong><br>Bake turkey crust. Top with sauce, spinach, and avocado slices (instead of cheese).<br><br><strong>Longevity Win:</strong> Fun format. Avocado replaces cheese to add 7g Fiber + Healthy Fats.|45|10|410|9",
+        "Turkey 'Meat-Za'|Turkey Patty base,Tomato,Spinach,Avocado|bake|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 15m<hr><strong>INGREDIENTS</strong><br>8oz Turkey (Flattened) • Spinach • 1/2 Avocado<br><br><strong>1. PREP</strong><br>Flatten turkey into a 'pizza crust'.<br><br><strong>2. COOK</strong><br>Bake turkey crust. Top with sauce, spinach, and avocado slices (instead of cheese).<br><br><strong>Longevity Win:</strong> Fun format. Avocado replaces cheese to add 7
         "Cod & Lentil Stew|Cod,Black Lentils,Tomato,Spinach|stew|<strong>Prep:</strong> 5m • <strong>Cook:</strong> 15m<hr><strong>INGREDIENTS</strong><br>6oz Cod • 3/4 Cup Lentils • Spinach<br><br><strong>1. PREP</strong><br>Use precooked lentils.<br><br><strong>2. COOK</strong><br>Simmer lentils in tomato sauce. Poach cod in the liquid. Fold in spinach.<br><br><strong>Longevity Win:</strong> One-pot digestion healer. 16g Fiber from the heavy lentil portion.|35|25|400|16",
         "Sirloin & Broccoli Mt.|Sirloin,4 Cups Broccoli,Garlic,Almonds|sear|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 10m<hr><strong>INGREDIENTS</strong><br>6oz Sirloin • 1 Large Head Broccoli • Almonds<br><br><strong>1. PREP</strong><br>Chop an entire head of broccoli.<br><br><strong>2. COOK</strong><br>Sear beef. Steam-fry the massive pile of broccoli (it shrinks down). Top with almonds.<br><br><strong>Longevity Win:</strong> Volume eating. 4 Cups of broccoli = 10g Fiber + 4g from Almonds = 14g Total.|42|15|460|14",
         "Shrimp & Avo Salad|Shrimp,1 Whole Avocado,Cucumber,Greens|raw|<strong>Prep:</strong> 10m<hr><strong>INGREDIENTS</strong><br>6oz Shrimp • 1 Avocado • 4 Cups Greens<br><br><strong>1. PREP</strong><br>Dice avocado.<br><br><strong>2. ASSEMBLY</strong><br>Massive salad. Use the whole avocado (13g fiber). Top with shrimp.<br><br><strong>Longevity Win:</strong> The easiest way to hit fiber goals is to eat a whole avocado. It's a fiber bomb.|35|12|450|15",
@@ -544,7 +458,7 @@ function showDay(dObj, idx){
     }
     
     const sch=["HEAVY LIFT","BOXING","REFORM","BOXING","REFORM/YOGA","CS4","RELAX"];
-    const jcs=["PLASMA FLUSH Juice","TITAN RED Juice","ZENITH GREEN Juice","TITAN RED Juice","ZENITH GREEN Juice","TITAN RED Juice","APOLLO GOLD Juice"];
+    const jcs=["PINEAPPLE GREEN Vitality","TITAN RED Juice","ZENITH GREEN Juice","TITAN RED Juice","ZENITH GREEN Juice","TITAN RED Juice","APOLLO GOLD Juice"];
     const j=jDB[jcs[idx]]; 
     
     let wName = holidayName ? "RELAX" : sch[idx];
