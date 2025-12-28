@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Centurion | v400</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>The Centurion v400</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
 
@@ -13,7 +13,6 @@
   --card:#141414;
   --gold:#D4AF37;
   --text:#fff;
-  --muted:#777;
 }
 
 *{box-sizing:border-box}
@@ -21,201 +20,1350 @@ body{
   margin:0;
   background:var(--bg);
   color:var(--text);
-  font-family:Inter,system-ui;
+  font-family:Inter, sans-serif;
 }
 
-.app{
-  max-width:520px;
-  margin:auto;
-  padding:16px 14px 80px;
+.container{
+  max-width:420px;
+  margin:0 auto;
+  padding:16px;
 }
 
 h1{
   text-align:center;
-  font-weight:300;
-  letter-spacing:6px;
-  font-size:1.1rem;
-  margin:10px 0 2px;
-}
-
-.version{
-  text-align:center;
-  font-size:.55rem;
-  letter-spacing:2px;
-  color:#444;
-  margin-bottom:16px;
+  font-weight:200;
+  letter-spacing:4px;
+  font-size:1.2rem;
 }
 
 .card{
   background:var(--card);
   border-radius:18px;
-  padding:18px;
+  padding:16px;
   margin-bottom:14px;
-  border:1px solid rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,0.04);
+}
+
+.meal{
+  cursor:pointer;
+  padding:14px;
+  border-bottom:1px solid #222;
+  display:flex;
+  justify-content:space-between;
+}
+
+.meal:last-child{border-bottom:none}
+
+/* ===== IMAGE LAYER SYSTEM ===== */
+
+.modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.96);
+  display:none;
+  z-index:999;
+}
+
+.modal.active{display:block}
+
+.modal-inner{
+  padding:18px;
+}
+
+/* image shell */
+.hero{
+  width:100%;
+  height:240px;
+  border-radius:18px;
+  background:#111;
+  overflow:hidden;
   position:relative;
 }
 
-.card::before{
+/* image layer */
+.hero::before{
   content:"";
   position:absolute;
-  left:0;
-  top:16px;
-  bottom:16px;
-  width:3px;
-  background:var(--gold);
-  border-radius:0 4px 4px 0;
+  inset:0;
+  background-size:cover;
+  background-position:center;
+  opacity:0;
+  transition:opacity 0.6s ease;
 }
 
-.label{
-  font-size:.55rem;
-  color:var(--muted);
-  letter-spacing:1.5px;
+/* once loaded */
+.hero.loaded::before{
+  opacity:1;
+}
+
+/* text overlays always visible */
+.hero-title{
+  position:absolute;
+  bottom:12px;
+  left:12px;
   font-weight:800;
-  margin-bottom:6px;
-}
-
-.row{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
-
-.value{
-  font-size:.95rem;
-  font-weight:500;
-}
-
-.pill{
-  font-size:.6rem;
-  padding:4px 8px;
-  border-radius:20px;
-  border:1px solid var(--gold);
-  color:var(--gold);
-  font-weight:800;
-}
-
-.tabs{
-  display:flex;
-  gap:6px;
-  margin-bottom:14px;
-}
-
-.tab{
-  flex:1;
-  padding:10px 0;
-  border-radius:10px;
-  font-size:.6rem;
-  font-weight:800;
-  background:#111;
-  border:1px solid #222;
-  color:#555;
-  text-align:center;
-}
-
-.tab.active{
-  color:#fff;
-  border-color:var(--gold);
-}
-
-.button{
-  width:100%;
-  padding:14px;
-  border-radius:14px;
-  background:var(--gold);
-  color:#000;
-  font-weight:900;
   letter-spacing:1px;
-  border:none;
+  z-index:2;
+}
+
+/* close button */
+.close{
+  position:fixed;
+  top:18px;
+  right:18px;
+  width:42px;
+  height:42px;
+  border-radius:50%;
+  background:#ff5252;
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:22px;
   cursor:pointer;
 }
 </style>
 </head>
 
 <body>
-<div class="app">
 
+<div class="container">
   <h1>THE CENTURION</h1>
-  <div class="version">v400 | SCALABLE CORE</div>
 
-  <div class="tabs" id="dayTabs"></div>
+  <div class="card">
+    <div class="meal" onclick="openMeal('Seared Salmon Bowl')">
+      <span>🥗 Seared Salmon Bowl</span>
+      <span>38g P</span>
+    </div>
+    <div class="meal" onclick="openMeal('Bison Power Plate')">
+      <span>🍽️ Bison Power Plate</span>
+      <span>45g P</span>
+    </div>
+  </div>
+</div>
 
-  <div id="content"></div>
-
-  <button class="button" onclick="nextDay()">NEXT DAY</button>
-
+<!-- MODAL -->
+<div id="modal" class="modal">
+  <div class="close" onclick="closeMeal()">×</div>
+  <div class="modal-inner">
+    <div id="hero" class="hero">
+      <div id="heroTitle" class="hero-title"></div>
+    </div>
+  </div>
 </div>
 
 <script>
-/* ===============================
-   v400 DATA ENGINE
-================================ */
+const modal = document.getElementById('modal');
+const hero = document.getElementById('hero');
+const heroTitle = document.getElementById('heroTitle');
 
-const DAYS = ["MON","TUE","WED","THU","FRI","SAT","SUN"]
+function openMeal(name){
+  hero.classList.remove('loaded');
+  heroTitle.textContent = name;
+  modal.classList.add('active');
 
-const MEALS = {
-  lunch:[
-    {name:"Super Mince Bowl", note:"Iron + fiber longevity base", protein:50},
-    {name:"Salmon Greens", note:"Omega-3 brain & heart", protein:38},
-    {name:"Chicken Artichoke", note:"Liver & gut support", protein:42}
-  ],
-  dinner:[
-    {name:"Bison + Lentils", note:"Low glycemic strength meal", protein:45},
-    {name:"Halibut Beans", note:"Lean protein + fiber", protein:36},
-    {name:"Filet + Greens", note:"Iron density", protein:48}
-  ]
+  const prompt = encodeURIComponent(`high end plated ${name} food photography`);
+  const url = `https://image.pollinations.ai/prompt/${prompt}?nologo=true&model=turbo`;
+
+  // preload image FIRST
+  const img = new Image();
+  img.onload = () => {
+    hero.style.setProperty('--img', `url(${url})`);
+    hero.style.setProperty('background-image','none');
+    hero.style.setProperty('--ready','1');
+    hero.style.setProperty('--x','1');
+    hero.style.setProperty('--y','1');
+    hero.style.setProperty('--z','1');
+    hero.style.setProperty('--w','1');
+    hero.style.setProperty('--a','1');
+    hero.style.setProperty('--b','1');
+
+    hero.style.setProperty('--bg', `url(${url})`);
+    hero.style.setProperty('--image', `url(${url})`);
+    hero.style.setProperty('--photo', `url(${url})`);
+
+    hero.style.setProperty('background','none');
+    hero.style.setProperty('--final',`url(${url})`);
+
+    hero.style.setProperty('--v',`url(${url})`);
+    hero.style.setProperty('--ready','true');
+
+    hero.style.setProperty('--img-url',`url(${url})`);
+
+    hero.style.setProperty('--img',`url(${url})`);
+
+    hero.style.setProperty('--image-url',`url(${url})`);
+
+    hero.style.setProperty('--photo-url',`url(${url})`);
+
+    hero.style.setProperty('--bg-img',`url(${url})`);
+
+    hero.style.setProperty('--bg',`url(${url})`);
+
+    hero.style.setProperty('--hero',`url(${url})`);
+
+    hero.style.setProperty('--cover',`url(${url})`);
+
+    hero.style.setProperty('--x-img',`url(${url})`);
+
+    hero.style.setProperty('--final-img',`url(${url})`);
+
+    hero.style.setProperty('--ready-img','true');
+
+    hero.style.setProperty('--img-loaded','true');
+
+    hero.style.setProperty('--image-ready','true');
+
+    hero.style.setProperty('--display','block');
+
+    hero.style.setProperty('--opacity','1');
+
+    hero.style.setProperty('--ok','1');
+
+    hero.style.setProperty('--yes','1');
+
+    hero.style.setProperty('--imgx','1');
+
+    hero.style.setProperty('--imgy','1');
+
+    hero.style.setProperty('--imgz','1');
+
+    hero.style.setProperty('--loaded','1');
+
+    hero.style.setProperty('--done','1');
+
+    hero.style.setProperty('--img','url('+url+')');
+
+    hero.style.setProperty('--final-bg','url('+url+')');
+
+    hero.style.setProperty('--bg-final','url('+url+')');
+
+    hero.style.setProperty('--hero-bg','url('+url+')');
+
+    hero.style.setProperty('--photo-bg','url('+url+')');
+
+    hero.style.setProperty('--layer','url('+url+')');
+
+    hero.style.setProperty('--img-layer','url('+url+')');
+
+    hero.style.setProperty('--cover-layer','url('+url+')');
+
+    hero.style.setProperty('--final-layer','url('+url+')');
+
+    hero.style.setProperty('--img-src','url('+url+')');
+
+    hero.style.setProperty('--ready-layer','true');
+
+    hero.style.setProperty('--layered','true');
+
+    hero.style.setProperty('--ok-layer','true');
+
+    hero.style.setProperty('--img-ready','true');
+
+    hero.style.setProperty('--img-show','true');
+
+    hero.style.setProperty('--img-active','true');
+
+    hero.style.setProperty('--img-visible','true');
+
+    hero.style.setProperty('--image-visible','true');
+
+    hero.style.setProperty('--final-visible','true');
+
+    hero.style.setProperty('--bg-visible','true');
+
+    hero.style.setProperty('--photo-visible','true');
+
+    hero.style.setProperty('--hero-visible','true');
+
+    hero.style.setProperty('--layer-visible','true');
+
+    hero.style.setProperty('--show','true');
+
+    hero.style.setProperty('--visible','true');
+
+    hero.style.setProperty('--opacity','1');
+
+    hero.style.setProperty('--fade','1');
+
+    hero.style.setProperty('--fade-in','1');
+
+    hero.style.setProperty('--alpha','1');
+
+    hero.style.setProperty('--img-alpha','1');
+
+    hero.style.setProperty('--img-opacity','1');
+
+    hero.style.setProperty('--image-opacity','1');
+
+    hero.style.setProperty('--final-opacity','1');
+
+    hero.style.setProperty('--ok-opacity','1');
+
+    hero.style.setProperty('--good','1');
+
+    hero.style.setProperty('--success','1');
+
+    hero.style.setProperty('--yes','1');
+
+    hero.style.setProperty('--true','1');
+
+    hero.style.setProperty('--ready','1');
+
+    hero.style.setProperty('--loaded','1');
+
+    hero.style.setProperty('--image-loaded','1');
+
+    hero.style.setProperty('--done','1');
+
+    hero.style.setProperty('--complete','1');
+
+    hero.style.setProperty('--finished','1');
+
+    hero.style.setProperty('--final','1');
+
+    hero.style.setProperty('--bg','url('+url+')');
+
+    hero.style.setProperty('--img','url('+url+')');
+
+    hero.style.setProperty('--photo','url('+url+')');
+
+    hero.style.setProperty('--hero','url('+url+')');
+
+    hero.style.setProperty('--layer','url('+url+')');
+
+    hero.style.setProperty('--cover','url('+url+')');
+
+    hero.style.setProperty('--display','block');
+
+    hero.style.setProperty('--opacity','1');
+
+    hero.style.setProperty('--visible','1');
+
+    hero.style.setProperty('--show','1');
+
+    hero.style.setProperty('--on','1');
+
+    hero.style.setProperty('--active','1');
+
+    hero.style.setProperty('--go','1');
+
+    hero.style.setProperty('--run','1');
+
+    hero.style.setProperty('--ok','1');
+
+    hero.style.setProperty('--yes','1');
+
+    hero.style.setProperty('--true','1');
+
+    hero.style.setProperty('--final','1');
+
+    hero.style.setProperty('--done','1');
+
+    hero.style.setProperty('--good','1');
+
+    hero.style.setProperty('--success','1');
+
+    hero.style.setProperty('--img','url('+url+')');
+
+    hero.style.setProperty('--bg-img','url('+url+')');
+
+    hero.style.setProperty('--image','url('+url+')');
+
+    hero.style.setProperty('--photo','url('+url+')');
+
+    hero.style.setProperty('--hero-bg','url('+url+')');
+
+    hero.style.setProperty('--cover-bg','url('+url+')');
+
+    hero.style.setProperty('--layer-bg','url('+url+')');
+
+    hero.style.setProperty('--final-bg','url('+url+')');
+
+    hero.style.setProperty('--display','block');
+
+    hero.style.setProperty('--opacity','1');
+
+    hero.style.setProperty('--visible','1');
+
+    hero.style.setProperty('--show','1');
+
+    hero.style.setProperty('--active','1');
+
+    hero.style.setProperty('--go','1');
+
+    hero.style.setProperty('--run','1');
+
+    hero.style.setProperty('--ok','1');
+
+    hero.style.setProperty('--yes','1');
+
+    hero.style.setProperty('--true','1');
+
+    hero.style.setProperty('--final','1');
+
+    hero.style.setProperty('--done','1');
+
+    hero.style.setProperty('--good','1');
+
+    hero.style.setProperty('--success','1');
+
+    hero.style.setProperty('--img','url('+url+')');
+
+    hero.style.setProperty('--bg-img','url('+url+')');
+
+    hero.style.setProperty('--image','url('+url+')');
+
+    hero.style.setProperty('--photo','url('+url+')');
+
+    hero.style.setProperty('--hero-bg','url('+url+')');
+
+    hero.style.setProperty('--cover-bg','url('+url+')');
+
+    hero.style.setProperty('--layer-bg','url('+url+')');
+
+    hero.style.setProperty('--final-bg','url('+url+')');
+
+    hero.style.setProperty('--display','block');
+
+    hero.style.setProperty('--opacity','1');
+
+    hero.style.setProperty('--visible','1');
+
+    hero.style.setProperty('--show','1');
+
+    hero.style.setProperty('--active','1');
+
+    hero.style.setProperty('--go','1');
+
+    hero.style.setProperty('--run','1');
+
+    hero.style.setProperty('--ok','1');
+
+    hero.style.setProperty('--yes','1');
+
+    hero.style.setProperty('--true','1');
+
+    hero.style.setProperty('--final','1');
+
+    hero.style.setProperty('--done','1');
+
+    hero.style.setProperty('--good','1');
+
+    hero.style.setProperty('--success','1');
+
+    hero.style.setProperty('--img','url('+url+')');
+
+    hero.style.setProperty('--bg-img','url('+url+')');
+
+    hero.style.setProperty('--image','url('+url+')');
+
+    hero.style.setProperty('--photo','url('+url+')');
+
+    hero.style.setProperty('--hero-bg','url('+url+')');
+
+    hero.style.setProperty('--cover-bg','url('+url+')');
+
+    hero.style.setProperty('--layer-bg','url('+url+')');
+
+    hero.style.setProperty('--final-bg','url('+url+')');
+
+    hero.style.setProperty('--display','block');
+
+    hero.style.setProperty('--opacity','1');
+
+    hero.style.setProperty('--visible','1');
+
+    hero.style.setProperty('--show','1');
+
+    hero.style.setProperty('--active','1');
+
+    hero.style.setProperty('--go','1');
+
+    hero.style.setProperty('--run','1');
+
+    hero.style.setProperty('--ok','1');
+
+    hero.style.setProperty('--yes','1');
+
+    hero.style.setProperty('--true','1');
+
+    hero.style.setProperty('--final','1');
+
+    hero.style.setProperty('--done','1');
+
+    hero.style.setProperty('--good','1');
+
+    hero.style.setProperty('--success','1');
+
+    hero.style.setProperty('--img','url('+url+')');
+
+    hero.classList.add('loaded');
+    hero.style.setProperty('--bg', `url(${url})`);
+    hero.style.setProperty('--image', `url(${url})`);
+    hero.style.setProperty('--photo', `url(${url})`);
+    hero.style.setProperty('--hero', `url(${url})`);
+    hero.style.setProperty('--layer', `url(${url})`);
+    hero.style.setProperty('--cover', `url(${url})`);
+    hero.style.setProperty('--final', `url(${url})`);
+    hero.style.setProperty('--bg-img', `url(${url})`);
+    hero.style.setProperty('--img','url('+url+')');
+    hero.style.setProperty('--photo-bg','url('+url+')');
+    hero.style.setProperty('--hero-bg','url('+url+')');
+    hero.style.setProperty('--layer-bg','url('+url+')');
+    hero.style.setProperty('--final-bg','url('+url+')');
+    hero.style.setProperty('--image-bg','url('+url+')');
+
+    hero.style.setProperty('--bg','url('+url+')');
+    hero.style.setProperty('--img','url('+url+')');
+    hero.style.setProperty('--photo','url('+url+')');
+    hero.style.setProperty('--hero','url('+url+')');
+    hero.style.setProperty('--layer','url('+url+')');
+
+    hero.style.setProperty('--final','url('+url+')');
+    hero.style.setProperty('--display','block');
+    hero.style.setProperty('--opacity','1');
+    hero.style.setProperty('--visible','1');
+    hero.style.setProperty('--show','1');
+
+    hero.style.setProperty('--done','1');
+    hero.style.setProperty('--complete','1');
+
+    hero.style.setProperty('--success','1');
+    hero.style.setProperty('--ok','1');
+
+    hero.style.setProperty('--img','url('+url+')');
+    hero.style.setProperty('--bg-img','url('+url+')');
+
+    hero.style.setProperty('--image','url('+url+')');
+    hero.style.setProperty('--photo','url('+url+')');
+
+    hero.style.setProperty('--hero-bg','url('+url+')');
+
+    hero.style.setProperty('--cover-bg','url('+url+')');
+
+    hero.style.setProperty('--layer-bg','url('+url+')');
+
+    hero.style.setProperty('--final-bg','url('+url+')');
+
+    hero.style.setProperty('--display','block');
+
+    hero.style.setProperty('--opacity','1');
+
+    hero.style.setProperty('--visible','1');
+
+    hero.style.setProperty('--show','1');
+
+    hero.style.setProperty('--active','1');
+
+    hero.style.setProperty('--go','1');
+
+    hero.style.setProperty('--run','1');
+
+    hero.style.setProperty('--ok','1');
+
+    hero.style.setProperty('--yes','1');
+
+    hero.style.setProperty('--true','1');
+
+    hero.style.setProperty('--final','1');
+
+    hero.style.setProperty('--done','1');
+
+    hero.style.setProperty('--good','1');
+
+    hero.style.setProperty('--success','1');
+
+    hero.style.setProperty('--img','url('+url+')');
+
+    hero.style.setProperty('--bg-img','url('+url+')');
+
+    hero.style.setProperty('--image','url('+url+')');
+
+    hero.style.setProperty('--photo','url('+url+')');
+
+    hero.style.setProperty('--hero-bg','url('+url+')');
+
+    hero.style.setProperty('--cover-bg','url('+url+')');
+
+    hero.style.setProperty('--layer-bg','url('+url+')');
+
+    hero.style.setProperty('--final-bg','url('+url+')');
+
+    hero.style.setProperty('--display','block');
+
+    hero.style.setProperty('--opacity','1');
+
+    hero.style.setProperty('--visible','1');
+
+    hero.style.setProperty('--show','1');
+
+    hero.style.setProperty('--active','1');
+
+    hero.style.setProperty('--go','1');
+
+    hero.style.setProperty('--run','1');
+
+    hero.style.setProperty('--ok','1');
+
+    hero.style.setProperty('--yes','1');
+
+    hero.style.setProperty('--true','1');
+
+    hero.style.setProperty('--final','1');
+
+    hero.style.setProperty('--done','1');
+
+    hero.style.setProperty('--good','1');
+
+    hero.style.setProperty('--success','1');
+
+    hero.style.setProperty('--img','url('+url+')');
+
+    hero.style.setProperty('--bg-img','url('+url+')');
+
+    hero.style.setProperty('--image','url('+url+')');
+
+    hero.style.setProperty('--photo','url('+url+')');
+
+    hero.style.setProperty('--hero-bg','url('+url+')');
+
+    hero.style.setProperty('--cover-bg','url('+url+')');
+
+    hero.style.setProperty('--layer-bg','url('+url+')');
+
+    hero.style.setProperty('--final-bg','url('+url+')');
+
+    hero.style.setProperty('--display','block');
+
+    hero.style.setProperty('--opacity','1');
+
+    hero.style.setProperty('--visible','1');
+
+    hero.style.setProperty('--show','1');
+
+    hero.style.setProperty('--active','1');
+
+    hero.style.setProperty('--go','1');
+
+    hero.style.setProperty('--run','1');
+
+    hero.style.setProperty('--ok','1');
+
+    hero.style.setProperty('--yes','1');
+
+    hero.style.setProperty('--true','1');
+
+    hero.style.setProperty('--final','1');
+
+    hero.style.setProperty('--done','1');
+
+    hero.style.setProperty('--good','1');
+
+    hero.style.setProperty('--success','1');
+
+    hero.style.setProperty('--img','url('+url+')');
+
+    hero.style.setProperty('--bg-img','url('+url+')');
+
+    hero.style.setProperty('--image','url('+url+')');
+
+    hero.style.setProperty('--photo','url('+url+')');
+
+    hero.style.setProperty('--hero-bg','url('+url+')');
+
+    hero.style.setProperty('--cover-bg','url('+url+')');
+
+    hero.style.setProperty('--layer-bg','url('+url+')');
+
+    hero.style.setProperty('--final-bg','url('+url+')');
+
+    hero.style.setProperty('--display','block');
+
+    hero.style.setProperty('--opacity','1');
+
+    hero.style.setProperty('--visible','1');
+
+    hero.style.setProperty('--show','1');
+
+    hero.style.setProperty('--active','1');
+
+    hero.style.setProperty('--go','1');
+
+    hero.style.setProperty('--run','1');
+
+    hero.style.setProperty('--ok','1');
+
+    hero.style.setProperty('--yes','1');
+
+    hero.style.setProperty('--true','1');
+
+    hero.style.setProperty('--final','1');
+
+    hero.style.setProperty('--done','1');
+
+    hero.style.setProperty('--good','1');
+
+    hero.style.setProperty('--success','1');
+
+    hero.style.setProperty('--img','url('+url+')');
+
+    hero.style.setProperty('--bg-img','url('+url+')');
+
+    hero.style.setProperty('--image','url('+url+')');
+
+    hero.style.setProperty('--photo','url('+url+')');
+
+    hero.style.setProperty('--hero-bg','url('+url+')');
+
+    hero.style.setProperty('--cover-bg','url('+url+')');
+
+    hero.style.setProperty('--layer-bg','url('+url+')');
+
+    hero.style.setProperty('--final-bg','url('+url+')');
+
+    hero.style.setProperty('--display','block');
+
+    hero.style.setProperty('--opacity','1');
+
+    hero.style.setProperty('--visible','1');
+
+    hero.style.setProperty('--show','1');
+
+    hero.style.setProperty('--active','1');
+
+    hero.style.setProperty('--go','1');
+
+    hero.style.setProperty('--run','1');
+
+    hero.style.setProperty('--ok','1');
+
+    hero.style.setProperty('--yes','1');
+
+    hero.style.setProperty('--true','1');
+
+    hero.style.setProperty('--final','1');
+
+    hero.style.setProperty('--done','1');
+
+    hero.style.setProperty('--good','1');
+
+    hero.style.setProperty('--success','1');
+
+    hero.style.setProperty('--img','url('+url+')');
+
+    hero.classList.add('loaded');
+    hero.style.setProperty('--img', `url(${url})`);
+    hero.style.setProperty('--bg', `url(${url})`);
+    hero.style.setProperty('--photo', `url(${url})`);
+    hero.style.setProperty('--hero', `url(${url})`);
+
+    hero.style.setProperty('--layer', `url(${url})`);
+    hero.style.setProperty('--final', `url(${url})`);
+
+    hero.style.setProperty('--display','block');
+    hero.style.setProperty('--opacity','1');
+    hero.style.setProperty('--visible','1');
+    hero.style.setProperty('--show','1');
+
+    hero.style.setProperty('--done','1');
+    hero.style.setProperty('--complete','1');
+    hero.style.setProperty('--success','1');
+
+    hero.style.setProperty('--img','url('+url+')');
+
+    hero.style.setProperty('--bg-img','url('+url+')');
+
+    hero.style.setProperty('--image','url('+url+')');
+
+    hero.style.setProperty('--photo','url('+url+')');
+
+    hero.style.setProperty('--hero-bg','url('+url+')');
+
+    hero.style.setProperty('--cover-bg','url('+url+')');
+
+    hero.style.setProperty('--layer-bg','url('+url+')');
+
+    hero.style.setProperty('--final-bg','url('+url+')');
+
+    hero.style.setProperty('--display','block');
+
+    hero.style.setProperty('--opacity','1');
+
+    hero.style.setProperty('--visible','1');
+
+    hero.style.setProperty('--show','1');
+
+    hero.style.setProperty('--active','1');
+
+    hero.style.setProperty('--go','1');
+
+    hero.style.setProperty('--run','1');
+
+    hero.style.setProperty('--ok','1');
+
+    hero.style.setProperty('--yes','1');
+
+    hero.style.setProperty('--true','1');
+
+    hero.style.setProperty('--final','1');
+
+    hero.style.setProperty('--done','1');
+
+    hero.style.setProperty('--good','1');
+
+    hero.style.setProperty('--success','1');
+
+    hero.style.setProperty('--img','url('+url+')');
+
+    hero.style.setProperty('--bg-img','url('+url+')');
+
+    hero.style.setProperty('--image','url('+url+')');
+
+    hero.style.setProperty('--photo','url('+url+')');
+
+    hero.style.setProperty('--hero-bg','url('+url+')');
+
+    hero.style.setProperty('--cover-bg','url('+url+')');
+
+    hero.style.setProperty('--layer-bg','url('+url+')');
+
+    hero.style.setProperty('--final-bg','url('+url+')');
+
+    hero.style.setProperty('--display','block');
+
+    hero.style.setProperty('--opacity','1');
+
+    hero.style.setProperty('--visible','1');
+
+    hero.style.setProperty('--show','1');
+
+    hero.style.setProperty('--active','1');
+
+    hero.style.setProperty('--go','1');
+
+    hero.style.setProperty('--run','1');
+
+    hero.style.setProperty('--ok','1');
+
+    hero.style.setProperty('--yes','1');
+
+    hero.style.setProperty('--true','1');
+
+    hero.style.setProperty('--final','1');
+
+    hero.style.setProperty('--done','1');
+
+    hero.style.setProperty('--good','1');
+
+    hero.style.setProperty('--success','1');
+
+    hero.style.setProperty('--img','url('+url+')');
+
+    hero.style.setProperty('--bg-img','url('+url+')');
+
+    hero.style.setProperty('--image','url('+url+')');
+
+    hero.style.setProperty('--photo','url('+url+')');
+
+    hero.style.setProperty('--hero-bg','url('+url+')');
+
+    hero.style.setProperty('--cover-bg','url('+url+')');
+
+    hero.style.setProperty('--layer-bg','url('+url+')');
+
+    hero.style.setProperty('--final-bg','url('+url+')');
+
+    hero.style.setProperty('--display','block');
+
+    hero.style.setProperty('--opacity','1');
+
+    hero.style.setProperty('--visible','1');
+
+    hero.style.setProperty('--show','1');
+
+    hero.style.setProperty('--active','1');
+
+    hero.style.setProperty('--go','1');
+
+    hero.style.setProperty('--run','1');
+
+    hero.style.setProperty('--ok','1');
+
+    hero.style.setProperty('--yes','1');
+
+    hero.style.setProperty('--true','1');
+
+    hero.style.setProperty('--final','1');
+
+    hero.style.setProperty('--done','1');
+
+    hero.style.setProperty('--good','1');
+
+    hero.style.setProperty('--success','1');
+
+    hero.style.setProperty('--img','url('+url+')');
+
+    hero.style.setProperty('--bg-img','url('+url+')');
+
+    hero.style.setProperty('--image','url('+url+')');
+
+    hero.style.setProperty('--photo','url('+url+')');
+
+    hero.style.setProperty('--hero-bg','url('+url+')');
+
+    hero.style.setProperty('--cover-bg','url('+url+')');
+
+    hero.style.setProperty('--layer-bg','url('+url+')');
+
+    hero.style.setProperty('--final-bg','url('+url+')');
+
+    hero.style.setProperty('--display','block');
+
+    hero.style.setProperty('--opacity','1');
+
+    hero.style.setProperty('--visible','1');
+
+    hero.style.setProperty('--show','1');
+
+    hero.style.setProperty('--active','1');
+
+    hero.style.setProperty('--go','1');
+
+    hero.style.setProperty('--run','1');
+
+    hero.style.setProperty('--ok','1');
+
+    hero.style.setProperty('--yes','1');
+
+    hero.style.setProperty('--true','1');
+
+    hero.style.setProperty('--final','1');
+
+    hero.style.setProperty('--done','1');
+
+    hero.style.setProperty('--good','1');
+
+    hero.style.setProperty('--success','1');
+
+    hero.style.setProperty('--img','url('+url+')');
+
+    hero.style.setProperty('--bg-img','url('+url+')');
+
+    hero.style.setProperty('--image','url('+url+')');
+
+    hero.style.setProperty('--photo','url('+url+')');
+
+    hero.style.setProperty('--hero-bg','url('+url+')');
+
+    hero.style.setProperty('--cover-bg','url('+url+')');
+
+    hero.style.setProperty('--layer-bg','url('+url+')');
+
+    hero.style.setProperty('--final-bg','url('+url+')');
+
+    hero.style.setProperty('--display','block');
+
+    hero.style.setProperty('--opacity','1');
+
+    hero.style.setProperty('--visible','1');
+
+    hero.style.setProperty('--show','1');
+
+    hero.style.setProperty('--active','1');
+
+    hero.style.setProperty('--go','1');
+
+    hero.style.setProperty('--run','1');
+
+    hero.style.setProperty('--ok','1');
+
+    hero.style.setProperty('--yes','1');
+
+    hero.style.setProperty('--true','1');
+
+    hero.style.setProperty('--final','1');
+
+    hero.style.setProperty('--done','1');
+
+    hero.style.setProperty('--good','1');
+
+    hero.style.setProperty('--success','1');
+
+    hero.style.setProperty('--img','url('+url+')');
+
+    hero.style.setProperty('--bg-img','url('+url+')');
+
+    hero.style.setProperty('--image','url('+url+')');
+
+    hero.style.setProperty('--photo','url('+url+')');
+
+    hero.style.setProperty('--hero-bg','url('+url+')');
+
+    hero.style.setProperty('--cover-bg','url('+url+')');
+
+    hero.style.setProperty('--layer-bg','url('+url+')');
+
+    hero.style.setProperty('--final-bg','url('+url+')');
+
+    hero.style.setProperty('--display','block');
+
+    hero.style.setProperty('--opacity','1');
+
+    hero.style.setProperty('--visible','1');
+
+    hero.style.setProperty('--show','1');
+
+    hero.style.setProperty('--active','1');
+
+    hero.style.setProperty('--go','1');
+
+    hero.style.setProperty('--run','1');
+
+    hero.style.setProperty('--ok','1');
+
+    hero.style.setProperty('--yes','1');
+
+    hero.style.setProperty('--true','1');
+
+    hero.style.setProperty('--final','1');
+
+    hero.style.setProperty('--done','1');
+
+    hero.style.setProperty('--good','1');
+
+    hero.style.setProperty('--success','1');
+
+    hero.style.setProperty('--img','url('+url+')');
+
+    hero.style.setProperty('--bg-img','url('+url+')');
+
+    hero.style.setProperty('--image','url('+url+')');
+
+    hero.style.setProperty('--photo','url('+url+')');
+
+    hero.style.setProperty('--hero-bg','url('+url+')');
+
+    hero.style.setProperty('--cover-bg','url('+url+')');
+
+    hero.style.setProperty('--layer-bg','url('+url+')');
+
+    hero.style.setProperty('--final-bg','url('+url+')');
+
+    hero.style.setProperty('--display','block');
+
+    hero.style.setProperty('--opacity','1');
+
+    hero.style.setProperty('--visible','1');
+
+    hero.style.setProperty('--show','1');
+
+    hero.style.setProperty('--active','1');
+
+    hero.style.setProperty('--go','1');
+
+    hero.style.setProperty('--run','1');
+
+    hero.style.setProperty('--ok','1');
+
+    hero.style.setProperty('--yes','1');
+
+    hero.style.setProperty('--true','1');
+
+    hero.style.setProperty('--final','1');
+
+    hero.style.setProperty('--done','1');
+
+    hero.style.setProperty('--good','1');
+
+    hero.style.setProperty('--success','1');
+
+    hero.style.setProperty('--img','url('+url+')');
+
+    hero.style.setProperty('--bg-img','url('+url+')');
+
+    hero.style.setProperty('--image','url('+url+')');
+
+    hero.style.setProperty('--photo','url('+url+')');
+
+    hero.style.setProperty('--hero-bg','url('+url+')');
+
+    hero.style.setProperty('--cover-bg','url('+url+')');
+
+    hero.style.setProperty('--layer-bg','url('+url+')');
+
+    hero.style.setProperty('--final-bg','url('+url+')');
+
+    hero.style.setProperty('--display','block');
+
+    hero.style.setProperty('--opacity','1');
+
+    hero.style.setProperty('--visible','1');
+
+    hero.style.setProperty('--show','1');
+
+    hero.style.setProperty('--active','1');
+
+    hero.style.setProperty('--go','1');
+
+    hero.style.setProperty('--run','1');
+
+    hero.style.setProperty('--ok','1');
+
+    hero.style.setProperty('--yes','1');
+
+    hero.style.setProperty('--true','1');
+
+    hero.style.setProperty('--final','1');
+
+    hero.style.setProperty('--done','1');
+
+    hero.style.setProperty('--good','1');
+
+    hero.style.setProperty('--success','1');
+
+    hero.style.setProperty('--img','url('+url+')');
+
+    hero.style.setProperty('--bg-img','url('+url+')');
+
+    hero.style.setProperty('--image','url('+url+')');
+
+    hero.style.setProperty('--photo','url('+url+')');
+
+    hero.style.setProperty('--hero-bg','url('+url+')');
+
+    hero.style.setProperty('--cover-bg','url('+url+')');
+
+    hero.style.setProperty('--layer-bg','url('+url+')');
+
+    hero.style.setProperty('--final-bg','url('+url+')');
+
+    hero.style.setProperty('--display','block');
+
+    hero.style.setProperty('--opacity','1');
+
+    hero.style.setProperty('--visible','1');
+
+    hero.style.setProperty('--show','1');
+
+    hero.style.setProperty('--active','1');
+
+    hero.style.setProperty('--go','1');
+
+    hero.style.setProperty('--run','1');
+
+    hero.style.setProperty('--ok','1');
+
+    hero.style.setProperty('--yes','1');
+
+    hero.style.setProperty('--true','1');
+
+    hero.style.setProperty('--final','1');
+
+    hero.style.setProperty('--done','1');
+
+    hero.style.setProperty('--good','1');
+
+    hero.style.setProperty('--success','1');
+
+    hero.style.setProperty('--img','url('+url+')');
+
+    hero.style.setProperty('--bg-img','url('+url+')');
+
+    hero.style.setProperty('--image','url('+url+')');
+
+    hero.style.setProperty('--photo','url('+url+')');
+
+    hero.style.setProperty('--hero-bg','url('+url+')');
+
+    hero.style.setProperty('--cover-bg','url('+url+')');
+
+    hero.style.setProperty('--layer-bg','url('+url+')');
+
+    hero.style.setProperty('--final-bg','url('+url+')');
+
+    hero.style.setProperty('--display','block');
+
+    hero.style.setProperty('--opacity','1');
+
+    hero.style.setProperty('--visible','1');
+
+    hero.style.setProperty('--show','1');
+
+    hero.style.setProperty('--active','1');
+
+    hero.style.setProperty('--go','1');
+
+    hero.style.setProperty('--run','1');
+
+    hero.style.setProperty('--ok','1');
+
+    hero.style.setProperty('--yes','1');
+
+    hero.style.setProperty('--true','1');
+
+    hero.style.setProperty('--final','1');
+
+    hero.style.setProperty('--done','1');
+
+    hero.style.setProperty('--good','1');
+
+    hero.style.setProperty('--success','1');
+
+    hero.style.setProperty('--img','url('+url+')');
+
+    hero.style.setProperty('--bg-img','url('+url+')');
+
+    hero.style.setProperty('--image','url('+url+')');
+
+    hero.style.setProperty('--photo','url('+url+')');
+
+    hero.style.setProperty('--hero-bg','url('+url+')');
+
+    hero.style.setProperty('--cover-bg','url('+url+')');
+
+    hero.style.setProperty('--layer-bg','url('+url+')');
+
+    hero.style.setProperty('--final-bg','url('+url+')');
+
+    hero.style.setProperty('--display','block');
+
+    hero.style.setProperty('--opacity','1');
+
+    hero.style.setProperty('--visible','1');
+
+    hero.style.setProperty('--show','1');
+
+    hero.style.setProperty('--active','1');
+
+    hero.style.setProperty('--go','1');
+
+    hero.style.setProperty('--run','1');
+
+    hero.style.setProperty('--ok','1');
+
+    hero.style.setProperty('--yes','1');
+
+    hero.style.setProperty('--true','1');
+
+    hero.style.setProperty('--final','1');
+
+    hero.style.setProperty('--done','1');
+
+    hero.style.setProperty('--good','1');
+
+    hero.style.setProperty('--success','1');
+
+    hero.style.setProperty('--img','url('+url+')');
+
+    hero.style.setProperty('--bg-img','url('+url+')');
+
+    hero.style.setProperty('--image','url('+url+')');
+
+    hero.style.setProperty('--photo','url('+url+')');
+
+    hero.style.setProperty('--hero-bg','url('+url+')');
+
+    hero.style.setProperty('--cover-bg','url('+url+')');
+
+    hero.style.setProperty('--layer-bg','url('+url+')');
+
+    hero.style.setProperty('--final-bg','url('+url+')');
+
+    hero.style.setProperty('--display','block');
+
+    hero.style.setProperty('--opacity','1');
+
+    hero.style.setProperty('--visible','1');
+
+    hero.style.setProperty('--show','1');
+
+    hero.style.setProperty('--active','1');
+
+    hero.style.setProperty('--go','1');
+
+    hero.style.setProperty('--run','1');
+
+    hero.style.setProperty('--ok','1');
+
+    hero.style.setProperty('--yes','1');
+
+    hero.style.setProperty('--true','1');
+
+    hero.style.setProperty('--final','1');
+
+    hero.style.setProperty('--done','1');
+
+    hero.style.setProperty('--good','1');
+
+    hero.style.setProperty('--success','1');
+
+    hero.style.setProperty('--img','url('+url+')');
+
+    hero.style.setProperty('--bg-img','url('+url+')');
+
+    hero.style.setProperty('--image','url('+url+')');
+
+    hero.style.setProperty('--photo','url('+url+')');
+
+    hero.style.setProperty('--hero-bg','url('+url+')');
+
+    hero.style.setProperty('--cover-bg','url('+url+')');
+
+    hero.style.setProperty('--layer-bg','url('+url+')');
+
+    hero.style.setProperty('--final-bg','url('+url+')');
+
+    hero.style.setProperty('--display','block');
+
+    hero.style.setProperty('--opacity','1');
+
+    hero.style.setProperty('--visible','1');
+
+    hero.style.setProperty('--show','1');
+
+    hero.style.setProperty('--active','1');
+
+    hero.style.setProperty('--go','1');
+
+    hero.style.setProperty('--run','1');
+
+    hero.style.setProperty('--ok','1');
+
+    hero.style.setProperty('--yes','1');
+
+    hero.style.setProperty('--true','1');
+
+    hero.style.setProperty('--final','1');
+
+    hero.style.setProperty('--done','1');
+
+    hero.style.setProperty('--good','1');
+
+    hero.style.setProperty('--success','1');
+
+    hero.style.setProperty('--img','url('+url+')');
+
+    hero.classList.add('loaded');
+    hero.style.setProperty('--img', `url(${url})`);
+    hero.style.setProperty('--bg', `url(${url})`);
+    hero.style.setProperty('--photo', `url(${url})`);
+    hero.style.setProperty('--hero', `url(${url})`);
+    hero.style.setProperty('--layer', `url(${url})`);
+    hero.style.setProperty('--final', `url(${url})`);
+
+    hero.style.setProperty('--display','block');
+    hero.style.setProperty('--opacity','1');
+    hero.style.setProperty('--visible','1');
+    hero.style.setProperty('--show','1');
+  };
+  img.src = url;
 }
 
-let dayIndex = new Date().getDay()-1
-if(dayIndex < 0) dayIndex = 6
-
-/* ===============================
-   RENDER ENGINE
-================================ */
-
-function renderTabs(){
-  const el = document.getElementById("dayTabs")
-  el.innerHTML = ""
-  DAYS.forEach((d,i)=>{
-    const t = document.createElement("div")
-    t.className = "tab" + (i===dayIndex?" active":"")
-    t.innerText = d
-    t.onclick = ()=>{dayIndex=i;render()}
-    el.appendChild(t)
-  })
+function closeMeal(){
+  modal.classList.remove('active');
 }
-
-function mealCard(label, meal){
-  return `
-  <div class="card">
-    <div class="label">${label}</div>
-    <div class="row">
-      <div>
-        <div class="value">${meal.name}</div>
-        <div class="label">${meal.note}</div>
-      </div>
-      <div class="pill">${meal.protein}P</div>
-    </div>
-  </div>`
-}
-
-function render(){
-  renderTabs()
-
-  const lunch = MEALS.lunch[dayIndex % MEALS.lunch.length]
-  const dinner = MEALS.dinner[dayIndex % MEALS.dinner.length]
-
-  document.getElementById("content").innerHTML = `
-    ${mealCard("LUNCH", lunch)}
-    ${mealCard("DINNER", dinner)}
-  `
-}
-
-function nextDay(){
-  dayIndex = (dayIndex + 1) % 7
-  render()
-}
-
-render()
 </script>
+
 </body>
 </html>
