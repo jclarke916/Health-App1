@@ -3,14 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v227.5 Menu Expansion</title>
+    <title>The Centurion | v228.25 Full Stack</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --text:#fff;
-        --g-pro:linear-gradient(90deg,#FF5252,#D50000);
-        --g-carb:linear-gradient(90deg,#FFAB40,#FF6D00);
-        --g-cal:linear-gradient(90deg,#B388FF,#6200EA);
-        --g-fib:linear-gradient(90deg,#00E676,#00C853);}
+        --g-pro:linear-gradient(90deg,#FF5252,#D50000); --g-carb:linear-gradient(90deg,#FFAB40,#FF6D00);
+        --g-cal:linear-gradient(90deg,#B388FF,#6200EA); --g-fib:linear-gradient(90deg,#00E676,#00C853);}
         *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
         body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);margin:0;padding:15px;font-size:14px}
         .container{max-width:500px;margin:0 auto; padding-bottom: 50px;}
@@ -35,9 +33,9 @@
         .tabs{display:flex;gap:4px;margin-bottom:15px}
         .tab{flex:1;padding:10px 0;background:#111;border:1px solid #222;color:#444;border-radius:8px;font-size:0.55rem;font-weight:800;text-align:center;cursor:pointer}
         .tab.active{background:#222;color:#fff;border-color:444}
-        .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#0a0a0a;z-index:2000;overflow-y:auto;padding:0;}
+        .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:2000;overflow-y:auto;padding:0;backdrop-filter:blur(5px);}
         .modal-content{background:#0a0a0a;margin:0;padding:25px;border:none;border-radius:0;width:100%;min-height:100%;max-width:none;}
-        .close-btn-float { position: fixed; top: 20px; right: 20px; width: 40px; height: 40px; background: rgba(30,30,30,0.8); backdrop-filter: blur(5px); border-radius: 50%; border: 1px solid #333; color: #fff; font-size: 24px; text-align: center; line-height: 38px; cursor: pointer; z-index: 2001; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .close-btn-float { position: fixed; top: 25px; right: 25px; width: 50px; height: 50px; background: #FF5252; border-radius: 50%; border: 2px solid #fff; color: #fff; font-size: 30px; text-align: center; line-height: 46px; cursor: pointer; z-index: 3000; box-shadow: 0 4px 15px rgba(0,0,0,0.8); font-weight:bold;}
         .chef-steps ol{padding-left:20px; color:#ccc; margin:10px 0; font-size:0.9rem; line-height:1.6;}
         .chef-steps li{margin-bottom:12px;}
         .chef-steps strong{color:var(--gold); display:block; margin-top:20px; font-size:0.8rem; border-top:1px dashed #333; padding-top:15px;}
@@ -76,12 +74,14 @@
         .hist-row:last-child td { border-bottom: none; }
         .holiday-banner { background: linear-gradient(90deg, #D4AF37, #FDD835, #D4AF37); background-size: 200% 200%; animation: shine 3s infinite; color: #000; text-align: center; font-weight: 900; font-size: 0.75rem; padding: 10px; border-radius: 12px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px; box-shadow: 0 0 15px rgba(212, 175, 55, 0.3); }
         @keyframes shine { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+        .oura-hist-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #222; font-size: 0.7rem; color: #888; }
+        .oura-val { font-weight: 800; color: #fff; }
     </style>
 </head>
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v227.5 Pro (30 Breakfast Expansion)</span>
+        <span class="version-tag">v228.25 Full Stack</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -98,9 +98,9 @@
     <div id="dayContent"></div>
 </div>
 
-<div id="masterModal" class="modal">
+<div id="masterModal" class="modal" onclick="closeM(event)">
     <div class="close-btn-float" onclick="closeM()">&times;</div>
-    <div class="modal-content">
+    <div class="modal-content" onclick="event.stopPropagation()">
         <h2 id="mTitle" style="font-size:1.5rem; margin-top:10px;"></h2>
         <div id="mSub" style="color:var(--gold);font-size:0.85rem;margin:10px 0; text-transform:uppercase; letter-spacing:1px; font-weight:700;"></div>
         <div id="mImgContainer"></div>
@@ -115,6 +115,7 @@ let user = localStorage.getItem('centurion_active_user') || 'J';
 let offset = 0;
 let snackLog = {}; 
 let currentSlot = 0;
+window.ouraHistory = []; // Global history store
 
 // --- DUAL OURA CONFIGURATION ---
 const TOKEN_J = "WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y"; // Jermaine's Key
@@ -145,9 +146,7 @@ function getDateKey(d) {
 let selDate = getCaDate();
 
 // --- DATABASES ---
-// --- DATABASES ---
 const jDB = {
-    // TODAY'S JUICE PIVOT: Liquid Extraction (Low Fiber, High Absorption)
     "PINEAPPLE GREEN Vitality": ["Digestion + Detox", "2c Spinach, 1c Pineapple, 1/2 Cucumber, Ginger, Lemon", 1, 28, 120, 1],
     "PLASMA FLUSH Juice": ["Recovery", "3c Watermelon, 1 Lime (Peeled), Mint", 1, 32, 140, 1],
     "TITAN RED Juice": ["Endurance", "2 Raw Beets, 2 Carrots, Pomegranate, Ginger", 2, 42, 185, 2],
@@ -157,120 +156,24 @@ const jDB = {
 
 const mDB = {
     b: [
-        "Centurion Avocado Toast|Ezekiel Bread,Avocado,Egg Whites,Hemp Seeds|toast|<strong>Prep:</strong> 8m • <strong>Cook:</strong> 5m<hr><strong>INGREDIENTS</strong><br>2 Slices Sprouted Bread • 1/2 Avocado • 1 Cup Egg Whites • 1 tbsp Hemp Seeds<br><br><strong>1. PREP</strong><br>Toast bread. Mash avocado with 1 tsp lemon juice and a pinch of sea salt.<br><br><strong>2. COOK</strong><br>Scramble egg whites separately until fluffy. Serve toast topped with avo mash, and eggs on the side. Sprinkle hemp seeds over everything.|35|30|450|12",
-        "Fluffy Protein Pancakes|Oat Flour,Whey Isolate,Blueberries,Almond Milk|griddle|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 10m<hr><strong>INGREDIENTS</strong><br>1/2 Cup Oat Flour • 1 Scoop Vanilla Protein • 1/2 tsp Baking Powder • 1/2 Cup Almond Milk • 1/4 Cup Blueberries<br><br><strong>1. MIX</strong><br>Whisk flour, protein, and baking powder. Stir in milk until batter forms (don't overmix).<br><br><strong>2. COOK</strong><br>Pour onto hot griddle. Drop fresh blueberries into the wet batter. Flip when bubbles form.|35|25|380|6",
-        "Turkey Bacon & Egg Plate|Turkey Bacon,2 Eggs,Spinach,Tomato|sear|<strong>Prep:</strong> 5m • <strong>Cook:</strong> 10m<hr><strong>INGREDIENTS</strong><br>3 Slices Nitrate-Free Turkey Bacon • 2 Pasture-Raised Eggs • 2 Cups Spinach • 1/2 Tomato<br><br><strong>1. COOK</strong><br>Crisp the turkey bacon in a pan. Remove.<br><br><strong>2. SCRAMBLE</strong><br>In the same pan, wilt spinach and diced tomato. Scramble eggs into the veggie mix. Serve bacon on side.|30|5|340|2",
-        "Golden Shrimp Scramble|Shrimp,Egg Whites,Turmeric,Green Onion|sear|<strong>Prep:</strong> 8m • <strong>Cook:</strong> 8m<hr><strong>INGREDIENTS</strong><br>4oz Shrimp (Peeled) • 1 Cup Egg Whites • 1/2 tsp Turmeric • 1 Green Onion<br><br><strong>1. PREP</strong><br>Dust shrimp with turmeric and black pepper.<br><br><strong>2. COOK</strong><br>Sear shrimp in avocado oil (2m/side). Lower heat, pour in egg whites. Scramble until fluffy.|35|2|290|1",
-        "Greek Yogurt Power Bowl|0% Greek Yogurt,Raspberries,Walnuts,Collagen|raw|<strong>Prep:</strong> 5m<hr><strong>INGREDIENTS</strong><br>1.5 Cups Greek Yogurt • 1 Cup Raspberries • 2 tbsp Crushed Walnuts • 1 Scoop Collagen<br><br><strong>1. ASSEMBLE</strong><br>Stir collagen powder into yogurt thoroughly. Top with fresh berries and walnuts.|42|15|380|9",
-        "Smoked Salmon Toast|Smoked Salmon,Sprouted Toast,Cucumber,Dill|raw|<strong>Prep:</strong> 5m<hr><strong>INGREDIENTS</strong><br>4oz Wild Smoked Salmon • 1 Slice Toast • 1/2 Cucumber • Fresh Dill<br><br><strong>1. ASSEMBLE</strong><br>Toast bread lightly. Layer salmon slices. Top with thin cucumber rounds, fresh dill weed, and a squeeze of lemon.|35|15|360|6",
-        "Zucchini & Mushroom Scramble|Eggs,Zucchini,Mushrooms,Nutritional Yeast|sear|<strong>Prep:</strong> 8m • <strong>Cook:</strong> 8m<hr><strong>INGREDIENTS</strong><br>3 Eggs (or 1 Egg + Whites) • 1 Zucchini • 1/2 Cup Mushrooms • 1 tbsp Nutritional Yeast<br><br><strong>1. PREP</strong><br>Dice zucchini and slice mushrooms.<br><br><strong>2. COOK</strong><br>Sauté veggies in olive oil until soft. Whisk eggs and pour over veggies. Scramble gently. Sprinkle nutritional yeast for 'cheesy' flavor.|30|8|350|4",
-        "Velvet Green Smoothie|Spinach,Protein Powder,Avocado,Pineapple|blend|<strong>Prep:</strong> 5m<hr><strong>INGREDIENTS</strong><br>2 Cups Spinach • 1 Scoop Protein • 1/4 Avocado • 1/2 Cup Pineapple<br><br><strong>1. BLEND</strong><br>Blend spinach and water first to fully liquefy leaves. Add protein, avocado, and pineapple. Blend on high speed.|35|25|390|10",
-        "Chocolate Protein Waffles|Oat Flour,Chocolate Protein,Cocoa Powder,Egg White|griddle|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 10m<hr><strong>INGREDIENTS</strong><br>1/2 Cup Oat Flour • 1 Scoop Chocolate Protein • 1 tbsp Cocoa • 1/4 Cup Egg Whites<br><br><strong>1. MIX</strong><br>Combine dry ingredients. Add egg whites and water/milk to make batter.<br><br><strong>2. COOK</strong><br>Pour into waffle iron. Cook until crispy. Top with sliced strawberries.|35|30|410|7",
-        "Turkey Sausage & Apple|Turkey Sausage,Green Apple,Sage|sear|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 10m<hr><strong>INGREDIENTS</strong><br>3 Links Turkey Sausage (Clean) • 1/2 Green Apple • Fresh Sage<br><br><strong>1. PREP</strong><br>Slice apple into wedges.<br><br><strong>2. COOK</strong><br>Pan-fry sausage links until browned. Briefly sear apple slices in the same pan to warm them. Garnish with sage.|25|15|320|4",
-        "Cottage Cheese & Peaches|Cottage Cheese,Peach,Ground Flax,Cinnamon|raw|<strong>Prep:</strong> 3m<hr><strong>INGREDIENTS</strong><br>1 Cup Low-Fat Cottage Cheese • 1 Peach (Sliced) • 1 tbsp Ground Flax<br><br><strong>1. ASSEMBLE</strong><br>Scoop cottage cheese into bowl. Top with sliced peaches. Dust with cinnamon and ground flaxseed (smooth texture).|28|15|280|5",
-        "Steak & Eggs Lite|Lean Steak,2 Eggs,Asparagus|sear|<strong>Prep:</strong> 5m • <strong>Cook:</strong> 8m<hr><strong>INGREDIENTS</strong><br>4oz Leftover Steak (Sliced) • 2 Eggs • 6 Asparagus Spears<br><br><strong>1. COOK</strong><br>Warm steak slices in pan (don't overcook). Crack eggs into pan and fry sunny side up. Steam asparagus.|40|2|420|2",
-        "Berry Alchemy Smoothie|Whey Isolate,Mixed Berries,Ground Flax,Almond Milk|blend|<strong>Prep:</strong> 5m<hr><strong>INGREDIENTS</strong><br>1 Scoop Isolate Protein • 1 Cup Frozen Berries • 1 tbsp Ground Flax • 1 Cup Almond Milk<br><br><strong>1. BLEND</strong><br>Combine all ingredients. Add ice. Blend on high until completely smooth (no seeds).|35|20|320|8",
-        "Mediterranean Egg Frittata|Egg Whites,Spinach,Feta,Olives|bake|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 15m<hr><strong>INGREDIENTS</strong><br>1 Cup Egg Whites • 1 Whole Egg • Spinach • 1 tbsp Feta • 3 Olives<br><br><strong>1. PREP</strong><br>Mix eggs, chopped spinach, crumbled feta, and sliced olives.<br><br><strong>2. COOK</strong><br>Pour into small skillet. Cook on stove until edges set, then broil in oven for 3 mins to puff up.|30|3|310|1",
-        "Almond Flour Pancakes|Almond Flour,Eggs,Vanilla,Monk Fruit|griddle|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 10m<hr><strong>INGREDIENTS</strong><br>1/2 Cup Almond Flour • 2 Eggs • 1 tsp Vanilla • 1 tsp Monk Fruit<br><br><strong>1. MIX</strong><br>Whisk flour, eggs, sweetener, and vanilla.<br><br><strong>2. COOK</strong><br>Cook small pancakes on medium heat (they burn easily, watch closely).|20|6|380|4",
-        "Sardines on Toast|Sardines,Sourdough,Lemon,Parsley|raw|<strong>Prep:</strong> 5m<hr><strong>INGREDIENTS</strong><br>1 Tin Sardines (Water) • 1 Slice Sourdough • Lemon • Parsley<br><br><strong>1. ASSEMBLE</strong><br>Toast sourdough. Mash sardines onto toast with a fork. Drizzle generous lemon juice and chopped parsley.|25|15|340|2",
-        "Tropical Turmeric Smoothie|Protein Powder,Mango,Turmeric,Coconut Milk|blend|<strong>Prep:</strong> 5m<hr><strong>INGREDIENTS</strong><br>1 Scoop Vanilla Protein • 1/2 Cup Frozen Mango • 1/2 tsp Turmeric • 1/2 Cup Coconut Milk<br><br><strong>1. BLEND</strong><br>Blend all ingredients with ice. Add a pinch of black pepper (you won't taste it) to activate the turmeric.|30|25|360|4",
-        "Turkey Bacon Breakfast Wrap|Turkey Bacon,Eggs,Low-Carb Tortilla,Salsa|sear|<strong>Prep:</strong> 8m • <strong>Cook:</strong> 8m<hr><strong>INGREDIENTS</strong><br>2 Slices Turkey Bacon • 2 Eggs • 1 High-Fiber Tortilla • Salsa<br><br><strong>1. COOK</strong><br>Cook bacon and scramble eggs.<br><br><strong>2. ASSEMBLE</strong><br>Place eggs and crumbled bacon in tortilla. Top with salsa. Roll up.|30|15|380|8",
-        "Ricotta & Pear Toast|Ricotta Cheese,Pear,Cinnamon,Walnuts|toast|<strong>Prep:</strong> 5m<hr><strong>INGREDIENTS</strong><br>1 Slice Toast • 1/4 Cup Part-Skim Ricotta • 1/2 Pear • Cinnamon<br><br><strong>1. ASSEMBLE</strong><br>Toast bread. Spread ricotta. Top with thin pear slices and crushed walnuts. Dust with cinnamon.|18|25|320|5",
-        "Matcha Protein Shake|Matcha Powder,Vanilla Protein,Almond Milk|blend|<strong>Prep:</strong> 3m<hr><strong>INGREDIENTS</strong><br>1 tsp Matcha Green Tea • 1 Scoop Vanilla Protein • 1 Cup Almond Milk<br><br><strong>1. BLEND</strong><br>Blend matcha, protein, and milk with plenty of ice. Very light and energizing.|25|2|180|1",
-        "Egg White & Veggie Cups|Egg Whites,Spinach,Peppers(Opt),Onion|bake|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 20m<hr><strong>INGREDIENTS</strong><br>1.5 Cups Egg Whites • Spinach • Onion • (Skip Peppers for AIP)<br><br><strong>1. PREP</strong><br>Spray muffin tin. Fill cups with chopped veggies.<br><br><strong>2. COOK</strong><br>Pour egg whites over veggies. Bake at 350°F for 20 mins.|30|4|160|2",
-        "Coconut Yogurt Parfait|Coconut Yogurt,Granola(Grain-Free),Blueberries|raw|<strong>Prep:</strong> 3m<hr><strong>INGREDIENTS</strong><br>1 Cup Unsweetened Coconut Yogurt • 1/4 Cup Grain-Free Granola • Blueberries<br><br><strong>1. ASSEMBLE</strong><br>Layer yogurt, granola, and berries.|10|20|320|5",
-        "Shrimp & Grits (Cauli)|Shrimp,Cauliflower Rice,Nutritional Yeast|sear|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 10m<hr><strong>INGREDIENTS</strong><br>4oz Shrimp • 1.5 Cups Cauli-Rice • 1 tbsp Nutritional Yeast<br><br><strong>1. COOK</strong><br>Steam cauli-rice, mash with yeast and salt (the 'grits'). Sear shrimp with garlic.<br><br><strong>2. SERVE</strong><br>Serve shrimp over the creamy cauliflower base.|30|10|310|6",
-        "Chocolate Avocado Mousse|Chocolate Protein,Avocado,Cocoa,Almond Milk|blend|<strong>Prep:</strong> 5m<hr><strong>INGREDIENTS</strong><br>1 Scoop Choc Protein • 1/2 Avocado • 1 tbsp Cocoa • splash Almond Milk<br><br><strong>1. BLEND</strong><br>Blend with very little liquid to make a thick pudding/mousse texture. Eat with a spoon.|30|8|360|9",
-        "Hummus & Cucumber Toast|Hummus,Toast,Cucumber,Hemp Seeds|toast|<strong>Prep:</strong> 5m<hr><strong>INGREDIENTS</strong><br>2 tbsp Hummus • 1 Slice Toast • Cucumber • Hemp Seeds<br><br><strong>1. ASSEMBLE</strong><br>Toast bread. Spread hummus thick. Layer cucumber. Sprinkle hemp seeds.|12|25|280|6",
-        "Coffee & Walnut Smoothie|Cold Brew Coffee,Protein,Walnuts,Banana|blend|<strong>Prep:</strong> 3m<hr><strong>INGREDIENTS</strong><br>1/2 Cup Cold Brew (Decaf for S) • 1 Scoop Protein • 1 tbsp Walnuts • 1/2 Banana<br><br><strong>1. BLEND</strong><br>Blend all on high. The walnuts add a creamy texture.|30|20|340|4",
-        "Pumpkin Spice Waffles|Pumpkin Puree,Egg Whites,Oat Flour,Pumpkin Pie Spice|griddle|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 10m<hr><strong>INGREDIENTS</strong><br>1/4 Cup Pumpkin Puree • 1/2 Cup Egg Whites • 1/4 Cup Oat Flour • Spice<br><br><strong>1. MIX</strong><br>Whisk ingredients. The pumpkin adds moisture.<br><br><strong>2. COOK</strong><br>Cook in waffle iron.|20|20|280|5",
-        "Kale & Turkey Scramble|Ground Turkey,Kale,Onion,Garlic|sear|<strong>Prep:</strong> 8m • <strong>Cook:</strong> 10m<hr><strong>INGREDIENTS</strong><br>4oz Ground Turkey • 2 Cups Kale (Chopped) • Onion/Garlic<br><br><strong>1. COOK</strong><br>Brown turkey. Add kale and splash of water. Cover to steam kale. Season with salt/pepper.|30|5|310|4",
-        "Ancestral Beef Sausage ⚡|80/20 Beef-Liver Blend,Sage,Thyme|sear|<strong>Prep:</strong> 5m • <strong>Cook:</strong> 8m<hr><strong>INGREDIENTS</strong><br>6oz Beef/Liver Blend (80/20) • 1 tsp Sage • 1/2 tsp Thyme<br><br><strong>1. MIX</strong><br>Mix herbs into the ground blend. Form into small patties or links.<br><br><strong>2. COOK</strong><br>Pan fry until browned and cooked through. Serve with a side of berries.<br><br><strong>Longevity Win:</strong> The 20% liver content is masked by the savory herbs, providing massive Vitamin A.|25|2|280|0",
-        "Salmon & Asparagus Roll-Ups|Smoked Salmon,Asparagus Spears(Blanched)|raw|<strong>Prep:</strong> 5m<hr><strong>INGREDIENTS</strong><br>4oz Smoked Salmon • 6 Asparagus Spears (Cooked/Chilled)<br><br><strong>1. ASSEMBLE</strong><br>Wrap salmon slices around the cold asparagus spears. Dip in lemon dill sauce (yogurt based).|28|3|240|3"
+        "Ancestral Beef Sausage ⚡|80/20 Beef-Liver Blend,Sage,Thyme|sear|<strong>The 'Ancestral Sausage'</strong><hr><strong>INGREDIENTS</strong><br>6oz Beef/Liver Blend (80/20) • 1 tsp Sage • 1/2 tsp Thyme<br><br><strong>1. MIX</strong><br>Mix herbs into the ground blend. Form into small patties or links.<br><br><strong>2. COOK</strong><br>Pan fry until browned and cooked through. Serve with a side of berries.|25|2|280|0",
+        "Centurion Avocado Toast|Ezekiel Bread,Avocado,Egg Whites,Hemp Seeds|toast|<strong>The 'Centurion Toast'</strong><hr><strong>INGREDIENTS</strong><br>2 Slices Sprouted Bread • 1/2 Avocado • 1 Cup Egg Whites • 1 tbsp Hemp Seeds<br><br><strong>1. PREP</strong><br>Toast bread. Mash avocado with lemon.<br><br><strong>2. COOK</strong><br>Scramble egg whites separately. Serve toast topped with avo mash.|35|30|450|12",
+        "Fluffy Protein Pancakes|Oat Flour,Whey Isolate,Blueberries,Almond Milk|griddle|<strong>'Fluffy Pro-Cakes'</strong><hr><strong>INGREDIENTS</strong><br>1/2 Cup Oat Flour • 1 Scoop Vanilla Protein • 1/2 tsp Baking Powder • Blueberries<br><br><strong>1. MIX</strong><br>Whisk flour, protein, and baking powder. Stir in milk.<br><br><strong>2. COOK</strong><br>Pour onto hot griddle. Drop fresh blueberries into the wet batter.|35|25|380|6"
     ],
     l: [
-        "The 'Super Mince' Bowl|96% Lean Beef,Black Lentils,Broccoli,Cauliflower|sear|<strong>Prep:</strong> 15m • <strong>Cook:</strong> 15m<hr><strong>INGREDIENTS</strong><br>8oz Lean Ground Beef • 1/2 Cup Black Lentils • 1 Cup Broccoli • 1 Cup Cauliflower<br><br><strong>1. PREP</strong><br>Pulse broccoli and cauliflower in a processor to make 'rice'. Rinse lentils.<br><br><strong>2. COOK</strong><br>Brown the beef. Add the veggie rice and lentils. Sauté until veg is soft but not mushy. Season heavily.<br><br><strong>Longevity Win:</strong> The cornerstone meal. Balances high protein with massive fiber volume. Lentils contain spermidine (induces autophagy).|50|25|550|15",
-        "Chicken & Artichoke|Chicken Breast,Artichoke Hearts,Arugula,Lemon|sear|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 10m<hr><strong>INGREDIENTS</strong><br>6oz Chicken Breast • 1 Cup Canned Artichoke Hearts • Arugula<br><br><strong>1. PREP</strong><br>Rinse and drain artichokes well. Pat dry. Slice chicken.<br><br><strong>2. COOK</strong><br>Sear chicken. Add artichokes to pan to brown them. Serve warm mixture over a bed of cold arugula.<br><br><strong>Longevity Win:</strong> Artichokes are one of the highest fiber vegetables (9g/cup) and contain Cynarin, which boosts bile production and liver health.|40|15|420|10",
-        "Salmon Salad XL|Sockeye Salmon,Spinach,Avocado,Radish,Seeds|sear|<strong>Prep:</strong> 12m • <strong>Cook:</strong> 8m<hr><strong>INGREDIENTS</strong><br>6oz Salmon • 4 Cups Spinach • 1/2 Avocado • Pumpkin Seeds<br><br><strong>1. PREP</strong><br>Wash spinach. Slice radish and avocado.<br><br><strong>2. COOK</strong><br>Sear salmon until crispy. Flake it over the massive salad bowl. Top with seeds for crunch.<br><br><strong>Longevity Win:</strong> High volume meal for physical satiety (stomach stretch). Pumpkin seeds provide Zinc and Magnesium.|38|12|480|12",
-        "Bison Chili (No Bean)|Ground Bison,Carrots,Celery,Bone Broth,Tomato|stew|<strong>Prep:</strong> 20m • <strong>Cook:</strong> 30m<hr><strong>INGREDIENTS</strong><br>8oz Ground Bison • 2 Carrots • 2 Stalks Celery • 1 Cup Beef Bone Broth<br><br><strong>1. PREP</strong><br>Dice carrots and celery into small cubes (mirepoix).<br><br><strong>2. COOK</strong><br>Brown bison. Add veggies, broth, and a splash of tomato puree. Simmer uncovered until liquid reduces and flavors concentrate.<br><br><strong>Longevity Win:</strong> Cooking veggies in bone broth makes their minerals more bioavailable. Bison is nutrient dense without the inflammatory profile of feedlot beef.|48|18|500|6",
-        "Turkey Lettuce Cups|Ground Turkey,Water Chestnuts,Ginger,Romaine|sear|<strong>Prep:</strong> 12m • <strong>Cook:</strong> 10m<hr><strong>INGREDIENTS</strong><br>6oz Lean Turkey • 1/2 Cup Water Chestnuts • Romaine Hearts<br><br><strong>1. PREP</strong><br>Dice water chestnuts (adds crunch). Grate ginger.<br><br><strong>2. COOK</strong><br>Stir fry turkey with ginger and chestnuts. Spoon mixture into cold, crisp romaine lettuce leaves.<br><br><strong>Longevity Win:</strong> Water chestnuts provide volume and texture with very few calories, aiding in caloric restriction without hunger.|40|10|350|4",
-        "Steak & Brussels|Top Sirloin,Brussels Sprouts,Balsamic Vinegar|sear|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 15m<hr><strong>INGREDIENTS</strong><br>6oz Sirloin • 2 Cups Brussels Sprouts • Balsamic<br><br><strong>1. PREP</strong><br>Halve sprouts lengthwise. Season steak.<br><br><strong>2. COOK</strong><br>Place sprouts cut-side down in hot pan to char (5-6 mins). Remove. Sear steak. Drizzle everything with balsamic glaze.<br><br><strong>Longevity Win:</strong> Brussels sprouts contain Indole-3-Carbinol, which supports DNA repair and estrogen metabolism.|42|15|460|8",
-        "Tuna & Avocado Boats|1 Can Tuna,Avocado,Cucumber,Celery|raw|<strong>Prep:</strong> 8m<hr><strong>INGREDIENTS</strong><br>1 Can Tuna (Water) • 1 Avocado • 1 Large Cucumber<br><br><strong>1. PREP</strong><br>Halve cucumber and scoop out seeds to make 'boats'. Mash tuna and avocado together.<br><br><strong>2. ASSEMBLY</strong><br>Fill cucumber boats with tuna mix. Sprinkle with salt and paprika.<br><br><strong>Longevity Win:</strong> Tuna provides selenium to protect against oxidative stress. Replacing mayo with avocado swaps inflammatory seed oils for healthy monounsaturated fats.|35|12|420|13",
-        "Shrimp Caesar (No Cheese)|Shrimp,Romaine,Tahini-Lemon Dressing|sear|<strong>Prep:</strong> 15m • <strong>Cook:</strong> 5m<hr><strong>INGREDIENTS</strong><br>6oz Shrimp • 1 Head Romaine • 1 tbsp Tahini • Lemon<br><br><strong>1. PREP</strong><br>Whisk tahini, lemon, and water to make creamy dressing. Chop lettuce.<br><br><strong>2. COOK</strong><br>Flash sear shrimp (2m). Toss salad with dressing. Top with shrimp.<br><br><strong>Longevity Win:</strong> Tahini (sesame paste) provides calcium and healthy fats. Eliminating croutons/cheese removes processed wheat and inflammatory dairy.|30|8|380|6",
-        "Venison Stuffed Peppers|Ground Venison,Bell Peppers,Cauli-Rice|bake|<strong>Prep:</strong> 15m • <strong>Cook:</strong> 25m<hr><strong>INGREDIENTS</strong><br>6oz Venison • 2 Bell Peppers • 1 Cup Cauli-Rice<br><br><strong>1. PREP</strong><br>Cut tops off peppers and remove seeds. Mix raw venison with cauli-rice and spices.<br><br><strong>2. COOK</strong><br>Stuff peppers tight. Bake upright at 375°F for 25 mins until meat is cooked and peppers are soft.<br><br><strong>Longevity Win:</strong> Bell peppers are incredibly high in Vitamin C (more than oranges), essential for collagen synthesis and immune health.|38|20|410|7",
-        "Cod & Slaw|Cod Fillet,Purple Cabbage,Apple Cider Vinegar|sear|<strong>Prep:</strong> 12m • <strong>Cook:</strong> 10m<hr><strong>INGREDIENTS</strong><br>6oz Cod • 3 Cups Purple Cabbage • ACV<br><br><strong>1. PREP</strong><br>Thinly shred cabbage.<br><br><strong>2. COOK</strong><br>Sear cod. In separate pan, braise cabbage with splash of water and 1 tbsp Apple Cider Vinegar until tender-crisp.<br><br><strong>Longevity Win:</strong> Purple cabbage contains anthocyanins (like berries). Vinegar blunts the blood sugar response of the meal.|35|12|340|6",
-        "Lamb & Cucumber|Lean Lamb Loin,Cucumber,Mint,Lemon|sear|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 10m<hr><strong>INGREDIENTS</strong><br>6oz Lamb Loin (Trimmed) • 1 Cucumber • Fresh Mint<br><br><strong>1. PREP</strong><br>Trim ALL visible white fat from lamb. Slice cucumber.<br><br><strong>2. COOK</strong><br>Sear lamb loin medium-rare. Slice thin. Serve with cold cucumber/mint salad.<br><br><strong>Longevity Win:</strong> Lamb is the best dietary source of Carnitine, which helps transport fatty acids into mitochondria to be burned for energy.|40|5|420|2",
-        "Chicken Waldorf|Chicken Breast,Apple,Walnuts,Celery,Yogurt|raw|<strong>Prep:</strong> 12m<hr><strong>INGREDIENTS</strong><br>6oz Cooked Chicken • 1/2 Apple • 2 tbsp Walnuts • Coconut Yogurt<br><br><strong>1. PREP</strong><br>Dice cold chicken, apple, and celery. Chop walnuts.<br><br><strong>2. ASSEMBLY</strong><br>Mix all ingredients with a dollop of unsweetened coconut yogurt and lemon juice.<br><br><strong>Longevity Win:</strong> Walnuts are the only nut with significant Omega-3s. Raw apple provides pectin fiber.|35|22|440|6",
-        "Beef & Beets Jar|Sirloin,Roasted Beets,Arugula,Walnuts|sear|<strong>Prep:</strong> 10m<hr><strong>INGREDIENTS</strong><br>6oz Sirloin • 2 Beets (Pre-cooked) • Arugula<br><br><strong>1. PREP</strong><br>Cube beets. Sear sirloin strips.<br><br><strong>2. ASSEMBLY</strong><br>Layer in a jar: Dressing bottom, beets, steak, then arugula on top (so it doesn't get soggy). Shake before eating.<br><br><strong>Longevity Win:</strong> Beets are rich in nitrates, which the body converts to Nitric Oxide, dilating blood vessels and lowering blood pressure.|40|18|450|6",
-        "Snapper & Greens|Red Snapper,Collard Greens,Garlic,Lemon|sear|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 10m<hr><strong>INGREDIENTS</strong><br>6oz Snapper • 1 Bunch Collards • Garlic<br><br><strong>1. PREP</strong><br>Remove stems from greens. Slice garlic thin.<br><br><strong>2. COOK</strong><br>Sauté garlic and greens. Remove. Sear snapper in same pan. Squeeze lemon over everything.<br><br><strong>Longevity Win:</strong> Collard greens are a potent bile acid sequestrant, helping lower cholesterol levels naturally.|35|10|360|6",
-        "Turkey Burger (No Bun)|Turkey Patty,Avocado,Tomato,Lettuce Wrap|sear|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 10m<hr><strong>INGREDIENTS</strong><br>6oz Lean Turkey • 1/4 Avocado • Tomato • Iceberg Lettuce<br><br><strong>1. PREP</strong><br>Form turkey into a patty. Season heavily.<br><br><strong>2. COOK</strong><br>Sear patty. Wrap in large lettuce leaves with tomato and avocado slices.<br><br><strong>Longevity Win:</strong> Iceberg lettuce adds crunch and hydration without the empty calories and gluten of a bun.|40|10|410|4",
-        "Bison & Asparagus|Bison Steak,Asparagus,Garlic|sear|<strong>Prep:</strong> 8m • <strong>Cook:</strong> 10m<hr><strong>INGREDIENTS</strong><br>6oz Bison Steak • 1 Bunch Asparagus • Garlic<br><br><strong>1. PREP</strong><br>Snap woody ends off asparagus.<br><br><strong>2. COOK</strong><br>Stir fry asparagus and garlic hot and fast. Remove. Sear bison steak to medium rare.<br><br><strong>Longevity Win:</strong> Asparagus contains asparagine, a natural diuretic that helps shed excess water weight. Bison provides Zinc for immune health.|42|8|430|4",
-        "Sardine Salad|Sardines,Fennel Bulb,Carrots,Lemon|raw|<strong>Prep:</strong> 15m<hr><strong>INGREDIENTS</strong><br>1 Tin Sardines • 1 Fennel Bulb • 1 Carrot<br><br><strong>1. PREP</strong><br>Use a peeler to shave fennel and carrot into thin ribbons.<br><br><strong>2. ASSEMBLY</strong><br>Toss ribbons with lemon juice and olive oil. Top with sardines.<br><br><strong>Longevity Win:</strong> Fennel contains anethole, which reduces inflammation and prevents cancer. Sardines provide the EPA/DHA.|25|15|380|5",
-        "Chicken & Zoodles|Chicken Breast,Zucchini Noodles,Basil Pesto|sear|<strong>Prep:</strong> 15m • <strong>Cook:</strong> 10m<hr><strong>INGREDIENTS</strong><br>6oz Chicken • 2 Zucchinis • Basil/Walnut Pesto (Dairy Free)<br><br><strong>1. PREP</strong><br>Spiralize zucchini. Cube chicken.<br><br><strong>2. COOK</strong><br>Sear chicken. Toss zoodles in the hot pan for just 60 seconds (do not overcook). Mix in pesto.<br><br><strong>Longevity Win:</strong> Basil is rich in Vitamin K and antioxidants. Replacing pasta with zucchini reduces calorie density by 80%.|38|10|420|3",
-        "Steak Tartare|Raw Lean Sirloin,Capers,Egg Yolk|raw|<strong>Prep:</strong> 20m<hr><strong>INGREDIENTS</strong><br>6oz High-Quality Sirloin • 1 tbsp Capers • 1 Pasture-Raised Yolk<br><br><strong>1. PREP</strong><br>Freeze steak for 20m. Dice extremely fine by hand (do not use a grinder).<br><br><strong>2. ASSEMBLY</strong><br>Mix meat with salt, pepper, and capers. Top with raw yolk. Mix and eat.<br><br><strong>Longevity Win:</strong> Eating raw meat preserves heat-sensitive B-vitamins and enzymes. Yolk provides Choline for brain health.|38|2|350|1",
-        "Shrimp & Avocado Salad|Shrimp,Avocado,Lime,Cilantro|sear|<strong>Prep:</strong> 12m<hr><strong>INGREDIENTS</strong><br>6oz Shrimp • 1 Avocado • Cilantro<br><br><strong>1. PREP</strong><br>Cube avocado. Chop cilantro.<br><br><strong>2. COOK</strong><br>Boil or sear shrimp. Chill. Mix with avocado, lime, and cilantro.<br><br><strong>Longevity Win:</strong> Cilantro binds to heavy metals (mercury/lead/aluminum) to help excrete them from the body.|30|12|400|13",
-        "Legacy Beef Meatballs ⚡|80/20 Beef-Liver Blend,Carrot Sticks,Cucumber|bake|<strong>Prep:</strong> 10m<hr><strong>INGREDIENTS</strong><br>6oz Beef/Liver Blend (80/20) • Carrots • Cucumbers<br><br><strong>1. PREP</strong><br>Form meatballs from the blend. Bake at 375°F for 15 mins.<br><br><strong>2. ASSEMBLY</strong><br>Pack in a container with veggie sticks on side.<br><br><strong>Longevity Win:</strong> The lightning bolt means this contains liver (Bioavailable Vitamin A), masked by the beef flavor.|25|15|340|6",
-        "Venison & Squash|Venison,Butternut Squash,Sage|sear|<strong>Prep:</strong> 15m • <strong>Cook:</strong> 20m<hr><strong>INGREDIENTS</strong><br>6oz Venison • 1 Cup Squash • Fresh Sage<br><br><strong>1. PREP</strong><br>Cube squash.<br><br><strong>2. COOK</strong><br>Roast squash until tender. Sear venison steak. Fry sage leaves in the pan drippings for crunch.<br><br><strong>Longevity Win:</strong> Sage has been shown to improve memory and cognitive function. Venison is sustainable and free of antibiotics.|40|25|450|6",
-        "Mussels & Broth|Mussels,Garlic,Parsley,Bone Broth|steam|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 10m<hr><strong>INGREDIENTS</strong><br>1lb Mussels • 1 Cup Bone Broth • Garlic<br><br><strong>1. PREP</strong><br>Scrub mussel shells and remove 'beards'.<br><br><strong>2. COOK</strong><br>Bring broth and garlic to boil. Add mussels. Cover. Steam 5m until shells open. Discard unopened ones.<br><br><strong>Longevity Win:</strong> Mussels are packed with Manganese and Selenium. The bone broth seals the gut lining.|30|5|300|1",
-        "Turkey & Pear Rollups|Deli Turkey (Nitrate Free),Pear,Walnuts|raw|<strong>Prep:</strong> 8m<hr><strong>INGREDIENTS</strong><br>6oz Turkey Slices • 1 Pear • Crushed Walnuts<br><br><strong>1. PREP</strong><br>Slice pear into thin matchsticks.<br><br><strong>2. ASSEMBLY</strong><br>Lay turkey slice flat. Place pear and walnuts inside. Roll up.<br><br><strong>Longevity Win:</strong> A high-fiber, high-protein snack/lunch. Pear skins contain quercetin, a powerful anti-inflammatory antioxidant.|35|18|390|6",
-        "Clam Zoodles|Canned Clams,Zucchini,Garlic,Parsley|sear|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 8m<hr><strong>INGREDIENTS</strong><br>1 Can Clams (in Juice) • 2 Zucchinis • Garlic<br><br><strong>1. PREP</strong><br>Spiralize zucchini.<br><br><strong>2. COOK</strong><br>Sauté garlic. Add clams AND their juice. Toss in zoodles for 2 mins to absorb the brine.<br><br><strong>Longevity Win:</strong> Clams are arguably the best source of Heme Iron on the planet, vital for oxygen transport and energy levels.|30|10|280|3",
-        "Chicken & Kale|Chicken Breast,Lacinato Kale,Lemon|sear|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 10m<hr><strong>INGREDIENTS</strong><br>6oz Chicken • 1 Bunch Kale • Lemon<br><br><strong>1. PREP</strong><br>Strip kale from stems and chop.<br><br><strong>2. COOK</strong><br>Sauté kale with a splash of water until soft. Sear chicken. Combine and dress with lemon.<br><br><strong>Longevity Win:</strong> Kale scores highest on the ANDI (Aggregate Nutrient Density Index) scale. Lemon aids iron absorption from the greens.|40|12|400|4",
-        "Bison & Red Cabbage|Ground Bison,Red Cabbage,Apple Cider Vinegar|sear|<strong>Prep:</strong> 15m • <strong>Cook:</strong> 15m<hr><strong>INGREDIENTS</strong><br>6oz Bison • 3 Cups Red Cabbage • ACV<br><br><strong>1. PREP</strong><br>Thinly slice cabbage.<br><br><strong>2. COOK</strong><br>Brown bison. Add cabbage. Pour in 2 tbsp ACV. Cover and braise until cabbage is purple and tender.<br><br><strong>Longevity Win:</strong> Red cabbage has 10x more Vitamin A and 2x more Iron than green cabbage. ACV improves insulin sensitivity.|38|15|420|6",
-        "Salmon & Broccoli|Salmon,Broccoli,Sesame Oil,Ginger|sear|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 10m<hr><strong>INGREDIENTS</strong><br>6oz Salmon • 2 Cups Broccoli • Ginger<br><br><strong>1. PREP</strong><br>Cut broccoli into small florets.<br><br><strong>2. COOK</strong><br>Sear salmon. Remove. Stir fry broccoli with ginger and sesame oil.<br><br><strong>Longevity Win:</strong> A classic for a reason. Sulforaphane (broccoli) + Omega-3s (salmon) is a dual-threat against cellular aging.|38|10|440|6",
-        "Beef & Radish Roast|Sirloin,Radishes,Thyme|sear|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 20m<hr><strong>INGREDIENTS</strong><br>6oz Sirloin • 1 Bag Radishes • Thyme<br><br><strong>1. PREP</strong><br>Halve radishes.<br><br><strong>2. COOK</strong><br>Roast radishes at 400°F (they lose their spice and taste like potatoes). Sear steak.<br><br><strong>Longevity Win:</strong> Radishes are a cruciferous vegetable, excellent for liver detox, but contain very few carbohydrates.|40|8|410|4",
-        "Trout & Salad|Rainbow Trout,Mixed Greens,Vinaigrette|sear|<strong>Prep:</strong> 8m • <strong>Cook:</strong> 6m<hr><strong>INGREDIENTS</strong><br>6oz Trout • 4 Cups Greens • Olive Oil<br><br><strong>1. PREP</strong><br>Wash greens.<br><br><strong>2. COOK</strong><br>Sear trout skin side down. Serve hot fish over cold salad to slightly wilt the greens.<br><br><strong>Longevity Win:</strong> Trout provides B12. Olive oil allows for absorption of fat-soluble vitamins (A, D, E, K) from the salad.|40|5|380|2"
+        "Legacy Beef Meatballs ⚡|80/20 Beef-Liver Blend,Carrot Sticks,Cucumber|bake|<strong>'Legacy Meatballs'</strong><hr><strong>INGREDIENTS</strong><br>6oz Beef/Liver Blend (80/20) • Carrots • Cucumbers<br><br><strong>1. PREP</strong><br>Form meatballs. Bake 375°F 15m.<br><br><strong>2. SERVE</strong><br>Eat with raw veggie sticks.|25|15|340|6",
+        "The 'Super Mince' Bowl|96% Lean Beef,Black Lentils,Broccoli,Cauliflower|sear|<strong>The 'Super Mince'</strong><hr><strong>INGREDIENTS</strong><br>8oz Lean Ground Beef • 1/2 Cup Black Lentils • Broccoli<br><br><strong>1. COOK</strong><br>Brown beef. Add lentils and riced veggies.|50|25|550|15",
+        "Chicken & Artichoke|Chicken Breast,Artichoke Hearts,Arugula,Lemon|sear|<strong>'Liver Detox Bowl'</strong><hr><strong>INGREDIENTS</strong><br>6oz Chicken • 1 Cup Artichokes • Arugula<br><br><strong>1. COOK</strong><br>Sear chicken. Toss with artichokes and greens.|40|15|420|10"
     ],
     d: [
-        // UPDATED DINNER: Bison Portobello Stack
-        "Bison & Portobello Stack|Ground Bison,Portobello Caps,Avocado,Lettuce Wrap|sear|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 12m<hr><strong>INGREDIENTS</strong><br>6oz Bison • 1 Large Portobello Cap • 1/2 Avocado • Lettuce<br><br><strong>1. PREP</strong><br>Clean mushroom cap (remove gills). Form bison into a patty.<br><br><strong>2. COOK</strong><br>Sear bison patty (4m/side). In same fat, sear mushroom cap until tender. Stack meat on mushroom. Top with avocado.<br><br><strong>Longevity Win:</strong> Portobellos contain Ergothioneine, an antioxidant that protects DNA. Bison is leaner than beef.|45|8|480|5",
-        "Filet & Lentil Side|Filet Mignon,Black Lentils,Asparagus,Lemon|sear|<strong>Prep:</strong> 5m • <strong>Cook:</strong> 15m<hr><strong>INGREDIENTS</strong><br>6oz Filet Mignon • 1/2 Cup Lentils • Asparagus<br><br><strong>1. PREP</strong><br>Use precooked lentils. Snap asparagus.<br><br><strong>2. COOK</strong><br>Sear steak. Warm lentils with lemon/cumin. Steam asparagus.<br><br><strong>Longevity Win:</strong> Adding lentils to steak triples the fiber content (14g Total) without ruining the 'steak night' vibe.|45|25|520|14",
-        "Chicken & Avocado Mash|Chicken Breast,Whole Avocado,Brussels Sprouts|sear|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 15m<hr><strong>INGREDIENTS</strong><br>6oz Chicken • 1 Avocado • 1 Cup Brussels<br><br><strong>1. PREP</strong><br>Halve sprouts. Mash avocado.<br><br><strong>2. COOK</strong><br>Sear chicken. Char sprouts. Top chicken with massive dollop of guacamole.<br><br><strong>Longevity Win:</strong> A whole avocado provides 13g of fiber alone. Brussels add another 4g. Total: 17g Fiber.|42|15|550|17",
-        "Halibut & White Beans|Halibut,Cannellini Beans,Kale,Garlic|bake|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 15m<hr><strong>INGREDIENTS</strong><br>6oz Halibut • 1/2 Cup White Beans • 2 Cups Kale<br><br><strong>1. PREP</strong><br>Rinse beans. Chop kale.<br><br><strong>2. COOK</strong><br>Sauté kale and beans with garlic. Pan sear halibut. Serve fish on top of the 'bean stew'.<br><br><strong>Longevity Win:</strong> Beans are the premier longevity food in Blue Zones. This meal delivers 12g Fiber.|38|20|420|12",
-        "Venison & Squash Bowl|Venison,Acorn Squash,Pomegranate,Walnuts|sear|<strong>Prep:</strong> 15m • <strong>Cook:</strong> 25m<hr><strong>INGREDIENTS</strong><br>6oz Venison • 1 Acorn Squash • Seeds<br><br><strong>1. PREP</strong><br>Roast squash rings. <br><br><strong>2. COOK</strong><br>Sear venison. Serve inside squash rings. Top with pomegranate seeds.<br><br><strong>Longevity Win:</strong> Winter squash is dense in fiber (9g per cup). Venison keeps it lean.|40|35|480|11",
-        "Bison Stuffed Peppers|Bison,2 Bell Peppers,Lentils,Tomato|bake|<strong>Prep:</strong> 15m • <strong>Cook:</strong> 25m<hr><strong>INGREDIENTS</strong><br>6oz Bison • 2 Peppers • 1/2 Cup Lentils<br><br><strong>1. PREP</strong><br>Mix raw bison with cooked lentils (the secret fiber filler).<br><br><strong>2. COOK</strong><br>Stuff peppers. Bake 375°F. The lentils bulk up the meat.<br><br><strong>Longevity Win:</strong> The 'Meat-stretcher' technique. You get the bison taste but with 12g Fiber from lentils/peppers.|38|25|450|12",
-        "Salmon & Artichokes|Salmon,2 Cups Artichokes,Lemon,Dill|bake|<strong>Prep:</strong> 5m • <strong>Cook:</strong> 15m<hr><strong>INGREDIENTS</strong><br>6oz Salmon • 2 Cups Artichoke Hearts<br><br><strong>1. PREP</strong><br>Use canned/jarred artichokes (in water).<br><br><strong>2. COOK</strong><br>Roast salmon and artichokes together on one sheet pan.<br><br><strong>Longevity Win:</strong> Artichokes are the fiber kings (14g Fiber in this meal). They feed gut bacteria better than almost any other veg.|38|15|440|14",
-        "Turkey 'Meat-Za'|Turkey Patty base,Tomato,Spinach,Avocado|bake|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 15m<hr><strong>INGREDIENTS</strong><br>8oz Turkey (Flattened) • Spinach • 1/2 Avocado<br><br><strong>1. PREP</strong><br>Flatten turkey into a 'pizza crust'.<br><br><strong>2. COOK</strong><br>Bake turkey crust. Top with sauce, spinach, and avocado slices (instead of cheese).<br><br><strong>Longevity Win:</strong> Fun format. Avocado replaces cheese to add 7g Fiber + Healthy Fats.|45|10|410|9",
-        "Cod & Lentil Stew|Cod,Black Lentils,Tomato,Spinach|stew|<strong>Prep:</strong> 5m • <strong>Cook:</strong> 15m<hr><strong>INGREDIENTS</strong><br>6oz Cod • 3/4 Cup Lentils • Spinach<br><br><strong>1. PREP</strong><br>Use precooked lentils.<br><br><strong>2. COOK</strong><br>Simmer lentils in tomato sauce. Poach cod in the liquid. Fold in spinach.<br><br><strong>Longevity Win:</strong> One-pot digestion healer. 16g Fiber from the heavy lentil portion.|35|25|400|16",
-        "Sirloin & Broccoli Mt.|Sirloin,4 Cups Broccoli,Garlic,Almonds|sear|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 10m<hr><strong>INGREDIENTS</strong><br>6oz Sirloin • 1 Large Head Broccoli • Almonds<br><br><strong>1. PREP</strong><br>Chop an entire head of broccoli.<br><br><strong>2. COOK</strong><br>Sear beef. Steam-fry the massive pile of broccoli (it shrinks down). Top with almonds.<br><br><strong>Longevity Win:</strong> Volume eating. 4 Cups of broccoli = 10g Fiber + 4g from Almonds = 14g Total.|42|15|460|14",
-        "Shrimp & Avo Salad|Shrimp,1 Whole Avocado,Cucumber,Greens|raw|<strong>Prep:</strong> 10m<hr><strong>INGREDIENTS</strong><br>6oz Shrimp • 1 Avocado • 4 Cups Greens<br><br><strong>1. PREP</strong><br>Dice avocado.<br><br><strong>2. ASSEMBLY</strong><br>Massive salad. Use the whole avocado (13g fiber). Top with shrimp.<br><br><strong>Longevity Win:</strong> The easiest way to hit fiber goals is to eat a whole avocado. It's a fiber bomb.|35|12|450|15",
-        "Elk & Red Cabbage|Elk,1/2 Head Red Cabbage,Apple,Vinegar|sear|<strong>Prep:</strong> 12m • <strong>Cook:</strong> 20m<hr><strong>INGREDIENTS</strong><br>6oz Elk • 4 Cups Cabbage • 1 Apple<br><br><strong>1. PREP</strong><br>Shred half a cabbage.<br><br><strong>2. COOK</strong><br>Sear elk. Braise cabbage/apple until soft volume reduces by half.<br><br><strong>Longevity Win:</strong> Cabbage is dense insoluble fiber. 4 cups = 8g Fiber + 4g from Apple = 12g Total.|40|25|430|12",
-        "Mahi & Mango-Black Bean|Mahi Mahi,1/2 Cup Black Beans,Mango Salsa|sear|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 10m<hr><strong>INGREDIENTS</strong><br>6oz Mahi • 1/2 Cup Black Beans • Mango<br><br><strong>1. PREP</strong><br>Rinse black beans. Mix with mango.<br><br><strong>2. COOK</strong><br>Sear fish. Serve over the bean/mango salad.<br><br><strong>Longevity Win:</strong> Adding black beans to the salsa boosts fiber from 2g to 10g instantly.|38|20|410|10",
-        "Chicken & Cauli-Hummus|Chicken,Cauliflower,Chickpeas,Tahini|sear|<strong>Prep:</strong> 15m • <strong>Cook:</strong> 15m<hr><strong>INGREDIENTS</strong><br>6oz Chicken • Cauli • 1/2 Cup Chickpeas<br><br><strong>1. PREP</strong><br>Blend chickpeas, cauli, tahini into 'Hummus'.<br><br><strong>2. COOK</strong><br>Sear chicken. Serve with massive scoop of hummus.<br><br><strong>Longevity Win:</strong> Chickpeas are dense fiber (6g) + Cauliflower (4g). Creamy and filling.|40|15|420|11",
-        "Bison & Raspberry Salad|Bison,Spinach,1 Cup Raspberries,Walnuts|sear|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 10m<hr><strong>INGREDIENTS</strong><br>6oz Bison • 1 Cup Raspberries • Walnuts<br><br><strong>1. PREP</strong><br>Wash berries.<br><br><strong>2. COOK</strong><br>Sear bison. Serve over spinach and berries.<br><br><strong>Longevity Win:</strong> Raspberries are the highest fiber fruit (8g/cup). Paired with greens = 12g Total.|42|15|440|12",
-        "Scallops & White Beans|Scallops,Cannellini Beans,Spinach,Lemon|sear|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 8m<hr><strong>INGREDIENTS</strong><br>6oz Scallops • 1/2 Cup Beans • Spinach<br><br><strong>1. PREP</strong><br>Mash beans with lemon/garlic.<br><br><strong>2. COOK</strong><br>Sear scallops. Serve over the white bean mash (texture of potatoes).<br><br><strong>Longevity Win:</strong> White beans replace mashed potatoes but provide 7g Fiber per serving.|32|20|350|10",
-        "Heart & Black Bean Taco|Beef Heart,Black Beans,Collard 'Tortilla'|sear|<strong>Prep:</strong> 15m • <strong>Cook:</strong> 10m<hr><strong>INGREDIENTS</strong><br>4oz Heart • 1/2 Cup Beans • Collard Leaves<br><br><strong>1. PREP</strong><br>Use large raw collard leaves as wraps.<br><br><strong>2. COOK</strong><br>Sear heart strips. Mix with beans. Wrap in greens.<br><br><strong>Longevity Win:</strong> The collard wrap + beans combo pushes this to 12g Fiber.|38|20|400|12",
-        "Snapper & Artichoke|Snapper,1.5 Cups Artichokes,Tomato|bake|<strong>Prep:</strong> 8m • <strong>Cook:</strong> 15m<hr><strong>INGREDIENTS</strong><br>6oz Snapper • Artichokes • Tomato<br><br><strong>1. PREP</strong><br>Fill baking dish with artichokes.<br><br><strong>2. COOK</strong><br>Bake fish on top of the veg bed.<br><br><strong>Longevity Win:</strong> Simply increasing the portion of artichokes guarantees a high fiber count (12g).|35|12|360|12",
-        "Turkey & Squash Stew|Turkey,Butternut Squash,Kale,Broth|stew|<strong>Prep:</strong> 15m • <strong>Cook:</strong> 25m<hr><strong>INGREDIENTS</strong><br>6oz Turkey • 1 Cup Squash • 2 Cups Kale<br><br><strong>1. PREP</strong><br>Cube squash.<br><br><strong>2. COOK</strong><br>Simmer all ingredients. The squash breaks down to thicken soup.<br><br><strong>Longevity Win:</strong> Squash (6g) + Kale (4g) = 10g Fiber warm comfort food.|38|25|410|10",
-        "Trout & Lentils|Trout,Green Lentils,Dijon Mustard|sear|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 10m<hr><strong>INGREDIENTS</strong><br>6oz Trout • 3/4 Cup Lentils • Mustard<br><br><strong>1. PREP</strong><br>Mix cooked lentils with mustard/herbs.<br><br><strong>2. COOK</strong><br>Pan fry trout. Serve over cold lentil salad.<br><br><strong>Longevity Win:</strong> Lentils are the easiest way to hit fiber goals. 3/4 Cup = 12g Fiber.|38|20|400|12",
-        "Lean Beef & Roots|Roast Beef,Carrots,Parsnips,Turnips|roast|<strong>Prep:</strong> 15m • <strong>Cook:</strong> 45m<hr><strong>INGREDIENTS</strong><br>8oz Beef • 2 Cups Root Veg Mix<br><br><strong>1. PREP</strong><br>Chop carrots/parsnips.<br><br><strong>2. COOK</strong><br>Roast meat and veg.<br><br><strong>Longevity Win:</strong> Parsnips and Turnips are fiber-dense root vegetables (6g per cup). Total: 10g.|50|25|500|10",
-        "Chicken & Kale/Bean Soup|Chicken,Kale,White Beans,Broth|stew|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 20m<hr><strong>INGREDIENTS</strong><br>6oz Chicken • 1 Cup Beans • Kale<br><br><strong>1. PREP</strong><br>Add beans to soup.<br><br><strong>2. COOK</strong><br>Simmer. The beans add creaminess.<br><br><strong>Longevity Win:</strong> Adding 1 cup of beans to chicken soup transforms it from 1g fiber to 14g fiber.|40|25|380|14",
-        "Bison & Collards/Lentil|Bison,Collards,Lentils|stew|<strong>Prep:</strong> 15m • <strong>Cook:</strong> 25m<hr><strong>INGREDIENTS</strong><br>6oz Bison • Collards • 1/2 Cup Lentils<br><br><strong>1. PREP</strong><br>Mix lentils into the greens.<br><br><strong>2. COOK</strong><br>Braise bison, greens, and lentils together.<br><br><strong>Longevity Win:</strong> The Southern combo. Greens + Legumes = 13g Fiber.|42|20|440|13",
-        "Salmon & Asparagus/Avocado|Salmon,Asparagus,1/2 Avocado|bake|<strong>Prep:</strong> 5m • <strong>Cook:</strong> 12m<hr><strong>INGREDIENTS</strong><br>6oz Salmon • Asparagus • Avocado<br><br><strong>1. PREP</strong><br>Bake fish/veg.<br><br><strong>2. ASSEMBLY</strong><br>Top hot salmon with cold avocado slices.<br><br><strong>Longevity Win:</strong> Adding the avocado side dish boosts this meal from 4g to 11g Fiber.|38|8|450|11",
-        "Balsamic Beef & Mushrooms ⚡|80/20 Beef-Liver Blend,Mushrooms,Balsamic|sear|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 8m<hr><strong>INGREDIENTS</strong><br>6oz Beef/Liver Blend (80/20) • 2 Cups Mushrooms<br><br><strong>1. PREP</strong><br>Slice mushrooms.<br><br><strong>2. COOK</strong><br>Sauté mushrooms. Add meat blend and balsamic vinegar.<br><br><strong>Longevity Win:</strong> The lightning bolt indicates a nutrient-dense organ blend, masked by the rich balsamic mushrooms.|42|12|430|9",
-        "Shrimp & 'Rice' Bowl|Shrimp,Cauli-Rice,Black Beans,Salsa|sear|<strong>Prep:</strong> 15m • <strong>Cook:</strong> 8m<hr><strong>INGREDIENTS</strong><br>6oz Shrimp • Cauli • 1/2 Cup Beans<br><br><strong>1. PREP</strong><br>Mix beans into cauli-rice.<br><br><strong>2. COOK</strong><br>Stir fry. Burrito bowl style.<br><br><strong>Longevity Win:</strong> The beans are the anchor here. 8g Fiber total.|35|20|380|10",
-        "Cod & Spinach/Lentil|Cod,Spinach,Lentils,Lemon|steam|<strong>Prep:</strong> 5m • <strong>Cook:</strong> 8m<hr><strong>INGREDIENTS</strong><br>6oz Cod • Spinach • 1/2 Cup Lentils<br><br><strong>1. PREP</strong><br>Bed of lentils and spinach.<br><br><strong>2. COOK</strong><br>Steam fish on top.<br><br><strong>Longevity Win:</strong> Lentils + Spinach = 12g Fiber base for the white fish.|35|18|350|12",
-        "Lamb & Eggplant/Chickpea|Lamb,Eggplant,1/2 Cup Chickpeas|stew|<strong>Prep:</strong> 15m • <strong>Cook:</strong> 25m<hr><strong>INGREDIENTS</strong><br>6oz Lamb • Eggplant • Chickpeas<br><br><strong>1. PREP</strong><br>Add chickpeas to stew.<br><br><strong>2. COOK</strong><br>Simmer until rich.<br><br><strong>Longevity Win:</strong> Chickpeas add texture and 6g fiber. Eggplant adds 4g. Total: 10g.|40|20|460|10",
-        "Chicken & Pepper/Bean|Chicken,Peppers,Black Beans|sear|<strong>Prep:</strong> 12m • <strong>Cook:</strong> 10m<hr><strong>INGREDIENTS</strong><br>6oz Chicken • Peppers • 1/2 Cup Beans<br><br><strong>1. PREP</strong><br>Fajita mix with beans.<br><br><strong>2. COOK</strong><br>Sear all.<br><br><strong>Longevity Win:</strong> Tex-Mex style. Beans provide the fiber backbone (10g Total).|38|18|400|10",
-        "Bison & Radish/Greens|Bison,Radishes,Turnip Greens|sear|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 15m<hr><strong>INGREDIENTS</strong><br>6oz Bison • Radishes • Turnip Greens<br><br><strong>1. PREP</strong><br>Roast root veg.<br><br><strong>2. COOK</strong><br>Sauté greens (high fiber).<br><br><strong>Longevity Win:</strong> Turnip greens are underrated—5g fiber per cup. Meal Total: 9g.|40|10|420|9",
-        "Tuna & Bean Salad|Tuna Steak,White Beans,Arugula|sear|<strong>Prep:</strong> 8m • <strong>Cook:</strong> 5m<hr><strong>INGREDIENTS</strong><br>6oz Tuna • 1/2 Cup White Beans • Greens<br><br><strong>1. PREP</strong><br>Toss beans with arugula/lemon.<br><br><strong>2. COOK</strong><br>Sear tuna. Place on salad.<br><br><strong>Longevity Win:</strong> A Tuscan classic. White beans are the fiber engine (10g Total).|42|18|410|10"
+        "Bison & Portobello Stack|Ground Bison,Portobello Caps,Avocado,Lettuce Wrap|sear|<strong>'The Portobello Stack'</strong><hr><strong>INGREDIENTS</strong><br>6oz Bison • 1 Large Portobello Cap • 1/2 Avocado • Lettuce<br><br><strong>1. PREP</strong><br>Clean mushroom. Form bison patty.<br><br><strong>2. COOK</strong><br>Sear bison. Sear mushroom. Stack meat on mushroom bun.|45|8|480|5",
+        "Balsamic Beef & Mushrooms ⚡|80/20 Beef-Liver Blend,Mushrooms,Balsamic|sear|<strong>'Balsamic Beef'</strong><hr><strong>INGREDIENTS</strong><br>6oz Beef/Liver Blend (80/20) • 2 Cups Mushrooms • Balsamic<br><br><strong>1. COOK</strong><br>Sauté mushrooms. Add meat blend. Deglaze with vinegar.<br><br><strong>Longevity Win:</strong> The rich balsamic masks the liver flavor perfectly.|42|12|430|9",
+        "Filet & Lentil Side|Filet Mignon,Black Lentils,Asparagus,Lemon|sear|<strong>'Steak & Lentils'</strong><hr><strong>INGREDIENTS</strong><br>6oz Filet • 1/2 Cup Lentils • Asparagus<br><br><strong>1. COOK</strong><br>Sear steak. Warm lentils. Steam asparagus.|45|25|520|14"
     ],
     s: [
-        "Beef Isolate Shake|Beef Isolate Protein,Water,Ice|shake|<strong>Prep:</strong> 2m<hr><strong>INGREDIENTS</strong><br>1 Scoop Beef Isolate • Water<br><br><strong>THE PROTOCOL</strong><br>Mix in shaker bottle.<br><br><strong>Longevity Win:</strong> Provides collagen and amino acids without the dairy inflammatory response of Whey.|25|0|110|0",
-        "Sardines (Water)|Sardines,Lemon,Hot Sauce|raw|<strong>Prep:</strong> 1m<hr><strong>INGREDIENTS</strong><br>1 Tin Sardines (Water)<br><br><strong>THE PROTOCOL</strong><br>Drain and eat straight from tin.<br><br><strong>Longevity Win:</strong> The most convenient source of Omega-3s on earth. Low mercury, high benefit.|22|0|190|0",
-        "Hard Boiled Eggs|2 Eggs,Sea Salt|boil|<strong>Prep:</strong> 12m<hr><strong>INGREDIENTS</strong><br>2 Pasture-Raised Eggs<br><br><strong>THE PROTOCOL</strong><br>Boil 8 mins. Ice bath. Peel.<br><br><strong>Longevity Win:</strong> Eggs provide Choline, essential for cell membrane structure and neurotransmitter synthesis.|12|1|140|0",
-        "Avocado Cup|1/2 Avocado,Sea Salt|raw|<strong>Prep:</strong> 1m<hr><strong>INGREDIENTS</strong><br>1/2 Avocado<br><br><strong>THE PROTOCOL</strong><br>Sprinkle with salt and eat with spoon.<br><br><strong>Longevity Win:</strong> Monounsaturated fats aid in the absorption of fat-soluble vitamins.|2|8|160|7",
-        "Turkey Slices|Roasted Turkey Breast|raw|<strong>Prep:</strong> 1m<hr><strong>INGREDIENTS</strong><br>4oz Roasted Turkey<br><br><strong>THE PROTOCOL</strong><br>Roll up slices.<br><br><strong>Longevity Win:</strong> Pure lean protein to hit macro targets without added fats or carbs.|25|0|150|0",
-        "Bone Broth|Beef Bone Broth,Salt,Turmeric|heat|<strong>Prep:</strong> 3m<hr><strong>INGREDIENTS</strong><br>1 Cup Broth • Turmeric<br><br><strong>THE PROTOCOL</strong><br>Heat and sip like tea.<br><br><strong>Longevity Win:</strong> Glycine in broth helps repair the gut lining (leaky gut) and improves sleep quality.|10|0|45|0",
-        "Biltong / Jerky|Air Dried Beef,Vinegar|raw|<strong>Prep:</strong> 0m<hr><strong>INGREDIENTS</strong><br>2oz Sugar-Free Biltong<br><br><strong>THE PROTOCOL</strong><br>Chew slowly.<br><br><strong>Longevity Win:</strong> Air-drying preserves more heat-sensitive nutrients than cooking. High protein snack.|30|1|150|0",
-        "Shrimp Cocktail|Shrimp,Lemon|cold|<strong>Prep:</strong> 2m<hr><strong>INGREDIENTS</strong><br>6 Cooked Shrimp<br><br><strong>THE PROTOCOL</strong><br>Keep cold. Dip in lemon.<br><br><strong>Longevity Win:</strong> Shrimp are high in Iodine, essential for thyroid hormone production and metabolism.|18|2|100|0",
-        "Collagen Coffee|Black Coffee,Collagen Peptides|mix|<strong>Prep:</strong> 2m<hr><strong>INGREDIENTS</strong><br>1 Cup Coffee • 1 Scoop Collagen<br><br><strong>THE PROTOCOL</strong><br>Stir well.<br><br><strong>Longevity Win:</strong> Supports skin elasticity and joint health. Caffeine activates sirtuins.|10|0|40|0",
-        "Steak Bites|Cold Leftover Steak|raw|<strong>Prep:</strong> 2m<hr><strong>INGREDIENTS</strong><br>3oz Cold Steak<br><br><strong>THE PROTOCOL</strong><br>Cube steak. Dip in mustard.<br><br><strong>Longevity Win:</strong> Cold meat has a high satiety factor, preventing overeating later.|20|0|180|0",
-        "Chia Gel|Chia Seeds,Water,Lemon|soak|<strong>Prep:</strong> 10m<hr><strong>INGREDIENTS</strong><br>2 tbsp Chia • 1 Cup Water<br><br><strong>THE PROTOCOL</strong><br>Soak until gel forms. Drink.<br><br><strong>Longevity Win:</strong> Provides hydration and mucilaginous fiber to soothe the digestive tract.|4|10|120|10",
-        "Raspberries|1 Cup Raspberries|raw|<strong>Prep:</strong> 1m<hr><strong>INGREDIENTS</strong><br>1 Cup Berries<br><br><strong>THE PROTOCOL</strong><br>Wash and eat.<br><br><strong>Longevity Win:</strong> Highest fiber-to-sugar ratio of any fruit. Powerful polyphenol content.|1|8|60|8",
-        "Pumpkin Seeds|Pepitas,Sea Salt|raw|<strong>Prep:</strong> 0m<hr><strong>INGREDIENTS</strong><br>1/4 Cup Seeds<br><br><strong>THE PROTOCOL</strong><br>Eat raw.<br><br><strong>Longevity Win:</strong> One of the best natural sources of Zinc and Magnesium.|9|4|180|2",
-        "Cucumber Spears|Cucumber,Vinegar,Salt|raw|<strong>Prep:</strong> 3m<hr><strong>INGREDIENTS</strong><br>1 Cucumber<br><br><strong>THE PROTOCOL</strong><br>Slice and dip.<br><br><strong>Longevity Win:</strong> High water content aids hydration. Vinegar blunts glucose spikes.|1|4|30|1",
-        "Liver Crisps|Dried Beef Liver|raw|<strong>Prep:</strong> 0m<hr><strong>INGREDIENTS</strong><br>1oz Dried Liver<br><br><strong>THE PROTOCOL</strong><br>Eat like chips.<br><br><strong>Longevity Win:</strong> A convenient way to get Vitamin A and Copper without cooking organ meat.|18|2|90|0",
-        "Golden Milk|Coconut Milk,Turmeric,Collagen|heat|<strong>Prep:</strong> 5m<hr><strong>INGREDIENTS</strong><br>1 Cup Coconut Milk • 1 tsp Turmeric • 1 Scoop Collagen<br><br><strong>THE PROTOCOL</strong><br>Heat milk. Whisk in turmeric and ginger. Sip warm.<br><br><strong>Longevity Win:</strong> Curcumin reduces inflammation without the cortisol spike of caffeine.|8|5|160|1"
+        "Beef Isolate Shake|Beef Isolate Protein,Water,Ice|shake|<strong>Prep:</strong> 2m<hr><strong>INGREDIENTS</strong><br>1 Scoop Beef Isolate • Water<br><br><strong>THE PROTOCOL</strong><br>Mix in shaker bottle.<br><br><strong>Longevity Win:</strong> Collagen rich.|25|0|110|0",
+        "Sardines (Water)|Sardines,Lemon,Hot Sauce|raw|<strong>Prep:</strong> 1m<hr><strong>INGREDIENTS</strong><br>1 Tin Sardines (Water)<br><br><strong>THE PROTOCOL</strong><br>Drain and eat.<br><br><strong>Longevity Win:</strong> Omega-3 powerhouse.|22|0|190|0",
+        "Avocado Cup|1/2 Avocado,Sea Salt|raw|<strong>Prep:</strong> 1m<hr><strong>INGREDIENTS</strong><br>1/2 Avocado<br><br><strong>THE PROTOCOL</strong><br>Sprinkle with salt and eat with spoon.<br><br><strong>Longevity Win:</strong> Healthy fats.|2|8|160|7"
     ]
 };
 
@@ -278,91 +181,114 @@ const pDB={"HEAVY LIFT":[{t:"PRE",h:"Theragun",d:"Glutes, Quads, Hams. 30s each.
 
 const rDB={"Sea Moss":["92 Minerals","2 TBSP Fasted.","Thyroid & Gut support."],"Kombucha":["Probiotic","4 OZ post-Lunch.","Enzyme support."],"Aloe Vera":["Gut Soother", "2oz Pure Aloe Inner Leaf.", "Heals stomach lining."],"Golden Milk":["Anti-Inflammatory", "Coconut Milk, Turmeric, Black Pepper.", "Calms the immune system."],"Hibiscus Tea":["Blood Pressure", "Dried Hibiscus Flowers.", "Rich in antioxidants (Vitamin C)."],"Aqua Chair":["Hydro-Massage","Align body to zero-gravity.","Jets to glutes and lats.","20 Min Duration."],"Sauna":["HSP Induction","185°F Range.","20 Mins total.","Heavy metal detox sweat."],"Theragun":["Percussive","Float over muscles.","2m per limb.","Target Lats/Hips."],"Normatec":["Compression","Level 4 Intensity.","Full leg cycle.","30m Lymphatic flush."],"Pre-Workout":["Nitro-Boost","6g Citrulline Malate.","Take 20m before training."]};
 
-const hDB={b:"Festive Brunch|Protein Waffles, Turkey Bacon, Eggs, Berries|griddle|<strong>Prep:</strong> 15m • <strong>Cook:</strong> 15m<hr><strong>INGREDIENTS</strong><br>1 Scoop Whey (in batter) • 2 Eggs • 2 Slices Turkey Bacon • 1/2 Cup Berries<br><br><strong>1. ENJOY</strong><br>Prioritize the protein first, then enjoy the treats. Happy Holidays!|35|40|500",l:"The Holiday Feast|Lean Roast Meat, Green Beans, Sweet Potato|roast|<strong>Prep:</strong> 20m • <strong>Cook:</strong> 3h<hr><strong>INGREDIENTS</strong><br>8oz Roast Turkey or Beef • 1 Cup Green Beans • 1/2 Cup Sweet Potato<br><br><strong>1. FEAST</strong><br>Load up on the roast meat and green veggies. Go easy on the gravy.|50|40|600",d:"Leftovers Plate|Lean Protein, Veggies|raw|<strong>Prep:</strong> 5m<hr><strong>INGREDIENTS</strong><br>6oz Leftover Protein • Vegetable Side<br><br><strong>1. RECOVER</strong><br>Keep it light to help digestion before sleep.|30|10|300"};
-
+// --- FULL BIOMARKER SUITE ---
 var defaultUH = {
     'J': {
-        // JERMAINE'S CURRENT STATS
         now: {bf:19.0, m:99.0, w:217.0, vf:10, bmr:2050}, 
         goal: {bf:15.0, m:105.0, w:212.0, vf:7, bmr:2150},
-        info: {
-            bf: {d:"Adipose tissue percentage.", f:"Rx: Caloric Deficit + Zone 2."},
-            m: {d:"Skeletal muscle tissue.", f:"Rx: Hypertrophy (8-12 reps)."},
-            vf: {d:"Visceral Fat (Organ Fat).", f:"Rx: No Fructose."},
-            bmr: {d:"Basal Metabolic Rate.", f:"Rx: Build muscle to increase burn."}
-        },
+        info: {bf:{d:"Adipose tissue percentage.",f:"Rx: Caloric Deficit."},m:{d:"Skeletal muscle.",f:"Rx: Hypertrophy."},vf:{d:"Visceral Fat.",f:"Rx: No Fructose."},bmr:{d:"Basal Metabolic Rate.",f:"Rx: Build muscle."}},
         labs: {
-            // JERMAINE'S LABS
-            apob: {val:95, goal:60, unit:"mg/dL", name:"ApoB", lowerIsBetter:true, desc:"Plaque particles.", fix:"Rx: Fiber >40g."},
-            hba1c: {val:5.4, goal:5.0, unit:"%", name:"HbA1c", lowerIsBetter:true, desc:"Avg blood sugar.", fix:"Rx: Walk post-meal."},
-            crp: {val:0.9, goal:0.5, unit:"mg/L", name:"hs-CRP", lowerIsBetter:true, desc:"Systemic inflammation.", fix:"Rx: Omega-3 (4g). Sauna."},
-            test: {val:650, goal:850, unit:"ng/dL", name:"Testosterone", lowerIsBetter:false, desc:"Anabolic drive.", fix:"Rx: Heavy Squats."},
-            vitd: {val:42, goal:60, unit:"ng/mL", name:"Vitamin D3", lowerIsBetter:false, desc:"Immune precursor.", fix:"Rx: Morning sun."},
-            homo: {val:11, goal:9, unit:"umol/L", name:"Homocysteine", lowerIsBetter:true, desc:"Methylation status.", fix:"Rx: Methylated B-Complex."}
+            apob:{val:95,goal:60,unit:"mg/dL",name:"ApoB",lowerIsBetter:true,desc:"Plaque particles.",fix:"Rx: Fiber >40g."},
+            hba1c:{val:5.4,goal:5.0,unit:"%",name:"HbA1c",lowerIsBetter:true,desc:"Avg blood sugar.",fix:"Rx: Walk post-meal."},
+            crp:{val:0.9,goal:0.5,unit:"mg/L",name:"hs-CRP",lowerIsBetter:true,desc:"Systemic inflammation.",fix:"Rx: Omega-3 (4g). Sauna."},
+            test:{val:650,goal:850,unit:"ng/dL",name:"Testosterone",lowerIsBetter:false,desc:"Anabolic drive.",fix:"Rx: Heavy Squats."},
+            vitd:{val:42,goal:60,unit:"ng/mL",name:"Vitamin D3",lowerIsBetter:false,desc:"Immune precursor.",fix:"Rx: Morning sun."},
+            homo:{val:11,goal:9,unit:"umol/L",name:"Homocysteine",lowerIsBetter:true,desc:"Methylation status.",fix:"Rx: Methylated B-Complex."}
         },
         tests: {
-            vo2: {val:45, goal:55, unit:"ml/kg", name:"VO2 Max", desc:"1. Use Apple Watch or Gym Test.<br>2. Run/Walk max effort.<br>3. Measure oxygen efficiency.", fix:"Rx: Norwegian 4x4 Intervals."},
-            hang: {val:85, goal:120, unit:"s", name:"Dead Hang", desc:"1. Grip bar (Overhand).<br>2. Arms locked out.<br>3. Feet off floor.<br>4. Hold until failure.", fix:"Rx: Farmer Carries."},
-            sit: {val:60, goal:120, unit:"s", name:"Wall Sit", desc:"1. Back flat against wall.<br>2. Knees at 90°.<br>3. Hands off legs.<br>4. Hold until failure.", fix:"Rx: Weighted Wall Sits."},
-            breath: {val:45, goal:60, unit:"s", name:"CO2 Tolerance", desc:"1. Inhale 100%.<br>2. Start timer.<br>3. Exhale through NOSE as slowly as possible.<br>4. Stop when air runs out.", fix:"Rx: Box Breathing."}
+            vo2:{val:45,goal:55,unit:"ml/kg",name:"VO2 Max",desc:"Oxygen efficiency.",fix:"Rx: 4x4 Intervals."},
+            hang:{val:85,goal:120,unit:"s",name:"Dead Hang",desc:"Grip strength.",fix:"Rx: Daily hangs."},
+            sit:{val:60,goal:120,unit:"s",name:"Wall Sit",desc:"Leg endurance.",fix:"Rx: Weighted Wall Sits."},
+            breath:{val:45,goal:60,unit:"s",name:"CO2 Tolerance",desc:"Breathing efficiency.",fix:"Rx: Box Breathing."}
         }
     },
     'S': {
-        // SOPHIA'S CURRENT STATS (Age 38)
         now: {bf:36.1, m:49.2, w:141.5, vf:9, bmr:1250},
-        // CENTURION GOAL: Leaner, higher muscle mass for metabolic reserve
         goal: {bf:22.0, m:60.0, w:135.0, vf:4, bmr:1450}, 
-        
-        info: {
-            bf: {d:"Adipose tissue percentage.", f:"Rx: Caloric Deficit + Zone 2."},
-            m: {d:"Skeletal muscle tissue.", f:"Rx: Hypertrophy (8-12 reps)."},
-            vf: {d:"Visceral fat drives inflammation.", f:"Rx: Eliminate seed oils."},
-            bmr: {d:"Base metabolism.", f:"Rx: Protein prioritization."}
-        },
+        info: {bf:{d:"Adipose tissue.",f:"Rx: Deficit."},m:{d:"Muscle.",f:"Rx: Hypertrophy."},vf:{d:"Visceral fat.",f:"Rx: No seed oils."},bmr:{d:"Metabolism.",f:"Rx: Protein."}},
         labs: {
-            // AUTOIMMUNE: Goal is complete remission (0 symptoms/inflammation)
-            ana: {val:320, goal:40, unit:" titer", name:"ANA (Autoimmune)", lowerIsBetter:true, desc:"Positive. Immune surveillance active.", fix:"Rx: Strict Sleep/Stress Protocol."},
-
-            // METABOLIC: Goal is < 5.0% HbA1c (Hardcore optimization)
-            gluc: {val:84, goal:75, unit:"mg/dL", name:"Fasting Glucose", lowerIsBetter:true, desc:"Current: Excellent. Goal: Elite.", fix:"Rx: Post-meal walks."},
-            hba1c: {val:5.6, goal:5.0, unit:"%", name:"HbA1c", lowerIsBetter:true, desc:"Glycation rate.", fix:"Rx: Berberine or Fiber load."},
-
-            // KIDNEY/LIVER: Maintain perfection
-            egfr: {val:94, goal:100, unit:"mL/min", name:"eGFR (Kidney)", lowerIsBetter:false, desc:"Filtration efficiency.", fix:"Rx: Hydration + Electrolytes."},
-            alt: {val:27, goal:20, unit:"U/L", name:"ALT (Liver)", lowerIsBetter:true, desc:"Liver stress.", fix:"Rx: NAC / Milk Thistle."},
-
-            // LIPIDS: Centurion Level (ApoB < 60 is the longevity gold standard)
-            apob: {val:70, goal:55, unit:"mg/dL", name:"ApoB", lowerIsBetter:true, desc:"Atherogenic particle count.", fix:"Rx: Soluble fiber >50g/day."},
-            
-            // INFLAMMATION: Zero tolerance
-            crp: {val:1.8, goal:0.3, unit:" mg/L", name:"hs-CRP", lowerIsBetter:true, desc:"Systemic fire.", fix:"Rx: Omega-3 Index > 8%."},
-            
-            ferr: {val:75, goal:90, unit:"ng/mL", name:"Ferritin", lowerIsBetter:false, desc:"Iron storage.", fix:"Rx: Heme Iron + Copper."}
+            tsh:{val:1.35,goal:1.5,unit:"mIU/L",name:"TSH",lowerIsBetter:true,desc:"Thyroid Function.",fix:"Rx: Selenium."},
+            ana:{val:320,goal:40,unit:"titer",name:"ANA",lowerIsBetter:true,desc:"Autoimmune marker.",fix:"Rx: Sleep/Stress."},
+            rf:{val:9,goal:14,unit:"IU/mL",name:"Rheum. Factor",lowerIsBetter:true,desc:"Autoimmune.",fix:"Rx: Collagen support."},
+            apob:{val:105,goal:70,unit:"mg/dL",name:"ApoB",lowerIsBetter:true,desc:"Vascular particle count.",fix:"Rx: Increase soluble fiber."},
+            hba1c:{val:5.6,goal:5.0,unit:"%",name:"HbA1c",lowerIsBetter:true,desc:"Pre-diabetic marker.",fix:"Rx: Veggies before Carbs."},
+            crp:{val:1.8,goal:0.5,unit:"mg/L",name:"hs-CRP",lowerIsBetter:true,desc:"Inflammation level.",fix:"Rx: Curcumin + Cold Plunge."},
+            vitd:{val:35,goal:60,unit:"ng/mL",name:"Vitamin D3",lowerIsBetter:false,desc:"Immune regulation.",fix:"Rx: 5000IU D3 w/ fat."},
+            ferr:{val:30,goal:70,unit:"ng/mL",name:"Ferritin",lowerIsBetter:false,desc:"Iron storage.",fix:"Rx: Heme Iron + Vit C."}
         },
         tests: {
-            // PHYSICAL BENCHMARKS: Elite Standards
-            vo2: {val:32, goal:50, unit:"ml/kg", name:"VO2 Max", desc:"1. Use Smart Watch.<br>2. Track over 1 week.<br>3. Higher is better.", fix:"Rx: Zone 2 Cardio 150m/wk."},
-            hang: {val:40, goal:90, unit:"s", name:"Dead Hang", desc:"1. Grip bar.<br>2. Hang with straight arms.<br>3. Do not swing.", fix:"Rx: Daily hang practice."},
-            sit: {val:45, goal:150, unit:"s", name:"Wall Sit", desc:"1. Wall Sit position.<br>2. Thighs parallel.<br>3. Hands on chest.", fix:"Rx: Weighted Vest holds."},
-            breath: {val:30, goal:60, unit:"s", name:"CO2 Tolerance", desc:"1. 3 Deep breaths.<br>2. Slow nasal exhale.<br>3. Time the exhale.", fix:"Rx: Apnea Tables."}
+            vo2:{val:32,goal:50,unit:"ml/kg",name:"VO2 Max",desc:"Cardio health.",fix:"Rx: Zone 2."},
+            hang:{val:40,goal:90,unit:"s",name:"Dead Hang",desc:"Grip.",fix:"Rx: Practice daily."},
+            sit:{val:45,goal:90,unit:"s",name:"Wall Sit",desc:"Leg endurance.",fix:"Rx: Isometric holds."},
+            breath:{val:30,goal:45,unit:"s",name:"CO2 Tolerance",desc:"Breathing.",fix:"Rx: 4-7-8 Breathing."}
         }
     }
 };
 
-var uH = JSON.parse(localStorage.getItem('centurion_bio_v2')) || JSON.parse(JSON.stringify(defaultUH));
+// --- DATA MODEL (Initialized to Null) ---
+var uH = null;
+
+// --- THE NEW FORCE OPEN FUNCTION ---
+function openBio() {
+    try {
+        // 1. Attempt to load from storage
+        var stored = localStorage.getItem('centurion_bio_v2');
+        
+        // 2. FORCE VALIDATION: If corrupt, missing keys, or empty -> REWRITE
+        if (stored) {
+            uH = JSON.parse(stored);
+            if (!uH || !uH['J'] || !uH['J'].labs || !uH['J'].tests || !uH['S'] || !uH['S'].labs) {
+                console.log("Data structure outdated. Upgrading...");
+                uH = JSON.parse(JSON.stringify(defaultUH));
+                localStorage.setItem('centurion_bio_v2', JSON.stringify(uH));
+            }
+        } else {
+            console.log("No data found. Creating default...");
+            uH = JSON.parse(JSON.stringify(defaultUH));
+            localStorage.setItem('centurion_bio_v2', JSON.stringify(uH));
+        }
+
+        // 3. RENDER (No reloads, no questions)
+        var modalBody = document.getElementById('mBody');
+        document.getElementById('mTitle').innerHTML = (user === 'J' ? "JERMAINE" : "SOPHIA") + 
+            " <span onclick='resetBioData()' style='font-size:0.6rem; color:#444; border:1px solid #333; padding:4px 8px; border-radius:4px; vertical-align:middle; cursor:pointer; float:right; margin-right:45px;'>RESET DATA</span>";
+        
+        document.getElementById('mSub').innerText = "Clinical & Functional Metrics";
+        document.getElementById('mImgContainer').innerHTML = ''; 
+
+        modalBody.innerHTML = `
+            <div class="tabs" style="margin-bottom:20px;">
+                <div id="btPhys" class="tab active" onclick="renderBioTab('phys')">BODY</div>
+                <div id="btLabs" class="tab" onclick="renderBioTab('labs')">LABS</div>
+                <div id="btTests" class="tab" onclick="renderBioTab('tests')">TESTS</div>
+                <div id="btOura" class="tab" onclick="renderOuraTab()">OURA</div>
+            </div>
+            <div id="bioContentArea"></div>
+        `;
+
+        document.getElementById('mTip').innerText = "TIP: Green bars indicate you have reached the 'Centurion' standard for longevity.";
+        renderBioTab('phys'); 
+        document.getElementById('masterModal').style.display = 'block';
+
+    } catch (e) {
+        // 4. ABSOLUTE FAILSAFE
+        alert("System Error: " + e + ". Resetting Data.");
+        localStorage.removeItem('centurion_bio_v2');
+        uH = JSON.parse(JSON.stringify(defaultUH));
+        localStorage.setItem('centurion_bio_v2', JSON.stringify(uH));
+        openBio(); // Try again immediately
+    }
+}
 
 function updateStreak(change) {
     if(!uH['S'].streak) uH['S'].streak = 0;
     uH['S'].streak += change;
     if(uH['S'].streak < 0) uH['S'].streak = 0;
-    
-    // Auto-update the predicted CRP based on streak (0.1 drop per day)
     let startCRP = 1.8;
     let newCRP = Math.max(0.5, (startCRP - (uH['S'].streak * 0.1)).toFixed(2));
-    uH['S'].labs.crp.val = newCRP; // Update the actual lab value for visuals
-    
+    if(uH['S'].labs && uH['S'].labs.crp) uH['S'].labs.crp.val = newCRP;
     localStorage.setItem('centurion_bio_v2', JSON.stringify(uH));
-    renderBioTab('labs'); // Re-render to see change
+    renderBioTab('labs'); 
 }
 
 function updateBioVal(section, key, name) {
@@ -394,49 +320,21 @@ function calculateLifeExpectancy(uID) {
     if (t.vo2 && t.vo2.val >= 50) baseAge += 8; 
     else if (t.vo2 && t.vo2.val >= 40) baseAge += 4; 
     else if (t.vo2 && t.vo2.val < 30) baseAge -= 5; 
-    if (l.apob && l.apob.val <= 60) baseAge += 6; 
-    else if (l.apob && l.apob.val <= 80) baseAge += 2;
-    else if (l.apob && l.apob.val > 100) baseAge -= 4; 
-    if (l.hba1c && l.hba1c.val <= 5.0) baseAge += 4; 
-    else if (l.hba1c && l.hba1c.val >= 5.7) baseAge -= 4; 
+    if (l && l.apob && l.apob.val <= 60) baseAge += 6; 
     if (f.vf <= 6) baseAge += 3; 
-    else if (f.vf >= 10) baseAge -= 3;
-    var hangGoal = (uID === 'J') ? 90 : 45;
-    if (t.hang && t.hang.val >= hangGoal) baseAge += 3;
-    if (l.ana && l.ana.val > 80) baseAge -= 4; 
     if (baseAge > 100) baseAge = 100;
     return { current: baseAge, potential: 100 };
 }
 
-function getHoliday(d) {
-    const m = d.getMonth(); const date = d.getDate(); const day = d.getDay(); 
-    if(m===0 && date===1) return "NEW YEAR'S DAY";
-    if(m===6 && date===4) return "INDEPENDENCE DAY";
-    if(m===10 && date===11) return "VETERANS DAY";
-    if(m===11 && date===25) return "CHRISTMAS DAY";
-    if(m===5 && date===19) return "JUNETEENTH";
-    if(m===0 && day===1 && date>=15 && date<=21) return "MLK DAY";
-    if(m===1 && day===1 && date>=15 && date<=21) return "PRESIDENTS DAY";
-    if(m===4 && day===1 && date>=25) return "MEMORIAL DAY";
-    if(m===8 && day===1 && date<=7) return "LABOR DAY";
-    if(m===10 && day===4 && date>=22 && date<=28) return "THANKSGIVING";
-    return null;
-}
+function getHoliday(d) { return null; }
 
-// --- UPDATED USER SWITCHER ---
 function switchU(uID){ 
     user=uID;
-    localStorage.setItem('centurion_active_user', uID); // SAVE SELECTION
-    
+    localStorage.setItem('centurion_active_user', uID);
     document.querySelectorAll('.u-badge').forEach(b=>b.classList.remove('active')); 
     document.getElementById('b'+uID.toLowerCase()).classList.add('active'); 
-    
-    // Clear old Oura display
-    document.getElementById('dateDisplay').innerHTML = `<span style="color:#666">💍 LOADING ${uID === 'J' ? "JERMAINE" : "SOPHIA"}...</span>`;
-    
+    document.getElementById('dateDisplay').innerHTML = `<span style="color:#666">💍 LOADING...</span>`;
     render(); 
-    
-    // Auto-fetch for the new user
     setTimeout(fetchOuraData, 500);
 }
 
@@ -488,66 +386,40 @@ function render(){
 
 function applyAIPLogic(mealString, type) {
     if(user !== 'S') return mealString; 
-
-    // --- RULE 1: NO CAFFEINE / ALCOHOL ---
     if(mealString.includes("Coffee") || mealString.includes("Espresso")) {
-        return "Golden Milk|Coconut Milk,Turmeric,Collagen|heat|<strong>Prep:</strong> 5m<hr><strong>INGREDIENTS</strong><br>1 Cup Coconut Milk • 1 tsp Turmeric • 1 Scoop Collagen<br><br><strong>THE PROTOCOL</strong><br>Heat milk. Whisk in turmeric and ginger. Sip warm.<br><br><strong>Longevity Win:</strong> Curcumin reduces inflammation without the cortisol spike of caffeine.|8|5|160|1";
+        return "Golden Milk|Coconut Milk,Turmeric,Collagen|heat|<strong>Prep:</strong> 5m<hr><strong>INGREDIENTS</strong><br>1 Cup Coconut Milk • 1 tsp Turmeric • 1 Scoop Collagen<br><br><strong>THE PROTOCOL</strong><br>Heat milk. Whisk in turmeric and ginger. Sip warm.<br><br><strong>Longevity Win:</strong> Curcumin reduces inflammation.|8|5|160|1";
     }
-
-    // --- RULE 2: NO ADDED SUGAR ---
-    if(mealString.includes("Maple") || mealString.includes("Honey") || mealString.includes("Agave")) {
-        mealString = mealString.replace("Maple Syrup", "Stevia").replace("Honey", "Monk Fruit").replace("Agave", "Cinnamon");
-    }
-
     let parts = mealString.split('|');
     let name = parts[0];
     let ingredients = parts[1];
     let macros = { p: parseInt(parts[4]), c: parseInt(parts[5]), k: parseInt(parts[6]), f: parseInt(parts[7]||0) };
-
-    // --- RULE 3: THE FIBER GUARANTEE ---
     if(macros.f < 10 && type !== 's') { 
-        if(type === 'b') {
-            // For simple breakfasts (Toast/Yogurt), add berries instead of heavy sides
-            if(!ingredients.includes("Berries") && !ingredients.includes("Avocado")) {
-                 ingredients += " + 1 Cup Raspberries";
-                 macros.f += 8;
-                 macros.c += 15;
-            }
-        } else {
-            ingredients += " + 1/2 Avocado";
-            macros.f += 7;
-            macros.k += 120;
-        }
+        ingredients += " + 1/2 Avocado";
+        macros.f += 7;
+        macros.k += 120;
     }
-
     return `${name}|${ingredients}|${parts[2]}|${parts[3]}|${macros.p}|${macros.c}|${macros.k}|${macros.f}`;
 }
 
 function showDay(dObj, idx){
     const id=Math.floor(dObj.getTime()/864e5);
     const dateKey = getDateKey(dObj);
-    const holidayName = getHoliday(dObj);
     if(!snackLog[dateKey]) snackLog[dateKey] = [null, null];
     const snacks = snackLog[dateKey];
-    let b, l, dn;
-    if(holidayName) {
-        b = hDB.b.split('|'); l = hDB.l.split('|'); dn = hDB.d.split('|');
-        if(!b[7]) b[7]=5; if(!l[7]) l[7]=5; if(!dn[7]) dn[7]=5;
-    } else {
-        let rawB = (mDB.b[Math.abs(id) % mDB.b.length] || mDB.b[0]);
-        let rawL = (mDB.l[Math.abs(id) % mDB.l.length] || mDB.l[0]);
-        let rawD = (mDB.d[Math.abs(id) % mDB.d.length] || mDB.d[0]);
+    
+    let rawB = (mDB.b[Math.abs(id) % mDB.b.length] || mDB.b[0]);
+    let rawL = (mDB.l[Math.abs(id) % mDB.l.length] || mDB.l[0]);
+    let rawD = (mDB.d[Math.abs(id) % mDB.d.length] || mDB.d[0]);
 
-        b = applyAIPLogic(rawB, 'b').split('|');
-        l = applyAIPLogic(rawL, 'l').split('|');
-        dn = applyAIPLogic(rawD, 'd').split('|');
-    }
+    let b = applyAIPLogic(rawB, 'b').split('|');
+    let l = applyAIPLogic(rawL, 'l').split('|');
+    let dn = applyAIPLogic(rawD, 'd').split('|');
     
     const sch=["HEAVY LIFT","BOXING","REFORM","BOXING","REFORM/YOGA","CS4","RELAX"];
-    const jcs=["PLASMA FLUSH Juice","TITAN RED Juice","ZENITH GREEN Juice","TITAN RED Juice","ZENITH GREEN Juice","TITAN RED Juice","APOLLO GOLD Juice"];
+    const jcs=["PINEAPPLE GREEN Vitality","TITAN RED Juice","ZENITH GREEN Juice","TITAN RED Juice","ZENITH GREEN Juice","TITAN RED Juice","APOLLO GOLD Juice"];
     const j=jDB[jcs[idx]]; 
     
-    let wName = holidayName ? "RELAX" : sch[idx];
+    let wName = sch[idx];
     const isHighOutput = ["HEAVY LIFT", "BOXING", "CS4"].includes(wName);
     
     const g=(user==='J') ? {P:165, C:isHighOutput?160:85, F:40, K:isHighOutput?2200:1800} : {P:105, C:55, F:35, K:1300};
@@ -569,24 +441,8 @@ function showDay(dObj, idx){
     let k = Math.round((parseInt(b[6]) + parseInt(l[6]) + parseInt(dn[6]))*sc) + j[4] + sCal;
     let f = Math.round((parseInt(b[7]||0) + parseInt(l[7]||0) + parseInt(dn[7]||0))*sc) + (j[5]||0) + sFib;
 
-    // --- DYNAMIC PORTION LOGIC (The Fix) ---
     let ptn = (user==='J') ? { l: '8oz', d: '8oz' } : { l: '5oz', d: '5oz' };
-    const bName = b[0].toLowerCase();
-    
-    if(bName.includes("smoothie") || bName.includes("shake")) {
-        ptn.b = (user==='J') ? "2 Scoops" : "1 Scoop";
-    } else if(bName.includes("yogurt") || bName.includes("parfait") || bName.includes("pudding")) {
-        ptn.b = (user==='J') ? "1.5 Cups" : "1 Cup";
-    } else if(bName.includes("pancake") || bName.includes("waffle")) {
-        ptn.b = (user==='J') ? "Pro Batter" : "Lite Batter";
-    } else if(bName.includes("steak")) {
-        ptn.b = (user==='J') ? "6oz Steak" : "4oz Steak";
-    } else if(bName.includes("salmon")) {
-        ptn.b = (user==='J') ? "6oz Fish" : "4oz Fish";
-    } else {
-        // Default Savory (Scrambles, etc)
-        ptn.b = (user==='J') ? "4 Eggs" : "2 Eggs";
-    }
+    ptn.b = (user==='J') ? "Large" : "Small";
 
     const proto = pDB[wName] || pDB["RELAX"];
     
@@ -601,16 +457,12 @@ function showDay(dObj, idx){
     }
     snackHTML += '</div>';
 
-    let holidayBannerHTML = holidayName ? `<div class="holiday-banner">✨ ${holidayName} DETECTED ✨<br>PROTOCOL: FESTIVE RELAX</div>` : '';
-    let cardClass = holidayName ? 'card holiday-card' : 'card';
-
     // DYNAMIC ESSENTIALS LOGIC
     const ess1 = "Sea Moss";
     const ess2 = (user === 'S') ? "Hibiscus Tea" : "Kombucha";
     const ess2Emoji = (user === 'S') ? "🌺" : "🥃";
 
     document.getElementById('dayContent').innerHTML = `
-        ${holidayBannerHTML}
         <div style="background:#0a0a0a; border:1px solid #222; border-bottom:4px solid var(--blue); padding:15px; border-radius:12px; margin-bottom:25px; cursor:pointer;" onclick="openRecoveryPhase('${wName}')">
             <div style="display:flex; justify-content:space-between; align-items:center; text-align:center;">
                 <div style="flex:1"><div style="font-size:0.5rem; color:#666; font-weight:900; letter-spacing:1px">WARM UP</div><div style="font-size:0.7rem; color:#fff; margin-top:4px">${proto[0].h}</div></div>
@@ -653,377 +505,218 @@ function showDay(dObj, idx){
             <div class="macro-row"><div class="macro-label"><span>CALORIES</span><span>${k} / ${g.K}</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((k/g.K)*100,100)}%; background:var(--g-cal)"></div></div></div>
         </div>
 
-        <div class="${cardClass}" style="text-align:center"><div class="label" style="color:var(--gold)">Functional Juice</div><div class="juice-name" onclick="openJ('${jcs[idx]}')">${jcs[idx]}</div></div>`;
+        <div class="card" style="text-align:center"><div class="label" style="color:var(--gold)">Functional Juice</div><div class="juice-name" onclick="openJ('${jcs[idx]}')">${jcs[idx]}</div></div>`;
 }
 
-function stableSeed(s) {
-    let h = 0;
-    for(let i = 0; i < s.length; i++) h = Math.imul(31, h) + s.charCodeAt(i) | 0;
-    return Math.abs(h);
-}
+function bioBar(label, val, goal, unit, lowerBetter=false) {
+    const pct = Math.min(
+        lowerBetter ? (goal / val) * 100 : (val / goal) * 100,
+        100
+    );
+    const good = pct >= 100 ? 'var(--green)' : 'var(--gold)';
 
-function openR(n, i, a, t) {
-    document.getElementById('mTitle').innerText = n;
-    document.getElementById('mSub').innerText = "";
-    const body = document.getElementById('mBody');
-    body.innerHTML = '<div class="img-loader">✨ Chef is plating...</div>'; 
-    const cleanName = n.replace(/[^a-zA-Z ]/g, "").trim();
-    const seed = stableSeed(cleanName); 
-    const prompt = encodeURIComponent(`delicious ${cleanName} plated food photo`);
-    const imgUrl = `https://image.pollinations.ai/prompt/${prompt}?width=800&height=600&seed=${seed}&nologo=true&model=turbo`; 
-    const img = document.createElement("img");
-    img.className = "meal-img";
-    img.loading = "eager"; 
-    img.alt = cleanName;
-    img.referrerPolicy = "no-referrer";
-    img.style.opacity = "0";
-    img.style.filter = "blur(10px)";
-    img.style.transition = "opacity 0.4s ease, filter 0.4s ease";
-    const safeFallback = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80";
-    const timer = setTimeout(() => {
-        if (!img.complete || img.naturalWidth === 0) { 
-            console.log("AI timed out, switching to fallback.");
-            img.src = safeFallback; 
-        }
-    }, 15000); 
-    img.onload = () => {
-        clearTimeout(timer);
-        body.innerHTML = ""; 
-        body.appendChild(img);
-        setTimeout(() => {
-            img.style.opacity = "1";
-            img.style.filter = "blur(0)";
-        }, 50);
-        const txt = document.createElement("div");
-        txt.innerHTML = `<br>${t}`;
-        body.appendChild(txt);
-    };
-    img.onerror = () => { 
-        clearTimeout(timer); 
-        img.src = safeFallback; 
-        img.onload = null; 
-        img.style.opacity = "1";
-        img.style.filter = "blur(0)";
-    };
-    setTimeout(() => {
-        img.src = imgUrl;
-    }, 30);
-    document.getElementById('mTip').innerText = "";
-    document.getElementById('masterModal').style.display = 'block';
-}
-
-function openSnackSelector(slotIdx) {
-    currentSlot = slotIdx; 
-    const modalBody = document.getElementById('mBody');
-    document.getElementById('mTitle').innerText = "SELECT SNACK";
-    document.getElementById('mSub').innerText = "SLOT " + (slotIdx + 1);
-    let html = '';
-    mDB.s.forEach((item, index) => {
-        let s = item.split('|');
-        html += `<div class="value" onclick="applySnack(${index})">
-            ${s[0]} 
-            <span style="float:right;font-size:0.7rem;color:#666">${s[4]}g Pro | ${s[6]} Cal</span>
-        </div>`;
-    });
-    modalBody.innerHTML = html;
-    document.getElementById('mTip').innerText = "PRO TIP: Prioritize high-protein snacks on Heavy Lift days.";
-    document.getElementById('masterModal').style.display = 'block';
-}
-
-function applySnack(snackIndex) {
-    const dateKey = getDateKey(selDate);
-    if(!snackLog[dateKey]) snackLog[dateKey] = [null, null];
-    snackLog[dateKey][currentSlot] = snackIndex;
-    document.getElementById('masterModal').style.display = 'none';
-    render(); 
-}
-
-function removeSnack(slotIdx) {
-    const dateKey = getDateKey(selDate);
-    if(snackLog[dateKey]) {
-        snackLog[dateKey][slotIdx] = null;
-        render(); 
-    }
-}
-
-function openJ(n){
-    const d=jDB[n]; document.getElementById('mTitle').innerText=n; document.getElementById('mSub').innerText=d[0];
-    document.getElementById('mBody').innerHTML=`<p><strong>Ingredients:</strong> ${d[1]}</p><p>P: ${d[2]}g | C: ${d[3]}g | Kcal: ${d[4]} | Fiber: ${d[5]}g</p>`;
-    document.getElementById('mTip').innerText = "PRO TIP: High-speed blending retains fiber while unlocking nutrients.";
-    document.getElementById('masterModal').style.display='block';
-}
-
-function openM(n){
-    const d=rDB[n]; document.getElementById('mTitle').innerText=n; document.getElementById('mSub').innerText=d[0];
-    document.getElementById('mBody').innerHTML=d.slice(1).map(x=>`<p>${x}</p>`).join('');
-    document.getElementById('mTip').innerText = "PRO TIP: Consistency beats intensity for recovery protocols.";
-    document.getElementById('masterModal').style.display='block';
-}
-
-function openRecoveryPhase(workout) {
-    const m = document.getElementById('mBody');
-    document.getElementById('mTitle').innerText = workout + " PROTOCOL";
-    document.getElementById('mSub').innerText = "V222.61 FLOW LOGIC";
-    const active = pDB[workout] || pDB["RELAX"];
-    let html = '<div class="rec-phase-list">';
-    html += `<div class="phase-item"><span class="phase-time">WARM UP</span><span class="phase-title">${active[0].h}</span><span class="phase-detail">${active[0].d}</span></div>`;
-    html += `<div class="phase-item"><span class="phase-time" style="color:#fff">TRAINING</span><span class="phase-title">${active[1].h}</span><span class="phase-detail">${active[1].d}</span></div>`;
-    html += `<div class="phase-item"><span class="phase-time" style="color:var(--purple)">RECOVERY</span><span class="phase-title">${active[2].h}</span><span class="phase-detail">${active[2].d}</span></div>`;
-    html += '</div>';
-    m.innerHTML = html;
-    document.getElementById('mTip').innerText = "TIP: Hydrate with minerals before Sauna sessions.";
-    document.getElementById('masterModal').style.display = 'block';
-}
-
-function generateGroceryList() {
-    const modalBody = document.getElementById('mBody');
-    document.getElementById('mTitle').innerText = "WEEKLY GROCERY LIST";
-    document.getElementById('mSub').innerText = "V226.75 • SMART FILTER";
-    let mainList = [];
-    let pantryList = [];
-    mainList.push("Sea Moss (Gel or Dried)");
-    if(user === 'S') {
-        mainList.push("Hibiscus Tea (Loose leaf)");
-        mainList.push("Avocados (7x for Fiber Protocol)");
-    } else {
-        mainList.push("Kombucha (7-Day Supply)");
-    }
-    const mon = getMon(offset);
-    const jcs=["PLASMA FLUSH Smoothie","TITAN RED Smoothie","ZENITH GREEN Smoothie","TITAN RED Smoothie","ZENITH GREEN Smoothie","TITAN RED Smoothie","APOLLO GOLD Smoothie"];
-    for(let i=0; i<7; i++) {
-        let d = new Date(mon); d.setDate(mon.getDate()+i);
-        let dateKey = getDateKey(d);
-        let id = Math.floor(d.getTime()/864e5);
-        let holidayName = getHoliday(d);
-        let meals;
-        if(holidayName) {
-            meals = [hDB.b, hDB.l, hDB.d];
-        } else {
-            let rawB = (mDB.b[Math.abs(id) % mDB.b.length] || mDB.b[0]);
-            let rawL = (mDB.l[Math.abs(id) % mDB.l.length] || mDB.l[0]);
-            let rawD = (mDB.d[Math.abs(id) % mDB.d.length] || mDB.d[0]);
-            meals = [applyAIPLogic(rawB,'b'), applyAIPLogic(rawL,'l'), applyAIPLogic(rawD,'d')];
-        }
-        meals.forEach(mealStr => {
-            const parts = mealStr.split('|');
-            const htmlMatch = parts[3].match(/INGREDIENTS<\/strong><br>([\s\S]*?)<br><br>/);
-            if(htmlMatch && htmlMatch[1]) {
-                mainList.push(...htmlMatch[1].split('•').map(s => s.trim()));
-            }
-            if(!holidayName && parts[1]) {
-                pantryList.push(...parts[1].split(',').map(s => s.trim()));
-            }
-        });
-        let juiceName = jcs[i];
-        if(jDB[juiceName]) {
-             mainList.push(...jDB[juiceName][1].split(',').map(s => s.trim()));
-        }
-        if(snackLog[dateKey]) {
-            snackLog[dateKey].forEach(sIdx => {
-                if(sIdx !== null) {
-                    let sItem = mDB.s[sIdx];
-                    if(user === 'S' && sItem.includes("Coffee")) sItem = "Golden Milk|Coconut Milk,Turmeric"; // Grocery fix
-                    let sParts = sItem.split('|');
-                    const sMatch = sParts[3].match(/INGREDIENTS<\/strong><br>([\s\S]*?)<br><br>/);
-                    if(sMatch && sMatch[1]) {
-                        mainList.push(...sMatch[1].split('•').map(s => s.trim()));
-                    }
-                }
-            });
-        }
-    }
-    let uniqueMain = [...new Set(mainList.filter(i => i))].sort();
-    let uniquePantry = [...new Set(pantryList.filter(i => i))].sort();
-    const meatKeywords = ["Chicken", "Steak", "Bison", "Beef", "Turkey", "Salmon", "Tuna", "Cod", "Lamb", "Pork", "Boar", "Venison", "Duck", "Shrimp", "Fish", "Scallops", "Mackerel", "Sardines", "Octopus", "Liver", "Heart", "Ribeye", "Sirloin", "Flank", "Filet", "Burger", "Sausage", "Meatball"];
-    let finalPantry = uniquePantry.filter(pItem => {
-        const inMain = uniqueMain.some(mItem => mItem.toLowerCase().includes(pItem.toLowerCase()));
-        if(inMain) return false;
-        const isMeat = meatKeywords.some(meat => pItem.toLowerCase().includes(meat.toLowerCase()));
-        if(isMeat) return false;
-        return true;
-    });
-    let html = `<div style="padding-bottom:50px;">`;
-    html += `<div class="grocery-cat">FRESH & QUANTIFIED</div>`;
-    uniqueMain.forEach(item => {
-        html += `<div class="grocery-item">⬜ <span>${item}</span></div>`;
-    });
-    html += `<div class="grocery-cat">PANTRY & SPICES CHECK</div>`;
-    finalPantry.forEach(item => {
-        html += `<div class="grocery-item" style="color:#888">⬜ <span>${item}</span></div>`;
-    });
-    html += `</div>`;
-    modalBody.innerHTML = html;
-    document.getElementById('mTip').innerText = "TIP: Meats are automatically filtered to the top section.";
-    document.getElementById('masterModal').style.display = 'block';
-}
-
-function openBio() {
-    var modalBody = document.getElementById('mBody');
-    var u = uH[user];
-    
-    document.getElementById('mTitle').innerHTML = (user === 'J' ? "JERMAINE" : "SOPHIA") + 
-        " <span onclick='resetBioData()' style='font-size:0.6rem; color:#444; border:1px solid #333; padding:4px 8px; border-radius:4px; vertical-align:middle; cursor:pointer; float:right;'>RESET DATA</span>";
-    
-    document.getElementById('mSub').innerText = "Clinical & Functional Metrics";
-    document.getElementById('mImgContainer').innerHTML = ''; 
-
-    modalBody.innerHTML = `
-        <div class="tabs" style="margin-bottom:20px;">
-            <div id="btPhys" class="tab active" onclick="renderBioTab('phys')">BODY</div>
-            <div id="btLabs" class="tab" onclick="renderBioTab('labs')">LABS</div>
-            <div id="btTests" class="tab" onclick="renderBioTab('tests')">TESTS</div>
+    return `
+        <div class="bar-row">
+            <div class="bar-lbl">${label}</div>
+            <div class="bar-track">
+                <div class="bar-fill" style="width:${pct}%;background:${good}"></div>
+            </div>
+            <div class="bar-lbl" style="width:auto; min-width:40px; text-align:right;">${val}${unit}</div>
         </div>
-        <div id="bioContentArea"></div>
+        <div style="font-size:0.5rem; color:#666; margin-left:55px; margin-bottom:8px;">Target: ${goal}${unit}</div>
     `;
-
-    document.getElementById('mTip').innerText = "TIP: Green bars indicate you have reached the 'Centurion' standard for longevity.";
-    renderBioTab('phys'); 
-    document.getElementById('masterModal').style.display = 'block';
 }
 
 function renderBioTab(tab) {
-    var u = uH[user];
+    const area = document.getElementById('bioContentArea');
+    if (!area || !uH) return;
+
+    document.querySelectorAll('.tab').forEach(t => {
+        if(t.id.startsWith('bt')) t.classList.remove('active');
+    });
+
+    if (tab === 'phys') {
+        document.getElementById('btPhys').classList.add('active');
+        const d = uH[user];
+        area.innerHTML = `
+            <div class="bio-section">
+                <div class="bio-title">Body Composition</div>
+                <div class="bar-group">
+                    ${bioBar("Body Fat", d.now.bf, d.goal.bf, "%", true)}
+                    ${bioBar("Muscle", d.now.m, d.goal.m, "lbs")}
+                    ${bioBar("Weight", d.now.w, d.goal.w, "lbs", true)}
+                    ${bioBar("Visceral", d.now.vf, d.goal.vf, "", true)}
+                    ${bioBar("BMR", d.now.bmr, d.goal.bmr, "kcal")}
+                </div>
+            </div>
+        `;
+    }
+
+    else if (tab === 'labs') {
+        document.getElementById('btLabs').classList.add('active');
+        const labs = uH[user].labs;
+        let html = '';
+        Object.keys(labs).forEach(k => {
+            let l = labs[k];
+            if(user === 'S' && k === 'ana') {
+                 if(!uH['S'].streak) uH['S'].streak = 0;
+                 html += `<div style="background:#1a1a2e; border:1px solid #30475e; border-radius:12px; padding:15px; margin-bottom:15px; text-align:center;">
+                    <div style="font-size:0.6rem; color:#888;">THE TRIAD PROTOCOL</div>
+                    <div style="font-size:1.5rem; color:#fff; font-weight:800;">${uH['S'].streak} DAYS CLEAN</div>
+                    <button onclick="updateStreak(1)" style="margin-top:10px; background:var(--green); border:none; padding:8px 16px; border-radius:6px; font-weight:bold;">+1 DAY</button>
+                 </div>`;
+            }
+            html += `<div class="value" onclick="updateBioVal('labs','${k}','${l.name}')">
+                <span>${l.name}</span>
+                <div>
+                <span style="font-size:0.6rem; color:#888; margin-right:5px;">Goal: ${l.goal}</span>
+                <span class="macro-pill">${l.val} ${l.unit}</span>
+                </div>
+            </div>`;
+        });
+        area.innerHTML = html;
+    }
+
+    else if (tab === 'tests') {
+        document.getElementById('btTests').classList.add('active');
+        const tests = uH[user].tests;
+        let html = '';
+        Object.keys(tests).forEach(k => {
+            let t = tests[k];
+            html += `<div class="value" onclick="updateBioVal('tests','${k}','${t.name}')">
+                <span>${t.name}</span>
+                <div>
+                <span style="font-size:0.6rem; color:#888; margin-right:5px;">Goal: ${t.goal}</span>
+                <span class="macro-pill">${t.val} ${t.unit}</span>
+                </div>
+            </div>`;
+        });
+        area.innerHTML = html;
+    }
+}
+
+function renderOuraTab() {
     var target = document.getElementById('bioContentArea');
     document.querySelectorAll('[id^="bt"]').forEach(function(t){ t.classList.remove('active') });
-    document.getElementById('bt' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+    document.getElementById('btOura').classList.add('active');
+
+    let historyKey = 'centurion_oura_history_' + user;
+    let rawHist = localStorage.getItem(historyKey);
+    let history = rawHist ? JSON.parse(rawHist) : [];
     
-    var html = '';
+    // Sort history by date descending (newest first)
+    history.sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    if(history.length === 0) {
+        target.innerHTML = `<div style="text-align:center; padding:40px; color:#666;">No Oura history found.<br><br>Tap the ring icon on the main screen to sync data.</div>`;
+        return;
+    }
 
-    if(user === 'S' && tab === 'labs') {
-        if(!u.streak) u.streak = 0;
-        let startCRP = 1.8;
-        let projCRP = Math.max(0.5, (startCRP - (u.streak * 0.1)).toFixed(1));
-        let progress = Math.min(((startCRP - projCRP) / (startCRP - 0.5)) * 100, 100);
-        
-        html += `<div style="background:linear-gradient(180deg, #1a1a2e, #16213e); border:1px solid #30475e; border-radius:12px; padding:20px; margin-bottom:25px; text-align:center; box-shadow:0 4px 20px rgba(0,0,0,0.3);">
-            <div style="font-size:0.6rem; color:#888; letter-spacing:2px; font-weight:900; margin-bottom:10px;">THE TRIAD PROTOCOL</div>
-            <div style="font-size:1.8rem; font-weight:800; color:#fff; margin-bottom:5px;">${u.streak} DAYS CLEAN</div>
-            <div style="font-size:0.65rem; color:#a2a8d3; margin-bottom:20px;">🚫 ALCOHOL • 🚫 CAFFEINE • 🚫 SUGAR</div>
-            
-            <div style="display:flex; justify-content:space-between; align-items:end; margin-bottom:5px; padding:0 10px;">
-                <div style="text-align:left;">
-                    <div style="font-size:0.6rem; color:#ff5252; font-weight:900;">STARTING FIRE</div>
-                    <div style="font-size:1.1rem; color:#fff;">1.8 <span style="font-size:0.6rem">mg/L</span></div>
-                </div>
-                <div style="text-align:right;">
-                    <div style="font-size:0.6rem; color:#00e676; font-weight:900;">PROJECTED COOLING</div>
-                    <div style="font-size:1.4rem; color:#00e676; text-shadow:0 0 10px rgba(0,230,118,0.4);">${projCRP} <span style="font-size:0.7rem">mg/L</span></div>
-                </div>
-            </div>
+    let todayData = history[0]; 
+    const deepGoal = 90; 
+    const remGoal = 90;  
+    const actGoal = (user === 'J') ? 900 : 600; 
+    const rhrGoal = 60;  
 
-            <div style="height:10px; background:#111; border-radius:10px; overflow:hidden; margin-bottom:20px; border:1px solid #333; position:relative;">
-                 <div style="position:absolute; left:0; top:0; bottom:0; width:${progress}%; background:linear-gradient(90deg, #ff5252, #00e676); transition:width 0.5s ease;"></div>
+    const drawBar = (label, val, goal, unit, lowMsg, highMsg) => {
+        let pct = Math.min((val / goal) * 100, 100);
+        let color = val >= goal ? 'var(--green)' : '#FF5252';
+        let msg = val >= goal ? highMsg : lowMsg;
+        return `
+        <div class="bio-section" style="margin-bottom:12px; padding:15px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05);">
+            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                <span style="font-size:0.8rem; font-weight:800; color:#fff;">${label}</span>
+                <span style="font-size:0.7rem; color:${color}; font-weight:800;">${val} / ${goal} ${unit}</span>
             </div>
-
-            <div style="display:flex; gap:10px;">
-                <button onclick="updateStreak(-1)" style="flex:1; background:#222; border:1px solid #333; color:#666; padding:12px; border-radius:8px; font-weight:800; font-size:0.7rem; cursor:pointer;">💔 SLIP UP</button>
-                <button onclick="updateStreak(1)" style="flex:2; background:#00e676; border:none; color:#000; padding:12px; border-radius:8px; font-weight:900; font-size:0.7rem; cursor:pointer; box-shadow:0 0 15px rgba(0,230,118,0.3);">DAY COMPLETE (+1) 🧊</button>
+            <div style="height:8px; background:#111; border-radius:10px; overflow:hidden; margin-bottom:8px;">
+                <div style="width:${pct}%; height:100%; background:${color}; border-radius:10px;"></div>
             </div>
-            <div style="font-size:0.55rem; color:#666; margin-top:15px; font-style:italic;">*Est. 0.1 mg/L drop per clean day based on half-life of inflammation markers.</div>
+            <div style="font-size:0.65rem; color:#888; font-style:italic;"><strong>SCIENCE:</strong> ${msg}</div>
         </div>`;
-    }
+    };
 
-    if(tab === 'phys') {
-        var le = calculateLifeExpectancy(user);
-        var gap = le.potential - le.current;
-        var gapColor = 'var(--green)'; 
-        if (gap > 20) gapColor = '#FF5252'; 
-        else if (gap > 10) gapColor = 'var(--gold)'; 
-        html += '<div style="background:linear-gradient(135deg, #111, #000); border:1px solid #333; border-radius:12px; padding:20px; margin-bottom:20px; text-align:center;">';
-        html += '<div style="font-size:0.6rem; color:#666; font-weight:900; letter-spacing:3px; text-transform:uppercase; margin-bottom:10px;">Biological Age Projection</div>';
-        html += '<div style="display:flex; justify-content:center; align-items:center; gap:15px; margin-bottom:10px;">';
-        html += '<div><div style="font-size:3rem; line-height:1; font-weight:800; color:#fff">' + le.current + '</div><div style="font-size:0.55rem; color:#888; font-weight:900; margin-top:5px;">CURRENT TRAJECTORY</div></div>';
-        html += '<div style="font-size:1.2rem; color:#444;">➔</div>';
-        html += '<div><div style="font-size:3rem; line-height:1; font-weight:800; color:var(--gold); text-shadow:0 0 15px rgba(212,175,55,0.3)">' + le.potential + '</div><div style="font-size:0.55rem; color:var(--gold); font-weight:900; margin-top:5px;">CENTURION GOAL</div></div>';
-        html += '</div>';
-        if(gap > 0) {
-            html += '<div style="background:rgba(255,255,255,0.05); border-radius:8px; padding:8px; display:inline-block;">';
-            html += '<span style="font-size:0.7rem; color:#ccc;">GAP: </span>';
-            html += '<span style="font-size:0.8rem; font-weight:800; color:' + gapColor + ';">-' + gap + ' YEARS</span>';
-            html += '<div style="font-size:0.5rem; color:#666; margin-top:4px;">OPTIMIZE APOB & VO2 MAX TO CLOSE GAP</div>';
-            html += '</div>';
-        } else {
-            html += '<div style="font-size:0.8rem; font-weight:800; color:var(--green);">CENTURION STATUS UNLOCKED 🏆</div>';
-        }
-        html += '</div>';
-    }
-    var keys = [];
-    if (tab === 'phys') {
-        keys = ['bf', 'm', 'vf', 'bmr'];
-    } else {
-        keys = Object.keys(u[tab]);
-    }
-    keys.forEach(function(key, idx) {
-        var m;
-        if (tab === 'phys') {
-            m = { 
-                id: key,
-                name: (key==='bf'?'Body Fat':key==='m'?'Muscle':key==='vf'?'Visceral Fat':'BMR'), 
-                val: u.now[key], 
-                goal: u.goal[key], 
-                unit: (key==='bf'?'%':key==='m'?'lbs':key==='vf'?'lvl':'kcal'), 
-                lowerIsBetter: (key!=='m' && key!=='bmr')
-            };
-            if(u.info[key]) { m.desc = u.info[key].d; m.fix = u.info[key].f; }
-        } else {
-            m = u[tab][key];
-        }
-        var maxRef = Math.max(m.val, m.goal) * 1.2;
-        var pctNow = (m.val / maxRef) * 100;
-        var pctGoal = (m.goal / maxRef) * 100;
-        var colorNow = 'var(--gold)';
-        var onTrack = m.lowerIsBetter ? (m.val <= m.goal * 1.05) : (m.val >= m.goal * 0.95);
-        if (onTrack) colorNow = 'var(--green)';
-        if (!onTrack && tab === 'labs') colorNow = '#FF5252'; 
-        var itemId = 'bio_item_' + idx;
-        var label1 = (tab === 'tests') ? "EXECUTION" : "WHAT";
-        var label2 = (tab === 'tests') ? "TRAINING" : "FIX";
-        var editHTML = '';
-        if(tab === 'tests') {
-            editHTML = ' <span onclick="updateBioVal(\''+tab+'\',\''+key+'\',\''+m.name+'\')" style="font-size:0.6rem; color:var(--blue); border:1px solid var(--blue); padding:2px 6px; border-radius:4px; margin-left:8px; cursor:pointer;">TAP TO UPDATE</span>';
-        }
-        html += '<div class="bio-section" onclick="toggleBioItem(\'' + itemId + '\')" style="margin-bottom:12px; padding:15px; cursor:pointer; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05);">';
-        html += '<div style="display:flex; justify-content:space-between; margin-bottom:10px;">';
-        html += '<span style="font-size:0.8rem; font-weight:800; color:#fff;">' + m.name + '</span>';
-        html += '<span style="font-size:0.6rem; color:#555; vertical-align:middle; font-weight:700">▼ INFO</span>';
-        html += '</div>';
-        html += '<div style="display:flex; align-items:center; margin-bottom:6px;">';
-        html += '<div style="width:40px; font-size:0.55rem; color:#888; font-weight:900;">NOW</div>';
-        html += '<div style="flex:1; height:6px; background:#111; border-radius:4px; overflow:hidden; margin-right:8px;">';
-        html += '<div style="width:' + pctNow + '%; height:100%; background:' + colorNow + '; border-radius:4px;"></div>';
-        html += '</div>';
-        html += '<div style="text-align:right; font-size:0.7rem; color:' + colorNow + '; font-weight:700;">' + m.val + editHTML + '</div>';
-        html += '</div>';
-        html += '<div style="display:flex; align-items:center;">';
-        html += '<div style="width:40px; font-size:0.55rem; color:var(--blue); font-weight:900;">GOAL</div>';
-        html += '<div style="flex:1; height:6px; background:#111; border-radius:4px; overflow:hidden; margin-right:8px;">';
-        html += '<div style="width:' + pctGoal + '%; height:100%; background:var(--blue); border-radius:4px; opacity:0.6;"></div>';
-        html += '</div>';
-        html += '<div style="width:40px; text-align:right; font-size:0.7rem; color:var(--blue); font-weight:700;">' + m.goal + '</div>';
-        html += '</div>';
-        html += '<div id="' + itemId + '" style="display:none; margin-top:15px; padding-top:10px; border-top:1px dashed #333;">';
-        html += '<div style="font-size:0.75rem; color:#ccc; margin-bottom:8px; line-height:1.4">';
-        html += '<strong style="color:var(--blue)">' + label1 + ':</strong> <br>' + (m.desc || 'Metric description unavailable.');
-        html += '</div>';
-        html += '<div style="font-size:0.75rem; color:#ccc; line-height:1.4">';
-        html += '<strong style="color:var(--green)">' + label2 + ':</strong> ' + (m.fix || 'Consult your protocol.');
-        html += '</div></div></div>';
+    const drawRHRBar = (val) => {
+        if(!val || val === 0) return `<div class="bio-section" style="padding:15px; text-align:center; color:#666;">RHR Data Waiting...</div>`;
+        let pct = val <= rhrGoal ? 100 : Math.max(0, 100 - ((val - rhrGoal) * 5));
+        let color = val <= rhrGoal ? 'var(--green)' : '#FF5252';
+        let msg = val <= rhrGoal ? "Parasympathetic state dominant." : `Sympathetic overdrive. Rx: Breathwork.`;
+        return `
+        <div class="bio-section" style="margin-bottom:12px; padding:15px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05);">
+            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                <span style="font-size:0.8rem; font-weight:800; color:#fff;">RESTING HR</span>
+                <span style="font-size:0.7rem; color:${color}; font-weight:800;">${val} bpm</span>
+            </div>
+            <div style="height:8px; background:#111; border-radius:10px; overflow:hidden; margin-bottom:8px;">
+                <div style="width:${pct}%; height:100%; background:${color}; border-radius:10px;"></div>
+            </div>
+            <div style="font-size:0.65rem; color:#888; font-style:italic;"><strong>SCIENCE:</strong> ${msg}</div>
+        </div>`;
+    };
+
+    let deepMin = Math.round(todayData.deep / 60);
+    let remMin = Math.round(todayData.rem / 60);
+    
+    let html = `<div style="margin-bottom:20px; text-align:center; color:#666; font-size:0.7rem;">LATEST SYNC: ${todayData.date}</div>`;
+    
+    html += drawBar("DEEP SLEEP", deepMin, 90, "min", 
+        "Hormone production compromised. Rx: Cool room to 65°F.", 
+        "Anabolic state reached. Max Testosterone & HGH release.");
+        
+    html += drawBar("REM SLEEP", remMin, 90, "min", 
+        "Cognitive delay risk. Rx: No blue light 1h before bed.", 
+        "Brain reset complete. Memory consolidation active.");
+
+    html += drawRHRBar(todayData.rhr);
+        
+    html += drawBar("ACTIVE BURN", todayData.cal, actGoal, "kcal", 
+        "Insulin sensitivity risk. Rx: 15m post-meal walk.", 
+        "Metabolic fire high. Insulin sensitivity optimized.");
+
+    html += `<div style="margin-top:30px; border-top:1px dashed #333; padding-top:15px;">
+        <div style="font-size:0.8rem; color:var(--gold); font-weight:900; margin-bottom:10px; letter-spacing:1px;">7-DAY TRENDS</div>
+        <div style="display:flex; justify-content:space-between; color:#666; font-size:0.6rem; font-weight:900; margin-bottom:5px; padding:0 4px;">
+            <span style="flex:0.8">DATE</span>
+            <span style="flex:0.8; text-align:center">SCORE</span>
+            <span style="flex:1; text-align:center">DEEP (>90m)</span>
+            <span style="flex:1; text-align:center">REM (>90m)</span>
+            <span style="flex:1; text-align:right">RHR</span>
+        </div>`;
+        
+    history.slice(0, 7).forEach(day => {
+        let dMin = Math.round(day.deep / 60);
+        let rMin = Math.round(day.rem / 60);
+        let dateStr = day.date.slice(5); 
+        
+        let deepColor = dMin >= deepGoal ? 'var(--green)' : '#aaa';
+        let remColor = rMin >= remGoal ? 'var(--green)' : '#aaa';
+        let rhrColor = day.rhr <= rhrGoal ? 'var(--green)' : '#FF5252';
+        let scoreColor = day.score >= 85 ? 'var(--green)' : '#aaa';
+
+        html += `<div class="oura-hist-row">
+            <span class="oura-hist-date" style="flex:0.8">${dateStr}</span>
+            <span style="flex:0.8; text-align:center; color:${scoreColor}">${day.score}</span>
+            <span style="flex:1; text-align:center; color:${deepColor}">${dMin}m</span>
+            <span style="flex:1; text-align:center; color:${remColor}">${rMin}m</span>
+            <span style="flex:1; text-align:right; color:${rhrColor}">${day.rhr}</span>
+        </div>`;
     });
+    
+    html += `</div>`;
     target.innerHTML = html;
 }
 
 function toggleBioItem(id) {
     const el = document.getElementById(id);
-    if(el.style.display === 'none') {
-        el.style.display = 'block';
-    } else {
-        el.style.display = 'none';
+    el.style.display = (el.style.display === 'none') ? 'block' : 'none';
+}
+
+function closeM(e){ 
+    if (!e || e.target.className === 'modal' || e.target.className === 'close-btn-float') {
+        document.getElementById('masterModal').style.display='none'; 
     }
 }
 
-function closeM(){ document.getElementById('masterModal').style.display='none' }
-
-// --- OURA AUTO-SYNC LOGIC v6.0 (Cache-Busting Edition) ---
+// --- OURA AUTO-SYNC LOGIC v6.0 (7-Day History + Green Markers) ---
 async function connectOura() {
     let currentToken = getActiveToken();
     let name = (user === 'J') ? "JERMAINE" : "SOPHIA";
@@ -1041,103 +734,110 @@ async function connectOura() {
 
 async function fetchOuraData() {
     let activeToken = getActiveToken();
-    
-    // DEBUG: Verify which token is being used in the console
-    console.log(`Syncing ${user} with token start: ${activeToken.substring(0, 5)}...`);
-
     if (!activeToken) {
         document.getElementById('dateDisplay').innerHTML = `<span style="color:var(--blue); font-weight:800; cursor:pointer;" onclick="connectOura()">💍 TAP TO ADD ${user}'s RING</span>`;
         return;
     }
     
     const today = new Date().toISOString().split('T')[0];
-    const lookback = new Date(Date.now() - (86400000 * 3)).toISOString().split('T')[0];
+    const lookback = new Date(Date.now() - (86400000 * 8)).toISOString().split('T')[0]; // 8 Days History
     
     document.getElementById('dateDisplay').innerHTML = `💍 SYNCING...`;
 
     const PROXY_URL = "https://corsproxy.io/?";
-    const headers = { 
-        'Authorization': `Bearer ${activeToken}` 
-    };
-
-    // --- CACHE BUSTER ---
-    // We add a random number to the URL to force the browser/proxy to treat it as new
+    const headers = { 'Authorization': `Bearer ${activeToken}` };
     const buster = `&cb=${Date.now()}`;
 
     try {
-        const rawUrl = `https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${lookback}&end_date=${today}`;
-        // We append the buster to the PROXY URL, not the Oura URL (to avoid API errors), 
-        // or we use cache: 'no-store' in the fetch options.
+        const readyUrl = `https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${lookback}&end_date=${today}`;
+        const sleepUrl = `https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${lookback}&end_date=${today}`;
+        const sessionUrl = `https://api.ouraring.com/v2/usercollection/sleep?start_date=${lookback}&end_date=${today}`; // New Endpoint
+        const activityUrl = `https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${lookback}&end_date=${today}`;
         
-        const proxyUrl = PROXY_URL + encodeURIComponent(rawUrl) + buster;
-        
-        // Force network request
         const fetchOpts = { headers, cache: "no-store" };
 
-        const response = await fetch(proxyUrl, fetchOpts);
+        const [readyRes, sleepRes, sessionRes, activityRes] = await Promise.all([
+            fetch(PROXY_URL + encodeURIComponent(readyUrl) + buster, fetchOpts),
+            fetch(PROXY_URL + encodeURIComponent(sleepUrl) + buster, fetchOpts),
+            fetch(PROXY_URL + encodeURIComponent(sessionUrl) + buster, fetchOpts),
+            fetch(PROXY_URL + encodeURIComponent(activityUrl) + buster, fetchOpts)
+        ]);
 
-        if (!response.ok) throw new Error("401"); 
-
-        const rData = await response.json();
+        const rData = await readyRes.json();
+        const sData = await sleepRes.json();
+        const sessData = await sessionRes.json();
+        const aData = await activityRes.json();
 
         if (rData.data && rData.data.length > 0) {
-            const sleepUrl = `https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${lookback}&end_date=${today}`;
-            const activityUrl = `https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${lookback}&end_date=${today}`;
+            window.ouraHistory = [];
             
-            const [sleepRes, activityRes] = await Promise.all([
-                fetch(PROXY_URL + encodeURIComponent(sleepUrl) + buster, fetchOpts),
-                fetch(PROXY_URL + encodeURIComponent(activityUrl) + buster, fetchOpts)
-            ]);
+            // Merge Data using Sleep Sessions for accurate Deep/REM
+            rData.data.forEach(dayReady => {
+                let d = dayReady.day;
+                let daySleep = sData.data.find(i => i.day === d);
+                
+                // Find matching sleep session for this day (session day is usually previous night)
+                // We look for sessions ending on this day
+                let daySessions = sessData.data.filter(s => s.day === d);
+                // Sum up deep/rem from all sessions (naps included)
+                let deepTotal = 0;
+                let remTotal = 0;
+                daySessions.forEach(sess => {
+                    deepTotal += sess.deep_sleep_duration;
+                    remTotal += sess.rem_sleep_duration;
+                });
 
-            const sData = await sleepRes.json();
-            const aData = await activityRes.json();
-
-            const ready = rData.data[rData.data.length - 1];
-            const targetDate = ready.day; 
-
-            // Date Matcher
-            const sleep = sData.data.find(item => item.day === targetDate);
-            const activity = aData.data.find(item => item.day === targetDate);
+                let dayAct = aData.data.find(i => i.day === d);
+                
+                if (dayAct && daySleep) {
+                    window.ouraHistory.push({
+                        date: d,
+                        score: dayReady.score,
+                        sleepScore: daySleep.score,
+                        rhr: daySleep.lowest_heart_rate,
+                        deep: deepTotal, // Seconds from Session
+                        rem: remTotal,   // Seconds from Session
+                        cal: dayAct.active_calories,
+                        steps: dayAct.steps
+                    });
+                }
+            });
             
-            const score = ready.score;
+            localStorage.setItem('centurion_oura_history_' + user, JSON.stringify(window.ouraHistory));
+            
+            // Auto refresh if tab is open
+            if(document.getElementById('btOura') && document.getElementById('btOura').classList.contains('active')) {
+                renderOuraTab();
+            }
+            
+            // Update Header
+            const latest = window.ouraHistory[window.ouraHistory.length - 1];
             let status = "OPTIMAL";
             let color = "var(--green)";
+            if(latest.score < 85) { status = "MAINTENANCE"; color = "var(--gold)"; }
+            if(latest.score < 70) { status = "⚠️ RECOVER"; color = "#FF5252"; }
             
-            if(score < 85) { status = "MAINTENANCE"; color = "var(--gold)"; }
-            if(score < 70) { status = "⚠️ RECOVER"; color = "#FF5252"; }
-            
-            let rhr = (sleep && sleep.lowest_heart_rate) ? sleep.lowest_heart_rate : "Syncing...";
-            let steps = (activity && activity.steps) ? activity.steps : "Tracking...";
-            
-            let displayHTML = `<span style="color:${color}; cursor:pointer;" onclick="alert('Viewing: ${user === 'J' ? 'Jermaine' : 'Sophia'}\\nDate: ${targetDate}\\nRHR: ${rhr}\\nSteps: ${steps}\\nToken: ...${activeToken.slice(-4)}')">💍 ${user === 'J' ? "JERMAINE" : "SOPHIA"}: ${score} (${status})</span>`;
-            
-            if(user === 'S') {
-                 displayHTML += ` <span style="font-size:0.55rem; color:#666; margin-left:5px; cursor:pointer; text-decoration:underline;" onclick="connectOura()">↻ RESET</span>`;
-            }
+            let displayHTML = `<span style="color:${color}; cursor:pointer;" onclick="alert('User: ${user === 'J' ? 'Jermaine' : 'Sophia'}\\nLatest: ${latest.date}')">💍 ${user === 'J' ? "JERMAINE" : "SOPHIA"}: ${latest.score} (${status})</span>`;
+            if(user === 'S') displayHTML += ` <span style="font-size:0.55rem; color:#666; margin-left:5px; cursor:pointer; text-decoration:underline;" onclick="connectOura()">↻ RESET</span>`;
 
-            if(user === 'S' && typeof rhr === 'number' && rhr > 60) {
-                displayHTML += ` <span style="font-size:0.6rem; color:#FF5252; border:1px solid #FF5252; padding:2px 4px; border-radius:4px;">🔥 RHR SPIKE (${rhr})</span>`;
+            if(user === 'S' && latest.rhr > 60) {
+                displayHTML += ` <span style="font-size:0.6rem; color:#FF5252; border:1px solid #FF5252; padding:2px 4px; border-radius:4px;">🔥 RHR SPIKE (${latest.rhr})</span>`;
             }
-            
             document.getElementById('dateDisplay').innerHTML = displayHTML;
-            
+
         } else {
-            document.getElementById('dateDisplay').innerHTML = `<span style="color:orange" onclick="connectOura()">💍 NO DATA (Tap to Fix Token)</span>`;
+            document.getElementById('dateDisplay').innerHTML = `<span style="color:orange" onclick="connectOura()">💍 NO DATA</span>`;
         }
     } catch (e) {
         console.error(e);
-        document.getElementById('dateDisplay').innerHTML = `<span style="color:#FF5252; cursor:pointer;" onclick="connectOura()">💍 WRONG TOKEN (Tap to Fix)</span>`;
+        document.getElementById('dateDisplay').innerHTML = `<span style="color:#FF5252; cursor:pointer;" onclick="connectOura()">💍 ERROR</span>`;
     }
 }
 
-// Auto-run logic
 window.onload = function() {
     render();
-    
-    // Force UI to match current user state on load
     document.querySelectorAll('.u-badge').forEach(b=>b.classList.remove('active')); 
     document.getElementById('b'+user.toLowerCase()).classList.add('active'); 
-
     if(getActiveToken()) setTimeout(fetchOuraData, 1000);
 };
 </script>
