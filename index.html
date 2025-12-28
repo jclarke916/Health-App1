@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v228.22 Integrated</title>
+    <title>The Centurion | v228.24 Resurrection</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --text:#fff;
@@ -81,7 +81,7 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v228.22 Integrated</span>
+        <span class="version-tag">v228.24 Resurrection</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -92,7 +92,7 @@
         <button class="nav-btn" onclick="changeW(-1)">PREV</button>
         <button class="nav-btn" onclick="resetD()">TODAY</button>
         <button class="nav-btn" onclick="changeW(1)">NEXT</button>
-        <button class="nav-btn" onclick="safeOpenBio()" style="color:var(--green)">MY DATA</button>
+        <button class="nav-btn" onclick="openBio()" style="color:var(--green)">MY DATA</button>
     </div>
     <div id="dayTabs" class="tabs"></div>
     <div id="dayContent"></div>
@@ -110,23 +110,23 @@
     </div>
 </div>
 <script>
+window.onerror = function(message, source, lineno, colno, error) {
+    alert("System Error: " + message);
+};
+
 // --- GLOBAL STATE ---
 let user = localStorage.getItem('centurion_active_user') || 'J';
 let offset = 0;
 let snackLog = {}; 
 let currentSlot = 0;
-window.ouraHistory = []; // Global history store
+window.ouraHistory = [];
 
 // --- DUAL OURA CONFIGURATION ---
-const TOKEN_J = "WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y"; // Jermaine's Key
-const TOKEN_S = "4QSDWYJJUZFHRWRH727NCK7WH4COQJF4"; // Sophia's Key
+const TOKEN_J = "WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y";
+const TOKEN_S = "4QSDWYJJUZFHRWRH727NCK7WH4COQJF4"; 
 
 function getActiveToken() {
-    if (user === 'J') {
-        return localStorage.getItem('centurion_oura_token_J') || TOKEN_J;
-    } else {
-        return TOKEN_S; 
-    }
+    return (user === 'J') ? (localStorage.getItem('centurion_oura_token_J') || TOKEN_J) : TOKEN_S;
 }
 
 // --- UTILITIES ---
@@ -155,31 +155,20 @@ const jDB = {
 };
 
 const mDB = {
-    b: [
-        "Ancestral Beef Sausage ⚡|80/20 Beef-Liver Blend,Sage,Thyme|sear|<strong>The 'Ancestral Sausage'</strong><hr><strong>INGREDIENTS</strong><br>6oz Beef/Liver Blend (80/20) • 1 tsp Sage • 1/2 tsp Thyme<br><br><strong>1. MIX</strong><br>Mix herbs into the ground blend. Form into small patties or links.<br><br><strong>2. COOK</strong><br>Pan fry until browned and cooked through. Serve with a side of berries.<br><br><strong>Longevity Win:</strong> The 20% liver content is masked by the savory herbs, providing massive Vitamin A.|25|2|280|0",
-        "Centurion Avocado Toast|Ezekiel Bread,Avocado,Egg Whites,Hemp Seeds|toast|<strong>The 'Centurion Toast'</strong><hr><strong>INGREDIENTS</strong><br>2 Slices Sprouted Bread • 1/2 Avocado • 1 Cup Egg Whites • 1 tbsp Hemp Seeds<br><br><strong>1. PREP</strong><br>Toast bread. Mash avocado with lemon.<br><br><strong>2. COOK</strong><br>Scramble egg whites separately. Serve toast topped with avo mash.|35|30|450|12",
-        "Fluffy Protein Pancakes|Oat Flour,Whey Isolate,Blueberries,Almond Milk|griddle|<strong>'Fluffy Pro-Cakes'</strong><hr><strong>INGREDIENTS</strong><br>1/2 Cup Oat Flour • 1 Scoop Vanilla Protein • 1/2 tsp Baking Powder • Blueberries<br><br><strong>1. MIX</strong><br>Whisk flour, protein, and baking powder. Stir in milk.<br><br><strong>2. COOK</strong><br>Pour onto hot griddle. Drop fresh blueberries into the wet batter.|35|25|380|6"
-    ],
-    l: [
-        "Legacy Beef Meatballs ⚡|80/20 Beef-Liver Blend,Carrot Sticks,Cucumber|bake|<strong>'Legacy Meatballs'</strong><hr><strong>INGREDIENTS</strong><br>6oz Beef/Liver Blend (80/20) • Carrots • Cucumbers<br><br><strong>1. PREP</strong><br>Form meatballs. Bake 375°F 15m.<br><br><strong>2. SERVE</strong><br>Eat with raw veggie sticks.|25|15|340|6",
-        "The 'Super Mince' Bowl|96% Lean Beef,Black Lentils,Broccoli,Cauliflower|sear|<strong>The 'Super Mince'</strong><hr><strong>INGREDIENTS</strong><br>8oz Lean Ground Beef • 1/2 Cup Black Lentils • Broccoli<br><br><strong>1. COOK</strong><br>Brown beef. Add lentils and riced veggies.|50|25|550|15",
-        "Chicken & Artichoke|Chicken Breast,Artichoke Hearts,Arugula,Lemon|sear|<strong>'Liver Detox Bowl'</strong><hr><strong>INGREDIENTS</strong><br>6oz Chicken • 1 Cup Artichokes • Arugula<br><br><strong>1. COOK</strong><br>Sear chicken. Toss with artichokes and greens.|40|15|420|10"
-    ],
-    d: [
-        "Bison & Portobello Stack|Ground Bison,Portobello Caps,Avocado,Lettuce Wrap|sear|<strong>'The Portobello Stack'</strong><hr><strong>INGREDIENTS</strong><br>6oz Bison • 1 Large Portobello Cap • 1/2 Avocado • Lettuce<br><br><strong>1. PREP</strong><br>Clean mushroom. Form bison patty.<br><br><strong>2. COOK</strong><br>Sear bison. Sear mushroom. Stack meat on mushroom bun.|45|8|480|5",
-        "Balsamic Beef & Mushrooms ⚡|80/20 Beef-Liver Blend,Mushrooms,Balsamic|sear|<strong>'Balsamic Beef'</strong><hr><strong>INGREDIENTS</strong><br>6oz Beef/Liver Blend (80/20) • 2 Cups Mushrooms • Balsamic<br><br><strong>1. COOK</strong><br>Sauté mushrooms. Add meat blend. Deglaze with vinegar.<br><br><strong>Longevity Win:</strong> The rich balsamic masks the liver flavor perfectly.|42|12|430|9",
-        "Filet & Lentil Side|Filet Mignon,Black Lentils,Asparagus,Lemon|sear|<strong>'Steak & Lentils'</strong><hr><strong>INGREDIENTS</strong><br>6oz Filet • 1/2 Cup Lentils • Asparagus<br><br><strong>1. COOK</strong><br>Sear steak. Warm lentils. Steam asparagus.|45|25|520|14"
-    ],
-    s: [
-        "Beef Isolate Shake|Beef Isolate Protein,Water,Ice|shake|<strong>Prep:</strong> 2m<hr><strong>INGREDIENTS</strong><br>1 Scoop Beef Isolate • Water<br><br><strong>THE PROTOCOL</strong><br>Mix in shaker bottle.<br><br><strong>Longevity Win:</strong> Collagen rich.|25|0|110|0",
-        "Sardines (Water)|Sardines,Lemon,Hot Sauce|raw|<strong>Prep:</strong> 1m<hr><strong>INGREDIENTS</strong><br>1 Tin Sardines (Water)<br><br><strong>THE PROTOCOL</strong><br>Drain and eat.<br><br><strong>Longevity Win:</strong> Omega-3 powerhouse.|22|0|190|0",
-        "Avocado Cup|1/2 Avocado,Sea Salt|raw|<strong>Prep:</strong> 1m<hr><strong>INGREDIENTS</strong><br>1/2 Avocado<br><br><strong>THE PROTOCOL</strong><br>Sprinkle with salt and eat with spoon.<br><br><strong>Longevity Win:</strong> Healthy fats.|2|8|160|7"
-    ]
+    b: ["Ancestral Beef Sausage ⚡|80/20 Beef-Liver Blend,Sage,Thyme|sear|<strong>The 'Ancestral Sausage'</strong><hr><strong>INGREDIENTS</strong><br>6oz Beef/Liver Blend (80/20) • 1 tsp Sage • 1/2 tsp Thyme<br><br><strong>1. MIX</strong><br>Mix herbs into the ground blend. Form into small patties or links.<br><br><strong>2. COOK</strong><br>Pan fry until browned and cooked through. Serve with a side of berries.|25|2|280|0",
+        "Centurion Avocado Toast|Ezekiel Bread,Avocado,Egg Whites,Hemp Seeds|toast|<strong>The 'Centurion Toast'</strong><hr><strong>INGREDIENTS</strong><br>2 Slices Sprouted Bread • 1/2 Avocado • 1 Cup Egg Whites • 1 tbsp Hemp Seeds<br><br><strong>1. PREP</strong><br>Toast bread. Mash avocado with lemon.<br><br><strong>2. COOK</strong><br>Scramble egg whites separately. Serve toast topped with avo mash.|35|30|450|12"],
+    l: ["Legacy Beef Meatballs ⚡|80/20 Beef-Liver Blend,Carrot Sticks,Cucumber|bake|<strong>'Legacy Meatballs'</strong><hr><strong>INGREDIENTS</strong><br>6oz Beef/Liver Blend (80/20) • Carrots • Cucumbers<br><br><strong>1. PREP</strong><br>Form meatballs. Bake 375°F 15m.<br><br><strong>2. SERVE</strong><br>Eat with raw veggie sticks.|25|15|340|6",
+        "The 'Super Mince' Bowl|96% Lean Beef,Black Lentils,Broccoli,Cauliflower|sear|<strong>The 'Super Mince'</strong><hr><strong>INGREDIENTS</strong><br>8oz Lean Ground Beef • 1/2 Cup Black Lentils • Broccoli<br><br><strong>1. COOK</strong><br>Brown beef. Add lentils and riced veggies.|50|25|550|15"],
+    d: ["Bison & Portobello Stack|Ground Bison,Portobello Caps,Avocado,Lettuce Wrap|sear|<strong>'The Portobello Stack'</strong><hr><strong>INGREDIENTS</strong><br>6oz Bison • 1 Large Portobello Cap • 1/2 Avocado • Lettuce<br><br><strong>1. PREP</strong><br>Clean mushroom. Form bison patty.<br><br><strong>2. COOK</strong><br>Sear bison. Sear mushroom. Stack meat on mushroom bun.|45|8|480|5",
+        "Balsamic Beef & Mushrooms ⚡|80/20 Beef-Liver Blend,Mushrooms,Balsamic|sear|<strong>'Balsamic Beef'</strong><hr><strong>INGREDIENTS</strong><br>6oz Beef/Liver Blend (80/20) • 2 Cups Mushrooms • Balsamic<br><br><strong>1. COOK</strong><br>Sauté mushrooms. Add meat blend. Deglaze with vinegar.|42|12|430|9"],
+    s: ["Beef Isolate Shake|Beef Isolate Protein,Water,Ice|shake|<strong>Prep:</strong> 2m<hr><strong>INGREDIENTS</strong><br>1 Scoop Beef Isolate • Water|25|0|110|0"]
 };
 
 const pDB={"HEAVY LIFT":[{t:"PRE",h:"Theragun",d:"Glutes, Quads, Hams. 30s each."},{t:"GYM",h:"Heavy Lift",d:"Main compound movement."},{t:"POST",h:"Chair+Sauna",d:"20m Zero-Grav + 20m Sauna."}],"BOXING":[{t:"PRE",h:"Mobility",d:"Rotator cuffs & Calves."},{t:"GYM",h:"Boxing",d:"High intensity rounds."},{t:"POST",h:"Normatec",d:"Flush legs. NO SAUNA."}],"REFORM":[{t:"PRE",h:"Sweep",d:"Light full body percussion."},{t:"GYM",h:"Reform",d:"Time under tension."},{t:"POST",h:"Sauna",d:"20m HGH Boost."}],"REFORM/YOGA":[{t:"PRE",h:"Sweep",d:"Light full body percussion."},{t:"GYM",h:"Yoga",d:"Deep fascial release."},{t:"POST",h:"Heat",d:"Sauna or Thera Knee Heat."}],"CS4":[{t:"PRE",h:"Hydrate",d:"Electrolytes."},{t:"GYM",h:"CS4",d:"Cardio Strength 4."},{t:"POST",h:"Contrast",d:"Sauna + Cold or Knee Contrast."}],"RELAX":[{t:"PRE",h:"Walk",d:"Light movement."},{t:"GYM",h:"Relax",d:"Active recovery."},{t:"POST",h:"Massage",d:"Chair or Thera Knee Heat."}]};
 
 const rDB={"Sea Moss":["92 Minerals","2 TBSP Fasted.","Thyroid & Gut support."],"Kombucha":["Probiotic","4 OZ post-Lunch.","Enzyme support."],"Aloe Vera":["Gut Soother", "2oz Pure Aloe Inner Leaf.", "Heals stomach lining."],"Golden Milk":["Anti-Inflammatory", "Coconut Milk, Turmeric, Black Pepper.", "Calms the immune system."],"Hibiscus Tea":["Blood Pressure", "Dried Hibiscus Flowers.", "Rich in antioxidants (Vitamin C)."],"Aqua Chair":["Hydro-Massage","Align body to zero-gravity.","Jets to glutes and lats.","20 Min Duration."],"Sauna":["HSP Induction","185°F Range.","20 Mins total.","Heavy metal detox sweat."],"Theragun":["Percussive","Float over muscles.","2m per limb.","Target Lats/Hips."],"Normatec":["Compression","Level 4 Intensity.","Full leg cycle.","30m Lymphatic flush."],"Pre-Workout":["Nitro-Boost","6g Citrulline Malate.","Take 20m before training."]};
+
+const hDB={b:"Festive Brunch|Protein Waffles, Turkey Bacon, Eggs, Berries|griddle|<strong>Prep:</strong> 15m|35|40|500",l:"Holiday Feast|Lean Roast Meat, Green Beans, Sweet Potato|roast|<strong>Prep:</strong> 20m|50|40|600",d:"Leftovers|Lean Protein, Veggies|raw|<strong>Prep:</strong> 5m|30|10|300"};
 
 var defaultUH = {
     'J': {
@@ -198,35 +187,26 @@ var defaultUH = {
     }
 };
 
-// --- DATA MODEL ---
+// --- GLOBAL VAR TO HOLD DATA ---
 var uH = null;
 
-// --- SAFE OPEN FUNCTION (SILENT REPAIR) ---
-function safeOpenBio() {
+// --- SAFE OPEN FUNCTION ---
+function openBio() {
     try {
         var stored = localStorage.getItem('centurion_bio_v2');
         if(stored) {
             uH = JSON.parse(stored);
+            if (!uH || !uH['J'] || !uH['J'].labs) throw new Error("Reset");
+        } else {
+            throw new Error("Reset");
         }
-        // Strict Validation Check
-        if (!uH || !uH['J'] || !uH['J'].labs || !uH['J'].tests || !uH['S'] || !uH['S'].labs) {
-            throw new Error("Old data format");
-        }
-        openBio(); 
     } catch (e) {
-        // SILENT REPAIR
-        console.log("Auto-Repairing Data...");
+        console.log("Repairing Data...");
         uH = JSON.parse(JSON.stringify(defaultUH));
         localStorage.setItem('centurion_bio_v2', JSON.stringify(uH));
-        openBio();
     }
-}
 
-function openBio() {
     var modalBody = document.getElementById('mBody');
-    var u = uH[user];
-    
-    // FIXED: Margin added to prevent X button overlap
     document.getElementById('mTitle').innerHTML = (user === 'J' ? "JERMAINE" : "SOPHIA") + 
         " <span onclick='resetBioData()' style='font-size:0.6rem; color:#444; border:1px solid #333; padding:4px 8px; border-radius:4px; vertical-align:middle; cursor:pointer; float:right; margin-right:45px;'>RESET DATA</span>";
     
@@ -248,7 +228,352 @@ function openBio() {
     document.getElementById('masterModal').style.display = 'block';
 }
 
-// --- NEW CLEAN RENDER LOGIC FOR BODY TAB ---
+function updateStreak(change) {
+    if(!uH['S'].streak) uH['S'].streak = 0;
+    uH['S'].streak += change;
+    if(uH['S'].streak < 0) uH['S'].streak = 0;
+    let startCRP = 1.8;
+    let newCRP = Math.max(0.5, (startCRP - (uH['S'].streak * 0.1)).toFixed(2));
+    if(uH['S'].labs && uH['S'].labs.crp) uH['S'].labs.crp.val = newCRP;
+    localStorage.setItem('centurion_bio_v2', JSON.stringify(uH));
+    renderBioTab('labs'); 
+}
+
+function updateBioVal(section, key, name) {
+    event.stopPropagation(); 
+    var current = uH[user][section][key].val;
+    var newVal = prompt("LOG NEW RESULT for " + name + ":", current);
+    if(newVal !== null && newVal !== "" && !isNaN(newVal)) {
+        uH[user][section][key].val = parseFloat(newVal);
+        localStorage.setItem('centurion_bio_v2', JSON.stringify(uH));
+        renderBioTab(section); 
+    }
+}
+
+function resetBioData() {
+    if(confirm("Reset all biometric data to defaults? This cannot be undone.")) {
+        uH = JSON.parse(JSON.stringify(defaultUH));
+        localStorage.setItem('centurion_bio_v2', JSON.stringify(uH));
+        renderBioTab('phys');
+    }
+}
+
+function calculateLifeExpectancy(uID) {
+    var u = uH[uID];
+    if (!u) return { current: 0, potential: 0 };
+    var l = u.labs;
+    var t = u.tests;
+    var f = u.now;
+    var baseAge = 78; 
+    if (t.vo2 && t.vo2.val >= 50) baseAge += 8; 
+    else if (t.vo2 && t.vo2.val >= 40) baseAge += 4; 
+    else if (t.vo2 && t.vo2.val < 30) baseAge -= 5; 
+    if (l && l.apob && l.apob.val <= 60) baseAge += 6; 
+    if (f.vf <= 6) baseAge += 3; 
+    if (baseAge > 100) baseAge = 100;
+    return { current: baseAge, potential: 100 };
+}
+
+function getHoliday(d) { return null; }
+
+function switchU(uID){ 
+    user=uID;
+    localStorage.setItem('centurion_active_user', uID);
+    document.querySelectorAll('.u-badge').forEach(b=>b.classList.remove('active')); 
+    document.getElementById('b'+uID.toLowerCase()).classList.add('active'); 
+    document.getElementById('dateDisplay').innerHTML = `<span style="color:#666">💍 LOADING...</span>`;
+    render(); 
+    setTimeout(fetchOuraData, 500);
+}
+
+function syncOffsetToSelection() {
+    let today = getCaDate(); today.setHours(0,0,0,0);
+    let todayMon = new Date(today);
+    todayMon.setDate(today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
+    let selMon = new Date(selDate);
+    selMon.setDate(selDate.getDate() - (selDate.getDay() === 0 ? 6 : selDate.getDay() - 1));
+    selMon.setHours(0,0,0,0);
+    offset = Math.round((selMon - todayMon) / (7 * 864e5));
+}
+
+function getMon(o){ 
+    let d = getCaDate(); 
+    d.setHours(0,0,0,0); 
+    let day = d.getDay(); 
+    let diff = d.getDate() - day + (day === 0 ? -6 : 1); 
+    d.setDate(diff + (o * 7)); 
+    return d; 
+}
+
+function changeW(direction) {
+    let viewMon = getMon(offset); 
+    if (direction > 0) selDate = new Date(viewMon.getTime() + (7 * 864e5)); 
+    else selDate = new Date(viewMon.getTime() - 864e5);
+    selDate.setHours(12, 0, 0, 0); syncOffsetToSelection(); render(); 
+}
+
+function resetD(){ offset=0; selDate=getCaDate(); render(); }
+
+function render(){
+    const mon=getMon(offset); const days=["MON","TUE","WED","THU","FRI","SAT","SUN"];
+    const tabs=document.getElementById('dayTabs'); tabs.innerHTML='';
+    const end=new Date(mon); end.setDate(mon.getDate()+6);
+    document.getElementById('dateDisplay').innerText=`${mon.toLocaleDateString('en-US',{month:'short',day:'numeric'})} - ${end.toLocaleDateString('en-US',{month:'short',day:'numeric'})}`;
+    
+    for(let i=0; i<7; i++){
+        let d=new Date(mon); d.setDate(mon.getDate()+i);
+        const isSelected = getDateKey(d) === getDateKey(selDate);
+        const b=document.createElement('div'); 
+        b.className='tab'+(isSelected?' active':'');
+        b.innerHTML=`${days[i]}<br>${d.getDate()}`;
+        b.onclick=()=>{ selDate=d; render() }; 
+        tabs.appendChild(b);
+        if(isSelected) showDay(d, i);
+    }
+}
+
+function applyAIPLogic(mealString, type) {
+    if(user !== 'S') return mealString; 
+    if(mealString.includes("Coffee") || mealString.includes("Espresso")) {
+        return "Golden Milk|Coconut Milk,Turmeric,Collagen|heat|<strong>Prep:</strong> 5m<hr><strong>INGREDIENTS</strong><br>1 Cup Coconut Milk • 1 tsp Turmeric • 1 Scoop Collagen<br><br><strong>THE PROTOCOL</strong><br>Heat milk. Whisk in turmeric and ginger. Sip warm.<br><br><strong>Longevity Win:</strong> Curcumin reduces inflammation.|8|5|160|1";
+    }
+    let parts = mealString.split('|');
+    let name = parts[0];
+    let ingredients = parts[1];
+    let macros = { p: parseInt(parts[4]), c: parseInt(parts[5]), k: parseInt(parts[6]), f: parseInt(parts[7]||0) };
+    if(macros.f < 10 && type !== 's') { 
+        ingredients += " + 1/2 Avocado";
+        macros.f += 7;
+        macros.k += 120;
+    }
+    return `${name}|${ingredients}|${parts[2]}|${parts[3]}|${macros.p}|${macros.c}|${macros.k}|${macros.f}`;
+}
+
+function showDay(dObj, idx){
+    const id=Math.floor(dObj.getTime()/864e5);
+    const dateKey = getDateKey(dObj);
+    if(!snackLog[dateKey]) snackLog[dateKey] = [null, null];
+    const snacks = snackLog[dateKey];
+    
+    let rawB = (mDB.b[Math.abs(id) % mDB.b.length] || mDB.b[0]);
+    let rawL = (mDB.l[Math.abs(id) % mDB.l.length] || mDB.l[0]);
+    let rawD = (mDB.d[Math.abs(id) % mDB.d.length] || mDB.d[0]);
+
+    let b = applyAIPLogic(rawB, 'b').split('|');
+    let l = applyAIPLogic(rawL, 'l').split('|');
+    let dn = applyAIPLogic(rawD, 'd').split('|');
+    
+    const sch=["HEAVY LIFT","BOXING","REFORM","BOXING","REFORM/YOGA","CS4","RELAX"];
+    const jcs=["PINEAPPLE GREEN Vitality","TITAN RED Juice","ZENITH GREEN Juice","TITAN RED Juice","ZENITH GREEN Juice","TITAN RED Juice","APOLLO GOLD Juice"];
+    const j=jDB[jcs[idx]]; 
+    
+    let wName = sch[idx];
+    const isHighOutput = ["HEAVY LIFT", "BOXING", "CS4"].includes(wName);
+    
+    const g=(user==='J') ? {P:165, C:isHighOutput?160:85, F:40, K:isHighOutput?2200:1800} : {P:105, C:55, F:35, K:1300};
+    const sc = (user==='J') ? 1 : 0.6; 
+
+    let sPro=0, sCarb=0, sFib=0, sCal=0;
+    snacks.forEach(sIdx => {
+        if(sIdx !== null) {
+            let sData = mDB.s[sIdx].split('|');
+            sPro += parseInt(sData[4]); 
+            sCarb += parseInt(sData[5]); 
+            sCal += parseInt(sData[6]);
+            sFib += parseInt(sData[7] || 0);
+        }
+    });
+
+    let p = Math.round((parseInt(b[4]) + parseInt(l[4]) + parseInt(dn[4]))*sc) + j[2] + sPro;
+    let c = Math.round((parseInt(b[5]) + parseInt(l[5]) + parseInt(dn[5]))*sc) + j[3] + sCarb;
+    let k = Math.round((parseInt(b[6]) + parseInt(l[6]) + parseInt(dn[6]))*sc) + j[4] + sCal;
+    let f = Math.round((parseInt(b[7]||0) + parseInt(l[7]||0) + parseInt(dn[7]||0))*sc) + (j[5]||0) + sFib;
+
+    let ptn = (user==='J') ? { l: '8oz', d: '8oz' } : { l: '5oz', d: '5oz' };
+    ptn.b = (user==='J') ? "Large" : "Small";
+
+    const proto = pDB[wName] || pDB["RELAX"];
+    
+    let snackHTML = '<div class="snack-grid">';
+    for(let i=0; i<2; i++) {
+        if(snacks[i] === null) {
+            snackHTML += `<div class="snack-slot" onclick="openSnackSelector(${i})"><span style="font-size:1.2rem; color:#333;">＋</span><span class="snack-label" style="color:#666; font-weight:500;">ADD SNACK</span></div>`;
+        } else {
+            let s = mDB.s[snacks[i]].split('|');
+            snackHTML += `<div class="snack-slot filled" onclick="openR('${s[0].replace(/'/g, "\\'")}', '${s[1]}', '${s[2]}', '${s[3].replace(/'/g, "\\'")}')"><div class="remove-snack" onclick="event.stopPropagation(); removeSnack(${i})">✕</div><span class="snack-label">${s[0]}</span><span class="snack-macro">${s[4]}P ${s[7]||0}F</span></div>`;
+        }
+    }
+    snackHTML += '</div>';
+
+    // DYNAMIC ESSENTIALS LOGIC
+    const ess1 = "Sea Moss";
+    const ess2 = (user === 'S') ? "Hibiscus Tea" : "Kombucha";
+    const ess2Emoji = (user === 'S') ? "🌺" : "🥃";
+
+    document.getElementById('dayContent').innerHTML = `
+        <div style="background:#0a0a0a; border:1px solid #222; border-bottom:4px solid var(--blue); padding:15px; border-radius:12px; margin-bottom:25px; cursor:pointer;" onclick="openRecoveryPhase('${wName}')">
+            <div style="display:flex; justify-content:space-between; align-items:center; text-align:center;">
+                <div style="flex:1"><div style="font-size:0.5rem; color:#666; font-weight:900; letter-spacing:1px">WARM UP</div><div style="font-size:0.7rem; color:#fff; margin-top:4px">${proto[0].h}</div></div>
+                <div style="color:var(--blue); font-size:0.8rem; padding:0 8px">➜</div>
+                <div style="flex:1.2"><div style="font-size:0.5rem; color:var(--blue); font-weight:900; letter-spacing:1px">WORKOUT</div><div style="font-size:0.85rem; color:#fff; font-weight:900; margin-top:4px">${wName}</div></div>
+                <div style="color:var(--blue); font-size:0.8rem; padding:0 8px">➜</div>
+                <div style="flex:1"><div style="font-size:0.5rem; color:#666; font-weight:900; letter-spacing:1px">RECOVER</div><div style="font-size:0.7rem; color:#fff; margin-top:4px">${proto[2].h}</div></div>
+            </div>
+            <div style="text-align:center; font-size:0.55rem; color:#444; margin-top:12px; letter-spacing:1px">TAP CARD FOR FULL GUIDE</div>
+        </div>
+        
+        <div class="label">🧬 Daily Essentials</div>
+        <div style="display:flex; gap:10px; margin-bottom:15px">
+            <div onclick="openM('${ess1}')" style="flex:1; background:#111; border:1px solid #333; padding:10px; border-radius:10px; text-align:center; font-size:0.8rem; font-weight:700; cursor:pointer;">${ess1} 🌿</div>
+            <div onclick="openM('${ess2}')" style="flex:1; background:#111; border:1px solid #333; padding:10px; border-radius:10px; text-align:center; font-size:0.8rem; font-weight:700; cursor:pointer;">${ess2} ${ess2Emoji}</div>
+        </div>
+
+        <div class="label">🍳 Breakfast <span class="portion-tag">• ${ptn.b}</span></div>
+        <div class="value" onclick="openR('${b[0].replace(/'/g, "\\'")}', '${b[1]}', '${b[2]}', '${b[3].replace(/'/g, "\\'")}')">
+            <span>${b[0]}</span> <span class="macro-pill">${Math.round(b[4]*sc)}P ${b[7]||0}F</span>
+        </div>
+
+        <div class="label">🥗 Lunch <span class="portion-tag">• ${ptn.l}</span></div>
+        <div class="value" onclick="openR('${l[0].replace(/'/g, "\\'")}', '${l[1]}', '${l[2]}', '${l[3].replace(/'/g, "\\'")}')">
+            <span>${l[0]} 💼</span> <span class="macro-pill">${Math.round(l[4]*sc)}P ${l[7]||0}F</span>
+        </div>
+
+        <div class="label">🍽️ Dinner <span class="portion-tag">• ${ptn.d}</span></div>
+        <div class="value" onclick="openR('${dn[0].replace(/'/g, "\\'")}', '${dn[1]}', '${dn[2]}', '${dn[3].replace(/'/g, "\\'")}')">
+            <span>${dn[0]}</span> <span class="macro-pill">${Math.round(dn[4]*sc)}P ${dn[7]||0}F</span>
+        </div>
+
+        <div class="label">🥜 Snack Options</div>
+        ${snackHTML}
+
+        <div class="macro-dashboard">
+            <div class="macro-row"><div class="macro-label"><span>PROTEIN</span><span>${p}g / ${g.P}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((p/g.P)*100,100)}%; background:var(--g-pro)"></div></div></div>
+            <div class="macro-row"><div class="macro-label"><span style="color:var(--green)">FIBER</span><span>${f}g / ${g.F}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((f/g.F)*100,100)}%; background:var(--g-fib)"></div></div></div>
+            <div class="macro-row"><div class="macro-label"><span>CARBS</span><span>${c}g / ${g.C}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((c/g.C)*100,100)}%; background:var(--g-carb)"></div></div></div>
+            <div class="macro-row"><div class="macro-label"><span>CALORIES</span><span>${k} / ${g.K}</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((k/g.K)*100,100)}%; background:var(--g-cal)"></div></div></div>
+        </div>
+
+        <div class="card" style="text-align:center"><div class="label" style="color:var(--gold)">Functional Juice</div><div class="juice-name" onclick="openJ('${jcs[idx]}')">${jcs[idx]}</div></div>`;
+}
+
+function stableSeed(s) {
+    let h = 0;
+    for(let i = 0; i < s.length; i++) h = Math.imul(31, h) + s.charCodeAt(i) | 0;
+    return Math.abs(h);
+}
+
+function openR(n, i, a, t) {
+    document.getElementById('mTitle').innerText = n;
+    document.getElementById('mSub').innerText = "";
+    const body = document.getElementById('mBody');
+    body.innerHTML = '<div class="img-loader">✨ Chef is plating...</div>'; 
+    const cleanName = n.replace(/[^a-zA-Z ]/g, "").trim();
+    const seed = stableSeed(cleanName); 
+    const prompt = encodeURIComponent(`delicious ${cleanName} plated food photo`);
+    const imgUrl = `https://image.pollinations.ai/prompt/${prompt}?width=800&height=600&seed=${seed}&nologo=true&model=turbo`; 
+    const img = document.createElement("img");
+    img.className = "meal-img";
+    img.loading = "eager"; 
+    img.alt = cleanName;
+    img.referrerPolicy = "no-referrer";
+    img.style.opacity = "0";
+    img.style.filter = "blur(10px)";
+    img.style.transition = "opacity 0.4s ease, filter 0.4s ease";
+    const safeFallback = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80";
+    const timer = setTimeout(() => {
+        if (!img.complete || img.naturalWidth === 0) { 
+            img.src = safeFallback; 
+        }
+    }, 15000); 
+    img.onload = () => {
+        clearTimeout(timer);
+        body.innerHTML = ""; 
+        body.appendChild(img);
+        setTimeout(() => {
+            img.style.opacity = "1";
+            img.style.filter = "blur(0)";
+        }, 50);
+        const txt = document.createElement("div");
+        txt.innerHTML = `<br>${t}`;
+        body.appendChild(txt);
+    };
+    img.onerror = () => { 
+        clearTimeout(timer); 
+        img.src = safeFallback; 
+        img.onload = null; 
+        img.style.opacity = "1";
+        img.style.filter = "blur(0)";
+    };
+    setTimeout(() => {
+        img.src = imgUrl;
+    }, 30);
+    document.getElementById('mTip').innerText = "";
+    document.getElementById('masterModal').style.display = 'block';
+}
+
+function openSnackSelector(slotIdx) {
+    currentSlot = slotIdx; 
+    const modalBody = document.getElementById('mBody');
+    document.getElementById('mTitle').innerText = "SELECT SNACK";
+    document.getElementById('mSub').innerText = "SLOT " + (slotIdx + 1);
+    let html = '';
+    mDB.s.forEach((item, index) => {
+        let s = item.split('|');
+        html += `<div class="value" onclick="applySnack(${index})">
+            ${s[0]} 
+            <span style="float:right;font-size:0.7rem;color:#666">${s[4]}g Pro | ${s[6]} Cal</span>
+        </div>`;
+    });
+    modalBody.innerHTML = html;
+    document.getElementById('mTip').innerText = "PRO TIP: Prioritize high-protein snacks on Heavy Lift days.";
+    document.getElementById('masterModal').style.display = 'block';
+}
+
+function applySnack(snackIndex) {
+    const dateKey = getDateKey(selDate);
+    if(!snackLog[dateKey]) snackLog[dateKey] = [null, null];
+    snackLog[dateKey][currentSlot] = snackIndex;
+    document.getElementById('masterModal').style.display = 'none';
+    render(); 
+}
+
+function removeSnack(slotIdx) {
+    const dateKey = getDateKey(selDate);
+    if(snackLog[dateKey]) {
+        snackLog[dateKey][slotIdx] = null;
+        render(); 
+    }
+}
+
+function openJ(n){
+    const d=jDB[n]; document.getElementById('mTitle').innerText=n; document.getElementById('mSub').innerText=d[0];
+    document.getElementById('mBody').innerHTML=`<p><strong>Ingredients:</strong> ${d[1]}</p><p>P: ${d[2]}g | C: ${d[3]}g | Kcal: ${d[4]} | Fiber: ${d[5]}g</p>`;
+    document.getElementById('mTip').innerText = "PRO TIP: High-speed blending retains fiber while unlocking nutrients.";
+    document.getElementById('masterModal').style.display='block';
+}
+
+function openM(n){
+    const d=rDB[n]; document.getElementById('mTitle').innerText=n; document.getElementById('mSub').innerText=d[0];
+    document.getElementById('mBody').innerHTML=d.slice(1).map(x=>`<p>${x}</p>`).join('');
+    document.getElementById('mTip').innerText = "PRO TIP: Consistency beats intensity for recovery protocols.";
+    document.getElementById('masterModal').style.display='block';
+}
+
+function openRecoveryPhase(workout) {
+    const m = document.getElementById('mBody');
+    document.getElementById('mTitle').innerText = workout + " PROTOCOL";
+    document.getElementById('mSub').innerText = "V222.61 FLOW LOGIC";
+    const active = pDB[workout] || pDB["RELAX"];
+    let html = '<div class="rec-phase-list">';
+    html += `<div class="phase-item"><span class="phase-time">WARM UP</span><span class="phase-title">${active[0].h}</span><span class="phase-detail">${active[0].d}</span></div>`;
+    html += `<div class="phase-item"><span class="phase-time" style="color:#fff">TRAINING</span><span class="phase-title">${active[1].h}</span><span class="phase-detail">${active[1].d}</span></div>`;
+    html += `<div class="phase-item"><span class="phase-time" style="color:var(--purple)">RECOVERY</span><span class="phase-title">${active[2].h}</span><span class="phase-detail">${active[2].d}</span></div>`;
+    html += '</div>';
+    m.innerHTML = html;
+    document.getElementById('mTip').innerText = "TIP: Hydrate with minerals before Sauna sessions.";
+    document.getElementById('masterModal').style.display = 'block';
+}
+
 function bioBar(label, val, goal, unit, lowerBetter=false) {
     const pct = Math.min(
         lowerBetter ? (goal / val) * 100 : (val / goal) * 100,
@@ -299,7 +624,6 @@ function renderBioTab(tab) {
         let html = '';
         Object.keys(labs).forEach(k => {
             let l = labs[k];
-             // Add Sophia's Inflam Widget on top if S
             if(user === 'S' && k === 'ana') {
                  if(!uH['S'].streak) uH['S'].streak = 0;
                  html += `<div style="background:#1a1a2e; border:1px solid #30475e; border-radius:12px; padding:15px; margin-bottom:15px; text-align:center;">
@@ -337,12 +661,9 @@ function renderBioTab(tab) {
     }
 }
 
-// --- KEEP OURA RENDERER ROBUST (AS REQUESTED) ---
 function renderOuraTab() {
     var target = document.getElementById('bioContentArea');
-    document.querySelectorAll('.tab').forEach(t => {
-        if(t.id.startsWith('bt')) t.classList.remove('active');
-    });
+    document.querySelectorAll('[id^="bt"]').forEach(function(t){ t.classList.remove('active') });
     document.getElementById('btOura').classList.add('active');
 
     let historyKey = 'centurion_oura_history_' + user;
@@ -430,10 +751,12 @@ function renderOuraTab() {
         let dMin = Math.round(day.deep / 60);
         let rMin = Math.round(day.rem / 60);
         let dateStr = day.date.slice(5); 
+        
         let deepColor = dMin >= deepGoal ? 'var(--green)' : '#aaa';
         let remColor = rMin >= remGoal ? 'var(--green)' : '#aaa';
         let rhrColor = day.rhr <= rhrGoal ? 'var(--green)' : '#FF5252';
         let scoreColor = day.score >= 85 ? 'var(--green)' : '#aaa';
+
         html += `<div class="oura-hist-row">
             <span class="oura-hist-date" style="flex:0.8">${dateStr}</span>
             <span style="flex:0.8; text-align:center; color:${scoreColor}">${day.score}</span>
@@ -447,39 +770,9 @@ function renderOuraTab() {
     target.innerHTML = html;
 }
 
-function updateBioVal(section, key, name) {
-    event.stopPropagation(); 
-    var current = uH[user][section][key].val;
-    var newVal = prompt("LOG NEW RESULT for " + name + ":", current);
-    if(newVal !== null && newVal !== "" && !isNaN(newVal)) {
-        uH[user][section][key].val = parseFloat(newVal);
-        localStorage.setItem('centurion_bio_v2', JSON.stringify(uH));
-        renderBioTab(section); 
-    }
-}
-
-function resetBioData() {
-    if(confirm("Reset all biometric data to defaults? This cannot be undone.")) {
-        uH = JSON.parse(JSON.stringify(defaultUH));
-        localStorage.setItem('centurion_bio_v2', JSON.stringify(uH));
-        renderBioTab('phys');
-    }
-}
-
-function calculateLifeExpectancy(uID) {
-    var u = uH[uID];
-    if (!u) return { current: 0, potential: 0 };
-    var l = u.labs;
-    var t = u.tests;
-    var f = u.now;
-    var baseAge = 78; 
-    if (t.vo2 && t.vo2.val >= 50) baseAge += 8; 
-    else if (t.vo2 && t.vo2.val >= 40) baseAge += 4; 
-    else if (t.vo2 && t.vo2.val < 30) baseAge -= 5; 
-    if (l && l.apob && l.apob.val <= 60) baseAge += 6; 
-    if (f.vf <= 6) baseAge += 3; 
-    if (baseAge > 100) baseAge = 100;
-    return { current: baseAge, potential: 100 };
+function toggleBioItem(id) {
+    const el = document.getElementById(id);
+    el.style.display = (el.style.display === 'none') ? 'block' : 'none';
 }
 
 function closeM(e){ 
@@ -488,11 +781,12 @@ function closeM(e){
     }
 }
 
-// --- OURA SYNC LOGIC ---
+// --- OURA AUTO-SYNC LOGIC v6.0 (7-Day History + Green Markers) ---
 async function connectOura() {
     let currentToken = getActiveToken();
     let name = (user === 'J') ? "JERMAINE" : "SOPHIA";
     const token = prompt(`Paste OURA TOKEN for ${name}:`, currentToken);
+    
     if (token && token !== currentToken) {
         if (user === 'J') localStorage.setItem('centurion_oura_token_J', token.trim());
         if (user === 'S') localStorage.setItem('centurion_oura_token_S', token.trim());
@@ -509,69 +803,93 @@ async function fetchOuraData() {
         document.getElementById('dateDisplay').innerHTML = `<span style="color:var(--blue); font-weight:800; cursor:pointer;" onclick="connectOura()">💍 TAP TO ADD ${user}'s RING</span>`;
         return;
     }
+    
     const today = new Date().toISOString().split('T')[0];
     const lookback = new Date(Date.now() - (86400000 * 8)).toISOString().split('T')[0]; // 8 Days History
+    
     document.getElementById('dateDisplay').innerHTML = `💍 SYNCING...`;
+
     const PROXY_URL = "https://corsproxy.io/?";
     const headers = { 'Authorization': `Bearer ${activeToken}` };
     const buster = `&cb=${Date.now()}`;
+
     try {
         const readyUrl = `https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${lookback}&end_date=${today}`;
         const sleepUrl = `https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${lookback}&end_date=${today}`;
-        const sessionUrl = `https://api.ouraring.com/v2/usercollection/sleep?start_date=${lookback}&end_date=${today}`; 
+        const sessionUrl = `https://api.ouraring.com/v2/usercollection/sleep?start_date=${lookback}&end_date=${today}`; // New Endpoint
         const activityUrl = `https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${lookback}&end_date=${today}`;
+        
         const fetchOpts = { headers, cache: "no-store" };
+
         const [readyRes, sleepRes, sessionRes, activityRes] = await Promise.all([
             fetch(PROXY_URL + encodeURIComponent(readyUrl) + buster, fetchOpts),
             fetch(PROXY_URL + encodeURIComponent(sleepUrl) + buster, fetchOpts),
             fetch(PROXY_URL + encodeURIComponent(sessionUrl) + buster, fetchOpts),
             fetch(PROXY_URL + encodeURIComponent(activityUrl) + buster, fetchOpts)
         ]);
+
         const rData = await readyRes.json();
         const sData = await sleepRes.json();
         const sessData = await sessionRes.json();
         const aData = await activityRes.json();
+
         if (rData.data && rData.data.length > 0) {
             window.ouraHistory = [];
+            
+            // Merge Data using Sleep Sessions for accurate Deep/REM
             rData.data.forEach(dayReady => {
                 let d = dayReady.day;
                 let daySleep = sData.data.find(i => i.day === d);
+                
+                // Find matching sleep session for this day (session day is usually previous night)
+                // We look for sessions ending on this day
                 let daySessions = sessData.data.filter(s => s.day === d);
+                // Sum up deep/rem from all sessions (naps included)
                 let deepTotal = 0;
                 let remTotal = 0;
                 daySessions.forEach(sess => {
                     deepTotal += sess.deep_sleep_duration;
                     remTotal += sess.rem_sleep_duration;
                 });
+
                 let dayAct = aData.data.find(i => i.day === d);
+                
                 if (dayAct && daySleep) {
                     window.ouraHistory.push({
                         date: d,
                         score: dayReady.score,
                         sleepScore: daySleep.score,
                         rhr: daySleep.lowest_heart_rate,
-                        deep: deepTotal, 
-                        rem: remTotal, 
+                        deep: deepTotal, // Seconds from Session
+                        rem: remTotal,   // Seconds from Session
                         cal: dayAct.active_calories,
                         steps: dayAct.steps
                     });
                 }
             });
+            
             localStorage.setItem('centurion_oura_history_' + user, JSON.stringify(window.ouraHistory));
+            
+            // Auto refresh if tab is open
             if(document.getElementById('btOura') && document.getElementById('btOura').classList.contains('active')) {
                 renderOuraTab();
             }
+            
+            // Update Header
             const latest = window.ouraHistory[window.ouraHistory.length - 1];
             let status = "OPTIMAL";
             let color = "var(--green)";
             if(latest.score < 85) { status = "MAINTENANCE"; color = "var(--gold)"; }
             if(latest.score < 70) { status = "⚠️ RECOVER"; color = "#FF5252"; }
+            
             let displayHTML = `<span style="color:${color}; cursor:pointer;" onclick="alert('User: ${user === 'J' ? 'Jermaine' : 'Sophia'}\\nLatest: ${latest.date}')">💍 ${user === 'J' ? "JERMAINE" : "SOPHIA"}: ${latest.score} (${status})</span>`;
             if(user === 'S') displayHTML += ` <span style="font-size:0.55rem; color:#666; margin-left:5px; cursor:pointer; text-decoration:underline;" onclick="connectOura()">↻ RESET</span>`;
+
             if(user === 'S' && latest.rhr > 60) {
                 displayHTML += ` <span style="font-size:0.6rem; color:#FF5252; border:1px solid #FF5252; padding:2px 4px; border-radius:4px;">🔥 RHR SPIKE (${latest.rhr})</span>`;
             }
             document.getElementById('dateDisplay').innerHTML = displayHTML;
+
         } else {
             document.getElementById('dateDisplay').innerHTML = `<span style="color:orange" onclick="connectOura()">💍 NO DATA</span>`;
         }
