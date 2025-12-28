@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v228.18 Fail-Safe</title>
+    <title>The Centurion | v228.19 Nuclear Fix</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --text:#fff;
@@ -33,10 +33,8 @@
         .tabs{display:flex;gap:4px;margin-bottom:15px}
         .tab{flex:1;padding:10px 0;background:#111;border:1px solid #222;color:#444;border-radius:8px;font-size:0.55rem;font-weight:800;text-align:center;cursor:pointer}
         .tab.active{background:#222;color:#fff;border-color:444}
-        /* MODAL FIXES */
         .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:2000;overflow-y:auto;padding:0;backdrop-filter:blur(5px);}
         .modal-content{background:#0a0a0a;margin:0;padding:25px;border:none;border-radius:0;width:100%;min-height:100%;max-width:none;}
-        /* BIGGER CLOSE BUTTON */
         .close-btn-float { position: fixed; top: 25px; right: 25px; width: 50px; height: 50px; background: #FF5252; border-radius: 50%; border: 2px solid #fff; color: #fff; font-size: 30px; text-align: center; line-height: 46px; cursor: pointer; z-index: 3000; box-shadow: 0 4px 15px rgba(0,0,0,0.8); font-weight:bold;}
         .chef-steps ol{padding-left:20px; color:#ccc; margin:10px 0; font-size:0.9rem; line-height:1.6;}
         .chef-steps li{margin-bottom:12px;}
@@ -83,7 +81,7 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v228.18 Fail-Safe</span>
+        <span class="version-tag">v228.19 Nuclear Fix</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -94,7 +92,7 @@
         <button class="nav-btn" onclick="changeW(-1)">PREV</button>
         <button class="nav-btn" onclick="resetD()">TODAY</button>
         <button class="nav-btn" onclick="changeW(1)">NEXT</button>
-        <button class="nav-btn" onclick="openBio()" style="color:var(--green)">MY DATA</button>
+        <button class="nav-btn" onclick="safeOpenBio()" style="color:var(--green)">MY DATA</button>
     </div>
     <div id="dayTabs" class="tabs"></div>
     <div id="dayContent"></div>
@@ -147,7 +145,7 @@ function getDateKey(d) {
 
 let selDate = getCaDate();
 
-// --- DATABASES ---
+// --- DATABASES (Minimal for Stability) ---
 const jDB = {
     "PINEAPPLE GREEN Vitality": ["Digestion + Detox", "2c Spinach, 1c Pineapple, 1/2 Cucumber, Ginger, Lemon", 1, 28, 120, 1],
     "PLASMA FLUSH Juice": ["Recovery", "3c Watermelon, 1 Lime (Peeled), Mint", 1, 32, 140, 1],
@@ -200,20 +198,35 @@ var defaultUH = {
     }
 };
 
-// --- FORCE DATA REPAIR ---
-// The following block wraps the data loading process in a safety net.
-// If any crucial data is missing or corrupted, it automatically resets to the defaults.
-var uH;
-try {
-    uH = JSON.parse(localStorage.getItem('centurion_bio_v2'));
-    // Deep check for required keys. If any are missing, force a reset.
-    if (!uH || !uH['J'] || !uH['J'].labs || !uH['J'].tests || !uH['S'] || !uH['S'].labs) {
-        throw new Error("Data corruption or schema mismatch detected.");
+// --- GLOBAL VAR TO HOLD DATA ---
+var uH = null;
+
+// --- SAFE OPEN FUNCTION ---
+function safeOpenBio() {
+    try {
+        // 1. Try to load data
+        var stored = localStorage.getItem('centurion_bio_v2');
+        if(stored) {
+            uH = JSON.parse(stored);
+        }
+        
+        // 2. Validate Data (Check for new keys)
+        if (!uH || !uH['J'] || !uH['J'].labs || !uH['J'].tests || !uH['S'] || !uH['S'].labs) {
+            throw new Error("Old data format");
+        }
+
+        // 3. Open Modal if safe
+        openBio();
+
+    } catch (e) {
+        // 4. CATASTROPHIC FAILURE -> AUTO REPAIR
+        if(confirm("Your saved data is from an older version. Update it now?")) {
+            uH = JSON.parse(JSON.stringify(defaultUH));
+            localStorage.setItem('centurion_bio_v2', JSON.stringify(uH));
+            alert("Data Updated! Tap 'MY DATA' again.");
+            location.reload(); 
+        }
     }
-} catch (e) {
-    console.log("Auto-Repairing Data: " + e);
-    uH = JSON.parse(JSON.stringify(defaultUH));
-    localStorage.setItem('centurion_bio_v2', JSON.stringify(uH));
 }
 
 function updateStreak(change) {
@@ -597,7 +610,6 @@ function renderOuraTab() {
     let rawHist = localStorage.getItem(historyKey);
     let history = rawHist ? JSON.parse(rawHist) : [];
     
-    // Sort history by date descending (newest first)
     history.sort((a, b) => new Date(b.date) - new Date(a.date));
     
     if(history.length === 0) {
@@ -661,21 +673,21 @@ function renderOuraTab() {
     
     // 1. Deep Sleep Bar
     html += drawBar("DEEP SLEEP", deepMin, 90, "min", 
-        "⚠️ LOW: Hormone production compromised. Rx: Cool room to 65°F.", 
-        "✅ ANABOLIC STATE: Testosterone & HGH optimization active.");
+        "Hormone production compromised. Rx: Cool room to 65°F.", 
+        "Anabolic state reached. Max Testosterone & HGH release.");
         
     // 2. REM Sleep Bar
     html += drawBar("REM SLEEP", remMin, 90, "min", 
-        "⚠️ FOG RISK: Cognitive recovery needed. Rx: No blue light 1h before bed.", 
-        "✅ BRAIN RESET: Memory consolidation & emotional balance active.");
+        "Cognitive delay risk. Rx: No blue light 1h before bed.", 
+        "Brain reset complete. Memory consolidation active.");
 
     // 3. Resting Heart Rate Bar
     html += drawRHRBar(todayData.rhr);
         
     // 4. Activity Bar
     html += drawBar("ACTIVE BURN", todayData.cal, actGoal, "kcal", 
-        "⚠️ LOW: Insulin sensitivity risk. Rx: 15m post-meal walk.", 
-        "✅ METABOLIC FIRE: Insulin sensitivity optimized.");
+        "Insulin sensitivity risk. Rx: 15m post-meal walk.", 
+        "Metabolic fire high. Insulin sensitivity optimized.");
 
     // 5. History Table
     html += `<div style="margin-top:30px; border-top:1px dashed #333; padding-top:15px;">
