@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v228.40 Robust</title>
+    <title>The Centurion | v228.41 Full Features</title>
     <link rel="apple-touch-icon" href="https://img.icons8.com/?size=512&id=104334&format=png">
     <link rel="icon" type="image/png" href="https://img.icons8.com/?size=512&id=104334&format=png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
@@ -36,19 +36,20 @@
         .tab{flex:1;padding:10px 0;background:#111;border:1px solid #222;color:#444;border-radius:8px;font-size:0.55rem;font-weight:800;text-align:center;cursor:pointer}
         .tab.active{background:#222;color:#fff;border-color:444}
         .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:2000;overflow-y:auto;backdrop-filter:blur(5px);}
-        .modal-content{background:#0a0a0a;margin:0;padding:25px;border:none;border-radius:0;width:100%;min-height:100%;}
+        .modal-content{background:#0a0a0a;margin:0;padding:25px;min-height:100%;}
         .close-btn-float { position: fixed; top: 25px; right: 25px; width: 45px; height: 45px; background: rgba(30,30,30,0.8); border-radius: 50%; border: 1px solid #333; color: #fff; font-size: 28px; text-align: center; line-height: 42px; cursor: pointer; z-index: 3000; }
         .bio-section{margin-bottom:12px;padding:15px;background:rgba(255,255,255,0.03);border-radius:15px;border:1px solid rgba(255,255,255,0.05)}
-        .macro-pill { background: #1a1a1a; border: 1px solid #333; padding: 3px 8px; border-radius: 12px; font-size: 0.55rem; color: #888; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; }
+        .macro-pill { background: #1a1a1a; border: 1px solid #333; padding: 3px 8px; border-radius: 12px; font-size: 0.55rem; color: #888; font-weight: 800; text-transform: uppercase; }
+        .meal-img { width: 100%; border-radius: 14px; margin-bottom: 15px; background: #111; min-height: 200px; object-fit: cover; }
+        .snack-grid { display: flex; gap: 10px; margin-bottom: 15px; }
+        .snack-slot { flex: 1; border: 1px dashed #333; border-radius: 12px; padding: 12px 5px; text-align: center; cursor: pointer; position: relative; min-height: 60px; display: flex; flex-direction: column; justify-content: center; background: rgba(255,255,255,0.02); }
+        .snack-slot.filled { border: 1px solid var(--gold); background: #111; }
+        .remove-snack { position: absolute; top: -5px; right: -5px; background: #333; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; line-height: 18px; color: #fff; }
+        .juice-name{font-size:1.1rem;font-weight:900;color:#fff;text-align:center;text-transform:uppercase;cursor:pointer;border:1px dashed #333;padding:10px;border-radius:12px}
         .bar-row{display:flex;align-items:center;margin-bottom:8px}
         .bar-lbl{width:45px;font-size:0.55rem;color:#666;font-weight:900;text-transform:uppercase}
         .bar-track{flex:1;height:8px;background:#111;border-radius:10px;margin:0 10px;border:1px solid #222;overflow:hidden}
         .bar-fill{height:100%;border-radius:10px;transition:width 1s}
-        .oura-hist-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #222; font-size: 0.7rem; color: #888; }
-        .snack-grid { display: flex; gap: 10px; margin-bottom: 15px; }
-        .snack-slot { flex: 1; border: 1px dashed #333; border-radius: 12px; padding: 12px 5px; text-align: center; cursor: pointer; min-height: 60px; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(255,255,255,0.02); }
-        .snack-slot.filled { border: 1px solid var(--gold); background: #111; }
-        .remove-snack { position: absolute; top: -5px; right: -5px; background: #333; border-radius: 50%; width: 16px; height: 16px; font-size: 9px; line-height: 16px; text-align: center; }
     </style>
 </head>
 <body>
@@ -72,19 +73,19 @@
 <div id="masterModal" class="modal" onclick="closeM(event)">
     <div class="close-btn-float" onclick="forceClose(event)">&times;</div>
     <div class="modal-content" onclick="event.stopPropagation()">
-        <h2 id="mTitle" style="font-size:1.5rem; margin-top:10px; color:white"></h2>
-        <div id="mSub" style="color:var(--gold); font-size:0.85rem; margin-bottom:15px; text-transform:uppercase;"></div>
+        <h2 id="mTitle" style="color:white; margin-top:10px;"></h2>
+        <div id="mSub" style="color:var(--gold); margin-bottom:15px; font-weight:800;"></div>
         <div id="mBody"></div>
         <div id="bioContentArea"></div>
     </div>
 </div>
 
 <script>
-// --- GLOBAL STATE ---
 let user = localStorage.getItem('centurion_active_user') || 'J';
 let offset = 0;
+let currentSlot = 0;
 let selDate = getCaDate();
-let snackLog = {};
+let snackLog = JSON.parse(localStorage.getItem('centurion_snacks')) || {};
 window.ouraHistory = [];
 
 function getCaDate() {
@@ -99,10 +100,11 @@ function getMon(o){
 }
 
 // --- DATABASES ---
-const pDB={"HEAVY LIFT":[{h:"Theragun"},{h:"Heavy Lift"},{h:"Sauna"}],"BOXING":[{h:"Mobility"},{h:"Boxing"},{h:"Normatec"}],"REFORM":[{h:"Sweep"},{h:"Reform"},{h:"Sauna"}],"REFORM/YOGA":[{h:"Sweep"},{h:"Yoga"},{h:"Heat"}],"CS4":[{h:"Hydrate"},{h:"CS4"},{h:"Contrast"}],"RELAX":[{h:"Walk"},{h:"Relax"},{h:"Massage"}]};
-const jDB={"PINEAPPLE GREEN Vitality":["Detox","Spinach, Pineapple",1,28,120,1],"PLASMA FLUSH Juice":["Recovery","Watermelon, Lime",1,32,140,1],"TITAN RED Juice":["Endurance","Beets, Carrots",2,42,185,2],"ZENITH GREEN Juice":["Alkalizer","Kale, Cucumber",2,18,120,1],"APOLLO GOLD Juice":["Anti-Inflam","Pears, Turmeric",1,45,195,2]};
+const pDB={"HEAVY LIFT":[{t:"PRE",h:"Theragun",d:"Target large chains."},{t:"TRAIN",h:"Main Lifts",d:"Compound movements."},{t:"POST",h:"Sauna",d:"20m Heat stress."}],"BOXING":[{t:"PRE",h:"Mobility",d:"Shoulder/Hip focus."},{t:"TRAIN",h:"Boxing",d:"High output intervals."},{t:"POST",h:"Normatec",d:"Flush legs."}],"REFORM":[{t:"PRE",h:"Sweep",d:"Light percussion."},{t:"TRAIN",h:"Reform",d:"Time under tension."},{t:"POST",h:"Steam",d:"Relax fascia."}],"REFORM/YOGA":[{t:"PRE",h:"Stretch",d:"Dynamic openers."},{t:"TRAIN",h:"Yoga",d:"Mobility work."},{t:"POST",h:"Heat",d:"Recovery wrap."}],"CS4":[{t:"PRE",h:"Hydrate",d:"Electrolytes."},{t:"TRAIN",h:"CS4",d:"Interval training."},{t:"POST",h:"Contrast",d:"Cold/Hot cycle."}],"RELAX":[{t:"PRE",h:"Walk",d:"Nature exposure."},{t:"TRAIN",h:"Active",d:"Low HR movement."},{t:"POST",h:"Chair",d:"Zero gravity."}]};
+const jDB={"PINEAPPLE GREEN Vitality":["Digestion + Detox","2c Spinach, 1c Pineapple, Ginger",1,28,120,1],"PLASMA FLUSH Juice":["Recovery","3c Watermelon, Lime, Mint",1,32,140,1],"TITAN RED Juice":["Endurance","2 Beets, 2 Carrots, Ginger",2,42,185,2],"ZENITH GREEN Juice":["Alkalizer","Kale, Cucumber, Celery",2,18,120,1],"APOLLO GOLD Juice":["Anti-Inflam","2 Pears, Turmeric, Lemon",1,45,195,2]};
+const rDB={"Sea Moss":["92 Minerals","2 TBSP Fasted.","Thyroid & Gut support."],"Kombucha":["Probiotic","4 OZ post-Lunch.","Enzyme support."],"Hibiscus Tea":["BP Control","Organic steep.","Antioxidant rich."]}
 
-// --- MDB PLACEHOLDER (WILL BE REPLACED IN STEP 3) ---
+// --- !!! PLACEHOLDER: PASTE mDB HERE !!! ---
 const mDB = {
     b: [
         "Beef & Liver Sausage|80/20 Beef-Liver Blend,Sage,Thyme,Blueberries|sear|<strong>The 'Ancestral Sausage'</strong><hr><strong>BENEFIT</strong><br>Heme iron + Vitamin A powerhouse for hormone health.<br><br><strong>CHEF TIP</strong><br>Mix herbs into ground blend. Form patties. Pan fry until browned. Serve with fresh berries.|25|8|280|15",
@@ -209,25 +211,7 @@ const mDB = {
     ]
 };
 
-// --- BIOMETRIC DATA ---
-var defaultUH = {
-    'J': {
-        now: {bf:19.0, m:99.0, w:217.0, vf:10, bmr:2050}, 
-        goal: {bf:15.0, m:105.0, w:212.0, vf:7, bmr:2150},
-        labs: {apob:{val:95,goal:60,unit:"mg/dL",name:"ApoB",lowerIsBetter:true},hba1c:{val:5.4,goal:5.0,unit:"%",name:"HbA1c",lowerIsBetter:true}},
-        tests: {vo2:{val:45,goal:55,unit:"ml/kg",name:"VO2 Max"},hang:{val:85,goal:120,unit:"s",name:"Dead Hang"}}
-    },
-    'S': {
-        now: {bf:36.1, m:49.2, w:141.5, vf:9, bmr:1250},
-        goal: {bf:22.0, m:60.0, w:135.0, vf:4, bmr:1450}, 
-        labs: {ana:{val:320,goal:40,unit:" titer",name:"ANA",lowerIsBetter:true},gluc:{val:84,goal:75,unit:"mg/dL",name:"Glucose",lowerIsBetter:true},hba1c:{val:5.6,goal:5.0,unit:"%",name:"HbA1c",lowerIsBetter:true},crp:{val:1.8,goal:0.5,unit:"mg/L",name:"hs-CRP",lowerIsBetter:true}},
-        tests: {vo2:{val:32,goal:50,unit:"ml/kg",name:"VO2 Max"},hang:{val:40,goal:90,unit:"s",name:"Dead Hang"}}
-    }
-};
-
-var uH = JSON.parse(localStorage.getItem('centurion_bio_v2')) || defaultUH;
-
-// --- RENDER LOGIC ---
+// --- RENDERING ---
 function render(){
     const mon = getMon(offset);
     const tabs = document.getElementById('dayTabs'); tabs.innerHTML='';
@@ -243,32 +227,116 @@ function render(){
 }
 
 function showDay(d, i){
-    if(!mDB.b.length) return; // Prevent Step 2 crash
+    if(!mDB.b.length) { document.getElementById('dayContent').innerHTML = '<p style="text-align:center; color:gray; padding-top:50px;">Waiting for Database (Step 3)...</p>'; return; }
     const sch=["HEAVY LIFT","BOXING","REFORM","BOXING","REFORM/YOGA","CS4","RELAX"];
     const jcs=["PINEAPPLE GREEN Vitality","TITAN RED Juice","ZENITH GREEN Juice","TITAN RED Juice","ZENITH GREEN Juice","TITAN RED Juice","APOLLO GOLD Juice"];
-    const w = sch[i]; const id = Math.floor(d.getTime()/864e5);
+    const w = sch[i]; const jn = jcs[i]; const j = jDB[jn];
+    const id = Math.floor(d.getTime()/864e5);
     const b=mDB.b[Math.abs(id)%mDB.b.length].split('|'), l=mDB.l[Math.abs(id)%mDB.l.length].split('|'), dn=mDB.d[Math.abs(id)%mDB.d.length].split('|');
     const sc = (user==='J')?1:0.6;
     
+    const dk = getDateKey(d);
+    const snacks = snackLog[dk] || [null, null];
+
+    let snackHTML = '<div class="snack-grid">';
+    for(let sIdx=0; sIdx<2; sIdx++){
+        if(snacks[sIdx] === null) {
+            snackHTML += `<div class="snack-slot" onclick="openSnackSelector(${sIdx})"><span style="color:#444">+ SNACK</span></div>`;
+        } else {
+            let sData = mDB.s[snacks[sIdx]].split('|');
+            snackHTML += `<div class="snack-slot filled" onclick="openR('${sData[0]}','','','${sData[3]}')"><div class="remove-snack" onclick="event.stopPropagation(); removeSnack(${sIdx})">✕</div><span>${sData[0]}</span></div>`;
+        }
+    }
+    snackHTML += '</div>';
+
     document.getElementById('dayContent').innerHTML = `
-        <div class="card" style="border-bottom:4px solid var(--blue)">
+        <div class="card" onclick="openRec('${w}')" style="border-bottom:4px solid var(--blue); cursor:pointer">
             <div style="display:flex; justify-content:space-between; text-align:center">
                 <div><div class="label">WARM</div>${pDB[w][0].h}</div>
                 <div style="color:var(--blue); font-weight:900">➜ ${w}</div>
                 <div><div class="label">RECOVER</div>${pDB[w][2].h}</div>
             </div>
         </div>
-        <div class="label">🍳 BREAKFAST</div><div class="value"><span>${b[0]}</span><span class="macro-pill">${Math.round(b[4]*sc)}P</span></div>
-        <div class="label">🥗 LUNCH</div><div class="value"><span>${l[0]}</span><span class="macro-pill">${Math.round(l[4]*sc)}P</span></div>
-        <div class="label">🍽️ DINNER</div><div class="value"><span>${dn[0]}</span><span class="macro-pill">${Math.round(dn[4]*sc)}P</span></div>
+        <div class="label">🧬 DAILY ESSENTIALS</div>
+        <div style="display:flex; gap:10px; margin-bottom:15px">
+            <div class="value" style="flex:1; justify-content:center" onclick="openM('Sea Moss')">Sea Moss</div>
+            <div class="value" style="flex:1; justify-content:center" onclick="openM('${user==='J'?'Kombucha':'Hibiscus Tea'}')">${user==='J'?'Kombucha':'Hibiscus'}</div>
+        </div>
+        <div class="label">🍳 BREAKFAST</div><div class="value" onclick="openR('${b[0]}','','','${b[3]}')"><span>${b[0]}</span><span class="macro-pill">${Math.round(b[4]*sc)}P</span></div>
+        <div class="label">🥗 LUNCH</div><div class="value" onclick="openR('${l[0]}','','','${l[3]}')"><span>${l[0]} 💼</span><span class="macro-pill">${Math.round(l[4]*sc)}P</span></div>
+        <div class="label">🍽️ DINNER</div><div class="value" onclick="openR('${dn[0]}','','','${dn[3]}')"><span>${dn[0]}</span><span class="macro-pill">${Math.round(dn[4]*sc)}P</span></div>
+        <div class="label">🥜 SNACKS</div>${snackHTML}
         <div class="macro-dashboard">
             <div class="macro-label">PROTEIN <span>${Math.round(150*sc)}g Goal</span></div>
             <div class="macro-bg"><div class="macro-fill" style="width:75%; background:var(--g-pro)"></div></div>
         </div>
+        <div class="label">🍹 FUNCTIONAL JUICE</div><div class="juice-name" onclick="openJ('${jn}')">${jn}</div>
     `;
 }
 
-// --- BIO/OURA LOGIC ---
+// --- MODAL & AI LOGIC ---
+function openR(n, i, a, t) {
+    document.getElementById('mTitle').innerText = n;
+    document.getElementById('mSub').innerText = "CENTURION RECIPE";
+    const prompt = encodeURIComponent(`high quality food photography of ${n}, plated, dark background`);
+    document.getElementById('mBody').innerHTML = `<img src="https://image.pollinations.ai/prompt/${prompt}?width=600&height=400&nologo=true" class="meal-img"><p style="color:#ccc; line-height:1.6">${t}</p>`;
+    document.getElementById('masterModal').style.display='block';
+}
+
+function openRec(w) {
+    const p = pDB[w];
+    document.getElementById('mTitle').innerText = w + " PROTOCOL";
+    document.getElementById('mSub').innerText = "RECOVERY FLOW";
+    document.getElementById('mBody').innerHTML = `
+        <div class="bio-section"><div class="label" style="color:var(--blue)">PRE: ${p[0].h}</div><p>${p[0].d}</p></div>
+        <div class="bio-section"><div class="label" style="color:white">WORKOUT</div><p>${p[1].d}</p></div>
+        <div class="bio-section"><div class="label" style="color:var(--purple)">POST: ${p[2].h}</div><p>${p[2].d}</p></div>
+    `;
+    document.getElementById('masterModal').style.display='block';
+}
+
+function openJ(n){
+    const d=jDB[n]; document.getElementById('mTitle').innerText=n; document.getElementById('mSub').innerText=d[0];
+    document.getElementById('mBody').innerHTML=`<p style="color:white"><strong>Ingredients:</strong> ${d[1]}</p><p style="color:var(--gold)">P: ${d[2]}g | C: ${d[3]}g | Kcal: ${d[4]}</p>`;
+    document.getElementById('masterModal').style.display='block';
+}
+
+function openM(n){
+    const d=rDB[n]; document.getElementById('mTitle').innerText=n; document.getElementById('mSub').innerText=d[0];
+    document.getElementById('mBody').innerHTML=`<p style="color:white">${d[1]}</p><p style="color:#888">${d[2]}</p>`;
+    document.getElementById('masterModal').style.display='block';
+}
+
+function openSnackSelector(slot) {
+    currentSlot = slot;
+    document.getElementById('mTitle').innerText = "Select Snack";
+    document.getElementById('mBody').innerHTML = mDB.s.map((s, idx) => {
+        let name = s.split('|')[0];
+        return `<div class="value" onclick="setSnack(${idx})">${name}</div>`;
+    }).join('');
+    document.getElementById('masterModal').style.display='block';
+}
+function setSnack(idx) {
+    const dk = getDateKey(selDate);
+    if(!snackLog[dk]) snackLog[dk] = [null, null];
+    snackLog[dk][currentSlot] = idx;
+    localStorage.setItem('centurion_snacks', JSON.stringify(snackLog));
+    forceClose(); render();
+}
+function removeSnack(slot) {
+    const dk = getDateKey(selDate);
+    snackLog[dk][slot] = null;
+    localStorage.setItem('centurion_snacks', JSON.stringify(snackLog));
+    render();
+}
+
+// --- BIOMETRICS (Kept Intact) ---
+var defaultUH = {
+    'J': { now:{bf:19.0, m:99.0, w:217.0, vf:10, bmr:2050}, goal:{bf:15.0, m:105.0, w:212.0, vf:7, bmr:2150}, labs:{apob:{val:95,goal:60,unit:"mg/dL",name:"ApoB",lowerIsBetter:true},hba1c:{val:5.4,goal:5.0,unit:"%",name:"HbA1c",lowerIsBetter:true}} },
+    'S': { now:{bf:36.1, m:49.2, w:141.5, vf:9, bmr:1250}, goal:{bf:22.0, m:60.0, w:135.0, vf:4, bmr:1450}, labs:{ana:{val:320,goal:40,unit:" titer",name:"ANA",lowerIsBetter:true},gluc:{val:84,goal:75,unit:"mg/dL",name:"Glucose",lowerIsBetter:true},hba1c:{val:5.6,goal:5.0,unit:"%",name:"HbA1c",lowerIsBetter:true},crp:{val:1.8,goal:0.5,unit:"mg/L",name:"hs-CRP",lowerIsBetter:true}} }
+};
+var uH = JSON.parse(localStorage.getItem('centurion_bio_v2')) || defaultUH;
+
 function safeOpenBio() { document.getElementById('mBody').innerHTML=''; openBio(); }
 function openBio() {
     document.getElementById('mTitle').innerText = (user==='J'?'JERMAINE':'SOPHIA');
@@ -277,14 +345,13 @@ function openBio() {
         <div class="tabs">
             <div class="tab active" id="btPhys" onclick="renderBioTab('phys')">BODY</div>
             <div class="tab" id="btLabs" onclick="renderBioTab('labs')">LABS</div>
-            <div class="tab" id="btOura" onclick="renderOuraTab()">OURA</div>
+            <div id="btOura" class="tab" onclick="renderOuraTab()">OURA</div>
         </div>
         <div id="bioContentArea"></div>
     `;
     renderBioTab('phys');
     document.getElementById('masterModal').style.display='block';
 }
-
 function bioBar(label, val, goal, unit, lowerBetter=false) {
     const pct = Math.min(lowerBetter ? (goal / val) * 100 : (val / goal) * 100, 100);
     const color = pct >= 100 ? 'var(--green)' : 'var(--gold)';
@@ -294,50 +361,27 @@ function bioBar(label, val, goal, unit, lowerBetter=false) {
         <div class="bar-row"><div class="bar-lbl" style="color:var(--blue)">GOAL</div><div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--blue);opacity:0.3"></div></div><div class="bar-lbl" style="text-align:right;color:var(--blue)">${goal}${unit}</div></div>
     </div>`;
 }
-
 function renderBioTab(tab) {
-    const area = document.getElementById('bioContentArea');
-    const u = uH[user];
+    const area = document.getElementById('bioContentArea'); const u = uH[user];
     document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-    document.getElementById('bt'+tab.charAt(0).toUpperCase()+tab.slice(1)).classList.add('active');
-    
-    if(tab==='phys') {
-        area.innerHTML = bioBar("Body Fat", u.now.bf, u.goal.bf, "%", true) + bioBar("Muscle", u.now.m, u.goal.m, "lbs") + bioBar("Visceral", u.now.vf, u.goal.vf, "", true);
-    } else if(tab==='labs') {
-        area.innerHTML = Object.keys(u.labs).map(k => {
-            const l = u.labs[k];
-            return `<div onclick="updateBioVal('labs','${k}','${l.name}')">${bioBar(l.name, l.val, l.goal, l.unit, l.lowerIsBetter)}</div>`;
-        }).join('');
-    }
+    if(document.getElementById('bt'+tab.charAt(0).toUpperCase()+tab.slice(1))) document.getElementById('bt'+tab.charAt(0).toUpperCase()+tab.slice(1)).classList.add('active');
+    if(tab==='phys') area.innerHTML = bioBar("Body Fat", u.now.bf, u.goal.bf, "%", true) + bioBar("Muscle", u.now.m, u.goal.m, "lbs") + bioBar("Visceral", u.now.vf, u.goal.vf, "", true);
+    else if(tab==='labs') area.innerHTML = Object.keys(u.labs).map(k => { const l = u.labs[k]; return `<div onclick="updateBioVal('labs','${k}','${l.name}')">${bioBar(l.name, l.val, l.goal, l.unit, l.lowerIsBetter)}</div>`; }).join('');
 }
-
 function renderOuraTab() {
-    const area = document.getElementById('bioContentArea');
-    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-    document.getElementById('btOura').classList.add('active');
-    
+    const area = document.getElementById('bioContentArea'); document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); document.getElementById('btOura').classList.add('active');
     if(!window.ouraHistory.length) { area.innerHTML="<p style='text-align:center;padding:20px;color:#666'>No Sync Data</p>"; return; }
-    
     const latest = window.ouraHistory[0];
-    area.innerHTML = `
-        <div class="bio-section" style="text-align:center"><div class="label">READINESS</div><div style="font-size:2.5rem;font-weight:800">${latest.score}</div></div>
-        <div class="bio-section">
-            <div class="oura-hist-row"><span>Deep Sleep</span><span style="color:white">${Math.round(latest.deep/60)}m</span></div>
-            <div class="oura-hist-row"><span>REM Sleep</span><span style="color:white">${Math.round(latest.rem/60)}m</span></div>
-            <div class="oura-hist-row"><span>Resting HR</span><span style="color:var(--green)">${latest.rhr} bpm</span></div>
-        </div>
-    `;
+    area.innerHTML = `<div class="bio-section" style="text-align:center"><div class="label">READINESS</div><div style="font-size:2.5rem;font-weight:800">${latest.score}</div></div><div class="bio-section"><div class="oura-hist-row"><span>Deep Sleep</span><span style="color:white">${Math.round(latest.deep/60)}m</span></div><div class="oura-hist-row"><span>REM Sleep</span><span style="color:white">${Math.round(latest.rem/60)}m</span></div><div class="oura-hist-row"><span>Resting HR</span><span style="color:var(--green)">${latest.rhr} bpm</span></div></div>`;
 }
-
 async function fetchOuraData() {
     let token = getActiveToken(); if(!token) return;
-    const PROXY = "https://corsproxy.io/?";
     const today = new Date().toISOString().split('T')[0];
     const lookback = new Date(Date.now() - 864e5*7).toISOString().split('T')[0];
     try {
         const [r, s] = await Promise.all([
-            fetch(PROXY + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${lookback}&end_date=${today}`), {headers:{'Authorization':`Bearer ${token}`}}),
-            fetch(PROXY + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${lookback}&end_date=${today}`), {headers:{'Authorization':`Bearer ${token}`}})
+            fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${lookback}&end_date=${today}`), {headers:{'Authorization':`Bearer ${token}`}}),
+            fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${lookback}&end_date=${today}`), {headers:{'Authorization':`Bearer ${token}`}})
         ]);
         const rJ = await r.json(), sJ = await s.json();
         if(rJ.data) {
@@ -350,7 +394,6 @@ async function fetchOuraData() {
         }
     } catch(e) { document.getElementById('dateDisplay').innerText="Sync Error"; }
 }
-
 function updateBioVal(s, k, n) {
     let v = prompt("New value for "+n, uH[user][s][k].val);
     if(v) { uH[user][s][k].val = parseFloat(v); localStorage.setItem('centurion_bio_v2', JSON.stringify(uH)); renderBioTab(s); }
