@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v228.25 Full Stack</title>
+    <title>The Centurion | v228.26 Polished</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --text:#fff;
@@ -33,9 +33,11 @@
         .tabs{display:flex;gap:4px;margin-bottom:15px}
         .tab{flex:1;padding:10px 0;background:#111;border:1px solid #222;color:#444;border-radius:8px;font-size:0.55rem;font-weight:800;text-align:center;cursor:pointer}
         .tab.active{background:#222;color:#fff;border-color:444}
+        /* FIXED SUBTLE CLOSE BUTTON */
         .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:2000;overflow-y:auto;padding:0;backdrop-filter:blur(5px);}
         .modal-content{background:#0a0a0a;margin:0;padding:25px;border:none;border-radius:0;width:100%;min-height:100%;max-width:none;}
-        .close-btn-float { position: fixed; top: 25px; right: 25px; width: 50px; height: 50px; background: #FF5252; border-radius: 50%; border: 2px solid #fff; color: #fff; font-size: 30px; text-align: center; line-height: 46px; cursor: pointer; z-index: 3000; box-shadow: 0 4px 15px rgba(0,0,0,0.8); font-weight:bold;}
+        .close-btn-float { position: fixed; top: 20px; right: 20px; width: 40px; height: 40px; background: rgba(30,30,30,0.8); backdrop-filter: blur(5px); border-radius: 50%; border: 1px solid #333; color: #fff; font-size: 24px; text-align: center; line-height: 38px; cursor: pointer; z-index: 2001; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        
         .chef-steps ol{padding-left:20px; color:#ccc; margin:10px 0; font-size:0.9rem; line-height:1.6;}
         .chef-steps li{margin-bottom:12px;}
         .chef-steps strong{color:var(--gold); display:block; margin-top:20px; font-size:0.8rem; border-top:1px dashed #333; padding-top:15px;}
@@ -81,7 +83,7 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v228.25 Full Stack</span>
+        <span class="version-tag">v228.26 Polished</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -92,7 +94,7 @@
         <button class="nav-btn" onclick="changeW(-1)">PREV</button>
         <button class="nav-btn" onclick="resetD()">TODAY</button>
         <button class="nav-btn" onclick="changeW(1)">NEXT</button>
-        <button class="nav-btn" onclick="openBio()" style="color:var(--green)">MY DATA</button>
+        <button class="nav-btn" onclick="safeOpenBio()" style="color:var(--green)">MY DATA</button>
     </div>
     <div id="dayTabs" class="tabs"></div>
     <div id="dayContent"></div>
@@ -181,333 +183,74 @@ const pDB={"HEAVY LIFT":[{t:"PRE",h:"Theragun",d:"Glutes, Quads, Hams. 30s each.
 
 const rDB={"Sea Moss":["92 Minerals","2 TBSP Fasted.","Thyroid & Gut support."],"Kombucha":["Probiotic","4 OZ post-Lunch.","Enzyme support."],"Aloe Vera":["Gut Soother", "2oz Pure Aloe Inner Leaf.", "Heals stomach lining."],"Golden Milk":["Anti-Inflammatory", "Coconut Milk, Turmeric, Black Pepper.", "Calms the immune system."],"Hibiscus Tea":["Blood Pressure", "Dried Hibiscus Flowers.", "Rich in antioxidants (Vitamin C)."],"Aqua Chair":["Hydro-Massage","Align body to zero-gravity.","Jets to glutes and lats.","20 Min Duration."],"Sauna":["HSP Induction","185°F Range.","20 Mins total.","Heavy metal detox sweat."],"Theragun":["Percussive","Float over muscles.","2m per limb.","Target Lats/Hips."],"Normatec":["Compression","Level 4 Intensity.","Full leg cycle.","30m Lymphatic flush."],"Pre-Workout":["Nitro-Boost","6g Citrulline Malate.","Take 20m before training."]};
 
-// --- FULL BIOMARKER SUITE ---
 var defaultUH = {
     'J': {
         now: {bf:19.0, m:99.0, w:217.0, vf:10, bmr:2050}, 
         goal: {bf:15.0, m:105.0, w:212.0, vf:7, bmr:2150},
         info: {bf:{d:"Adipose tissue percentage.",f:"Rx: Caloric Deficit."},m:{d:"Skeletal muscle.",f:"Rx: Hypertrophy."},vf:{d:"Visceral Fat.",f:"Rx: No Fructose."},bmr:{d:"Basal Metabolic Rate.",f:"Rx: Build muscle."}},
-        labs: {
-            apob:{val:95,goal:60,unit:"mg/dL",name:"ApoB",lowerIsBetter:true,desc:"Plaque particles.",fix:"Rx: Fiber >40g."},
-            hba1c:{val:5.4,goal:5.0,unit:"%",name:"HbA1c",lowerIsBetter:true,desc:"Avg blood sugar.",fix:"Rx: Walk post-meal."},
-            crp:{val:0.9,goal:0.5,unit:"mg/L",name:"hs-CRP",lowerIsBetter:true,desc:"Systemic inflammation.",fix:"Rx: Omega-3 (4g). Sauna."},
-            test:{val:650,goal:850,unit:"ng/dL",name:"Testosterone",lowerIsBetter:false,desc:"Anabolic drive.",fix:"Rx: Heavy Squats."},
-            vitd:{val:42,goal:60,unit:"ng/mL",name:"Vitamin D3",lowerIsBetter:false,desc:"Immune precursor.",fix:"Rx: Morning sun."},
-            homo:{val:11,goal:9,unit:"umol/L",name:"Homocysteine",lowerIsBetter:true,desc:"Methylation status.",fix:"Rx: Methylated B-Complex."}
-        },
-        tests: {
-            vo2:{val:45,goal:55,unit:"ml/kg",name:"VO2 Max",desc:"Oxygen efficiency.",fix:"Rx: 4x4 Intervals."},
-            hang:{val:85,goal:120,unit:"s",name:"Dead Hang",desc:"Grip strength.",fix:"Rx: Daily hangs."},
-            sit:{val:60,goal:120,unit:"s",name:"Wall Sit",desc:"Leg endurance.",fix:"Rx: Weighted Wall Sits."},
-            breath:{val:45,goal:60,unit:"s",name:"CO2 Tolerance",desc:"Breathing efficiency.",fix:"Rx: Box Breathing."}
-        }
+        labs: {apob:{val:95,goal:60,unit:"mg/dL",name:"ApoB",lowerIsBetter:true,desc:"Plaque particles.",fix:"Rx: Fiber >40g."},hba1c:{val:5.4,goal:5.0,unit:"%",name:"HbA1c",lowerIsBetter:true,desc:"Avg blood sugar.",fix:"Rx: Walk post-meal."}},
+        tests: {vo2:{val:45,goal:55,unit:"ml/kg",name:"VO2 Max",desc:"Oxygen efficiency.",fix:"Rx: 4x4 Intervals."},hang:{val:85,goal:120,unit:"s",name:"Dead Hang",desc:"Grip strength.",fix:"Rx: Daily hangs."}}
     },
     'S': {
         now: {bf:36.1, m:49.2, w:141.5, vf:9, bmr:1250},
         goal: {bf:22.0, m:60.0, w:135.0, vf:4, bmr:1450}, 
         info: {bf:{d:"Adipose tissue.",f:"Rx: Deficit."},m:{d:"Muscle.",f:"Rx: Hypertrophy."},vf:{d:"Visceral fat.",f:"Rx: No seed oils."},bmr:{d:"Metabolism.",f:"Rx: Protein."}},
-        labs: {
-            tsh:{val:1.35,goal:1.5,unit:"mIU/L",name:"TSH",lowerIsBetter:true,desc:"Thyroid Function.",fix:"Rx: Selenium."},
-            ana:{val:320,goal:40,unit:"titer",name:"ANA",lowerIsBetter:true,desc:"Autoimmune marker.",fix:"Rx: Sleep/Stress."},
-            rf:{val:9,goal:14,unit:"IU/mL",name:"Rheum. Factor",lowerIsBetter:true,desc:"Autoimmune.",fix:"Rx: Collagen support."},
-            apob:{val:105,goal:70,unit:"mg/dL",name:"ApoB",lowerIsBetter:true,desc:"Vascular particle count.",fix:"Rx: Increase soluble fiber."},
-            hba1c:{val:5.6,goal:5.0,unit:"%",name:"HbA1c",lowerIsBetter:true,desc:"Pre-diabetic marker.",fix:"Rx: Veggies before Carbs."},
-            crp:{val:1.8,goal:0.5,unit:"mg/L",name:"hs-CRP",lowerIsBetter:true,desc:"Inflammation level.",fix:"Rx: Curcumin + Cold Plunge."},
-            vitd:{val:35,goal:60,unit:"ng/mL",name:"Vitamin D3",lowerIsBetter:false,desc:"Immune regulation.",fix:"Rx: 5000IU D3 w/ fat."},
-            ferr:{val:30,goal:70,unit:"ng/mL",name:"Ferritin",lowerIsBetter:false,desc:"Iron storage.",fix:"Rx: Heme Iron + Vit C."}
-        },
-        tests: {
-            vo2:{val:32,goal:50,unit:"ml/kg",name:"VO2 Max",desc:"Cardio health.",fix:"Rx: Zone 2."},
-            hang:{val:40,goal:90,unit:"s",name:"Dead Hang",desc:"Grip.",fix:"Rx: Practice daily."},
-            sit:{val:45,goal:90,unit:"s",name:"Wall Sit",desc:"Leg endurance.",fix:"Rx: Isometric holds."},
-            breath:{val:30,goal:45,unit:"s",name:"CO2 Tolerance",desc:"Breathing.",fix:"Rx: 4-7-8 Breathing."}
-        }
+        labs: {ana:{val:320,goal:40,unit:" titer",name:"ANA",lowerIsBetter:true,desc:"Autoimmune marker.",fix:"Rx: Sleep/Stress."},gluc:{val:84,goal:75,unit:"mg/dL",name:"Glucose",lowerIsBetter:true,desc:"Fasting sugar.",fix:"Rx: Post-meal walks."}},
+        tests: {vo2:{val:32,goal:50,unit:"ml/kg",name:"VO2 Max",desc:"Cardio health.",fix:"Rx: Zone 2."},hang:{val:40,goal:90,unit:"s",name:"Dead Hang",desc:"Grip.",fix:"Rx: Practice daily."}}
     }
 };
 
-// --- DATA MODEL (Initialized to Null) ---
+// --- DATA MODEL ---
 var uH = null;
 
-// --- THE NEW FORCE OPEN FUNCTION ---
-function openBio() {
+// --- SAFE OPEN FUNCTION (SILENT REPAIR) ---
+function safeOpenBio() {
     try {
-        // 1. Attempt to load from storage
         var stored = localStorage.getItem('centurion_bio_v2');
-        
-        // 2. FORCE VALIDATION: If corrupt, missing keys, or empty -> REWRITE
-        if (stored) {
+        if(stored) {
             uH = JSON.parse(stored);
-            if (!uH || !uH['J'] || !uH['J'].labs || !uH['J'].tests || !uH['S'] || !uH['S'].labs) {
-                console.log("Data structure outdated. Upgrading...");
-                uH = JSON.parse(JSON.stringify(defaultUH));
-                localStorage.setItem('centurion_bio_v2', JSON.stringify(uH));
-            }
-        } else {
-            console.log("No data found. Creating default...");
-            uH = JSON.parse(JSON.stringify(defaultUH));
-            localStorage.setItem('centurion_bio_v2', JSON.stringify(uH));
         }
-
-        // 3. RENDER (No reloads, no questions)
-        var modalBody = document.getElementById('mBody');
-        document.getElementById('mTitle').innerHTML = (user === 'J' ? "JERMAINE" : "SOPHIA") + 
-            " <span onclick='resetBioData()' style='font-size:0.6rem; color:#444; border:1px solid #333; padding:4px 8px; border-radius:4px; vertical-align:middle; cursor:pointer; float:right; margin-right:45px;'>RESET DATA</span>";
-        
-        document.getElementById('mSub').innerText = "Clinical & Functional Metrics";
-        document.getElementById('mImgContainer').innerHTML = ''; 
-
-        modalBody.innerHTML = `
-            <div class="tabs" style="margin-bottom:20px;">
-                <div id="btPhys" class="tab active" onclick="renderBioTab('phys')">BODY</div>
-                <div id="btLabs" class="tab" onclick="renderBioTab('labs')">LABS</div>
-                <div id="btTests" class="tab" onclick="renderBioTab('tests')">TESTS</div>
-                <div id="btOura" class="tab" onclick="renderOuraTab()">OURA</div>
-            </div>
-            <div id="bioContentArea"></div>
-        `;
-
-        document.getElementById('mTip').innerText = "TIP: Green bars indicate you have reached the 'Centurion' standard for longevity.";
-        renderBioTab('phys'); 
-        document.getElementById('masterModal').style.display = 'block';
-
+        // Strict Validation Check
+        if (!uH || !uH['J'] || !uH['J'].labs || !uH['J'].tests || !uH['S'] || !uH['S'].labs) {
+            throw new Error("Old data format");
+        }
+        openBio(); 
     } catch (e) {
-        // 4. ABSOLUTE FAILSAFE
-        alert("System Error: " + e + ". Resetting Data.");
-        localStorage.removeItem('centurion_bio_v2');
+        // SILENT REPAIR
+        console.log("Auto-Repairing Data...");
         uH = JSON.parse(JSON.stringify(defaultUH));
         localStorage.setItem('centurion_bio_v2', JSON.stringify(uH));
-        openBio(); // Try again immediately
+        openBio();
     }
 }
 
-function updateStreak(change) {
-    if(!uH['S'].streak) uH['S'].streak = 0;
-    uH['S'].streak += change;
-    if(uH['S'].streak < 0) uH['S'].streak = 0;
-    let startCRP = 1.8;
-    let newCRP = Math.max(0.5, (startCRP - (uH['S'].streak * 0.1)).toFixed(2));
-    if(uH['S'].labs && uH['S'].labs.crp) uH['S'].labs.crp.val = newCRP;
-    localStorage.setItem('centurion_bio_v2', JSON.stringify(uH));
-    renderBioTab('labs'); 
-}
-
-function updateBioVal(section, key, name) {
-    event.stopPropagation(); 
-    var current = uH[user][section][key].val;
-    var newVal = prompt("LOG NEW RESULT for " + name + ":", current);
-    if(newVal !== null && newVal !== "" && !isNaN(newVal)) {
-        uH[user][section][key].val = parseFloat(newVal);
-        localStorage.setItem('centurion_bio_v2', JSON.stringify(uH));
-        renderBioTab(section); 
-    }
-}
-
-function resetBioData() {
-    if(confirm("Reset all biometric data to defaults? This cannot be undone.")) {
-        uH = JSON.parse(JSON.stringify(defaultUH));
-        localStorage.setItem('centurion_bio_v2', JSON.stringify(uH));
-        renderBioTab('phys');
-    }
-}
-
-function calculateLifeExpectancy(uID) {
-    var u = uH[uID];
-    if (!u) return { current: 0, potential: 0 };
-    var l = u.labs;
-    var t = u.tests;
-    var f = u.now;
-    var baseAge = 78; 
-    if (t.vo2 && t.vo2.val >= 50) baseAge += 8; 
-    else if (t.vo2 && t.vo2.val >= 40) baseAge += 4; 
-    else if (t.vo2 && t.vo2.val < 30) baseAge -= 5; 
-    if (l && l.apob && l.apob.val <= 60) baseAge += 6; 
-    if (f.vf <= 6) baseAge += 3; 
-    if (baseAge > 100) baseAge = 100;
-    return { current: baseAge, potential: 100 };
-}
-
-function getHoliday(d) { return null; }
-
-function switchU(uID){ 
-    user=uID;
-    localStorage.setItem('centurion_active_user', uID);
-    document.querySelectorAll('.u-badge').forEach(b=>b.classList.remove('active')); 
-    document.getElementById('b'+uID.toLowerCase()).classList.add('active'); 
-    document.getElementById('dateDisplay').innerHTML = `<span style="color:#666">💍 LOADING...</span>`;
-    render(); 
-    setTimeout(fetchOuraData, 500);
-}
-
-function syncOffsetToSelection() {
-    let today = getCaDate(); today.setHours(0,0,0,0);
-    let todayMon = new Date(today);
-    todayMon.setDate(today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
-    let selMon = new Date(selDate);
-    selMon.setDate(selDate.getDate() - (selDate.getDay() === 0 ? 6 : selDate.getDay() - 1));
-    selMon.setHours(0,0,0,0);
-    offset = Math.round((selMon - todayMon) / (7 * 864e5));
-}
-
-function getMon(o){ 
-    let d = getCaDate(); 
-    d.setHours(0,0,0,0); 
-    let day = d.getDay(); 
-    let diff = d.getDate() - day + (day === 0 ? -6 : 1); 
-    d.setDate(diff + (o * 7)); 
-    return d; 
-}
-
-function changeW(direction) {
-    let viewMon = getMon(offset); 
-    if (direction > 0) selDate = new Date(viewMon.getTime() + (7 * 864e5)); 
-    else selDate = new Date(viewMon.getTime() - 864e5);
-    selDate.setHours(12, 0, 0, 0); syncOffsetToSelection(); render(); 
-}
-
-function resetD(){ offset=0; selDate=getCaDate(); render(); }
-
-function render(){
-    const mon=getMon(offset); const days=["MON","TUE","WED","THU","FRI","SAT","SUN"];
-    const tabs=document.getElementById('dayTabs'); tabs.innerHTML='';
-    const end=new Date(mon); end.setDate(mon.getDate()+6);
-    document.getElementById('dateDisplay').innerText=`${mon.toLocaleDateString('en-US',{month:'short',day:'numeric'})} - ${end.toLocaleDateString('en-US',{month:'short',day:'numeric'})}`;
+function openBio() {
+    var modalBody = document.getElementById('mBody');
+    var u = uH[user];
     
-    for(let i=0; i<7; i++){
-        let d=new Date(mon); d.setDate(mon.getDate()+i);
-        const isSelected = getDateKey(d) === getDateKey(selDate);
-        const b=document.createElement('div'); 
-        b.className='tab'+(isSelected?' active':'');
-        b.innerHTML=`${days[i]}<br>${d.getDate()}`;
-        b.onclick=()=>{ selDate=d; render() }; 
-        tabs.appendChild(b);
-        if(isSelected) showDay(d, i);
-    }
+    // FIXED: Margin added to prevent X button overlap
+    document.getElementById('mTitle').innerHTML = (user === 'J' ? "JERMAINE" : "SOPHIA") + 
+        " <span onclick='resetBioData()' style='font-size:0.6rem; color:#444; border:1px solid #333; padding:4px 8px; border-radius:4px; vertical-align:middle; cursor:pointer; float:right; margin-right:45px;'>RESET DATA</span>";
+    
+    document.getElementById('mSub').innerText = "Clinical & Functional Metrics";
+    document.getElementById('mImgContainer').innerHTML = ''; 
+
+    modalBody.innerHTML = `
+        <div class="tabs" style="margin-bottom:20px;">
+            <div id="btPhys" class="tab active" onclick="renderBioTab('phys')">BODY</div>
+            <div id="btLabs" class="tab" onclick="renderBioTab('labs')">LABS</div>
+            <div id="btTests" class="tab" onclick="renderBioTab('tests')">TESTS</div>
+            <div id="btOura" class="tab" onclick="renderOuraTab()">OURA</div>
+        </div>
+        <div id="bioContentArea"></div>
+    `;
+
+    document.getElementById('mTip').innerText = "TIP: Green bars indicate you have reached the 'Centurion' standard for longevity.";
+    renderBioTab('phys'); 
+    document.getElementById('masterModal').style.display = 'block';
 }
 
-function applyAIPLogic(mealString, type) {
-    if(user !== 'S') return mealString; 
-    if(mealString.includes("Coffee") || mealString.includes("Espresso")) {
-        return "Golden Milk|Coconut Milk,Turmeric,Collagen|heat|<strong>Prep:</strong> 5m<hr><strong>INGREDIENTS</strong><br>1 Cup Coconut Milk • 1 tsp Turmeric • 1 Scoop Collagen<br><br><strong>THE PROTOCOL</strong><br>Heat milk. Whisk in turmeric and ginger. Sip warm.<br><br><strong>Longevity Win:</strong> Curcumin reduces inflammation.|8|5|160|1";
-    }
-    let parts = mealString.split('|');
-    let name = parts[0];
-    let ingredients = parts[1];
-    let macros = { p: parseInt(parts[4]), c: parseInt(parts[5]), k: parseInt(parts[6]), f: parseInt(parts[7]||0) };
-    if(macros.f < 10 && type !== 's') { 
-        ingredients += " + 1/2 Avocado";
-        macros.f += 7;
-        macros.k += 120;
-    }
-    return `${name}|${ingredients}|${parts[2]}|${parts[3]}|${macros.p}|${macros.c}|${macros.k}|${macros.f}`;
-}
-
-function showDay(dObj, idx){
-    const id=Math.floor(dObj.getTime()/864e5);
-    const dateKey = getDateKey(dObj);
-    if(!snackLog[dateKey]) snackLog[dateKey] = [null, null];
-    const snacks = snackLog[dateKey];
-    
-    let rawB = (mDB.b[Math.abs(id) % mDB.b.length] || mDB.b[0]);
-    let rawL = (mDB.l[Math.abs(id) % mDB.l.length] || mDB.l[0]);
-    let rawD = (mDB.d[Math.abs(id) % mDB.d.length] || mDB.d[0]);
-
-    let b = applyAIPLogic(rawB, 'b').split('|');
-    let l = applyAIPLogic(rawL, 'l').split('|');
-    let dn = applyAIPLogic(rawD, 'd').split('|');
-    
-    const sch=["HEAVY LIFT","BOXING","REFORM","BOXING","REFORM/YOGA","CS4","RELAX"];
-    const jcs=["PINEAPPLE GREEN Vitality","TITAN RED Juice","ZENITH GREEN Juice","TITAN RED Juice","ZENITH GREEN Juice","TITAN RED Juice","APOLLO GOLD Juice"];
-    const j=jDB[jcs[idx]]; 
-    
-    let wName = sch[idx];
-    const isHighOutput = ["HEAVY LIFT", "BOXING", "CS4"].includes(wName);
-    
-    const g=(user==='J') ? {P:165, C:isHighOutput?160:85, F:40, K:isHighOutput?2200:1800} : {P:105, C:55, F:35, K:1300};
-    const sc = (user==='J') ? 1 : 0.6; 
-
-    let sPro=0, sCarb=0, sFib=0, sCal=0;
-    snacks.forEach(sIdx => {
-        if(sIdx !== null) {
-            let sData = mDB.s[sIdx].split('|');
-            sPro += parseInt(sData[4]); 
-            sCarb += parseInt(sData[5]); 
-            sCal += parseInt(sData[6]);
-            sFib += parseInt(sData[7] || 0);
-        }
-    });
-
-    let p = Math.round((parseInt(b[4]) + parseInt(l[4]) + parseInt(dn[4]))*sc) + j[2] + sPro;
-    let c = Math.round((parseInt(b[5]) + parseInt(l[5]) + parseInt(dn[5]))*sc) + j[3] + sCarb;
-    let k = Math.round((parseInt(b[6]) + parseInt(l[6]) + parseInt(dn[6]))*sc) + j[4] + sCal;
-    let f = Math.round((parseInt(b[7]||0) + parseInt(l[7]||0) + parseInt(dn[7]||0))*sc) + (j[5]||0) + sFib;
-
-    let ptn = (user==='J') ? { l: '8oz', d: '8oz' } : { l: '5oz', d: '5oz' };
-    ptn.b = (user==='J') ? "Large" : "Small";
-
-    const proto = pDB[wName] || pDB["RELAX"];
-    
-    let snackHTML = '<div class="snack-grid">';
-    for(let i=0; i<2; i++) {
-        if(snacks[i] === null) {
-            snackHTML += `<div class="snack-slot" onclick="openSnackSelector(${i})"><span style="font-size:1.2rem; color:#333;">＋</span><span class="snack-label" style="color:#666; font-weight:500;">ADD SNACK</span></div>`;
-        } else {
-            let s = mDB.s[snacks[i]].split('|');
-            snackHTML += `<div class="snack-slot filled" onclick="openR('${s[0].replace(/'/g, "\\'")}', '${s[1]}', '${s[2]}', '${s[3].replace(/'/g, "\\'")}')"><div class="remove-snack" onclick="event.stopPropagation(); removeSnack(${i})">✕</div><span class="snack-label">${s[0]}</span><span class="snack-macro">${s[4]}P ${s[7]||0}F</span></div>`;
-        }
-    }
-    snackHTML += '</div>';
-
-    // DYNAMIC ESSENTIALS LOGIC
-    const ess1 = "Sea Moss";
-    const ess2 = (user === 'S') ? "Hibiscus Tea" : "Kombucha";
-    const ess2Emoji = (user === 'S') ? "🌺" : "🥃";
-
-    document.getElementById('dayContent').innerHTML = `
-        <div style="background:#0a0a0a; border:1px solid #222; border-bottom:4px solid var(--blue); padding:15px; border-radius:12px; margin-bottom:25px; cursor:pointer;" onclick="openRecoveryPhase('${wName}')">
-            <div style="display:flex; justify-content:space-between; align-items:center; text-align:center;">
-                <div style="flex:1"><div style="font-size:0.5rem; color:#666; font-weight:900; letter-spacing:1px">WARM UP</div><div style="font-size:0.7rem; color:#fff; margin-top:4px">${proto[0].h}</div></div>
-                <div style="color:var(--blue); font-size:0.8rem; padding:0 8px">➜</div>
-                <div style="flex:1.2"><div style="font-size:0.5rem; color:var(--blue); font-weight:900; letter-spacing:1px">WORKOUT</div><div style="font-size:0.85rem; color:#fff; font-weight:900; margin-top:4px">${wName}</div></div>
-                <div style="color:var(--blue); font-size:0.8rem; padding:0 8px">➜</div>
-                <div style="flex:1"><div style="font-size:0.5rem; color:#666; font-weight:900; letter-spacing:1px">RECOVER</div><div style="font-size:0.7rem; color:#fff; margin-top:4px">${proto[2].h}</div></div>
-            </div>
-            <div style="text-align:center; font-size:0.55rem; color:#444; margin-top:12px; letter-spacing:1px">TAP CARD FOR FULL GUIDE</div>
-        </div>
-        
-        <div class="label">🧬 Daily Essentials</div>
-        <div style="display:flex; gap:10px; margin-bottom:15px">
-            <div onclick="openM('${ess1}')" style="flex:1; background:#111; border:1px solid #333; padding:10px; border-radius:10px; text-align:center; font-size:0.8rem; font-weight:700; cursor:pointer;">${ess1} 🌿</div>
-            <div onclick="openM('${ess2}')" style="flex:1; background:#111; border:1px solid #333; padding:10px; border-radius:10px; text-align:center; font-size:0.8rem; font-weight:700; cursor:pointer;">${ess2} ${ess2Emoji}</div>
-        </div>
-
-        <div class="label">🍳 Breakfast <span class="portion-tag">• ${ptn.b}</span></div>
-        <div class="value" onclick="openR('${b[0].replace(/'/g, "\\'")}', '${b[1]}', '${b[2]}', '${b[3].replace(/'/g, "\\'")}')">
-            <span>${b[0]}</span> <span class="macro-pill">${Math.round(b[4]*sc)}P ${b[7]||0}F</span>
-        </div>
-
-        <div class="label">🥗 Lunch <span class="portion-tag">• ${ptn.l}</span></div>
-        <div class="value" onclick="openR('${l[0].replace(/'/g, "\\'")}', '${l[1]}', '${l[2]}', '${l[3].replace(/'/g, "\\'")}')">
-            <span>${l[0]} 💼</span> <span class="macro-pill">${Math.round(l[4]*sc)}P ${l[7]||0}F</span>
-        </div>
-
-        <div class="label">🍽️ Dinner <span class="portion-tag">• ${ptn.d}</span></div>
-        <div class="value" onclick="openR('${dn[0].replace(/'/g, "\\'")}', '${dn[1]}', '${dn[2]}', '${dn[3].replace(/'/g, "\\'")}')">
-            <span>${dn[0]}</span> <span class="macro-pill">${Math.round(dn[4]*sc)}P ${dn[7]||0}F</span>
-        </div>
-
-        <div class="label">🥜 Snack Options</div>
-        ${snackHTML}
-
-        <div class="macro-dashboard">
-            <div class="macro-row"><div class="macro-label"><span>PROTEIN</span><span>${p}g / ${g.P}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((p/g.P)*100,100)}%; background:var(--g-pro)"></div></div></div>
-            <div class="macro-row"><div class="macro-label"><span style="color:var(--green)">FIBER</span><span>${f}g / ${g.F}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((f/g.F)*100,100)}%; background:var(--g-fib)"></div></div></div>
-            <div class="macro-row"><div class="macro-label"><span>CARBS</span><span>${c}g / ${g.C}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((c/g.C)*100,100)}%; background:var(--g-carb)"></div></div></div>
-            <div class="macro-row"><div class="macro-label"><span>CALORIES</span><span>${k} / ${g.K}</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((k/g.K)*100,100)}%; background:var(--g-cal)"></div></div></div>
-        </div>
-
-        <div class="card" style="text-align:center"><div class="label" style="color:var(--gold)">Functional Juice</div><div class="juice-name" onclick="openJ('${jcs[idx]}')">${jcs[idx]}</div></div>`;
-}
-
+// --- NEW CLEAN RENDER LOGIC FOR BODY TAB ---
 function bioBar(label, val, goal, unit, lowerBetter=false) {
     const pct = Math.min(
         lowerBetter ? (goal / val) * 100 : (val / goal) * 100,
