@@ -710,6 +710,48 @@ window.onload = function() {
     render();
     document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active')); 
     document.getElementById('b' + user.toLowerCase()).classList.add('active');
+// 1. RESTORE WORKOUT MODAL
+function openRecoveryPhase(workout) {
+    const p = {
+        "HEAVY LIFT":[{h:"Theragun",d:"Target large chains."},{h:"Main Lifts",d:"Compound movements."},{h:"Sauna",d:"20m Heat stress."}],
+        "BOXING":[{h:"Mobility",d:"Shoulder/Hip focus."},{h:"Boxing",d:"High output intervals."},{h:"Normatec",d:"Flush legs."}],
+        "RELAX":[{h:"Walk",d:"Nature exposure."},{h:"Active",d:"Low HR movement."},{h:"Chair",d:"Zero gravity."}]
+    };
+    const active = p[workout] || p["RELAX"];
+    document.getElementById('mTitle').innerText = workout + " PROTOCOL";
+    document.getElementById('mSub').innerText = "RECOVERY FLOW";
+    document.getElementById('mBody').innerHTML = `
+        <div class="intervention-card" style="border-left-color:var(--blue)"><strong>PRE:</strong> ${active[0].h}</div>
+        <div class="intervention-card" style="border-left-color:white"><strong>TRAIN:</strong> ${active[1].h}</div>
+        <div class="intervention-card" style="border-left-color:var(--purple)"><strong>POST:</strong> ${active[2].h}</div>
+    `;
+    document.getElementById('masterModal').style.display = 'block';
+}
+
+// 2. RESTORE MEAL MODAL (AI Prompting)
+function openR(n, i, a, t) {
+    document.getElementById('mTitle').innerText = n;
+    document.getElementById('mSub').innerText = "CENTURION RECIPE";
+    const clean = n.replace(/[^a-zA-Z ]/g, "").trim();
+    const prompt = encodeURIComponent(`delicious high-end plated ${clean} food photography`);
+    document.getElementById('mBody').innerHTML = `
+        <img src="https://image.pollinations.ai/prompt/${prompt}?nologo=true" style="width:100%; border-radius:15px; margin-bottom:15px;">
+        <p style="color:#ccc; line-height:1.6">${t}</p>
+    `;
+    document.getElementById('masterModal').style.display = 'block';
+}
+
+// 3. RESTORE OURA SYNC (proxy logic)
+async function fetchOuraData() {
+    const token = user === 'J' ? 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y' : '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4';
+    try {
+        const res = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${getDateKey(new Date(Date.now()-864e5*3))}&end_date=${getDateKey(new Date())}`), {headers:{'Authorization':`Bearer ${token}`}});
+        const j = await res.json();
+        if(j.data) {
+            const score = j.data[j.data.length-1].score;
+            document.getElementById('dateDisplay').innerHTML = `<span style="color:var(--green)">💍 OURA READINESS: ${score}</span>`;
+        }
+    } catch(e) { document.getElementById('dateDisplay').innerText = "Sync Ready"; }
 };
 </script>
 </body>
