@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v228.14 UX Patch</title>
+    <title>The Centurion | v228.15</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --text:#fff;
@@ -33,11 +33,9 @@
         .tabs{display:flex;gap:4px;margin-bottom:15px}
         .tab{flex:1;padding:10px 0;background:#111;border:1px solid #222;color:#444;border-radius:8px;font-size:0.55rem;font-weight:800;text-align:center;cursor:pointer}
         .tab.active{background:#222;color:#fff;border-color:444}
-        /* MODAL FIXES */
         .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:2000;overflow-y:auto;padding:0;backdrop-filter:blur(5px);}
         .modal-content{background:#0a0a0a;margin:0;padding:25px;border:none;border-radius:0;width:100%;min-height:100%;max-width:none;}
-        /* BIGGER CLOSE BUTTON */
-        .close-btn-float { position: fixed; top: 25px; right: 25px; width: 50px; height: 50px; background: #FF5252; border-radius: 50%; border: 2px solid #fff; color: #fff; font-size: 30px; text-align: center; line-height: 46px; cursor: pointer; z-index: 3000; box-shadow: 0 4px 15px rgba(0,0,0,0.8); font-weight:bold;}
+        .close-btn-float { position: fixed; top: 20px; right: 20px; color: #fff; font-size: 30px; cursor: pointer; z-index: 3000; background: rgba(0,0,0,0.5); width: 40px; height: 40px; text-align: center; line-height: 40px; border-radius: 50%; }
         .chef-steps ol{padding-left:20px; color:#ccc; margin:10px 0; font-size:0.9rem; line-height:1.6;}
         .chef-steps li{margin-bottom:12px;}
         .chef-steps strong{color:var(--gold); display:block; margin-top:20px; font-size:0.8rem; border-top:1px dashed #333; padding-top:15px;}
@@ -83,7 +81,7 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v228.14 UX Patch (Safe Mode)</span>
+        <span class="version-tag">v228.15</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -299,7 +297,6 @@ var defaultUH = {
 // --- DATA SAFE LOADER ---
 var uH = JSON.parse(localStorage.getItem('centurion_bio_v2'));
 if (!uH || !uH['J'].labs || !uH['J'].tests) {
-    // If old data structure is detected, reset to new default to prevent crash
     uH = JSON.parse(JSON.stringify(defaultUH));
     localStorage.setItem('centurion_bio_v2', JSON.stringify(uH));
 }
@@ -733,19 +730,27 @@ function renderOuraTab() {
     html += `<div style="margin-top:30px; border-top:1px dashed #333; padding-top:15px;">
         <div style="font-size:0.8rem; color:var(--gold); font-weight:900; margin-bottom:10px; letter-spacing:1px;">7-DAY TRENDS</div>
         <div style="display:flex; justify-content:space-between; color:#666; font-size:0.6rem; font-weight:900; margin-bottom:5px; padding:0 4px;">
-            <span style="flex:1">DATE</span>
-            <span style="flex:1; text-align:center">SCORE</span>
-            <span style="flex:1; text-align:center">DEEP</span>
+            <span style="flex:0.8">DATE</span>
+            <span style="flex:0.8; text-align:center">SCORE</span>
+            <span style="flex:1; text-align:center">DEEP (>90m)</span>
+            <span style="flex:1; text-align:center">REM (>90m)</span>
             <span style="flex:1; text-align:right">BURN</span>
         </div>`;
         
     history.slice(0, 7).forEach(day => {
         let dMin = Math.round(day.deep / 60);
+        let rMin = Math.round(day.rem / 60);
         let dateStr = day.date.slice(5); 
+        
+        let deepColor = dMin >= deepGoal ? 'var(--green)' : '#aaa';
+        let remColor = rMin >= remGoal ? 'var(--green)' : '#aaa';
+        let scoreColor = day.score >= 85 ? 'var(--green)' : '#aaa';
+
         html += `<div class="oura-hist-row">
-            <span class="oura-hist-date" style="flex:1">${dateStr}</span>
-            <span style="flex:1; text-align:center; color:${day.score >= 85 ? 'var(--green)' : '#aaa'}">${day.score}</span>
-            <span style="flex:1; text-align:center">${dMin}m</span>
+            <span class="oura-hist-date" style="flex:0.8">${dateStr}</span>
+            <span style="flex:0.8; text-align:center; color:${scoreColor}">${day.score}</span>
+            <span style="flex:1; text-align:center; color:${deepColor}">${dMin}m</span>
+            <span style="flex:1; text-align:center; color:${remColor}">${rMin}m</span>
             <span style="flex:1; text-align:right">${day.cal}</span>
         </div>`;
     });
