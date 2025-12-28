@@ -1,3 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>The Centurion | v228.5 Master</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --text:#fff;
+        --g-pro:linear-gradient(90deg,#FF5252,#D50000);
+        --g-carb:linear-gradient(90deg,#FFAB40,#FF6D00);
+        --g-cal:linear-gradient(90deg,#B388FF,#6200EA);
+        --g-fib:linear-gradient(90deg,#00E676,#00C853);}
+        *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+        body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);margin:0;padding:15px;font-size:14px}
+        .container{max-width:500px;margin:0 auto; padding-bottom: 50px;}
+        h1{text-align:center;font-weight:200;letter-spacing:5px;text-transform:uppercase;font-size:1.2rem;margin:10px 0}
+        .version-tag { display: block; text-align: center; font-size: 0.5rem; color: #444; margin-top: -8px; margin-bottom: 15px; letter-spacing: 2px; }
+        .badge-row{display:flex;justify-content:center;gap:8px;margin-bottom:15px}
+        .u-badge{background:#000;padding:8px 16px;border-radius:20px;border:1px solid #333;font-size:0.6rem;font-weight:800;cursor:pointer;color:#666}
+        .u-badge.active{border-color:var(--gold);color:var(--gold)}
+        .status-bar{text-align:center;color:#888;font-size:0.65rem;font-weight:800;margin-bottom:10px;text-transform:uppercase}
+        .controls{display:flex;gap:5px;margin-bottom:15px}
+        .nav-btn{background:#111;border:1px solid #222;color:#888;padding:10px;flex:1;border-radius:8px;font-size:0.55rem;font-weight:800;cursor:pointer}
+        .card, .macro-dashboard{background:var(--card);border-radius:20px;padding:20px;margin-bottom:15px;border:1px solid rgba(255,255,255,0.03);position:relative}
+        .card::before{content:"";position:absolute;left:0;top:20px;bottom:20px;width:3px;background:var(--gold);border-radius:0 4px 4px 0}
+        .card.holiday-card::before{background:var(--purple);box-shadow: 0 0 15px rgba(213, 0, 249, 0.4);}
+        .label{color:#666;font-size:0.5rem;text-transform:uppercase;font-weight:900;margin-bottom:4px; display: flex; justify-content: space-between;}
+        .portion-tag { color: var(--blue); }
+        .value{ font-size: 0.95rem; margin-bottom: 12px; font-weight: 500; cursor: pointer; border-bottom: 1px solid #222; padding-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
+        .macro-row{margin-bottom:10px}
+        .macro-label{display:flex;justify-content:space-between;font-size:0.55rem;font-weight:800;color:#777;margin-bottom:3px}
+        .macro-bg{height:5px;background:#222;border-radius:10px;overflow:hidden}
+        .macro-fill{height:100%;border-radius:10px;transition:width 0.8s}
+        .tabs{display:flex;gap:4px;margin-bottom:15px}
+        .tab{flex:1;padding:10px 0;background:#111;border:1px solid #222;color:#444;border-radius:8px;font-size:0.55rem;font-weight:800;text-align:center;cursor:pointer}
+        .tab.active{background:#222;color:#fff;border-color:444}
+        .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#0a0a0a;z-index:2000;overflow-y:auto;padding:0;}
+        .modal-content{background:#0a0a0a;margin:0;padding:25px;border:none;border-radius:0;width:100%;min-height:100%;max-width:none;}
+        .close-btn-float { position: fixed; top: 20px; right: 20px; width: 40px; height: 40px; background: rgba(30,30,30,0.8); backdrop-filter: blur(5px); border-radius: 50%; border: 1px solid #333; color: #fff; font-size: 24px; text-align: center; line-height: 38px; cursor: pointer; z-index: 2001; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .chef-steps ol{padding-left:20px; color:#ccc; margin:10px 0; font-size:0.9rem; line-height:1.6;}
+        .chef-steps li{margin-bottom:12px;}
+        .chef-steps strong{color:var(--gold); display:block; margin-top:20px; font-size:0.8rem; border-top:1px dashed #333; padding-top:15px;}
+        .juice-name{font-size:1.1rem;font-weight:900;color:#fff;text-align:center;text-transform:uppercase;cursor:pointer;border:1px dashed #333;padding:10px;border-radius:12px}
+        .bio-section{margin-bottom:25px;padding:15px;background:rgba(255,255,255,0.03);border-radius:15px;border:1px solid rgba(255,255,255,0.05)}
+        .bio-title{display:flex;justify-content:space-between;font-size:0.75rem;font-weight:800;color:#fff;margin-bottom:12px;text-transform:uppercase}
+        .bar-group{display:flex;flex-direction:column;gap:8px}
+        .bar-row{display:flex;align-items:center}
+        .bar-lbl{width:45px;font-size:0.55rem;color:#666;font-weight:900;text-transform:uppercase}
+        .bar-track{flex:1;height:8px;background:#111;border-radius:10px;margin:0 10px;border:1px solid #222;overflow:hidden}
+        .bar-fill{height:100%;border-radius:10px;transition:width 1s cubic-bezier(0.4,0,0.2,1)}
+        .rec-phase-list { position: relative; padding-left: 25px; margin-top: 20px; }
+        .rec-phase-list::before { content: ''; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: linear-gradient(to bottom, var(--blue), var(--purple)); }
+        .phase-item { position: relative; margin-bottom: 25px; }
+        .phase-item::after { content: ''; position: absolute; left: -22px; top: 5px; width: 10px; height: 10px; background: var(--bg); border: 2px solid var(--blue); border-radius: 50%; }
+        .phase-time { font-size: 0.6rem; font-weight: 900; color: var(--blue); text-transform: uppercase; letter-spacing: 1px; }
+        .phase-title { display: block; font-size: 0.9rem; font-weight: 700; color: #fff; margin: 2px 0; }
+        .phase-detail { font-size: 0.75rem; color: #999; line-height: 1.4; display: block; }
+        .macro-pill { background: #1a1a1a; border: 1px solid #333; padding: 3px 8px; border-radius: 12px; font-size: 0.55rem; color: #888; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; white-space: nowrap; }
+        .grocery-cat { font-size: 0.85rem; color: var(--gold); text-transform: uppercase; letter-spacing: 2px; margin-top: 30px; margin-bottom: 15px; font-weight: 900; border-bottom: 1px dashed #333; padding-bottom: 8px; }
+        .grocery-item { padding: 12px 0; color: #ccc; font-size: 0.95rem; display:flex; align-items:center; border-bottom:1px solid #1a1a1a; }
+        .grocery-item span { margin-left: 12px; }
+        .snack-grid { display: flex; gap: 10px; margin-bottom: 15px; }
+        .snack-slot { flex: 1; border: 1px dashed #333; border-radius: 12px; padding: 12px 5px; text-align: center; cursor: pointer; position: relative; min-height: 60px; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(255,255,255,0.02); }
+        .snack-slot.filled { border: 1px solid var(--gold); background: #111; }
+        .snack-label { font-size: 0.65rem; color: #fff; font-weight: 700; line-height: 1.2; }
+        .snack-macro { font-size: 0.5rem; color: #666; margin-top: 4px; }
+        .remove-snack { position: absolute; top: -5px; right: -5px; background: #333; color: #aaa; border: 1px solid #222; border-radius: 50%; width: 16px; height: 16px; font-size: 9px; line-height: 14px; text-align: center; font-weight: 800; box-shadow: 0 1px 3px rgba(0,0,0,0.5); z-index: 10; transition: all 0.2s ease; }
+        .remove-snack:hover { background: #444; color: #fff; border-color:#333; }
+        .meal-img { display: block; width: 100%; max-width: 100%; height: auto; min-height: 220px; object-fit: cover; border-radius: 14px; background-color: #111; transition: opacity 0.5s ease, filter 0.5s ease; }
+        .img-loader { height: 220px; display: flex; align-items: center; justify-content: center; color: var(--gold); font-size: 0.8rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; background: rgba(255,255,255,0.02); border-radius: 14px; border: 1px dashed #333; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+        .hist-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.7rem; color: #ccc; }
+        .hist-table th { text-align: left; color: #666; border-bottom: 1px solid #333; padding: 5px; font-weight: 800; }
+        .hist-table td { border-bottom: 1px solid #222; padding: 8px 5px; }
+        .hist-row:last-child td { border-bottom: none; }
+        .holiday-banner { background: linear-gradient(90deg, #D4AF37, #FDD835, #D4AF37); background-size: 200% 200%; animation: shine 3s infinite; color: #000; text-align: center; font-weight: 900; font-size: 0.75rem; padding: 10px; border-radius: 12px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px; box-shadow: 0 0 15px rgba(212, 175, 55, 0.3); }
+        @keyframes shine { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+        .oura-hist-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #222; font-size: 0.7rem; color: #888; }
+        .oura-val { font-weight: 800; color: #fff; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header><h1>THE CENTURION</h1>
+        <span class="version-tag">v228.5 Master</span>
+        <div class="badge-row">
+            <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
+            <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
+        </div>
+    </header>
+    <div id="dateDisplay" class="status-bar">...</div>
+    <div class="controls">
+        <button class="nav-btn" onclick="changeW(-1)">PREV</button>
+        <button class="nav-btn" onclick="resetD()">TODAY</button>
+        <button class="nav-btn" onclick="changeW(1)">NEXT</button>
+        <button class="nav-btn" onclick="openBio()" style="color:var(--green)">MY DATA</button>
+    </div>
+    <div id="dayTabs" class="tabs"></div>
+    <div id="dayContent"></div>
+</div>
+
+<div id="masterModal" class="modal">
+    <div class="close-btn-float" onclick="closeM()">&times;</div>
+    <div class="modal-content">
+        <h2 id="mTitle" style="font-size:1.5rem; margin-top:10px;"></h2>
+        <div id="mSub" style="color:var(--gold);font-size:0.85rem;margin:10px 0; text-transform:uppercase; letter-spacing:1px; font-weight:700;"></div>
+        <div id="mImgContainer"></div>
+        <div id="mBody" class="chef-steps" style="counter-reset:step"></div>
+        <div id="mTip" class="chef-tip" style="margin-top:30px; padding:15px; border:1px solid #222; background:#111; border-radius:10px; color:#888; font-style:italic;"></div>
+        <br><br><br>
+    </div>
+</div>
+<script>
+// --- GLOBAL STATE ---
+let user = localStorage.getItem('centurion_active_user') || 'J';
+let offset = 0;
+let snackLog = {}; 
+let currentSlot = 0;
+
+// --- DUAL OURA CONFIGURATION ---
+const TOKEN_J = "WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y"; // Jermaine's Key
+const TOKEN_S = "4QSDWYJJUZFHRWRH727NCK7WH4COQJF4"; // Sophia's Key
+
+function getActiveToken() {
+    if (user === 'J') {
+        return localStorage.getItem('centurion_oura_token_J') || TOKEN_J;
+    } else {
+        return TOKEN_S; 
+    }
+}
+
+// --- UTILITIES ---
+function getCaDate() {
+    let d = new Date(new Date().toLocaleString("en-US", {timeZone: "America/Los_Angeles"}));
+    d.setHours(12, 0, 0, 0); 
+    return d;
+}
+
+function getDateKey(d) {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+let selDate = getCaDate();
+
+// --- DATABASES ---
+const jDB = {
+    "PINEAPPLE GREEN Vitality": ["Digestion + Detox", "2c Spinach, 1c Pineapple, 1/2 Cucumber, Ginger, Lemon", 1, 28, 120, 1],
+    "PLASMA FLUSH Juice": ["Recovery", "3c Watermelon, 1 Lime (Peeled), Mint", 1, 32, 140, 1],
+    "TITAN RED Juice": ["Endurance", "2 Raw Beets, 2 Carrots, Pomegranate, Ginger", 2, 42, 185, 2],
+    "ZENITH GREEN Juice": ["Alkalizer", "4 Kale Leaves, 1 Cucumber, Celery, Lemon", 2, 18, 120, 1],
+    "APOLLO GOLD Juice": ["Anti-Inflammatory", "2 Pears, Turmeric Root, Ginger, Lemon", 1, 45, 195, 2]
+};
+
+const pDB={"HEAVY LIFT":[{t:"PRE",h:"Theragun",d:"Glutes, Quads, Hams. 30s each."},{t:"GYM",h:"Heavy Lift",d:"Main compound movement."},{t:"POST",h:"Chair+Sauna",d:"20m Zero-Grav + 20m Sauna."}],"BOXING":[{t:"PRE",h:"Mobility",d:"Rotator cuffs & Calves."},{t:"GYM",h:"Boxing",d:"High intensity rounds."},{t:"POST",h:"Normatec",d:"Flush legs. NO SAUNA."}],"REFORM":[{t:"PRE",h:"Sweep",d:"Light full body percussion."},{t:"GYM",h:"Reform",d:"Time under tension."},{t:"POST",h:"Sauna",d:"20m HGH Boost."}],"REFORM/YOGA":[{t:"PRE",h:"Sweep",d:"Light full body percussion."},{t:"GYM",h:"Yoga",d:"Deep fascial release."},{t:"POST",h:"Heat",d:"Sauna or Thera Knee Heat."}],"CS4":[{t:"PRE",h:"Hydrate",d:"Electrolytes."},{t:"GYM",h:"CS4",d:"Cardio Strength 4."},{t:"POST",h:"Contrast",d:"Sauna + Cold or Knee Contrast."}],"RELAX":[{t:"PRE",h:"Walk",d:"Light movement."},{t:"GYM",h:"Relax",d:"Active recovery."},{t:"POST",h:"Massage",d:"Chair or Thera Knee Heat."}]};
+
+const rDB={"Sea Moss":["92 Minerals","2 TBSP Fasted.","Thyroid & Gut support."],"Kombucha":["Probiotic","4 OZ post-Lunch.","Enzyme support."],"Aloe Vera":["Gut Soother", "2oz Pure Aloe Inner Leaf.", "Heals stomach lining."],"Golden Milk":["Anti-Inflammatory", "Coconut Milk, Turmeric, Black Pepper.", "Calms the immune system."],"Hibiscus Tea":["Blood Pressure", "Dried Hibiscus Flowers.", "Rich in antioxidants (Vitamin C)."],"Aqua Chair":["Hydro-Massage","Align body to zero-gravity.","Jets to glutes and lats.","20 Min Duration."],"Sauna":["HSP Induction","185°F Range.","20 Mins total.","Heavy metal detox sweat."],"Theragun":["Percussive","Float over muscles.","2m per limb.","Target Lats/Hips."],"Normatec":["Compression","Level 4 Intensity.","Full leg cycle.","30m Lymphatic flush."],"Pre-Workout":["Nitro-Boost","6g Citrulline Malate.","Take 20m before training."]};
+
 const hDB={b:"Festive Brunch|Protein Waffles, Turkey Bacon, Eggs, Berries|griddle|<strong>Prep:</strong> 15m • <strong>Cook:</strong> 15m<hr><strong>INGREDIENTS</strong><br>1 Scoop Whey (in batter) • 2 Eggs • 2 Slices Turkey Bacon • 1/2 Cup Berries<br><br><strong>1. ENJOY</strong><br>Prioritize the protein first, then enjoy the treats. Happy Holidays!|35|40|500",l:"The Holiday Feast|Lean Roast Meat, Green Beans, Sweet Potato|roast|<strong>Prep:</strong> 20m • <strong>Cook:</strong> 3h<hr><strong>INGREDIENTS</strong><br>8oz Roast Turkey or Beef • 1 Cup Green Beans • 1/2 Cup Sweet Potato<br><br><strong>1. FEAST</strong><br>Load up on the roast meat and green veggies. Go easy on the gravy.|50|40|600",d:"Leftovers Plate|Lean Protein, Veggies|raw|<strong>Prep:</strong> 5m<hr><strong>INGREDIENTS</strong><br>6oz Leftover Protein • Vegetable Side<br><br><strong>1. RECOVER</strong><br>Keep it light to help digestion before sleep.|30|10|300"};
 
 var defaultUH = {
@@ -143,7 +304,7 @@ const mDB = {
         "Venison & Squash Bowl|Venison,Acorn Squash,Pomegranate,Walnuts|sear|<strong>Prep:</strong> 15m • <strong>Cook:</strong> 25m<hr><strong>INGREDIENTS</strong><br>6oz Venison • 1 Acorn Squash • Seeds<br><br><strong>1. PREP</strong><br>Roast squash rings. <br><br><strong>2. COOK</strong><br>Sear venison. Serve inside squash rings. Top with pomegranate seeds.<br><br><strong>Longevity Win:</strong> Winter squash is dense in fiber (9g per cup). Venison keeps it lean.|40|35|480|11",
         "Bison Stuffed Peppers|Bison,2 Bell Peppers,Lentils,Tomato|bake|<strong>Prep:</strong> 15m • <strong>Cook:</strong> 25m<hr><strong>INGREDIENTS</strong><br>6oz Bison • 2 Peppers • 1/2 Cup Lentils<br><br><strong>1. PREP</strong><br>Mix raw bison with cooked lentils (the secret fiber filler).<br><br><strong>2. COOK</strong><br>Stuff peppers. Bake 375°F. The lentils bulk up the meat.<br><br><strong>Longevity Win:</strong> The 'Meat-stretcher' technique. You get the bison taste but with 12g Fiber from lentils/peppers.|38|25|450|12",
         "Salmon & Artichokes|Salmon,2 Cups Artichokes,Lemon,Dill|bake|<strong>Prep:</strong> 5m • <strong>Cook:</strong> 15m<hr><strong>INGREDIENTS</strong><br>6oz Salmon • 2 Cups Artichoke Hearts<br><br><strong>1. PREP</strong><br>Use canned/jarred artichokes (in water).<br><br><strong>2. COOK</strong><br>Roast salmon and artichokes together on one sheet pan.<br><br><strong>Longevity Win:</strong> Artichokes are the fiber kings (14g Fiber in this meal). They feed gut bacteria better than almost any other veg.|38|15|440|14",
-        "Turkey 'Meat-Za'|Turkey Patty base,Tomato,Spinach,Avocado|bake|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 15m<hr><strong>INGREDIENTS</strong><br>8oz Turkey (Flattened) • Spinach • 1/2 Avocado<br><br><strong>1. PREP</strong><br>Flatten turkey into a 'pizza crust'.<br><br><strong>2. COOK</strong><br>Bake turkey crust. Top with sauce, spinach, and avocado slices (instead of cheese).<br><br><strong>Longevity Win:</strong> Fun format. Avocado replaces cheese to add 7
+        "Turkey 'Meat-Za'|Turkey Patty base,Tomato,Spinach,Avocado|bake|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 15m<hr><strong>INGREDIENTS</strong><br>8oz Turkey (Flattened) • Spinach • 1/2 Avocado<br><br><strong>1. PREP</strong><br>Flatten turkey into a 'pizza crust'.<br><br><strong>2. COOK</strong><br>Bake turkey crust. Top with sauce, spinach, and avocado slices (instead of cheese).<br><br><strong>Longevity Win:</strong> Fun format. Avocado replaces cheese to add 7g Fiber + Healthy Fats.|45|10|410|9",
         "Cod & Lentil Stew|Cod,Black Lentils,Tomato,Spinach|stew|<strong>Prep:</strong> 5m • <strong>Cook:</strong> 15m<hr><strong>INGREDIENTS</strong><br>6oz Cod • 3/4 Cup Lentils • Spinach<br><br><strong>1. PREP</strong><br>Use precooked lentils.<br><br><strong>2. COOK</strong><br>Simmer lentils in tomato sauce. Poach cod in the liquid. Fold in spinach.<br><br><strong>Longevity Win:</strong> One-pot digestion healer. 16g Fiber from the heavy lentil portion.|35|25|400|16",
         "Sirloin & Broccoli Mt.|Sirloin,4 Cups Broccoli,Garlic,Almonds|sear|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 10m<hr><strong>INGREDIENTS</strong><br>6oz Sirloin • 1 Large Head Broccoli • Almonds<br><br><strong>1. PREP</strong><br>Chop an entire head of broccoli.<br><br><strong>2. COOK</strong><br>Sear beef. Steam-fry the massive pile of broccoli (it shrinks down). Top with almonds.<br><br><strong>Longevity Win:</strong> Volume eating. 4 Cups of broccoli = 10g Fiber + 4g from Almonds = 14g Total.|42|15|460|14",
         "Shrimp & Avo Salad|Shrimp,1 Whole Avocado,Cucumber,Greens|raw|<strong>Prep:</strong> 10m<hr><strong>INGREDIENTS</strong><br>6oz Shrimp • 1 Avocado • 4 Cups Greens<br><br><strong>1. PREP</strong><br>Dice avocado.<br><br><strong>2. ASSEMBLY</strong><br>Massive salad. Use the whole avocado (13g fiber). Top with shrimp.<br><br><strong>Longevity Win:</strong> The easiest way to hit fiber goals is to eat a whole avocado. It's a fiber bomb.|35|12|450|15",
@@ -187,589 +348,6 @@ const mDB = {
         "Golden Milk|Coconut Milk,Turmeric,Collagen|heat|<strong>Prep:</strong> 5m<hr><strong>INGREDIENTS</strong><br>1 Cup Coconut Milk • 1 tsp Turmeric • 1 Scoop Collagen<br><br><strong>THE PROTOCOL</strong><br>Heat milk. Whisk in turmeric and ginger. Sip warm.<br><br><strong>Longevity Win:</strong> Curcumin reduces inflammation without the cortisol spike of caffeine.|8|5|160|1"
     ]
 };
-
-const pDB={"HEAVY LIFT":[{t:"PRE",h:"Theragun",d:"Glutes, Quads, Hams. 30s each."},{t:"GYM",h:"Heavy Lift",d:"Main compound movement."},{t:"POST",h:"Chair+Sauna",d:"20m Zero-Grav + 20m Sauna."}],"BOXING":[{t:"PRE",h:"Mobility",d:"Rotator cuffs & Calves."},{t:"GYM",h:"Boxing",d:"High intensity rounds."},{t:"POST",h:"Normatec",d:"Flush legs. NO SAUNA."}],"REFORM":[{t:"PRE",h:"Sweep",d:"Light full body percussion."},{t:"GYM",h:"Reform",d:"Time under tension."},{t:"POST",h:"Sauna",d:"20m HGH Boost."}],"REFORM/YOGA":[{t:"PRE",h:"Sweep",d:"Light full body percussion."},{t:"GYM",h:"Yoga",d:"Deep fascial release."},{t:"POST",h:"Heat",d:"Sauna or Thera Knee Heat."}],"CS4":[{t:"PRE",h:"Hydrate",d:"Electrolytes."},{t:"GYM",h:"CS4",d:"Cardio Strength 4."},{t:"POST",h:"Contrast",d:"Sauna + Cold or Knee Contrast."}],"RELAX":[{t:"PRE",h:"Walk",d:"Light movement."},{t:"GYM",h:"Relax",d:"Active recovery."},{t:"POST",h:"Massage",d:"Chair or Thera Knee Heat."}]};
-
-const rDB={"Sea Moss":["92 Minerals","2 TBSP Fasted.","Thyroid & Gut support."],"Kombucha":["Probiotic","4 OZ post-Lunch.","Enzyme support."],"Aloe Vera":["Gut Soother", "2oz Pure Aloe Inner Leaf.", "Heals stomach lining."],"Golden Milk":["Anti-Inflammatory", "Coconut Milk, Turmeric, Black Pepper.", "Calms the immune system."],"Hibiscus Tea":["Blood Pressure", "Dried Hibiscus Flowers.", "Rich in antioxidants (Vitamin C)."],"Aqua Chair":["Hydro-Massage","Align body to zero-gravity.","Jets to glutes and lats.","20 Min Duration."],"Sauna":["HSP Induction","185°F Range.","20 Mins total.","Heavy metal detox sweat."],"Theragun":["Percussive","Float over muscles.","2m per limb.","Target Lats/Hips."],"Normatec":["Compression","Level 4 Intensity.","Full leg cycle.","30m Lymphatic flush."],"Pre-Workout":["Nitro-Boost","6g Citrulline Malate.","Take 20m before training."]};
-
-const hDB={b:"Festive Brunch|Protein Waffles, Turkey Bacon, Eggs, Berries|griddle|<strong>Prep:</strong> 15m • <strong>Cook:</strong> 15m<hr><strong>INGREDIENTS</strong><br>1 Scoop Whey (in batter) • 2 Eggs • 2 Slices Turkey Bacon • 1/2 Cup Berries<br><br><strong>1. ENJOY</strong><br>Prioritize the protein first, then enjoy the treats. Happy Holidays!|35|40|500",l:"The Holiday Feast|Lean Roast Meat, Green Beans, Sweet Potato|roast|<strong>Prep:</strong> 20m • <strong>Cook:</strong> 3h<hr><strong>INGREDIENTS</strong><br>8oz Roast Turkey or Beef • 1 Cup Green Beans • 1/2 Cup Sweet Potato<br><br><strong>1. FEAST</strong><br>Load up on the roast meat and green veggies. Go easy on the gravy.|50|40|600",d:"Leftovers Plate|Lean Protein, Veggies|raw|<strong>Prep:</strong> 5m<hr><strong>INGREDIENTS</strong><br>6oz Leftover Protein • Vegetable Side<br><br><strong>1. RECOVER</strong><br>Keep it light to help digestion before sleep.|30|10|300"};
-
-var defaultUH = {
-    'J': {
-        // JERMAINE'S CURRENT STATS
-        now: {bf:19.0, m:99.0, w:217.0, vf:10, bmr:2050}, 
-        goal: {bf:15.0, m:105.0, w:212.0, vf:7, bmr:2150},
-        info: {
-            bf: {d:"Adipose tissue percentage.", f:"Rx: Caloric Deficit + Zone 2."},
-            m: {d:"Skeletal muscle tissue.", f:"Rx: Hypertrophy (8-12 reps)."},
-            vf: {d:"Visceral Fat (Organ Fat).", f:"Rx: No Fructose."},
-            bmr: {d:"Basal Metabolic Rate.", f:"Rx: Build muscle to increase burn."}
-        },
-        labs: {
-            // JERMAINE'S LABS
-            apob: {val:95, goal:60, unit:"mg/dL", name:"ApoB", lowerIsBetter:true, desc:"Plaque particles.", fix:"Rx: Fiber >40g."},
-            hba1c: {val:5.4, goal:5.0, unit:"%", name:"HbA1c", lowerIsBetter:true, desc:"Avg blood sugar.", fix:"Rx: Walk post-meal."},
-            crp: {val:0.9, goal:0.5, unit:"mg/L", name:"hs-CRP", lowerIsBetter:true, desc:"Systemic inflammation.", fix:"Rx: Omega-3 (4g). Sauna."},
-            test: {val:650, goal:850, unit:"ng/dL", name:"Testosterone", lowerIsBetter:false, desc:"Anabolic drive.", fix:"Rx: Heavy Squats."},
-            vitd: {val:42, goal:60, unit:"ng/mL", name:"Vitamin D3", lowerIsBetter:false, desc:"Immune precursor.", fix:"Rx: Morning sun."},
-            homo: {val:11, goal:9, unit:"umol/L", name:"Homocysteine", lowerIsBetter:true, desc:"Methylation status.", fix:"Rx: Methylated B-Complex."}
-        },
-        tests: {
-            vo2: {val:45, goal:55, unit:"ml/kg", name:"VO2 Max", desc:"1. Use Apple Watch or Gym Test.<br>2. Run/Walk max effort.<br>3. Measure oxygen efficiency.", fix:"Rx: Norwegian 4x4 Intervals."},
-            hang: {val:85, goal:120, unit:"s", name:"Dead Hang", desc:"1. Grip bar (Overhand).<br>2. Arms locked out.<br>3. Feet off floor.<br>4. Hold until failure.", fix:"Rx: Farmer Carries."},
-            sit: {val:60, goal:120, unit:"s", name:"Wall Sit", desc:"1. Back flat against wall.<br>2. Knees at 90°.<br>3. Hands off legs.<br>4. Hold until failure.", fix:"Rx: Weighted Wall Sits."},
-            breath: {val:45, goal:60, unit:"s", name:"CO2 Tolerance", desc:"1. Inhale 100%.<br>2. Start timer.<br>3. Exhale through NOSE as slowly as possible.<br>4. Stop when air runs out.", fix:"Rx: Box Breathing."}
-        }
-    },
-    'S': {
-        // SOPHIA'S CURRENT STATS (Age 38)
-        now: {bf:36.1, m:49.2, w:141.5, vf:9, bmr:1250},
-        // CENTURION GOAL: Leaner, higher muscle mass for metabolic reserve
-        goal: {bf:22.0, m:60.0, w:135.0, vf:4, bmr:1450}, 
-        
-        info: {
-            bf: {d:"Adipose tissue percentage.", f:"Rx: Caloric Deficit + Zone 2."},
-            m: {d:"Skeletal muscle tissue.", f:"Rx: Hypertrophy (8-12 reps)."},
-            vf: {d:"Visceral fat drives inflammation.", f:"Rx: Eliminate seed oils."},
-            bmr: {d:"Base metabolism.", f:"Rx: Protein prioritization."}
-        },
-        labs: {
-            // AUTOIMMUNE: Goal is complete remission (0 symptoms/inflammation)
-            ana: {val:320, goal:40, unit:" titer", name:"ANA (Autoimmune)", lowerIsBetter:true, desc:"Positive. Immune surveillance active.", fix:"Rx: Strict Sleep/Stress Protocol."},
-
-            // METABOLIC: Goal is < 5.0% HbA1c (Hardcore optimization)
-            gluc: {val:84, goal:75, unit:"mg/dL", name:"Fasting Glucose", lowerIsBetter:true, desc:"Current: Excellent. Goal: Elite.", fix:"Rx: Post-meal walks."},
-            hba1c: {val:5.6, goal:5.0, unit:"%", name:"HbA1c", lowerIsBetter:true, desc:"Glycation rate.", fix:"Rx: Berberine or Fiber load."},
-
-            // KIDNEY/LIVER: Maintain perfection
-            egfr: {val:94, goal:100, unit:"mL/min", name:"eGFR (Kidney)", lowerIsBetter:false, desc:"Filtration efficiency.", fix:"Rx: Hydration + Electrolytes."},
-            alt: {val:27, goal:20, unit:"U/L", name:"ALT (Liver)", lowerIsBetter:true, desc:"Liver stress.", fix:"Rx: NAC / Milk Thistle."},
-
-            // LIPIDS: Centurion Level (ApoB < 60 is the longevity gold standard)
-            apob: {val:70, goal:55, unit:"mg/dL", name:"ApoB", lowerIsBetter:true, desc:"Atherogenic particle count.", fix:"Rx: Soluble fiber >50g/day."},
-            
-            // INFLAMMATION: Zero tolerance
-            crp: {val:1.8, goal:0.3, unit:" mg/L", name:"hs-CRP", lowerIsBetter:true, desc:"Systemic fire.", fix:"Rx: Omega-3 Index > 8%."},
-            
-            ferr: {val:75, goal:90, unit:"ng/mL", name:"Ferritin", lowerIsBetter:false, desc:"Iron storage.", fix:"Rx: Heme Iron + Copper."}
-        },
-        tests: {
-            // PHYSICAL BENCHMARKS: Elite Standards
-            vo2: {val:32, goal:50, unit:"ml/kg", name:"VO2 Max", desc:"1. Use Smart Watch.<br>2. Track over 1 week.<br>3. Higher is better.", fix:"Rx: Zone 2 Cardio 150m/wk."},
-            hang: {val:40, goal:90, unit:"s", name:"Dead Hang", desc:"1. Grip bar.<br>2. Hang with straight arms.<br>3. Do not swing.", fix:"Rx: Daily hang practice."},
-            sit: {val:45, goal:150, unit:"s", name:"Wall Sit", desc:"1. Wall Sit position.<br>2. Thighs parallel.<br>3. Hands on chest.", fix:"Rx: Weighted Vest holds."},
-            breath: {val:30, goal:60, unit:"s", name:"CO2 Tolerance", desc:"1. 3 Deep breaths.<br>2. Slow nasal exhale.<br>3. Time the exhale.", fix:"Rx: Apnea Tables."}
-        }
-    }
-};
-
-var uH = JSON.parse(localStorage.getItem('centurion_bio_v2')) || JSON.parse(JSON.stringify(defaultUH));
-
-function updateStreak(change) {
-    if(!uH['S'].streak) uH['S'].streak = 0;
-    uH['S'].streak += change;
-    if(uH['S'].streak < 0) uH['S'].streak = 0;
-    
-    // Auto-update the predicted CRP based on streak (0.1 drop per day)
-    let startCRP = 1.8;
-    let newCRP = Math.max(0.5, (startCRP - (uH['S'].streak * 0.1)).toFixed(2));
-    uH['S'].labs.crp.val = newCRP; // Update the actual lab value for visuals
-    
-    localStorage.setItem('centurion_bio_v2', JSON.stringify(uH));
-    renderBioTab('labs'); // Re-render to see change
-}
-
-function updateBioVal(section, key, name) {
-    event.stopPropagation(); 
-    var current = uH[user][section][key].val;
-    var newVal = prompt("LOG NEW RESULT for " + name + ":", current);
-    if(newVal !== null && newVal !== "" && !isNaN(newVal)) {
-        uH[user][section][key].val = parseFloat(newVal);
-        localStorage.setItem('centurion_bio_v2', JSON.stringify(uH));
-        renderBioTab(section); 
-    }
-}
-
-function resetBioData() {
-    if(confirm("Reset all biometric data to defaults? This cannot be undone.")) {
-        uH = JSON.parse(JSON.stringify(defaultUH));
-        localStorage.setItem('centurion_bio_v2', JSON.stringify(uH));
-        renderBioTab('phys');
-    }
-}
-
-function calculateLifeExpectancy(uID) {
-    var u = uH[uID];
-    if (!u) return { current: 0, potential: 0 };
-    var l = u.labs;
-    var t = u.tests;
-    var f = u.now;
-    var baseAge = 78; 
-    if (t.vo2 && t.vo2.val >= 50) baseAge += 8; 
-    else if (t.vo2 && t.vo2.val >= 40) baseAge += 4; 
-    else if (t.vo2 && t.vo2.val < 30) baseAge -= 5; 
-    if (l.apob && l.apob.val <= 60) baseAge += 6; 
-    else if (l.apob && l.apob.val <= 80) baseAge += 2;
-    else if (l.apob && l.apob.val > 100) baseAge -= 4; 
-    if (l.hba1c && l.hba1c.val <= 5.0) baseAge += 4; 
-    else if (l.hba1c && l.hba1c.val >= 5.7) baseAge -= 4; 
-    if (f.vf <= 6) baseAge += 3; 
-    else if (f.vf >= 10) baseAge -= 3;
-    var hangGoal = (uID === 'J') ? 90 : 45;
-    if (t.hang && t.hang.val >= hangGoal) baseAge += 3;
-    if (l.ana && l.ana.val > 80) baseAge -= 4; 
-    if (baseAge > 100) baseAge = 100;
-    return { current: baseAge, potential: 100 };
-}
-
-function getHoliday(d) {
-    const m = d.getMonth(); const date = d.getDate(); const day = d.getDay(); 
-    if(m===0 && date===1) return "NEW YEAR'S DAY";
-    if(m===6 && date===4) return "INDEPENDENCE DAY";
-    if(m===10 && date===11) return "VETERANS DAY";
-    if(m===11 && date===25) return "CHRISTMAS DAY";
-    if(m===5 && date===19) return "JUNETEENTH";
-    if(m===0 && day===1 && date>=15 && date<=21) return "MLK DAY";
-    if(m===1 && day===1 && date>=15 && date<=21) return "PRESIDENTS DAY";
-    if(m===4 && day===1 && date>=25) return "MEMORIAL DAY";
-    if(m===8 && day===1 && date<=7) return "LABOR DAY";
-    if(m===10 && day===4 && date>=22 && date<=28) return "THANKSGIVING";
-    return null;
-}
-
-// --- UPDATED USER SWITCHER ---
-function switchU(uID){ 
-    user=uID;
-    localStorage.setItem('centurion_active_user', uID); // SAVE SELECTION
-    
-    document.querySelectorAll('.u-badge').forEach(b=>b.classList.remove('active')); 
-    document.getElementById('b'+uID.toLowerCase()).classList.add('active'); 
-    
-    // Clear old Oura display
-    document.getElementById('dateDisplay').innerHTML = `<span style="color:#666">💍 LOADING ${uID === 'J' ? "JERMAINE" : "SOPHIA"}...</span>`;
-    
-    render(); 
-    
-    // Auto-fetch for the new user
-    setTimeout(fetchOuraData, 500);
-}
-
-function syncOffsetToSelection() {
-    let today = getCaDate(); today.setHours(0,0,0,0);
-    let todayMon = new Date(today);
-    todayMon.setDate(today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
-    let selMon = new Date(selDate);
-    selMon.setDate(selDate.getDate() - (selDate.getDay() === 0 ? 6 : selDate.getDay() - 1));
-    selMon.setHours(0,0,0,0);
-    offset = Math.round((selMon - todayMon) / (7 * 864e5));
-}
-
-function getMon(o){ 
-    let d = getCaDate(); 
-    d.setHours(0,0,0,0); 
-    let day = d.getDay(); 
-    let diff = d.getDate() - day + (day === 0 ? -6 : 1); 
-    d.setDate(diff + (o * 7)); 
-    return d; 
-}
-
-function changeW(direction) {
-    let viewMon = getMon(offset); 
-    if (direction > 0) selDate = new Date(viewMon.getTime() + (7 * 864e5)); 
-    else selDate = new Date(viewMon.getTime() - 864e5);
-    selDate.setHours(12, 0, 0, 0); syncOffsetToSelection(); render(); 
-}
-
-function resetD(){ offset=0; selDate=getCaDate(); render(); }
-
-function render(){
-    const mon=getMon(offset); const days=["MON","TUE","WED","THU","FRI","SAT","SUN"];
-    const tabs=document.getElementById('dayTabs'); tabs.innerHTML='';
-    const end=new Date(mon); end.setDate(mon.getDate()+6);
-    document.getElementById('dateDisplay').innerText=`${mon.toLocaleDateString('en-US',{month:'short',day:'numeric'})} - ${end.toLocaleDateString('en-US',{month:'short',day:'numeric'})}`;
-    
-    for(let i=0; i<7; i++){
-        let d=new Date(mon); d.setDate(mon.getDate()+i);
-        const isSelected = getDateKey(d) === getDateKey(selDate);
-        const b=document.createElement('div'); 
-        b.className='tab'+(isSelected?' active':'');
-        b.innerHTML=`${days[i]}<br>${d.getDate()}`;
-        b.onclick=()=>{ selDate=d; render() }; 
-        tabs.appendChild(b);
-        if(isSelected) showDay(d, i);
-    }
-}
-
-function applyAIPLogic(mealString, type) {
-    if(user !== 'S') return mealString; 
-
-    // --- RULE 1: NO CAFFEINE / ALCOHOL ---
-    if(mealString.includes("Coffee") || mealString.includes("Espresso")) {
-        return "Golden Milk|Coconut Milk,Turmeric,Collagen|heat|<strong>Prep:</strong> 5m<hr><strong>INGREDIENTS</strong><br>1 Cup Coconut Milk • 1 tsp Turmeric • 1 Scoop Collagen<br><br><strong>THE PROTOCOL</strong><br>Heat milk. Whisk in turmeric and ginger. Sip warm.<br><br><strong>Longevity Win:</strong> Curcumin reduces inflammation without the cortisol spike of caffeine.|8|5|160|1";
-    }
-
-    // --- RULE 2: NO ADDED SUGAR ---
-    if(mealString.includes("Maple") || mealString.includes("Honey") || mealString.includes("Agave")) {
-        mealString = mealString.replace("Maple Syrup", "Stevia").replace("Honey", "Monk Fruit").replace("Agave", "Cinnamon");
-    }
-
-    let parts = mealString.split('|');
-    let name = parts[0];
-    let ingredients = parts[1];
-    let macros = { p: parseInt(parts[4]), c: parseInt(parts[5]), k: parseInt(parts[6]), f: parseInt(parts[7]||0) };
-
-    // --- RULE 3: THE FIBER GUARANTEE ---
-    if(macros.f < 10 && type !== 's') { 
-        if(type === 'b') {
-            // For simple breakfasts (Toast/Yogurt), add berries instead of heavy sides
-            if(!ingredients.includes("Berries") && !ingredients.includes("Avocado")) {
-                 ingredients += " + 1 Cup Raspberries";
-                 macros.f += 8;
-                 macros.c += 15;
-            }
-        } else {
-            ingredients += " + 1/2 Avocado";
-            macros.f += 7;
-            macros.k += 120;
-        }
-    }
-
-    return `${name}|${ingredients}|${parts[2]}|${parts[3]}|${macros.p}|${macros.c}|${macros.k}|${macros.f}`;
-}
-
-function showDay(dObj, idx){
-    const id=Math.floor(dObj.getTime()/864e5);
-    const dateKey = getDateKey(dObj);
-    const holidayName = getHoliday(dObj);
-    if(!snackLog[dateKey]) snackLog[dateKey] = [null, null];
-    const snacks = snackLog[dateKey];
-    let b, l, dn;
-    if(holidayName) {
-        b = hDB.b.split('|'); l = hDB.l.split('|'); dn = hDB.d.split('|');
-        if(!b[7]) b[7]=5; if(!l[7]) l[7]=5; if(!dn[7]) dn[7]=5;
-    } else {
-        let rawB = (mDB.b[Math.abs(id) % mDB.b.length] || mDB.b[0]);
-        let rawL = (mDB.l[Math.abs(id) % mDB.l.length] || mDB.l[0]);
-        let rawD = (mDB.d[Math.abs(id) % mDB.d.length] || mDB.d[0]);
-
-        b = applyAIPLogic(rawB, 'b').split('|');
-        l = applyAIPLogic(rawL, 'l').split('|');
-        dn = applyAIPLogic(rawD, 'd').split('|');
-    }
-    
-    const sch=["HEAVY LIFT","BOXING","REFORM","BOXING","REFORM/YOGA","CS4","RELAX"];
-    const jcs=["PINEAPPLE GREEN Vitality","TITAN RED Juice","ZENITH GREEN Juice","TITAN RED Juice","ZENITH GREEN Juice","TITAN RED Juice","APOLLO GOLD Juice"];
-    const j=jDB[jcs[idx]]; 
-    
-    let wName = holidayName ? "RELAX" : sch[idx];
-    const isHighOutput = ["HEAVY LIFT", "BOXING", "CS4"].includes(wName);
-    
-    const g=(user==='J') ? {P:165, C:isHighOutput?160:85, F:40, K:isHighOutput?2200:1800} : {P:105, C:55, F:35, K:1300};
-    const sc = (user==='J') ? 1 : 0.6; 
-
-    let sPro=0, sCarb=0, sFib=0, sCal=0;
-    snacks.forEach(sIdx => {
-        if(sIdx !== null) {
-            let sData = mDB.s[sIdx].split('|');
-            sPro += parseInt(sData[4]); 
-            sCarb += parseInt(sData[5]); 
-            sCal += parseInt(sData[6]);
-            sFib += parseInt(sData[7] || 0);
-        }
-    });
-
-    let p = Math.round((parseInt(b[4]) + parseInt(l[4]) + parseInt(dn[4]))*sc) + j[2] + sPro;
-    let c = Math.round((parseInt(b[5]) + parseInt(l[5]) + parseInt(dn[5]))*sc) + j[3] + sCarb;
-    let k = Math.round((parseInt(b[6]) + parseInt(l[6]) + parseInt(dn[6]))*sc) + j[4] + sCal;
-    let f = Math.round((parseInt(b[7]||0) + parseInt(l[7]||0) + parseInt(dn[7]||0))*sc) + (j[5]||0) + sFib;
-
-    // --- DYNAMIC PORTION LOGIC (The Fix) ---
-    let ptn = (user==='J') ? { l: '8oz', d: '8oz' } : { l: '5oz', d: '5oz' };
-    const bName = b[0].toLowerCase();
-    
-    if(bName.includes("smoothie") || bName.includes("shake")) {
-        ptn.b = (user==='J') ? "2 Scoops" : "1 Scoop";
-    } else if(bName.includes("yogurt") || bName.includes("parfait") || bName.includes("pudding")) {
-        ptn.b = (user==='J') ? "1.5 Cups" : "1 Cup";
-    } else if(bName.includes("pancake") || bName.includes("waffle")) {
-        ptn.b = (user==='J') ? "Pro Batter" : "Lite Batter";
-    } else if(bName.includes("steak")) {
-        ptn.b = (user==='J') ? "6oz Steak" : "4oz Steak";
-    } else if(bName.includes("salmon")) {
-        ptn.b = (user==='J') ? "6oz Fish" : "4oz Fish";
-    } else {
-        // Default Savory (Scrambles, etc)
-        ptn.b = (user==='J') ? "4 Eggs" : "2 Eggs";
-    }
-
-    const proto = pDB[wName] || pDB["RELAX"];
-    
-    let snackHTML = '<div class="snack-grid">';
-    for(let i=0; i<2; i++) {
-        if(snacks[i] === null) {
-            snackHTML += `<div class="snack-slot" onclick="openSnackSelector(${i})"><span style="font-size:1.2rem; color:#333;">＋</span><span class="snack-label" style="color:#666; font-weight:500;">ADD SNACK</span></div>`;
-        } else {
-            let s = mDB.s[snacks[i]].split('|');
-            snackHTML += `<div class="snack-slot filled" onclick="openR('${s[0].replace(/'/g, "\\'")}', '${s[1]}', '${s[2]}', '${s[3].replace(/'/g, "\\'")}')"><div class="remove-snack" onclick="event.stopPropagation(); removeSnack(${i})">✕</div><span class="snack-label">${s[0]}</span><span class="snack-macro">${s[4]}P ${s[7]||0}F</span></div>`;
-        }
-    }
-    snackHTML += '</div>';
-
-    let holidayBannerHTML = holidayName ? `<div class="holiday-banner">✨ ${holidayName} DETECTED ✨<br>PROTOCOL: FESTIVE RELAX</div>` : '';
-    let cardClass = holidayName ? 'card holiday-card' : 'card';
-
-    // DYNAMIC ESSENTIALS LOGIC
-    const ess1 = "Sea Moss";
-    const ess2 = (user === 'S') ? "Hibiscus Tea" : "Kombucha";
-    const ess2Emoji = (user === 'S') ? "🌺" : "🥃";
-
-    document.getElementById('dayContent').innerHTML = `
-        ${holidayBannerHTML}
-        <div style="background:#0a0a0a; border:1px solid #222; border-bottom:4px solid var(--blue); padding:15px; border-radius:12px; margin-bottom:25px; cursor:pointer;" onclick="openRecoveryPhase('${wName}')">
-            <div style="display:flex; justify-content:space-between; align-items:center; text-align:center;">
-                <div style="flex:1"><div style="font-size:0.5rem; color:#666; font-weight:900; letter-spacing:1px">WARM UP</div><div style="font-size:0.7rem; color:#fff; margin-top:4px">${proto[0].h}</div></div>
-                <div style="color:var(--blue); font-size:0.8rem; padding:0 8px">➜</div>
-                <div style="flex:1.2"><div style="font-size:0.5rem; color:var(--blue); font-weight:900; letter-spacing:1px">WORKOUT</div><div style="font-size:0.85rem; color:#fff; font-weight:900; margin-top:4px">${wName}</div></div>
-                <div style="color:var(--blue); font-size:0.8rem; padding:0 8px">➜</div>
-                <div style="flex:1"><div style="font-size:0.5rem; color:#666; font-weight:900; letter-spacing:1px">RECOVER</div><div style="font-size:0.7rem; color:#fff; margin-top:4px">${proto[2].h}</div></div>
-            </div>
-            <div style="text-align:center; font-size:0.55rem; color:#444; margin-top:12px; letter-spacing:1px">TAP CARD FOR FULL GUIDE</div>
-        </div>
-        
-        <div class="label">🧬 Daily Essentials</div>
-        <div style="display:flex; gap:10px; margin-bottom:15px">
-            <div onclick="openM('${ess1}')" style="flex:1; background:#111; border:1px solid #333; padding:10px; border-radius:10px; text-align:center; font-size:0.8rem; font-weight:700; cursor:pointer;">${ess1} 🌿</div>
-            <div onclick="openM('${ess2}')" style="flex:1; background:#111; border:1px solid #333; padding:10px; border-radius:10px; text-align:center; font-size:0.8rem; font-weight:700; cursor:pointer;">${ess2} ${ess2Emoji}</div>
-        </div>
-
-        <div class="label">🍳 Breakfast <span class="portion-tag">• ${ptn.b}</span></div>
-        <div class="value" onclick="openR('${b[0].replace(/'/g, "\\'")}', '${b[1]}', '${b[2]}', '${b[3].replace(/'/g, "\\'")}')">
-            <span>${b[0]}</span> <span class="macro-pill">${Math.round(b[4]*sc)}P ${b[7]||0}F</span>
-        </div>
-
-        <div class="label">🥗 Lunch <span class="portion-tag">• ${ptn.l}</span></div>
-        <div class="value" onclick="openR('${l[0].replace(/'/g, "\\'")}', '${l[1]}', '${l[2]}', '${l[3].replace(/'/g, "\\'")}')">
-            <span>${l[0]} 💼</span> <span class="macro-pill">${Math.round(l[4]*sc)}P ${l[7]||0}F</span>
-        </div>
-
-        <div class="label">🍽️ Dinner <span class="portion-tag">• ${ptn.d}</span></div>
-        <div class="value" onclick="openR('${dn[0].replace(/'/g, "\\'")}', '${dn[1]}', '${dn[2]}', '${dn[3].replace(/'/g, "\\'")}')">
-            <span>${dn[0]}</span> <span class="macro-pill">${Math.round(dn[4]*sc)}P ${dn[7]||0}F</span>
-        </div>
-
-        <div class="label">🥜 Snack Options</div>
-        ${snackHTML}
-
-        <div class="macro-dashboard">
-            <div class="macro-row"><div class="macro-label"><span>PROTEIN</span><span>${p}g / ${g.P}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((p/g.P)*100,100)}%; background:var(--g-pro)"></div></div></div>
-            <div class="macro-row"><div class="macro-label"><span style="color:var(--green)">FIBER</span><span>${f}g / ${g.F}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((f/g.F)*100,100)}%; background:var(--g-fib)"></div></div></div>
-            <div class="macro-row"><div class="macro-label"><span>CARBS</span><span>${c}g / ${g.C}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((c/g.C)*100,100)}%; background:var(--g-carb)"></div></div></div>
-            <div class="macro-row"><div class="macro-label"><span>CALORIES</span><span>${k} / ${g.K}</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((k/g.K)*100,100)}%; background:var(--g-cal)"></div></div></div>
-        </div>
-
-        <div class="${cardClass}" style="text-align:center"><div class="label" style="color:var(--gold)">Functional Juice</div><div class="juice-name" onclick="openJ('${jcs[idx]}')">${jcs[idx]}</div></div>`;
-}
-
-function stableSeed(s) {
-    let h = 0;
-    for(let i = 0; i < s.length; i++) h = Math.imul(31, h) + s.charCodeAt(i) | 0;
-    return Math.abs(h);
-}
-
-function openR(n, i, a, t) {
-    document.getElementById('mTitle').innerText = n;
-    document.getElementById('mSub').innerText = "";
-    const body = document.getElementById('mBody');
-    body.innerHTML = '<div class="img-loader">✨ Chef is plating...</div>'; 
-    const cleanName = n.replace(/[^a-zA-Z ]/g, "").trim();
-    const seed = stableSeed(cleanName); 
-    const prompt = encodeURIComponent(`delicious ${cleanName} plated food photo`);
-    const imgUrl = `https://image.pollinations.ai/prompt/${prompt}?width=800&height=600&seed=${seed}&nologo=true&model=turbo`; 
-    const img = document.createElement("img");
-    img.className = "meal-img";
-    img.loading = "eager"; 
-    img.alt = cleanName;
-    img.referrerPolicy = "no-referrer";
-    img.style.opacity = "0";
-    img.style.filter = "blur(10px)";
-    img.style.transition = "opacity 0.4s ease, filter 0.4s ease";
-    const safeFallback = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80";
-    const timer = setTimeout(() => {
-        if (!img.complete || img.naturalWidth === 0) { 
-            console.log("AI timed out, switching to fallback.");
-            img.src = safeFallback; 
-        }
-    }, 15000); 
-    img.onload = () => {
-        clearTimeout(timer);
-        body.innerHTML = ""; 
-        body.appendChild(img);
-        setTimeout(() => {
-            img.style.opacity = "1";
-            img.style.filter = "blur(0)";
-        }, 50);
-        const txt = document.createElement("div");
-        txt.innerHTML = `<br>${t}`;
-        body.appendChild(txt);
-    };
-    img.onerror = () => { 
-        clearTimeout(timer); 
-        img.src = safeFallback; 
-        img.onload = null; 
-        img.style.opacity = "1";
-        img.style.filter = "blur(0)";
-    };
-    setTimeout(() => {
-        img.src = imgUrl;
-    }, 30);
-    document.getElementById('mTip').innerText = "";
-    document.getElementById('masterModal').style.display = 'block';
-}
-
-function openSnackSelector(slotIdx) {
-    currentSlot = slotIdx; 
-    const modalBody = document.getElementById('mBody');
-    document.getElementById('mTitle').innerText = "SELECT SNACK";
-    document.getElementById('mSub').innerText = "SLOT " + (slotIdx + 1);
-    let html = '';
-    mDB.s.forEach((item, index) => {
-        let s = item.split('|');
-        html += `<div class="value" onclick="applySnack(${index})">
-            ${s[0]} 
-            <span style="float:right;font-size:0.7rem;color:#666">${s[4]}g Pro | ${s[6]} Cal</span>
-        </div>`;
-    });
-    modalBody.innerHTML = html;
-    document.getElementById('mTip').innerText = "PRO TIP: Prioritize high-protein snacks on Heavy Lift days.";
-    document.getElementById('masterModal').style.display = 'block';
-}
-
-function applySnack(snackIndex) {
-    const dateKey = getDateKey(selDate);
-    if(!snackLog[dateKey]) snackLog[dateKey] = [null, null];
-    snackLog[dateKey][currentSlot] = snackIndex;
-    document.getElementById('masterModal').style.display = 'none';
-    render(); 
-}
-
-function removeSnack(slotIdx) {
-    const dateKey = getDateKey(selDate);
-    if(snackLog[dateKey]) {
-        snackLog[dateKey][slotIdx] = null;
-        render(); 
-    }
-}
-
-function openJ(n){
-    const d=jDB[n]; document.getElementById('mTitle').innerText=n; document.getElementById('mSub').innerText=d[0];
-    document.getElementById('mBody').innerHTML=`<p><strong>Ingredients:</strong> ${d[1]}</p><p>P: ${d[2]}g | C: ${d[3]}g | Kcal: ${d[4]} | Fiber: ${d[5]}g</p>`;
-    document.getElementById('mTip').innerText = "PRO TIP: High-speed blending retains fiber while unlocking nutrients.";
-    document.getElementById('masterModal').style.display='block';
-}
-
-function openM(n){
-    const d=rDB[n]; document.getElementById('mTitle').innerText=n; document.getElementById('mSub').innerText=d[0];
-    document.getElementById('mBody').innerHTML=d.slice(1).map(x=>`<p>${x}</p>`).join('');
-    document.getElementById('mTip').innerText = "PRO TIP: Consistency beats intensity for recovery protocols.";
-    document.getElementById('masterModal').style.display='block';
-}
-
-function openRecoveryPhase(workout) {
-    const m = document.getElementById('mBody');
-    document.getElementById('mTitle').innerText = workout + " PROTOCOL";
-    document.getElementById('mSub').innerText = "V222.61 FLOW LOGIC";
-    const active = pDB[workout] || pDB["RELAX"];
-    let html = '<div class="rec-phase-list">';
-    html += `<div class="phase-item"><span class="phase-time">WARM UP</span><span class="phase-title">${active[0].h}</span><span class="phase-detail">${active[0].d}</span></div>`;
-    html += `<div class="phase-item"><span class="phase-time" style="color:#fff">TRAINING</span><span class="phase-title">${active[1].h}</span><span class="phase-detail">${active[1].d}</span></div>`;
-    html += `<div class="phase-item"><span class="phase-time" style="color:var(--purple)">RECOVERY</span><span class="phase-title">${active[2].h}</span><span class="phase-detail">${active[2].d}</span></div>`;
-    html += '</div>';
-    m.innerHTML = html;
-    document.getElementById('mTip').innerText = "TIP: Hydrate with minerals before Sauna sessions.";
-    document.getElementById('masterModal').style.display = 'block';
-}
-
-function generateGroceryList() {
-    const modalBody = document.getElementById('mBody');
-    document.getElementById('mTitle').innerText = "WEEKLY GROCERY LIST";
-    document.getElementById('mSub').innerText = "V226.75 • SMART FILTER";
-    let mainList = [];
-    let pantryList = [];
-    mainList.push("Sea Moss (Gel or Dried)");
-    if(user === 'S') {
-        mainList.push("Hibiscus Tea (Loose leaf)");
-        mainList.push("Avocados (7x for Fiber Protocol)");
-    } else {
-        mainList.push("Kombucha (7-Day Supply)");
-    }
-    const mon = getMon(offset);
-    const jcs=["PLASMA FLUSH Smoothie","TITAN RED Smoothie","ZENITH GREEN Smoothie","TITAN RED Smoothie","ZENITH GREEN Smoothie","TITAN RED Smoothie","APOLLO GOLD Smoothie"];
-    for(let i=0; i<7; i++) {
-        let d = new Date(mon); d.setDate(mon.getDate()+i);
-        let dateKey = getDateKey(d);
-        let id = Math.floor(d.getTime()/864e5);
-        let holidayName = getHoliday(d);
-        let meals;
-        if(holidayName) {
-            meals = [hDB.b, hDB.l, hDB.d];
-        } else {
-            let rawB = (mDB.b[Math.abs(id) % mDB.b.length] || mDB.b[0]);
-            let rawL = (mDB.l[Math.abs(id) % mDB.l.length] || mDB.l[0]);
-            let rawD = (mDB.d[Math.abs(id) % mDB.d.length] || mDB.d[0]);
-            meals = [applyAIPLogic(rawB,'b'), applyAIPLogic(rawL,'l'), applyAIPLogic(rawD,'d')];
-        }
-        meals.forEach(mealStr => {
-            const parts = mealStr.split('|');
-            const htmlMatch = parts[3].match(/INGREDIENTS<\/strong><br>([\s\S]*?)<br><br>/);
-            if(htmlMatch && htmlMatch[1]) {
-                mainList.push(...htmlMatch[1].split('•').map(s => s.trim()));
-            }
-            if(!holidayName && parts[1]) {
-                pantryList.push(...parts[1].split(',').map(s => s.trim()));
-            }
-        });
-        let juiceName = jcs[i];
-        if(jDB[juiceName]) {
-             mainList.push(...jDB[juiceName][1].split(',').map(s => s.trim()));
-        }
-        if(snackLog[dateKey]) {
-            snackLog[dateKey].forEach(sIdx => {
-                if(sIdx !== null) {
-                    let sItem = mDB.s[sIdx];
-                    if(user === 'S' && sItem.includes("Coffee")) sItem = "Golden Milk|Coconut Milk,Turmeric"; // Grocery fix
-                    let sParts = sItem.split('|');
-                    const sMatch = sParts[3].match(/INGREDIENTS<\/strong><br>([\s\S]*?)<br><br>/);
-                    if(sMatch && sMatch[1]) {
-                        mainList.push(...sMatch[1].split('•').map(s => s.trim()));
-                    }
-                }
-            });
-        }
-    }
-    let uniqueMain = [...new Set(mainList.filter(i => i))].sort();
-    let uniquePantry = [...new Set(pantryList.filter(i => i))].sort();
-    const meatKeywords = ["Chicken", "Steak", "Bison", "Beef", "Turkey", "Salmon", "Tuna", "Cod", "Lamb", "Pork", "Boar", "Venison", "Duck", "Shrimp", "Fish", "Scallops", "Mackerel", "Sardines", "Octopus", "Liver", "Heart", "Ribeye", "Sirloin", "Flank", "Filet", "Burger", "Sausage", "Meatball"];
-    let finalPantry = uniquePantry.filter(pItem => {
-        const inMain = uniqueMain.some(mItem => mItem.toLowerCase().includes(pItem.toLowerCase()));
-        if(inMain) return false;
-        const isMeat = meatKeywords.some(meat => pItem.toLowerCase().includes(meat.toLowerCase()));
-        if(isMeat) return false;
-        return true;
-    });
-    let html = `<div style="padding-bottom:50px;">`;
-    html += `<div class="grocery-cat">FRESH & QUANTIFIED</div>`;
-    uniqueMain.forEach(item => {
-        html += `<div class="grocery-item">⬜ <span>${item}</span></div>`;
-    });
-    html += `<div class="grocery-cat">PANTRY & SPICES CHECK</div>`;
-    finalPantry.forEach(item => {
-        html += `<div class="grocery-item" style="color:#888">⬜ <span>${item}</span></div>`;
-    });
-    html += `</div>`;
-    modalBody.innerHTML = html;
-    document.getElementById('mTip').innerText = "TIP: Meats are automatically filtered to the top section.";
-    document.getElementById('masterModal').style.display = 'block';
-}
 
 function openBio() {
     var modalBody = document.getElementById('mBody');
@@ -884,7 +462,163 @@ function renderOuraTab() {
     target.innerHTML = html;
 }
 
-// ... (Rest of existing renderBioTab and toggleBioItem functions remain same)
+function renderBioTab(tab) {
+    var u = uH[user];
+    var target = document.getElementById('bioContentArea');
+    document.querySelectorAll('[id^="bt"]').forEach(function(t){ t.classList.remove('active') });
+    document.getElementById('bt' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+    
+    var html = '';
+
+    if(user === 'S' && tab === 'labs') {
+        if(!u.streak) u.streak = 0;
+        let startCRP = 1.8;
+        let projCRP = Math.max(0.5, (startCRP - (u.streak * 0.1)).toFixed(1));
+        let progress = Math.min(((startCRP - projCRP) / (startCRP - 0.5)) * 100, 100);
+        
+        html += `<div style="background:linear-gradient(180deg, #1a1a2e, #16213e); border:1px solid #30475e; border-radius:12px; padding:20px; margin-bottom:25px; text-align:center; box-shadow:0 4px 20px rgba(0,0,0,0.3);">
+            <div style="font-size:0.6rem; color:#888; letter-spacing:2px; font-weight:900; margin-bottom:10px;">THE TRIAD PROTOCOL</div>
+            <div style="font-size:1.8rem; font-weight:800; color:#fff; margin-bottom:5px;">${u.streak} DAYS CLEAN</div>
+            <div style="font-size:0.65rem; color:#a2a8d3; margin-bottom:20px;">🚫 ALCOHOL • 🚫 CAFFEINE • 🚫 SUGAR</div>
+            
+            <div style="display:flex; justify-content:space-between; align-items:end; margin-bottom:5px; padding:0 10px;">
+                <div style="text-align:left;">
+                    <div style="font-size:0.6rem; color:#ff5252; font-weight:900;">STARTING FIRE</div>
+                    <div style="font-size:1.1rem; color:#fff;">1.8 <span style="font-size:0.6rem">mg/L</span></div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:0.6rem; color:#00e676; font-weight:900;">PROJECTED COOLING</div>
+                    <div style="font-size:1.4rem; color:#00e676; text-shadow:0 0 10px rgba(0,230,118,0.4);">${projCRP} <span style="font-size:0.7rem">mg/L</span></div>
+                </div>
+            </div>
+
+            <div style="height:10px; background:#111; border-radius:10px; overflow:hidden; margin-bottom:20px; border:1px solid #333; position:relative;">
+                 <div style="position:absolute; left:0; top:0; bottom:0; width:${progress}%; background:linear-gradient(90deg, #ff5252, #00e676); transition:width 0.5s ease;"></div>
+            </div>
+
+            <div style="display:flex; gap:10px;">
+                <button onclick="updateStreak(-1)" style="flex:1; background:#222; border:1px solid #333; color:#666; padding:12px; border-radius:8px; font-weight:800; font-size:0.7rem; cursor:pointer;">💔 SLIP UP</button>
+                <button onclick="updateStreak(1)" style="flex:2; background:#00e676; border:none; color:#000; padding:12px; border-radius:8px; font-weight:900; font-size:0.7rem; cursor:pointer; box-shadow:0 0 15px rgba(0,230,118,0.3);">DAY COMPLETE (+1) 🧊</button>
+            </div>
+            <div style="font-size:0.55rem; color:#666; margin-top:15px; font-style:italic;">*Est. 0.1 mg/L drop per clean day based on half-life of inflammation markers.</div>
+        </div>`;
+    }
+
+    if(tab === 'phys') {
+        var le = calculateLifeExpectancy(user);
+        var gap = le.potential - le.current;
+        var gapColor = 'var(--green)'; 
+        if (gap > 20) gapColor = '#FF5252'; 
+        else if (gap > 10) gapColor = 'var(--gold)'; 
+        html += '<div style="background:linear-gradient(135deg, #111, #000); border:1px solid #333; border-radius:12px; padding:20px; margin-bottom:20px; text-align:center;">';
+        html += '<div style="font-size:0.6rem; color:#666; font-weight:900; letter-spacing:3px; text-transform:uppercase; margin-bottom:10px;">Biological Age Projection</div>';
+        html += '<div style="display:flex; justify-content:center; align-items:center; gap:15px; margin-bottom:10px;">';
+        html += '<div><div style="font-size:3rem; line-height:1; font-weight:800; color:#fff">' + le.current + '</div><div style="font-size:0.55rem; color:#888; font-weight:900; margin-top:5px;">CURRENT TRAJECTORY</div></div>';
+        html += '<div style="font-size:1.2rem; color:#444;">➔</div>';
+        html += '<div><div style="font-size:3rem; line-height:1; font-weight:800; color:var(--gold); text-shadow:0 0 15px rgba(212,175,55,0.3)">' + le.potential + '</div><div style="font-size:0.55rem; color:var(--gold); font-weight:900; margin-top:5px;">CENTURION GOAL</div></div>';
+        html += '</div>';
+        if(gap > 0) {
+            html += '<div style="background:rgba(255,255,255,0.05); border-radius:8px; padding:8px; display:inline-block;">';
+            html += '<span style="font-size:0.7rem; color:#ccc;">GAP: </span>';
+            html += '<span style="font-size:0.8rem; font-weight:800; color:' + gapColor + ';">-' + gap + ' YEARS</span>';
+            html += '<div style="font-size:0.5rem; color:#666; margin-top:4px;">OPTIMIZE APOB & VO2 MAX TO CLOSE GAP</div>';
+            html += '</div>';
+        } else {
+            html += '<div style="font-size:0.8rem; font-weight:800; color:var(--green);">CENTURION STATUS UNLOCKED 🏆</div>';
+        }
+        html += '</div>';
+    }
+    var keys = [];
+    if (tab === 'phys') {
+        keys = ['bf', 'm', 'vf', 'bmr'];
+    } else {
+        keys = Object.keys(u[tab]);
+    }
+    keys.forEach(function(key, idx) {
+        var m;
+        if (tab === 'phys') {
+            m = { 
+                id: key,
+                name: (key==='bf'?'Body Fat':key==='m'?'Muscle':key==='vf'?'Visceral Fat':'BMR'), 
+                val: u.now[key], 
+                goal: u.goal[key], 
+                unit: (key==='bf'?'%':key==='m'?'lbs':key==='vf'?'lvl':'kcal'), 
+                lowerIsBetter: (key!=='m' && key!=='bmr')
+            };
+            if(u.info[key]) { m.desc = u.info[key].d; m.fix = u.info[key].f; }
+        } else {
+            m = u[tab][key];
+        }
+        var maxRef = Math.max(m.val, m.goal) * 1.2;
+        var pctNow = (m.val / maxRef) * 100;
+        var pctGoal = (m.goal / maxRef) * 100;
+        var colorNow = 'var(--gold)';
+        var onTrack = m.lowerIsBetter ? (m.val <= m.goal * 1.05) : (m.val >= m.goal * 0.95);
+        if (onTrack) colorNow = 'var(--green)';
+        if (!onTrack && tab === 'labs') colorNow = '#FF5252'; 
+        var itemId = 'bio_item_' + idx;
+        var label1 = (tab === 'tests') ? "EXECUTION" : "WHAT";
+        var label2 = (tab === 'tests') ? "TRAINING" : "FIX";
+        var editHTML = '';
+        if(tab === 'tests') {
+            editHTML = ' <span onclick="updateBioVal(\''+tab+'\',\''+key+'\',\''+m.name+'\')" style="font-size:0.6rem; color:var(--blue); border:1px solid var(--blue); padding:2px 6px; border-radius:4px; margin-left:8px; cursor:pointer;">TAP TO UPDATE</span>';
+        }
+        html += '<div class="bio-section" onclick="toggleBioItem(\'' + itemId + '\')" style="margin-bottom:12px; padding:15px; cursor:pointer; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05);">';
+        html += '<div style="display:flex; justify-content:space-between; margin-bottom:10px;">';
+        html += '<span style="font-size:0.8rem; font-weight:800; color:#fff;">' + m.name + '</span>';
+        html += '<span style="font-size:0.6rem; color:#555; vertical-align:middle; font-weight:700">▼ INFO</span>';
+        html += '</div>';
+        html += '<div style="display:flex; align-items:center; margin-bottom:6px;">';
+        html += '<div style="width:40px; font-size:0.55rem; color:#888; font-weight:900;">NOW</div>';
+        html += '<div style="flex:1; height:6px; background:#111; border-radius:4px; overflow:hidden; margin-right:8px;">';
+        html += '<div style="width:' + pctNow + '%; height:100%; background:' + colorNow + '; border-radius:4px;"></div>';
+        html += '</div>';
+        html += '<div style="text-align:right; font-size:0.7rem; color:' + colorNow + '; font-weight:700;">' + m.val + editHTML + '</div>';
+        html += '</div>';
+        html += '<div style="display:flex; align-items:center;">';
+        html += '<div style="width:40px; font-size:0.55rem; color:var(--blue); font-weight:900;">GOAL</div>';
+        html += '<div style="flex:1; height:6px; background:#111; border-radius:4px; overflow:hidden; margin-right:8px;">';
+        html += '<div style="width:' + pctGoal + '%; height:100%; background:var(--blue); border-radius:4px; opacity:0.6;"></div>';
+        html += '</div>';
+        html += '<div style="width:40px; text-align:right; font-size:0.7rem; color:var(--blue); font-weight:700;">' + m.goal + '</div>';
+        html += '</div>';
+        html += '<div id="' + itemId + '" style="display:none; margin-top:15px; padding-top:10px; border-top:1px dashed #333;">';
+        html += '<div style="font-size:0.75rem; color:#ccc; margin-bottom:8px; line-height:1.4">';
+        html += '<strong style="color:var(--blue)">' + label1 + ':</strong> <br>' + (m.desc || 'Metric description unavailable.');
+        html += '</div>';
+        html += '<div style="font-size:0.75rem; color:#ccc; line-height:1.4">';
+        html += '<strong style="color:var(--green)">' + label2 + ':</strong> ' + (m.fix || 'Consult your protocol.');
+        html += '</div></div></div>';
+    });
+    target.innerHTML = html;
+}
+
+function toggleBioItem(id) {
+    const el = document.getElementById(id);
+    if(el.style.display === 'none') {
+        el.style.display = 'block';
+    } else {
+        el.style.display = 'none';
+    }
+}
+
+function closeM(){ document.getElementById('masterModal').style.display='none' }
+
+// --- OURA AUTO-SYNC LOGIC v6.0 (Cache-Busting Edition) ---
+async function connectOura() {
+    let currentToken = getActiveToken();
+    let name = (user === 'J') ? "JERMAINE" : "SOPHIA";
+    const token = prompt(`Paste OURA TOKEN for ${name}:`, currentToken);
+    
+    if (token && token !== currentToken) {
+        if (user === 'J') localStorage.setItem('centurion_oura_token_J', token.trim());
+        if (user === 'S') localStorage.setItem('centurion_oura_token_S', token.trim());
+        document.getElementById('dateDisplay').innerHTML = "💍 SAVING...";
+        setTimeout(fetchOuraData, 500);
+    } else {
+        await fetchOuraData();
+    }
+}
 
 async function fetchOuraData() {
     let activeToken = getActiveToken();
@@ -980,7 +714,16 @@ async function fetchOuraData() {
     }
 }
 
-// ... window.onload remains same ...
+// Auto-run logic
+window.onload = function() {
+    render();
+    
+    // Force UI to match current user state on load
+    document.querySelectorAll('.u-badge').forEach(b=>b.classList.remove('active')); 
+    document.getElementById('b'+user.toLowerCase()).classList.add('active'); 
+
+    if(getActiveToken()) setTimeout(fetchOuraData, 1000);
+};
 </script>
 </body>
 </html>
