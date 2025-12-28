@@ -3,14 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v228.8 Fixed</title>
+    <title>The Centurion | v226.60 Pro Upgrade</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --text:#fff;
-        --g-pro:linear-gradient(90deg,#FF5252,#D50000);
-        --g-carb:linear-gradient(90deg,#FFAB40,#FF6D00);
-        --g-cal:linear-gradient(90deg,#B388FF,#6200EA);
-        --g-fib:linear-gradient(90deg,#00E676,#00C853);}
+    --g-pro:linear-gradient(90deg,#FF5252,#D50000);
+    --g-carb:linear-gradient(90deg,#FFAB40,#FF6D00);
+    --g-cal:linear-gradient(90deg,#B388FF,#6200EA);
+    --g-fib:linear-gradient(90deg,#00E676,#00C853); 
+        --bg:#050505;--card:#141414;--gold:#D4AF37;--green:#00E676;--blue:#00B0FF;--purple:#D500F9;--text:#fff;--g-pro:linear-gradient(90deg,#FF5252,#D50000);--g-carb:linear-gradient(90deg,#FFAB40,#FF6D00);--g-cal:linear-gradient(90deg,#B388FF,#6200EA)}
         *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
         body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);margin:0;padding:15px;font-size:14px}
         .container{max-width:500px;margin:0 auto; padding-bottom: 50px;}
@@ -76,14 +77,12 @@
         .hist-row:last-child td { border-bottom: none; }
         .holiday-banner { background: linear-gradient(90deg, #D4AF37, #FDD835, #D4AF37); background-size: 200% 200%; animation: shine 3s infinite; color: #000; text-align: center; font-weight: 900; font-size: 0.75rem; padding: 10px; border-radius: 12px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px; box-shadow: 0 0 15px rgba(212, 175, 55, 0.3); }
         @keyframes shine { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
-        .oura-hist-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #222; font-size: 0.7rem; color: #888; }
-        .oura-val { font-weight: 800; color: #fff; }
     </style>
 </head>
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v228.8 Fixed</span>
+        <span class="version-tag">v226.60 Pro Upgrade (Smart Grocery + Bio)</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -113,20 +112,20 @@
 </div>
 <script>
 // --- GLOBAL STATE ---
-let user = localStorage.getItem('centurion_active_user') || 'J';
-let offset = 0;
+let user='J', offset=0;
 let snackLog = {}; 
 let currentSlot = 0;
+// We store the raw Oura data here for the history tab
+window.ouraHistory = [];
 
 // --- DUAL OURA CONFIGURATION ---
 const TOKEN_J = "WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y"; // Jermaine's Key
-const TOKEN_S = "4QSDWYJJUZFHRWRH727NCK7WH4COQJF4"; // Sophia's Key
 
 function getActiveToken() {
     if (user === 'J') {
         return localStorage.getItem('centurion_oura_token_J') || TOKEN_J;
     } else {
-        return TOKEN_S; 
+        return localStorage.getItem('centurion_oura_token_S') || "";
     }
 }
 
@@ -147,15 +146,8 @@ function getDateKey(d) {
 let selDate = getCaDate();
 
 // --- DATABASES ---
-const jDB = {
-    "PINEAPPLE GREEN Vitality": ["Digestion + Detox", "2c Spinach, 1c Pineapple, 1/2 Cucumber, Ginger, Lemon", 1, 28, 120, 1],
-    "PLASMA FLUSH Juice": ["Recovery", "3c Watermelon, 1 Lime (Peeled), Mint", 1, 32, 140, 1],
-    "TITAN RED Juice": ["Endurance", "2 Raw Beets, 2 Carrots, Pomegranate, Ginger", 2, 42, 185, 2],
-    "ZENITH GREEN Juice": ["Alkalizer", "4 Kale Leaves, 1 Cucumber, Celery, Lemon", 2, 18, 120, 1],
-    "APOLLO GOLD Juice": ["Anti-Inflammatory", "2 Pears, Turmeric Root, Ginger, Lemon", 1, 45, 195, 2]
-};
-
 const mDB = {
+    const mDB = {
     b: [
         "Beef & Liver Sausage Patties ⚡|80/20 Beef-Liver Blend,Sage,Thyme|sear|<strong>The 'Ancestral Sausage'</strong><hr><strong>INGREDIENTS</strong><br>6oz Beef/Liver Blend (80/20) • 1 tsp Sage • 1/2 tsp Thyme<br><br><strong>1. MIX</strong><br>Mix herbs into the ground blend. Form into small patties or links.<br><br><strong>2. COOK</strong><br>Pan fry until browned and cooked through. Serve with a side of berries.|25|2|280|0",
         "Sprouted Avocado Toast|Ezekiel Bread,Avocado,Egg Whites,Hemp Seeds|toast|<strong>The 'Centurion Toast'</strong><hr><strong>INGREDIENTS</strong><br>2 Slices Sprouted Bread • 1/2 Avocado • 1 Cup Egg Whites • 1 tbsp Hemp Seeds<br><br><strong>1. PREP</strong><br>Toast bread. Mash avocado with lemon.<br><br><strong>2. COOK</strong><br>Scramble egg whites separately. Serve toast topped with avo mash.|35|30|450|12",
@@ -273,27 +265,71 @@ const mDB = {
         "Liver Crisps|Dried Beef Liver|raw|<strong>Prep:</strong> 0m<hr><strong>INGREDIENTS</strong><br>1oz Dried Liver<br><br><strong>THE PROTOCOL</strong><br>Eat like chips.<br><br><strong>Longevity Win:</strong> Nutrient density.|18|2|90|0"
     ]
 };
+};
 
 const pDB={"HEAVY LIFT":[{t:"PRE",h:"Theragun",d:"Glutes, Quads, Hams. 30s each."},{t:"GYM",h:"Heavy Lift",d:"Main compound movement."},{t:"POST",h:"Chair+Sauna",d:"20m Zero-Grav + 20m Sauna."}],"BOXING":[{t:"PRE",h:"Mobility",d:"Rotator cuffs & Calves."},{t:"GYM",h:"Boxing",d:"High intensity rounds."},{t:"POST",h:"Normatec",d:"Flush legs. NO SAUNA."}],"REFORM":[{t:"PRE",h:"Sweep",d:"Light full body percussion."},{t:"GYM",h:"Reform",d:"Time under tension."},{t:"POST",h:"Sauna",d:"20m HGH Boost."}],"REFORM/YOGA":[{t:"PRE",h:"Sweep",d:"Light full body percussion."},{t:"GYM",h:"Yoga",d:"Deep fascial release."},{t:"POST",h:"Heat",d:"Sauna or Thera Knee Heat."}],"CS4":[{t:"PRE",h:"Hydrate",d:"Electrolytes."},{t:"GYM",h:"CS4",d:"Cardio Strength 4."},{t:"POST",h:"Contrast",d:"Sauna + Cold or Knee Contrast."}],"RELAX":[{t:"PRE",h:"Walk",d:"Light movement."},{t:"GYM",h:"Relax",d:"Active recovery."},{t:"POST",h:"Massage",d:"Chair or Thera Knee Heat."}]};
 
 const rDB={"Sea Moss":["92 Minerals","2 TBSP Fasted.","Thyroid & Gut support."],"Kombucha":["Probiotic","4 OZ post-Lunch.","Enzyme support."],"Aloe Vera":["Gut Soother", "2oz Pure Aloe Inner Leaf.", "Heals stomach lining."],"Golden Milk":["Anti-Inflammatory", "Coconut Milk, Turmeric, Black Pepper.", "Calms the immune system."],"Hibiscus Tea":["Blood Pressure", "Dried Hibiscus Flowers.", "Rich in antioxidants (Vitamin C)."],"Aqua Chair":["Hydro-Massage","Align body to zero-gravity.","Jets to glutes and lats.","20 Min Duration."],"Sauna":["HSP Induction","185°F Range.","20 Mins total.","Heavy metal detox sweat."],"Theragun":["Percussive","Float over muscles.","2m per limb.","Target Lats/Hips."],"Normatec":["Compression","Level 4 Intensity.","Full leg cycle.","30m Lymphatic flush."],"Pre-Workout":["Nitro-Boost","6g Citrulline Malate.","Take 20m before training."]};
 
+const jDB={
+    "PLASMA FLUSH Smoothie": ["Recovery", "3c Watermelon, 1 Lime (Peeled), Mint", 1, 32, 140, 2],
+    "TITAN RED Smoothie": ["Endurance", "2 Raw Beets, 2 Carrots, Pomegranate, Ginger", 4, 42, 185, 8],
+    "ZENITH GREEN Smoothie": ["Alkalizer", "4 Kale Leaves, 1 Cucumber, Celery, Lemon", 4, 18, 120, 8],
+    "APOLLO GOLD Smoothie": ["Anti-Inflammatory", "2 Pears (Skin on), Turmeric, Ginger", 1, 45, 195, 10]
+};
+
 const hDB={b:"Festive Brunch|Protein Waffles, Turkey Bacon, Eggs, Berries|griddle|<strong>Prep:</strong> 15m • <strong>Cook:</strong> 15m<hr><strong>INGREDIENTS</strong><br>1 Scoop Whey (in batter) • 2 Eggs • 2 Slices Turkey Bacon • 1/2 Cup Berries<br><br><strong>1. ENJOY</strong><br>Prioritize the protein first, then enjoy the treats. Happy Holidays!|35|40|500",l:"The Holiday Feast|Lean Roast Meat, Green Beans, Sweet Potato|roast|<strong>Prep:</strong> 20m • <strong>Cook:</strong> 3h<hr><strong>INGREDIENTS</strong><br>8oz Roast Turkey or Beef • 1 Cup Green Beans • 1/2 Cup Sweet Potato<br><br><strong>1. FEAST</strong><br>Load up on the roast meat and green veggies. Go easy on the gravy.|50|40|600",d:"Leftovers Plate|Lean Protein, Veggies|raw|<strong>Prep:</strong> 5m<hr><strong>INGREDIENTS</strong><br>6oz Leftover Protein • Vegetable Side<br><br><strong>1. RECOVER</strong><br>Keep it light to help digestion before sleep.|30|10|300"};
 
 var defaultUH = {
     'J': {
-        now: {bf:19.0, m:99.0, w:217.0, vf:10, bmr:2050}, 
+        now: {bf:19.0, m:99.0, w:217.0, vf:10, bmr:2050},
         goal: {bf:15.0, m:105.0, w:212.0, vf:7, bmr:2150},
-        info: {bf:{d:"Adipose tissue percentage.",f:"Rx: Caloric Deficit."},m:{d:"Skeletal muscle.",f:"Rx: Hypertrophy."},vf:{d:"Visceral Fat.",f:"Rx: No Fructose."},bmr:{d:"Basal Metabolic Rate.",f:"Rx: Build muscle."}},
-        labs: {apob:{val:95,goal:60,unit:"mg/dL",name:"ApoB",lowerIsBetter:true,desc:"Plaque particles.",fix:"Rx: Fiber >40g."},hba1c:{val:5.4,goal:5.0,unit:"%",name:"HbA1c",lowerIsBetter:true,desc:"Avg blood sugar.",fix:"Rx: Walk post-meal."}},
-        tests: {vo2:{val:45,goal:55,unit:"ml/kg",name:"VO2 Max",desc:"Oxygen efficiency.",fix:"Rx: 4x4 Intervals."},hang:{val:85,goal:120,unit:"s",name:"Dead Hang",desc:"Grip strength.",fix:"Rx: Daily hangs."}}
+        info: {
+            bf: {d:"Adipose tissue percentage.", f:"Rx: Caloric Deficit + Zone 2."},
+            m: {d:"Skeletal muscle tissue.", f:"Rx: Hypertrophy (8-12 reps)."},
+            vf: {d:"Visceral Fat (Organ Fat).", f:"Rx: No Fructose."},
+            bmr: {d:"Basal Metabolic Rate.", f:"Rx: Build muscle to increase burn."}
+        },
+        labs: {
+            apob: {val:95, goal:60, unit:"mg/dL", name:"ApoB", lowerIsBetter:true, desc:"Plaque particles.", fix:"Rx: Fiber >40g."},
+            hba1c: {val:5.4, goal:5.0, unit:"%", name:"HbA1c", lowerIsBetter:true, desc:"Avg blood sugar.", fix:"Rx: Walk post-meal."},
+            crp: {val:0.9, goal:0.5, unit:"mg/L", name:"hs-CRP", lowerIsBetter:true, desc:"Systemic inflammation.", fix:"Rx: Omega-3 (4g). Sauna."},
+            test: {val:650, goal:850, unit:"ng/dL", name:"Testosterone", lowerIsBetter:false, desc:"Anabolic drive.", fix:"Rx: Heavy Squats."},
+            vitd: {val:42, goal:60, unit:"ng/mL", name:"Vitamin D3", lowerIsBetter:false, desc:"Immune precursor.", fix:"Rx: Morning sun."},
+            homo: {val:11, goal:9, unit:"umol/L", name:"Homocysteine", lowerIsBetter:true, desc:"Methylation status.", fix:"Rx: Methylated B-Complex."}
+        },
+        tests: {
+            vo2: {val:45, goal:55, unit:"ml/kg", name:"VO2 Max", desc:"1. Use Apple Watch or Gym Test.<br>2. Run/Walk max effort.<br>3. Measure oxygen efficiency.", fix:"Rx: Norwegian 4x4 Intervals."},
+            hang: {val:85, goal:120, unit:"s", name:"Dead Hang", desc:"1. Grip bar (Overhand).<br>2. Arms locked out.<br>3. Feet off floor.<br>4. Hold until failure.", fix:"Rx: Farmer Carries."},
+            sit: {val:60, goal:120, unit:"s", name:"Wall Sit", desc:"1. Back flat against wall.<br>2. Knees at 90°.<br>3. Hands off legs.<br>4. Hold until failure.", fix:"Rx: Weighted Wall Sits."},
+            breath: {val:45, goal:60, unit:"s", name:"CO2 Tolerance", desc:"1. Inhale 100%.<br>2. Start timer.<br>3. Exhale through NOSE as slowly as possible.<br>4. Stop when air runs out.", fix:"Rx: Box Breathing."}
+        }
     },
     'S': {
         now: {bf:36.1, m:49.2, w:141.5, vf:9, bmr:1250},
-        goal: {bf:22.0, m:60.0, w:135.0, vf:4, bmr:1450}, 
-        info: {bf:{d:"Adipose tissue.",f:"Rx: Deficit."},m:{d:"Muscle.",f:"Rx: Hypertrophy."},vf:{d:"Visceral fat.",f:"Rx: No seed oils."},bmr:{d:"Metabolism.",f:"Rx: Protein."}},
-        labs: {ana:{val:320,goal:40,unit:" titer",name:"ANA",lowerIsBetter:true,desc:"Autoimmune marker.",fix:"Rx: Sleep/Stress."},gluc:{val:84,goal:75,unit:"mg/dL",name:"Glucose",lowerIsBetter:true,desc:"Fasting sugar.",fix:"Rx: Post-meal walks."}},
-        tests: {vo2:{val:32,goal:50,unit:"ml/kg",name:"VO2 Max",desc:"Cardio health.",fix:"Rx: Zone 2."},hang:{val:40,goal:90,unit:"s",name:"Dead Hang",desc:"Grip.",fix:"Rx: Practice daily."}}
+        goal: {bf:28.0, m:55.0, w:138.0, vf:5, bmr:1350},
+        info: {
+            bf: {d:"Adipose tissue releases cytokines.", f:"Rx: Anti-inflammatory deficit."},
+            m: {d:"Muscle acts as a 'glucose sink'.", f:"Rx: Slow Resistance Training."},
+            vf: {d:"Visceral fat drives inflammation.", f:"Rx: Eliminate seed oils."},
+            bmr: {d:"Base metabolism.", f:"Rx: Protein prioritization."}
+        },
+        labs: {
+            tsh: {val:1.35, goal:1.5, unit:" mIU/L", name:"TSH (Thyroid)", lowerIsBetter:true, desc:"Thyroid Function OPTIMAL.", fix:"Rx: Maintain Selenium."},
+            ana: {val:320, goal:40, unit:" titer", name:"ANA Titer", lowerIsBetter:true, desc:"Autoantibody level (High).", fix:"Rx: Autoimmune Protocol (AIP)."},
+            rf: {val:9, goal:14, unit:" IU/mL", name:"Rheum. Factor", lowerIsBetter:true, desc:"Negative. Rules out RA.", fix:"Rx: Collagen support."},
+            apob: {val:105, goal:70, unit:"mg/dL", name:"ApoB", lowerIsBetter:true, desc:"Vascular particle count.", fix:"Rx: Increase soluble fiber."},
+            hba1c: {val:5.6, goal:5.0, unit:"%", name:"HbA1c", lowerIsBetter:true, desc:"Pre-diabetic marker.", fix:"Rx: Veggies before Carbs."},
+            crp: {val:1.8, goal:0.5, unit:" mg/L", name:"hs-CRP", lowerIsBetter:true, desc:"Inflammation level.", fix:"Rx: Curcumin + Cold Plunge."},
+            vitd: {val:35, goal:60, unit:" ng/mL", name:"Vitamin D3", lowerIsBetter:false, desc:"Immune regulation.", fix:"Rx: 5000IU D3 w/ fat."},
+            ferr: {val:30, goal:70, unit:" ng/mL", name:"Ferritin", lowerIsBetter:false, desc:"Iron storage status.", fix:"Rx: Heme Iron + Vit C."}
+        },
+        tests: {
+            vo2: {val:32, goal:45, unit:"ml/kg", name:"VO2 Max", desc:"1. Use Smart Watch.<br>2. Track over 1 week.<br>3. Higher is better.", fix:"Rx: Zone 2 Cardio 150m/wk."},
+            hang: {val:40, goal:60, unit:"s", name:"Dead Hang", desc:"1. Grip bar.<br>2. Hang with straight arms.<br>3. Do not swing.", fix:"Rx: Daily hang practice."},
+            sit: {val:45, goal:90, unit:"s", name:"Wall Sit", desc:"1. Wall Sit position.<br>2. Thighs parallel.<br>3. Hands on chest.", fix:"Rx: Isometric holds."},
+            breath: {val:30, goal:45, unit:"s", name:"CO2 Tolerance", desc:"1. 3 Deep breaths.<br>2. Slow nasal exhale.<br>3. Time the exhale.", fix:"Rx: 4-7-8 Breathing."}
+        }
     }
 };
 
@@ -303,9 +339,11 @@ function updateStreak(change) {
     if(!uH['S'].streak) uH['S'].streak = 0;
     uH['S'].streak += change;
     if(uH['S'].streak < 0) uH['S'].streak = 0;
+    
     let startCRP = 1.8;
     let newCRP = Math.max(0.5, (startCRP - (uH['S'].streak * 0.1)).toFixed(2));
-    uH['S'].labs.crp = {val: newCRP, goal:0.3, unit:"mg/L", name:"hs-CRP", lowerIsBetter:true, desc:"Inflammation.", fix:"Rx: Omega-3."};
+    uH['S'].labs.crp.val = newCRP; 
+    
     localStorage.setItem('centurion_bio_v2', JSON.stringify(uH));
     renderBioTab('labs'); 
 }
@@ -340,22 +378,44 @@ function calculateLifeExpectancy(uID) {
     else if (t.vo2 && t.vo2.val >= 40) baseAge += 4; 
     else if (t.vo2 && t.vo2.val < 30) baseAge -= 5; 
     if (l.apob && l.apob.val <= 60) baseAge += 6; 
+    else if (l.apob && l.apob.val <= 80) baseAge += 2;
+    else if (l.apob && l.apob.val > 100) baseAge -= 4; 
     if (l.hba1c && l.hba1c.val <= 5.0) baseAge += 4; 
+    else if (l.hba1c && l.hba1c.val >= 5.7) baseAge -= 4; 
     if (f.vf <= 6) baseAge += 3; 
+    else if (f.vf >= 10) baseAge -= 3;
+    var hangGoal = (uID === 'J') ? 90 : 45;
+    if (t.hang && t.hang.val >= hangGoal) baseAge += 3;
+    if (l.ana && l.ana.val > 80) baseAge -= 4; 
     if (baseAge > 100) baseAge = 100;
     return { current: baseAge, potential: 100 };
 }
 
 function getHoliday(d) {
-    return null; 
+    const m = d.getMonth(); const date = d.getDate(); const day = d.getDay(); 
+    if(m===0 && date===1) return "NEW YEAR'S DAY";
+    if(m===6 && date===4) return "INDEPENDENCE DAY";
+    if(m===10 && date===11) return "VETERANS DAY";
+    if(m===11 && date===25) return "CHRISTMAS DAY";
+    if(m===5 && date===19) return "JUNETEENTH";
+    if(m===0 && day===1 && date>=15 && date<=21) return "MLK DAY";
+    if(m===1 && day===1 && date>=15 && date<=21) return "PRESIDENTS DAY";
+    if(m===4 && day===1 && date>=25) return "MEMORIAL DAY";
+    if(m===8 && day===1 && date<=7) return "LABOR DAY";
+    if(m===10 && day===4 && date>=22 && date<=28) return "THANKSGIVING";
+    return null;
 }
 
+// --- UPDATED USER SWITCHER ---
 function switchU(uID){ 
-    user=uID;
-    localStorage.setItem('centurion_active_user', uID);
+    user=uID; 
     document.querySelectorAll('.u-badge').forEach(b=>b.classList.remove('active')); 
     document.getElementById('b'+uID.toLowerCase()).classList.add('active'); 
-    document.getElementById('dateDisplay').innerHTML = `<span style="color:#666">💍 LOADING...</span>`;
+    
+    // Clear old Oura display
+    document.getElementById('dateDisplay').innerHTML = `<span style="color:#666">💍 LOADING ${uID === 'J' ? "JERMAINE" : "SOPHIA"}...</span>`;
+    window.ouraHistory = []; // Clear history for safety
+    
     render(); 
     setTimeout(fetchOuraData, 500);
 }
@@ -408,40 +468,60 @@ function render(){
 
 function applyAIPLogic(mealString, type) {
     if(user !== 'S') return mealString; 
+
     if(mealString.includes("Coffee") || mealString.includes("Espresso")) {
-        return "Golden Milk|Coconut Milk,Turmeric,Collagen|heat|<strong>Prep:</strong> 5m<hr><strong>INGREDIENTS</strong><br>1 Cup Coconut Milk • 1 tsp Turmeric • 1 Scoop Collagen<br><br><strong>THE PROTOCOL</strong><br>Heat milk. Whisk in turmeric and ginger. Sip warm.<br><br><strong>Longevity Win:</strong> Curcumin reduces inflammation.|8|5|160|1";
+        return "Golden Milk|Coconut Milk,Turmeric,Collagen|heat|<strong>Prep:</strong> 5m<hr><strong>INGREDIENTS</strong><br>1 Cup Coconut Milk • 1 tsp Turmeric • 1 Scoop Collagen<br><br><strong>THE PROTOCOL</strong><br>Heat milk. Whisk in turmeric and ginger. Sip warm.<br><br><strong>Longevity Win:</strong> Curcumin reduces inflammation without the cortisol spike of caffeine.|8|5|160|1";
     }
+
+    if(mealString.includes("Maple") || mealString.includes("Honey") || mealString.includes("Agave")) {
+        mealString = mealString.replace("Maple Syrup", "Stevia").replace("Honey", "Monk Fruit").replace("Agave", "Cinnamon");
+    }
+
     let parts = mealString.split('|');
     let name = parts[0];
     let ingredients = parts[1];
     let macros = { p: parseInt(parts[4]), c: parseInt(parts[5]), k: parseInt(parts[6]), f: parseInt(parts[7]||0) };
+
     if(macros.f < 10 && type !== 's') { 
-        ingredients += " + 1/2 Avocado";
-        macros.f += 7;
-        macros.k += 120;
+        if(type === 'b') {
+            ingredients += " + 1 Cup Raspberries";
+            macros.f += 8;
+            macros.c += 15;
+        } else {
+            ingredients += " + 1/2 Avocado";
+            macros.f += 7;
+            macros.k += 120;
+        }
     }
+
     return `${name}|${ingredients}|${parts[2]}|${parts[3]}|${macros.p}|${macros.c}|${macros.k}|${macros.f}`;
 }
 
 function showDay(dObj, idx){
     const id=Math.floor(dObj.getTime()/864e5);
     const dateKey = getDateKey(dObj);
+    const holidayName = getHoliday(dObj);
     if(!snackLog[dateKey]) snackLog[dateKey] = [null, null];
     const snacks = snackLog[dateKey];
-    
-    let rawB = (mDB.b[Math.abs(id) % mDB.b.length] || mDB.b[0]);
-    let rawL = (mDB.l[Math.abs(id) % mDB.l.length] || mDB.l[0]);
-    let rawD = (mDB.d[Math.abs(id) % mDB.d.length] || mDB.d[0]);
+    let b, l, dn;
+    if(holidayName) {
+        b = hDB.b.split('|'); l = hDB.l.split('|'); dn = hDB.d.split('|');
+        if(!b[7]) b[7]=5; if(!l[7]) l[7]=5; if(!dn[7]) dn[7]=5;
+    } else {
+        let rawB = (mDB.b && mDB.b.length) ? (mDB.b[Math.abs(id) % mDB.b.length] || mDB.b[0]) : "Loading...|Wait|raw|...|0|0|0|0";
+        let rawL = (mDB.l && mDB.l.length) ? (mDB.l[Math.abs(id) % mDB.l.length] || mDB.l[0]) : "Loading...|Wait|raw|...|0|0|0|0";
+        let rawD = (mDB.d && mDB.d.length) ? (mDB.d[Math.abs(id) % mDB.d.length] || mDB.d[0]) : "Loading...|Wait|raw|...|0|0|0|0";
 
-    let b = applyAIPLogic(rawB, 'b').split('|');
-    let l = applyAIPLogic(rawL, 'l').split('|');
-    let dn = applyAIPLogic(rawD, 'd').split('|');
+        b = applyAIPLogic(rawB, 'b').split('|');
+        l = applyAIPLogic(rawL, 'l').split('|');
+        dn = applyAIPLogic(rawD, 'd').split('|');
+    }
     
     const sch=["HEAVY LIFT","BOXING","REFORM","BOXING","REFORM/YOGA","CS4","RELAX"];
-    const jcs=["PINEAPPLE GREEN Vitality","TITAN RED Juice","ZENITH GREEN Juice","TITAN RED Juice","ZENITH GREEN Juice","TITAN RED Juice","APOLLO GOLD Juice"];
+    const jcs=["PLASMA FLUSH Smoothie","TITAN RED Smoothie","ZENITH GREEN Smoothie","TITAN RED Smoothie","ZENITH GREEN Smoothie","TITAN RED Smoothie","APOLLO GOLD Smoothie"];
     const j=jDB[jcs[idx]]; 
     
-    let wName = sch[idx];
+    let wName = holidayName ? "RELAX" : sch[idx];
     const isHighOutput = ["HEAVY LIFT", "BOXING", "CS4"].includes(wName);
     
     const g=(user==='J') ? {P:165, C:isHighOutput?160:85, F:40, K:isHighOutput?2200:1800} : {P:105, C:55, F:35, K:1300};
@@ -449,7 +529,7 @@ function showDay(dObj, idx){
 
     let sPro=0, sCarb=0, sFib=0, sCal=0;
     snacks.forEach(sIdx => {
-        if(sIdx !== null) {
+        if(sIdx !== null && mDB.s) {
             let sData = mDB.s[sIdx].split('|');
             sPro += parseInt(sData[4]); 
             sCarb += parseInt(sData[5]); 
@@ -463,9 +543,7 @@ function showDay(dObj, idx){
     let k = Math.round((parseInt(b[6]) + parseInt(l[6]) + parseInt(dn[6]))*sc) + j[4] + sCal;
     let f = Math.round((parseInt(b[7]||0) + parseInt(l[7]||0) + parseInt(dn[7]||0))*sc) + (j[5]||0) + sFib;
 
-    let ptn = (user==='J') ? { l: '8oz', d: '8oz' } : { l: '5oz', d: '5oz' };
-    ptn.b = (user==='J') ? "Large" : "Small";
-
+    const ptn = (user==='J') ? { b: '4 Eggs', l: '8oz', d: '8oz' } : { b: '2 Eggs', l: '5oz', d: '5oz' };
     const proto = pDB[wName] || pDB["RELAX"];
     
     let snackHTML = '<div class="snack-grid">';
@@ -473,18 +551,21 @@ function showDay(dObj, idx){
         if(snacks[i] === null) {
             snackHTML += `<div class="snack-slot" onclick="openSnackSelector(${i})"><span style="font-size:1.2rem; color:#333;">＋</span><span class="snack-label" style="color:#666; font-weight:500;">ADD SNACK</span></div>`;
         } else {
-            let s = mDB.s[snacks[i]].split('|');
+            let s = mDB.s ? mDB.s[snacks[i]].split('|') : ["Loading","...","...","...","0","0","0","0"];
             snackHTML += `<div class="snack-slot filled" onclick="openR('${s[0].replace(/'/g, "\\'")}', '${s[1]}', '${s[2]}', '${s[3].replace(/'/g, "\\'")}')"><div class="remove-snack" onclick="event.stopPropagation(); removeSnack(${i})">✕</div><span class="snack-label">${s[0]}</span><span class="snack-macro">${s[4]}P ${s[7]||0}F</span></div>`;
         }
     }
     snackHTML += '</div>';
 
-    // DYNAMIC ESSENTIALS LOGIC
+    let holidayBannerHTML = holidayName ? `<div class="holiday-banner">✨ ${holidayName} DETECTED ✨<br>PROTOCOL: FESTIVE RELAX</div>` : '';
+    let cardClass = holidayName ? 'card holiday-card' : 'card';
+
     const ess1 = "Sea Moss";
     const ess2 = (user === 'S') ? "Hibiscus Tea" : "Kombucha";
     const ess2Emoji = (user === 'S') ? "🌺" : "🥃";
 
     document.getElementById('dayContent').innerHTML = `
+        ${holidayBannerHTML}
         <div style="background:#0a0a0a; border:1px solid #222; border-bottom:4px solid var(--blue); padding:15px; border-radius:12px; margin-bottom:25px; cursor:pointer;" onclick="openRecoveryPhase('${wName}')">
             <div style="display:flex; justify-content:space-between; align-items:center; text-align:center;">
                 <div style="flex:1"><div style="font-size:0.5rem; color:#666; font-weight:900; letter-spacing:1px">WARM UP</div><div style="font-size:0.7rem; color:#fff; margin-top:4px">${proto[0].h}</div></div>
@@ -527,7 +608,7 @@ function showDay(dObj, idx){
             <div class="macro-row"><div class="macro-label"><span>CALORIES</span><span>${k} / ${g.K}</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((k/g.K)*100,100)}%; background:var(--g-cal)"></div></div></div>
         </div>
 
-        <div class="card" style="text-align:center"><div class="label" style="color:var(--gold)">Functional Juice</div><div class="juice-name" onclick="openJ('${jcs[idx]}')">${jcs[idx]}</div></div>`;
+        <div class="${cardClass}" style="text-align:center"><div class="label" style="color:var(--gold)">Functional Smoothie</div><div class="juice-name" onclick="openJ('${jcs[idx]}')">${jcs[idx]}</div></div>`;
 }
 
 function stableSeed(s) {
@@ -556,6 +637,7 @@ function openR(n, i, a, t) {
     const safeFallback = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80";
     const timer = setTimeout(() => {
         if (!img.complete || img.naturalWidth === 0) { 
+            console.log("AI timed out, switching to fallback.");
             img.src = safeFallback; 
         }
     }, 15000); 
@@ -586,6 +668,7 @@ function openR(n, i, a, t) {
 }
 
 function openSnackSelector(slotIdx) {
+    if(!mDB.s) return;
     currentSlot = slotIdx; 
     const modalBody = document.getElementById('mBody');
     document.getElementById('mTitle').innerText = "SELECT SNACK";
@@ -648,6 +731,88 @@ function openRecoveryPhase(workout) {
     document.getElementById('masterModal').style.display = 'block';
 }
 
+function generateGroceryList() {
+    const modalBody = document.getElementById('mBody');
+    document.getElementById('mTitle').innerText = "WEEKLY GROCERY LIST";
+    document.getElementById('mSub').innerText = "V226.75 • SMART FILTER";
+    let mainList = [];
+    let pantryList = [];
+    mainList.push("Sea Moss (Gel or Dried)");
+    if(user === 'S') {
+        mainList.push("Hibiscus Tea (Loose leaf)");
+        mainList.push("Avocados (7x for Fiber Protocol)");
+    } else {
+        mainList.push("Kombucha (7-Day Supply)");
+    }
+    const mon = getMon(offset);
+    const jcs=["PLASMA FLUSH Smoothie","TITAN RED Smoothie","ZENITH GREEN Smoothie","TITAN RED Smoothie","ZENITH GREEN Smoothie","TITAN RED Smoothie","APOLLO GOLD Smoothie"];
+    for(let i=0; i<7; i++) {
+        let d = new Date(mon); d.setDate(mon.getDate()+i);
+        let dateKey = getDateKey(d);
+        let id = Math.floor(d.getTime()/864e5);
+        let holidayName = getHoliday(d);
+        let meals;
+        if(holidayName) {
+            meals = [hDB.b, hDB.l, hDB.d];
+        } else {
+            let rawB = (mDB.b && mDB.b.length) ? (mDB.b[Math.abs(id) % mDB.b.length] || mDB.b[0]) : "Loading...|Wait|raw|...|0|0|0|0";
+            let rawL = (mDB.l && mDB.l.length) ? (mDB.l[Math.abs(id) % mDB.l.length] || mDB.l[0]) : "Loading...|Wait|raw|...|0|0|0|0";
+            let rawD = (mDB.d && mDB.d.length) ? (mDB.d[Math.abs(id) % mDB.d.length] || mDB.d[0]) : "Loading...|Wait|raw|...|0|0|0|0";
+            meals = [applyAIPLogic(rawB,'b'), applyAIPLogic(rawL,'l'), applyAIPLogic(rawD,'d')];
+        }
+        meals.forEach(mealStr => {
+            const parts = mealStr.split('|');
+            const htmlMatch = parts[3].match(/INGREDIENTS<\/strong><br>([\s\S]*?)<br><br>/);
+            if(htmlMatch && htmlMatch[1]) {
+                mainList.push(...htmlMatch[1].split('•').map(s => s.trim()));
+            }
+            if(!holidayName && parts[1]) {
+                pantryList.push(...parts[1].split(',').map(s => s.trim()));
+            }
+        });
+        let juiceName = jcs[i];
+        if(jDB[juiceName]) {
+             mainList.push(...jDB[juiceName][1].split(',').map(s => s.trim()));
+        }
+        if(snackLog[dateKey]) {
+            snackLog[dateKey].forEach(sIdx => {
+                if(sIdx !== null && mDB.s) {
+                    let sItem = mDB.s[sIdx];
+                    if(user === 'S' && sItem.includes("Coffee")) sItem = "Golden Milk|Coconut Milk,Turmeric"; 
+                    let sParts = sItem.split('|');
+                    const sMatch = sParts[3].match(/INGREDIENTS<\/strong><br>([\s\S]*?)<br><br>/);
+                    if(sMatch && sMatch[1]) {
+                        mainList.push(...sMatch[1].split('•').map(s => s.trim()));
+                    }
+                }
+            });
+        }
+    }
+    let uniqueMain = [...new Set(mainList.filter(i => i))].sort();
+    let uniquePantry = [...new Set(pantryList.filter(i => i))].sort();
+    const meatKeywords = ["Chicken", "Steak", "Bison", "Beef", "Turkey", "Salmon", "Tuna", "Cod", "Lamb", "Pork", "Boar", "Venison", "Duck", "Shrimp", "Fish", "Scallops", "Mackerel", "Sardines", "Octopus", "Liver", "Heart", "Ribeye", "Sirloin", "Flank", "Filet", "Burger", "Sausage", "Meatball"];
+    let finalPantry = uniquePantry.filter(pItem => {
+        const inMain = uniqueMain.some(mItem => mItem.toLowerCase().includes(pItem.toLowerCase()));
+        if(inMain) return false;
+        const isMeat = meatKeywords.some(meat => pItem.toLowerCase().includes(meat.toLowerCase()));
+        if(isMeat) return false;
+        return true;
+    });
+    let html = `<div style="padding-bottom:50px;">`;
+    html += `<div class="grocery-cat">FRESH & QUANTIFIED</div>`;
+    uniqueMain.forEach(item => {
+        html += `<div class="grocery-item">⬜ <span>${item}</span></div>`;
+    });
+    html += `<div class="grocery-cat">PANTRY & SPICES CHECK</div>`;
+    finalPantry.forEach(item => {
+        html += `<div class="grocery-item" style="color:#888">⬜ <span>${item}</span></div>`;
+    });
+    html += `</div>`;
+    modalBody.innerHTML = html;
+    document.getElementById('mTip').innerText = "TIP: Meats are automatically filtered to the top section.";
+    document.getElementById('masterModal').style.display = 'block';
+}
+
 function openBio() {
     var modalBody = document.getElementById('mBody');
     var u = uH[user];
@@ -663,93 +828,14 @@ function openBio() {
             <div id="btPhys" class="tab active" onclick="renderBioTab('phys')">BODY</div>
             <div id="btLabs" class="tab" onclick="renderBioTab('labs')">LABS</div>
             <div id="btTests" class="tab" onclick="renderBioTab('tests')">TESTS</div>
-            <div id="btOura" class="tab" onclick="renderOuraTab()">OURA</div>
+            <div id="btOura" class="tab" onclick="renderBioTab('oura')">OURA</div>
         </div>
         <div id="bioContentArea"></div>
     `;
 
-    document.getElementById('mTip').innerText = "TIP: Green bars indicate you have reached the 'Centurion' standard for longevity.";
+    document.getElementById('mTip').innerText = "TIP: Green metrics indicate Centurion-level optimization.";
     renderBioTab('phys'); 
     document.getElementById('masterModal').style.display = 'block';
-}
-
-function renderOuraTab() {
-    var target = document.getElementById('bioContentArea');
-    document.querySelectorAll('[id^="bt"]').forEach(function(t){ t.classList.remove('active') });
-    document.getElementById('btOura').classList.add('active');
-
-    let historyKey = 'centurion_oura_history_' + user;
-    let rawHist = localStorage.getItem(historyKey);
-    let history = rawHist ? JSON.parse(rawHist) : [];
-    
-    history.sort((a, b) => new Date(b.date) - new Date(a.date));
-    
-    if(history.length === 0) {
-        target.innerHTML = `<div style="text-align:center; padding:40px; color:#666;">No Oura history found.<br><br>Tap the ring icon on the main screen to sync data.</div>`;
-        return;
-    }
-
-    let todayData = history[0]; 
-    const deepGoal = 90; 
-    const remGoal = 90;  
-    const actGoal = (user === 'J') ? 900 : 600; 
-
-    const drawBar = (label, val, goal, unit, lowMsg, highMsg) => {
-        let pct = Math.min((val / goal) * 100, 100);
-        let color = val >= goal ? 'var(--green)' : '#FF5252';
-        let msg = val >= goal ? highMsg : lowMsg;
-        return `
-        <div class="bio-section" style="margin-bottom:12px; padding:15px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05);">
-            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
-                <span style="font-size:0.8rem; font-weight:800; color:#fff;">${label}</span>
-                <span style="font-size:0.7rem; color:${color}; font-weight:800;">${val} / ${goal} ${unit}</span>
-            </div>
-            <div style="height:8px; background:#111; border-radius:10px; overflow:hidden; margin-bottom:8px;">
-                <div style="width:${pct}%; height:100%; background:${color}; border-radius:10px;"></div>
-            </div>
-            <div style="font-size:0.65rem; color:#888; font-style:italic;">${msg}</div>
-        </div>`;
-    };
-
-    let deepMin = Math.round(todayData.deep / 60);
-    let remMin = Math.round(todayData.rem / 60);
-    
-    let html = `<div style="margin-bottom:20px; text-align:center; color:#666; font-size:0.7rem;">LATEST SYNC: ${todayData.date}</div>`;
-    
-    html += drawBar("DEEP SLEEP", deepMin, 90, "min", 
-        "⚠️ Low: Hormone production compromised. Rx: Cool room to 65°F.", 
-        "✅ Optimal: Anabolic hormone production active.");
-        
-    html += drawBar("REM SLEEP", remMin, 90, "min", 
-        "⚠️ Low: Cognitive recovery needed. Rx: No blue light 1h before bed.", 
-        "✅ Optimal: Memory consolidation active.");
-        
-    html += drawBar("ACTIVE BURN", todayData.cal, actGoal, "kcal", 
-        "⚠️ Low: Insulin sensitivity risk. Rx: 15m post-meal walk.", 
-        "✅ Optimal: Metabolic firing rate high.");
-
-    html += `<div style="margin-top:30px; border-top:1px dashed #333; padding-top:15px;">
-        <div style="font-size:0.8rem; color:var(--gold); font-weight:900; margin-bottom:10px; letter-spacing:1px;">7-DAY TRENDS</div>
-        <div style="display:flex; justify-content:space-between; color:#666; font-size:0.6rem; font-weight:900; margin-bottom:5px; padding:0 4px;">
-            <span style="flex:1">DATE</span>
-            <span style="flex:1; text-align:center">SCORE</span>
-            <span style="flex:1; text-align:center">DEEP</span>
-            <span style="flex:1; text-align:right">BURN</span>
-        </div>`;
-        
-    history.slice(0, 7).forEach(day => {
-        let dMin = Math.round(day.deep / 60);
-        let dateStr = day.date.slice(5); 
-        html += `<div class="oura-hist-row">
-            <span class="oura-hist-date" style="flex:1">${dateStr}</span>
-            <span style="flex:1; text-align:center; color:${day.score >= 85 ? 'var(--green)' : '#aaa'}">${day.score}</span>
-            <span style="flex:1; text-align:center">${dMin}m</span>
-            <span style="flex:1; text-align:right">${day.cal}</span>
-        </div>`;
-    });
-    
-    html += `</div>`;
-    target.innerHTML = html;
 }
 
 function renderBioTab(tab) {
@@ -757,8 +843,39 @@ function renderBioTab(tab) {
     var target = document.getElementById('bioContentArea');
     document.querySelectorAll('[id^="bt"]').forEach(function(t){ t.classList.remove('active') });
     document.getElementById('bt' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+    
     var html = '';
 
+    // --- NEW OURA HISTORY TAB ---
+    if(tab === 'oura') {
+        if(!window.ouraHistory || window.ouraHistory.length === 0) {
+            html = '<div style="text-align:center; color:#666; padding:20px;">No Recent Data Found.<br>Try Syncing your Oura Ring App first.</div>';
+        } else {
+            html += '<table class="hist-table" style="width:100%; text-align:center; font-size:0.8rem;">';
+            html += '<thead><tr><th style="text-align:left; color:#666;">DATE</th><th>READY</th><th>SLEEP</th><th>RHR</th><th>STEPS</th></tr></thead><tbody>';
+            
+            window.ouraHistory.slice().reverse().forEach(day => {
+                let cReady = day.score >= 85 ? 'var(--green)' : '#fff';
+                let cSleep = day.sleepScore >= 85 ? 'var(--green)' : '#fff';
+                let cRHR = day.rhr <= 60 ? 'var(--green)' : '#fff';
+                let cSteps = day.steps >= 10000 ? 'var(--green)' : '#fff';
+
+                html += `<tr>
+                    <td style="text-align:left; color:#888; padding:10px 0; border-bottom:1px solid #222;">${day.date.slice(5)}</td>
+                    <td style="color:${cReady}; font-weight:700; border-bottom:1px solid #222;">${day.score}</td>
+                    <td style="color:${cSleep}; font-weight:700; border-bottom:1px solid #222;">${day.sleepScore}</td>
+                    <td style="color:${cRHR}; font-weight:700; border-bottom:1px solid #222;">${day.rhr}</td>
+                    <td style="color:${cSteps}; font-weight:700; border-bottom:1px solid #222;">${(day.steps/1000).toFixed(1)}k</td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+            html += '<div style="margin-top:15px; font-size:0.6rem; color:#555; text-align:center;">GOALS: Ready 85+ • Sleep 85+ • RHR <60 • Steps 10k+</div>';
+        }
+        target.innerHTML = html;
+        return; 
+    }
+
+    // --- SOPHIA'S INFLAMMATION WIDGET (Only shows for 'S' on 'Labs' tab) ---
     if(user === 'S' && tab === 'labs') {
         if(!u.streak) u.streak = 0;
         let startCRP = 1.8;
@@ -770,14 +887,8 @@ function renderBioTab(tab) {
             <div style="font-size:1.8rem; font-weight:800; color:#fff; margin-bottom:5px;">${u.streak} DAYS CLEAN</div>
             <div style="font-size:0.65rem; color:#a2a8d3; margin-bottom:20px;">🚫 ALCOHOL • 🚫 CAFFEINE • 🚫 SUGAR</div>
             <div style="display:flex; justify-content:space-between; align-items:end; margin-bottom:5px; padding:0 10px;">
-                <div style="text-align:left;">
-                    <div style="font-size:0.6rem; color:#ff5252; font-weight:900;">STARTING FIRE</div>
-                    <div style="font-size:1.1rem; color:#fff;">1.8 <span style="font-size:0.6rem">mg/L</span></div>
-                </div>
-                <div style="text-align:right;">
-                    <div style="font-size:0.6rem; color:#00e676; font-weight:900;">PROJECTED COOLING</div>
-                    <div style="font-size:1.4rem; color:#00e676; text-shadow:0 0 10px rgba(0,230,118,0.4);">${projCRP} <span style="font-size:0.7rem">mg/L</span></div>
-                </div>
+                <div style="text-align:left;"><div style="font-size:0.6rem; color:#ff5252; font-weight:900;">STARTING FIRE</div><div style="font-size:1.1rem; color:#fff;">1.8 <span style="font-size:0.6rem">mg/L</span></div></div>
+                <div style="text-align:right;"><div style="font-size:0.6rem; color:#00e676; font-weight:900;">PROJECTED COOLING</div><div style="font-size:1.4rem; color:#00e676; text-shadow:0 0 10px rgba(0,230,118,0.4);">${projCRP} <span style="font-size:0.7rem">mg/L</span></div></div>
             </div>
             <div style="height:10px; background:#111; border-radius:10px; overflow:hidden; margin-bottom:20px; border:1px solid #333; position:relative;">
                  <div style="position:absolute; left:0; top:0; bottom:0; width:${progress}%; background:linear-gradient(90deg, #ff5252, #00e676); transition:width 0.5s ease;"></div>
@@ -786,110 +897,49 @@ function renderBioTab(tab) {
                 <button onclick="updateStreak(-1)" style="flex:1; background:#222; border:1px solid #333; color:#666; padding:12px; border-radius:8px; font-weight:800; font-size:0.7rem; cursor:pointer;">💔 SLIP UP</button>
                 <button onclick="updateStreak(1)" style="flex:2; background:#00e676; border:none; color:#000; padding:12px; border-radius:8px; font-weight:900; font-size:0.7rem; cursor:pointer; box-shadow:0 0 15px rgba(0,230,118,0.3);">DAY COMPLETE (+1) 🧊</button>
             </div>
-            <div style="font-size:0.55rem; color:#666; margin-top:15px; font-style:italic;">*Est. 0.1 mg/L drop per clean day based on half-life of inflammation markers.</div>
         </div>`;
     }
 
     if(tab === 'phys') {
         var le = calculateLifeExpectancy(user);
         var gap = le.potential - le.current;
-        var gapColor = 'var(--green)'; 
-        if (gap > 20) gapColor = '#FF5252'; 
-        else if (gap > 10) gapColor = 'var(--gold)'; 
-        html += '<div style="background:linear-gradient(135deg, #111, #000); border:1px solid #333; border-radius:12px; padding:20px; margin-bottom:20px; text-align:center;">';
-        html += '<div style="font-size:0.6rem; color:#666; font-weight:900; letter-spacing:3px; text-transform:uppercase; margin-bottom:10px;">Biological Age Projection</div>';
-        html += '<div style="display:flex; justify-content:center; align-items:center; gap:15px; margin-bottom:10px;">';
-        html += '<div><div style="font-size:3rem; line-height:1; font-weight:800; color:#fff">' + le.current + '</div><div style="font-size:0.55rem; color:#888; font-weight:900; margin-top:5px;">CURRENT TRAJECTORY</div></div>';
-        html += '<div style="font-size:1.2rem; color:#444;">➔</div>';
-        html += '<div><div style="font-size:3rem; line-height:1; font-weight:800; color:var(--gold); text-shadow:0 0 15px rgba(212,175,55,0.3)">' + le.potential + '</div><div style="font-size:0.55rem; color:var(--gold); font-weight:900; margin-top:5px;">CENTURION GOAL</div></div>';
-        html += '</div>';
-        if(gap > 0) {
-            html += '<div style="background:rgba(255,255,255,0.05); border-radius:8px; padding:8px; display:inline-block;">';
-            html += '<span style="font-size:0.7rem; color:#ccc;">GAP: </span>';
-            html += '<span style="font-size:0.8rem; font-weight:800; color:' + gapColor + ';">-' + gap + ' YEARS</span>';
-            html += '<div style="font-size:0.5rem; color:#666; margin-top:4px;">OPTIMIZE APOB & VO2 MAX TO CLOSE GAP</div>';
-            html += '</div>';
-        } else {
-            html += '<div style="font-size:0.8rem; font-weight:800; color:var(--green);">CENTURION STATUS UNLOCKED 🏆</div>';
-        }
-        html += '</div>';
+        var gapColor = gap > 20 ? '#FF5252' : (gap > 10 ? 'var(--gold)' : 'var(--green)');
+        html += `<div style="background:linear-gradient(135deg, #111, #000); border:1px solid #333; border-radius:12px; padding:20px; margin-bottom:20px; text-align:center;">
+            <div style="font-size:0.6rem; color:#666; font-weight:900; letter-spacing:3px; text-transform:uppercase; margin-bottom:10px;">Biological Age Projection</div>
+            <div style="display:flex; justify-content:center; align-items:center; gap:15px; margin-bottom:10px;">
+            <div><div style="font-size:3rem; line-height:1; font-weight:800; color:#fff">${le.current}</div><div style="font-size:0.55rem; color:#888; font-weight:900; margin-top:5px;">CURRENT TRAJECTORY</div></div>
+            <div style="font-size:1.2rem; color:#444;">➔</div>
+            <div><div style="font-size:3rem; line-height:1; font-weight:800; color:var(--gold); text-shadow:0 0 15px rgba(212,175,55,0.3)">${le.potential}</div><div style="font-size:0.55rem; color:var(--gold); font-weight:900; margin-top:5px;">CENTURION GOAL</div></div>
+            </div></div>`;
     }
-    var keys = [];
-    if (tab === 'phys') {
-        keys = ['bf', 'm', 'vf', 'bmr'];
-    } else {
-        keys = Object.keys(u[tab]);
-    }
+    
+    var keys = (tab === 'phys') ? ['bf', 'm', 'vf', 'bmr'] : Object.keys(u[tab]);
     keys.forEach(function(key, idx) {
-        var m;
-        if (tab === 'phys') {
-            m = { 
-                id: key,
-                name: (key==='bf'?'Body Fat':key==='m'?'Muscle':key==='vf'?'Visceral Fat':'BMR'), 
-                val: u.now[key], 
-                goal: u.goal[key], 
-                unit: (key==='bf'?'%':key==='m'?'lbs':key==='vf'?'lvl':'kcal'), 
-                lowerIsBetter: (key!=='m' && key!=='bmr')
-            };
-            if(u.info[key]) { m.desc = u.info[key].d; m.fix = u.info[key].f; }
-        } else {
-            m = u[tab][key];
-        }
+        var m = (tab === 'phys') ? { id: key, name: (key==='bf'?'Body Fat':key==='m'?'Muscle':key==='vf'?'Visceral Fat':'BMR'), val: u.now[key], goal: u.goal[key], unit: (key==='bf'?'%':key==='m'?'lbs':key==='vf'?'lvl':'kcal'), lowerIsBetter: (key!=='m' && key!=='bmr') } : u[tab][key];
+        
         var maxRef = Math.max(m.val, m.goal) * 1.2;
         var pctNow = (m.val / maxRef) * 100;
         var pctGoal = (m.goal / maxRef) * 100;
-        var colorNow = 'var(--gold)';
-        var onTrack = m.lowerIsBetter ? (m.val <= m.goal * 1.05) : (m.val >= m.goal * 0.95);
-        if (onTrack) colorNow = 'var(--green)';
-        if (!onTrack && tab === 'labs') colorNow = '#FF5252'; 
-        var itemId = 'bio_item_' + idx;
-        var label1 = (tab === 'tests') ? "EXECUTION" : "WHAT";
-        var label2 = (tab === 'tests') ? "TRAINING" : "FIX";
-        var editHTML = '';
-        if(tab === 'tests') {
-            editHTML = ' <span onclick="updateBioVal(\''+tab+'\',\''+key+'\',\''+m.name+'\')" style="font-size:0.6rem; color:var(--blue); border:1px solid var(--blue); padding:2px 6px; border-radius:4px; margin-left:8px; cursor:pointer;">TAP TO UPDATE</span>';
-        }
-        html += '<div class="bio-section" onclick="toggleBioItem(\'' + itemId + '\')" style="margin-bottom:12px; padding:15px; cursor:pointer; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05);">';
-        html += '<div style="display:flex; justify-content:space-between; margin-bottom:10px;">';
-        html += '<span style="font-size:0.8rem; font-weight:800; color:#fff;">' + m.name + '</span>';
-        html += '<span style="font-size:0.6rem; color:#555; vertical-align:middle; font-weight:700">▼ INFO</span>';
-        html += '</div>';
-        html += '<div style="display:flex; align-items:center; margin-bottom:6px;">';
-        html += '<div style="width:40px; font-size:0.55rem; color:#888; font-weight:900;">NOW</div>';
-        html += '<div style="flex:1; height:6px; background:#111; border-radius:4px; overflow:hidden; margin-right:8px;">';
-        html += '<div style="width:' + pctNow + '%; height:100%; background:' + colorNow + '; border-radius:4px;"></div>';
-        html += '</div>';
-        html += '<div style="text-align:right; font-size:0.7rem; color:' + colorNow + '; font-weight:700;">' + m.val + editHTML + '</div>';
-        html += '</div>';
-        html += '<div style="display:flex; align-items:center;">';
-        html += '<div style="width:40px; font-size:0.55rem; color:var(--blue); font-weight:900;">GOAL</div>';
-        html += '<div style="flex:1; height:6px; background:#111; border-radius:4px; overflow:hidden; margin-right:8px;">';
-        html += '<div style="width:' + pctGoal + '%; height:100%; background:var(--blue); border-radius:4px; opacity:0.6;"></div>';
-        html += '</div>';
-        html += '<div style="width:40px; text-align:right; font-size:0.7rem; color:var(--blue); font-weight:700;">' + m.goal + '</div>';
-        html += '</div>';
-        html += '<div id="' + itemId + '" style="display:none; margin-top:15px; padding-top:10px; border-top:1px dashed #333;">';
-        html += '<div style="font-size:0.75rem; color:#ccc; margin-bottom:8px; line-height:1.4">';
-        html += '<strong style="color:var(--blue)">' + label1 + ':</strong> <br>' + (m.desc || 'Metric description unavailable.');
-        html += '</div>';
-        html += '<div style="font-size:0.75rem; color:#ccc; line-height:1.4">';
-        html += '<strong style="color:var(--green)">' + label2 + ':</strong> ' + (m.fix || 'Consult your protocol.');
-        html += '</div></div></div>';
+        var colorNow = (m.lowerIsBetter ? (m.val <= m.goal * 1.05) : (m.val >= m.goal * 0.95)) ? 'var(--green)' : 'var(--gold)';
+        if (colorNow !== 'var(--green)' && tab === 'labs') colorNow = '#FF5252'; 
+
+        html += `<div class="bio-section" onclick="toggleBioItem('bio_${idx}')" style="margin-bottom:12px; padding:15px; cursor:pointer; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05);">
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px;"><span style="font-size:0.8rem; font-weight:800; color:#fff;">${m.name}</span><span style="font-size:0.6rem; color:#555;">▼ INFO</span></div>
+            <div style="display:flex; align-items:center; margin-bottom:6px;"><div style="width:40px; font-size:0.55rem; color:#888; font-weight:900;">NOW</div><div style="flex:1; height:6px; background:#111; border-radius:4px; overflow:hidden; margin-right:8px;"><div style="width:${pctNow}%; height:100%; background:${colorNow}; border-radius:4px;"></div></div><div style="text-align:right; font-size:0.7rem; color:${colorNow}; font-weight:700;">${m.val}</div></div>
+            <div style="display:flex; align-items:center;"><div style="width:40px; font-size:0.55rem; color:var(--blue); font-weight:900;">GOAL</div><div style="flex:1; height:6px; background:#111; border-radius:4px; overflow:hidden; margin-right:8px;"><div style="width:${pctGoal}%; height:100%; background:var(--blue); border-radius:4px; opacity:0.6;"></div></div><div style="width:40px; text-align:right; font-size:0.7rem; color:var(--blue); font-weight:700;">${m.goal}</div></div>
+            <div id="bio_${idx}" style="display:none; margin-top:15px; padding-top:10px; border-top:1px dashed #333;"><div style="font-size:0.75rem; color:#ccc; line-height:1.4">${m.desc||''}</div></div></div>`;
     });
     target.innerHTML = html;
 }
 
 function toggleBioItem(id) {
     const el = document.getElementById(id);
-    if(el.style.display === 'none') {
-        el.style.display = 'block';
-    } else {
-        el.style.display = 'none';
-    }
+    el.style.display = (el.style.display === 'none') ? 'block' : 'none';
 }
 
 function closeM(){ document.getElementById('masterModal').style.display='none' }
 
+// --- OURA AUTO-SYNC LOGIC v6.0 (7-Day History + Green Markers) ---
 async function connectOura() {
     let currentToken = getActiveToken();
     let name = (user === 'J') ? "JERMAINE" : "SOPHIA";
@@ -911,100 +961,78 @@ async function fetchOuraData() {
         document.getElementById('dateDisplay').innerHTML = `<span style="color:var(--blue); font-weight:800; cursor:pointer;" onclick="connectOura()">💍 TAP TO ADD ${user}'s RING</span>`;
         return;
     }
+    
     const today = new Date().toISOString().split('T')[0];
-    const lookback = new Date(Date.now() - (86400000 * 8)).toISOString().split('T')[0];
+    const lookback = new Date(Date.now() - (86400000 * 8)).toISOString().split('T')[0]; // 8 Days History
+    
     document.getElementById('dateDisplay').innerHTML = `💍 SYNCING...`;
+
     const PROXY_URL = "https://corsproxy.io/?";
     const headers = { 'Authorization': `Bearer ${activeToken}` };
-    const buster = `&cb=${Date.now()}`;
-    try {
-        const readyUrl = `https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${lookback}&end_date=${today}`;
-        const sleepUrl = `https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${lookback}&end_date=${today}`;
-        const sessionUrl = `https://api.ouraring.com/v2/usercollection/sleep?start_date=${lookback}&end_date=${today}`; // New Endpoint
-        const activityUrl = `https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${lookback}&end_date=${today}`;
-        
-        const fetchOpts = { headers, cache: "no-store" };
 
-        const [readyRes, sleepRes, sessionRes, activityRes] = await Promise.all([
-            fetch(PROXY_URL + encodeURIComponent(readyUrl) + buster, fetchOpts),
-            fetch(PROXY_URL + encodeURIComponent(sleepUrl) + buster, fetchOpts),
-            fetch(PROXY_URL + encodeURIComponent(sessionUrl) + buster, fetchOpts),
-            fetch(PROXY_URL + encodeURIComponent(activityUrl) + buster, fetchOpts)
+    try {
+        const [readinessRes, sleepRes, activityRes] = await Promise.all([
+            fetch(PROXY_URL + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${lookback}&end_date=${today}`), { headers }),
+            fetch(PROXY_URL + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${lookback}&end_date=${today}`), { headers }),
+            fetch(PROXY_URL + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${lookback}&end_date=${today}`), { headers })
         ]);
 
-        const rData = await readyRes.json();
+        if (!readinessRes.ok) throw new Error("401"); 
+
+        const rData = await readinessRes.json();
         const sData = await sleepRes.json();
-        const sessData = await sessionRes.json();
         const aData = await activityRes.json();
 
         if (rData.data && rData.data.length > 0) {
-            const latestReady = rData.data[rData.data.length - 1];
-            const targetDate = latestReady.day;
-            const latestSleep = sData.data.find(item => item.day === targetDate);
+            window.ouraHistory = [];
             
-            const score = latestReady.score;
-            let status = "OPTIMAL";
-            let color = "var(--green)";
-            if(score < 85) { status = "MAINTENANCE"; color = "var(--gold)"; }
-            if(score < 70) { status = "⚠️ RECOVER"; color = "#FF5252"; }
-            
-            let displayHTML = `<span style="color:${color}; cursor:pointer;" onclick="alert('Viewing: ${user === 'J' ? 'Jermaine' : 'Sophia'}')">💍 ${user === 'J' ? "JERMAINE" : "SOPHIA"}: ${score} (${status})</span>`;
-            if(user === 'S') displayHTML += ` <span style="font-size:0.55rem; color:#666; margin-left:5px; cursor:pointer; text-decoration:underline;" onclick="connectOura()">↻ RESET</span>`;
-
-            let rhr = (latestSleep && latestSleep.lowest_heart_rate) ? latestSleep.lowest_heart_rate : 0;
-            if(user === 'S' && rhr > 60) {
-                displayHTML += ` <span style="font-size:0.6rem; color:#FF5252; border:1px solid #FF5252; padding:2px 4px; border-radius:4px;">🔥 RHR SPIKE (${rhr})</span>`;
-            }
-            document.getElementById('dateDisplay').innerHTML = displayHTML;
-            
-            let history = [];
-            // Merge Data using Sleep Sessions for accurate Deep/REM
+            // Build History
             rData.data.forEach(dayReady => {
-                let d = dayReady.day;
-                // Find matching sleep session for this day (session day is usually previous night)
-                // We look for sessions ending on this day
-                let daySessions = sessData.data.filter(s => s.day === d);
-                // Sum up deep/rem from all sessions (naps included)
-                let deepTotal = 0;
-                let remTotal = 0;
-                daySessions.forEach(sess => {
-                    deepTotal += sess.deep_sleep_duration;
-                    remTotal += sess.rem_sleep_duration;
-                });
-
-                let dayAct = aData.data.find(i => i.day === d);
+                let date = dayReady.day;
+                let daySleep = sData.data.find(d => d.day === date);
+                let dayAct = aData.data.find(d => d.day === date);
                 
-                if (dayAct) {
-                    history.push({
-                        date: d,
+                if(daySleep && dayAct) {
+                    window.ouraHistory.push({
+                        date: date,
                         score: dayReady.score,
-                        deep: deepTotal, // Seconds from Session
-                        rem: remTotal,   // Seconds from Session
-                        cal: dayAct.active_calories
+                        sleepScore: daySleep.score,
+                        rhr: daySleep.lowest_heart_rate,
+                        steps: dayAct.steps
                     });
                 }
             });
-            
-            localStorage.setItem('centurion_oura_history_' + user, JSON.stringify(history));
-            
-            // Auto refresh if tab is open
-            if(document.getElementById('btOura') && document.getElementById('btOura').classList.contains('active')) {
-                renderOuraTab();
-            }
 
+            // Update Header (Latest Day)
+            const latest = window.ouraHistory[window.ouraHistory.length - 1];
+            
+            let status = "OPTIMAL";
+            let color = "var(--green)";
+            if(latest.score < 85) { status = "MAINTENANCE"; color = "var(--gold)"; }
+            if(latest.score < 70) { status = "⚠️ RECOVER"; color = "#FF5252"; }
+            
+            let displayHTML = `<span style="color:${color}; cursor:pointer;" onclick="alert('User: ${user === 'J' ? 'Jermaine' : 'Sophia'}\\nLatest: ${latest.date}')">💍 ${user}: ${latest.score} (${status})</span>`;
+            
+            if(user === 'S') displayHTML += ` <span style="font-size:0.55rem; color:#666; margin-left:5px; cursor:pointer; text-decoration:underline;" onclick="connectOura()">↻ RESET</span>`;
+
+            if(user === 'S' && latest.rhr > 60) {
+                displayHTML += ` <span style="font-size:0.6rem; color:#FF5252; border:1px solid #FF5252; padding:2px 4px; border-radius:4px;">🔥 RHR SPIKE (${latest.rhr})</span>`;
+            }
+            
+            document.getElementById('dateDisplay').innerHTML = displayHTML;
+            
         } else {
             document.getElementById('dateDisplay').innerHTML = `<span style="color:orange" onclick="connectOura()">💍 NO DATA</span>`;
         }
     } catch (e) {
         console.error(e);
-        document.getElementById('dateDisplay').innerHTML = `<span style="color:#FF5252; cursor:pointer;" onclick="connectOura()">💍 ERROR</span>`;
+        document.getElementById('dateDisplay').innerHTML = `<span style="color:#FF5252; cursor:pointer;" onclick="connectOura()">💍 INVALID TOKEN (Tap)</span>`;
     }
 }
 
+// Auto-run logic
 window.onload = function() {
     render();
-    document.querySelectorAll('.u-badge').forEach(b=>b.classList.remove('active')); 
-    document.getElementById('b'+user.toLowerCase()).classList.add('active'); 
     if(getActiveToken()) setTimeout(fetchOuraData, 1000);
 };
 </script>
