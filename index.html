@@ -682,6 +682,7 @@ function renderOuraTab() {
     let rawHist = localStorage.getItem(historyKey);
     let history = rawHist ? JSON.parse(rawHist) : [];
     
+    // Sort history by date descending (newest first)
     history.sort((a, b) => new Date(b.date) - new Date(a.date));
     
     if(history.length === 0) {
@@ -690,10 +691,14 @@ function renderOuraTab() {
     }
 
     let todayData = history[0]; 
-    const deepGoal = 90; 
-    const remGoal = 90;  
-    const actGoal = (user === 'J') ? 900 : 600; 
+    
+    // Goals
+    const deepGoal = 90; // Minutes
+    const remGoal = 90;  // Minutes
+    const actGoal = (user === 'J') ? 900 : 600; // Calories
+    const rhrGoal = 60;  // BPM (Lower is better)
 
+    // Helper for Standard Bars (Higher = Better)
     const drawBar = (label, val, goal, unit, lowMsg, highMsg) => {
         let pct = Math.min((val / goal) * 100, 100);
         let color = val >= goal ? 'var(--green)' : '#FF5252';
@@ -711,31 +716,60 @@ function renderOuraTab() {
         </div>`;
     };
 
+    // Helper for RHR Bar (Lower = Better)
+    const drawRHRBar = (val) => {
+        // Logic: If val is <= 60, bar is 100% Green. If > 60, bar shrinks and turns red.
+        let pct = val <= rhrGoal ? 100 : Math.max(0, 100 - ((val - rhrGoal) * 5));
+        let color = val <= rhrGoal ? 'var(--green)' : '#FF5252';
+        let msg = val <= rhrGoal ? 
+            "✅ RECOVERY: Parasympathetic state dominant." : 
+            `⚠️ STRESS: Elevated (+${val-rhrGoal}). Rx: 4-7-8 Breathwork.`;
+
+        return `
+        <div class="bio-section" style="margin-bottom:12px; padding:15px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05);">
+            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                <span style="font-size:0.8rem; font-weight:800; color:#fff;">RESTING HR</span>
+                <span style="font-size:0.7rem; color:${color}; font-weight:800;">${val} bpm</span>
+            </div>
+            <div style="height:8px; background:#111; border-radius:10px; overflow:hidden; margin-bottom:8px;">
+                <div style="width:${pct}%; height:100%; background:${color}; border-radius:10px;"></div>
+            </div>
+            <div style="font-size:0.65rem; color:#888; font-style:italic;">${msg}</div>
+        </div>`;
+    };
+
     let deepMin = Math.round(todayData.deep / 60);
     let remMin = Math.round(todayData.rem / 60);
     
     let html = `<div style="margin-bottom:20px; text-align:center; color:#666; font-size:0.7rem;">LATEST SYNC: ${todayData.date}</div>`;
     
+    // 1. Deep Sleep Bar
     html += drawBar("DEEP SLEEP", deepMin, 90, "min", 
-        "⚠️ Low: Hormone production compromised. Rx: Cool room to 65°F.", 
-        "✅ Optimal: Anabolic hormone production active.");
+        "⚠️ LOW: Hormone production compromised. Rx: Cool room to 65°F.", 
+        "✅ ANABOLIC STATE: Testosterone & HGH optimization active.");
         
+    // 2. REM Sleep Bar
     html += drawBar("REM SLEEP", remMin, 90, "min", 
-        "⚠️ Low: Cognitive recovery needed. Rx: No blue light 1h before bed.", 
-        "✅ Optimal: Memory consolidation active.");
-        
-    html += drawBar("ACTIVE BURN", todayData.cal, actGoal, "kcal", 
-        "⚠️ Low: Insulin sensitivity risk. Rx: 15m post-meal walk.", 
-        "✅ Optimal: Metabolic firing rate high.");
+        "⚠️ FOG RISK: Cognitive recovery needed. Rx: No blue light 1h before bed.", 
+        "✅ BRAIN RESET: Memory consolidation & emotional balance active.");
 
+    // 3. Resting Heart Rate Bar (NEW)
+    html += drawRHRBar(todayData.rhr);
+        
+    // 4. Activity Bar
+    html += drawBar("ACTIVE BURN", todayData.cal, actGoal, "kcal", 
+        "⚠️ LOW: Insulin sensitivity risk. Rx: 15m post-meal walk.", 
+        "✅ METABOLIC FIRE: Insulin sensitivity optimized.");
+
+    // 5. History Table
     html += `<div style="margin-top:30px; border-top:1px dashed #333; padding-top:15px;">
         <div style="font-size:0.8rem; color:var(--gold); font-weight:900; margin-bottom:10px; letter-spacing:1px;">7-DAY TRENDS</div>
         <div style="display:flex; justify-content:space-between; color:#666; font-size:0.6rem; font-weight:900; margin-bottom:5px; padding:0 4px;">
             <span style="flex:0.8">DATE</span>
             <span style="flex:0.8; text-align:center">SCORE</span>
-            <span style="flex:1; text-align:center">DEEP (>90m)</span>
-            <span style="flex:1; text-align:center">REM (>90m)</span>
-            <span style="flex:1; text-align:right">BURN</span>
+            <span style="flex:1; text-align:center">DEEP</span>
+            <span style="flex:1; text-align:center">REM</span>
+            <span style="flex:1; text-align:right">RHR</span>
         </div>`;
         
     history.slice(0, 7).forEach(day => {
@@ -745,6 +779,7 @@ function renderOuraTab() {
         
         let deepColor = dMin >= deepGoal ? 'var(--green)' : '#aaa';
         let remColor = rMin >= remGoal ? 'var(--green)' : '#aaa';
+        let rhrColor = day.rhr <= rhrGoal ? 'var(--green)' : '#FF5252';
         let scoreColor = day.score >= 85 ? 'var(--green)' : '#aaa';
 
         html += `<div class="oura-hist-row">
@@ -752,7 +787,7 @@ function renderOuraTab() {
             <span style="flex:0.8; text-align:center; color:${scoreColor}">${day.score}</span>
             <span style="flex:1; text-align:center; color:${deepColor}">${dMin}m</span>
             <span style="flex:1; text-align:center; color:${remColor}">${rMin}m</span>
-            <span style="flex:1; text-align:right">${day.cal}</span>
+            <span style="flex:1; text-align:right; color:${rhrColor}">${day.rhr}</span>
         </div>`;
     });
     
