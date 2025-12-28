@@ -1,972 +1,199 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v228.14 UX Patch</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --text:#fff;
-        --g-pro:linear-gradient(90deg,#FF5252,#D50000); --g-carb:linear-gradient(90deg,#FFAB40,#FF6D00);
-        --g-cal:linear-gradient(90deg,#B388FF,#6200EA); --g-fib:linear-gradient(90deg,#00E676,#00C853);}
-        *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-        body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);margin:0;padding:15px;font-size:14px}
-        .container{max-width:500px;margin:0 auto; padding-bottom: 50px;}
-        h1{text-align:center;font-weight:200;letter-spacing:5px;text-transform:uppercase;font-size:1.2rem;margin:10px 0}
-        .version-tag { display: block; text-align: center; font-size: 0.5rem; color: #444; margin-top: -8px; margin-bottom: 15px; letter-spacing: 2px; }
-        .badge-row{display:flex;justify-content:center;gap:8px;margin-bottom:15px}
-        .u-badge{background:#000;padding:8px 16px;border-radius:20px;border:1px solid #333;font-size:0.6rem;font-weight:800;cursor:pointer;color:#666}
-        .u-badge.active{border-color:var(--gold);color:var(--gold)}
-        .status-bar{text-align:center;color:#888;font-size:0.65rem;font-weight:800;margin-bottom:10px;text-transform:uppercase}
-        .controls{display:flex;gap:5px;margin-bottom:15px}
-        .nav-btn{background:#111;border:1px solid #222;color:#888;padding:10px;flex:1;border-radius:8px;font-size:0.55rem;font-weight:800;cursor:pointer}
-        .card, .macro-dashboard{background:var(--card);border-radius:20px;padding:20px;margin-bottom:15px;border:1px solid rgba(255,255,255,0.03);position:relative}
-        .card::before{content:"";position:absolute;left:0;top:20px;bottom:20px;width:3px;background:var(--gold);border-radius:0 4px 4px 0}
-        .card.holiday-card::before{background:var(--purple);box-shadow: 0 0 15px rgba(213, 0, 249, 0.4);}
-        .label{color:#666;font-size:0.5rem;text-transform:uppercase;font-weight:900;margin-bottom:4px; display: flex; justify-content: space-between;}
-        .portion-tag { color: var(--blue); }
-        .value{ font-size: 0.95rem; margin-bottom: 12px; font-weight: 500; cursor: pointer; border-bottom: 1px solid #222; padding-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
-        .macro-row{margin-bottom:10px}
-        .macro-label{display:flex;justify-content:space-between;font-size:0.55rem;font-weight:800;color:#777;margin-bottom:3px}
-        .macro-bg{height:5px;background:#222;border-radius:10px;overflow:hidden}
-        .macro-fill{height:100%;border-radius:10px;transition:width 0.8s}
-        .tabs{display:flex;gap:4px;margin-bottom:15px}
-        .tab{flex:1;padding:10px 0;background:#111;border:1px solid #222;color:#444;border-radius:8px;font-size:0.55rem;font-weight:800;text-align:center;cursor:pointer}
-        .tab.active{background:#222;color:#fff;border-color:444}
-        /* MODAL FIXES */
-        .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:2000;overflow-y:auto;padding:0;backdrop-filter:blur(5px);}
-        .modal-content{background:#0a0a0a;margin:0;padding:25px;border:none;border-radius:0;width:100%;min-height:100%;max-width:none;}
-        /* BIGGER CLOSE BUTTON */
-        .close-btn-float { position: fixed; top: 25px; right: 25px; width: 50px; height: 50px; background: #FF5252; border-radius: 50%; border: 2px solid #fff; color: #fff; font-size: 30px; text-align: center; line-height: 46px; cursor: pointer; z-index: 3000; box-shadow: 0 4px 15px rgba(0,0,0,0.8); font-weight:bold;}
-        .chef-steps ol{padding-left:20px; color:#ccc; margin:10px 0; font-size:0.9rem; line-height:1.6;}
-        .chef-steps li{margin-bottom:12px;}
-        .chef-steps strong{color:var(--gold); display:block; margin-top:20px; font-size:0.8rem; border-top:1px dashed #333; padding-top:15px;}
-        .juice-name{font-size:1.1rem;font-weight:900;color:#fff;text-align:center;text-transform:uppercase;cursor:pointer;border:1px dashed #333;padding:10px;border-radius:12px}
-        .bio-section{margin-bottom:25px;padding:15px;background:rgba(255,255,255,0.03);border-radius:15px;border:1px solid rgba(255,255,255,0.05)}
-        .bio-title{display:flex;justify-content:space-between;font-size:0.75rem;font-weight:800;color:#fff;margin-bottom:12px;text-transform:uppercase}
-        .bar-group{display:flex;flex-direction:column;gap:8px}
-        .bar-row{display:flex;align-items:center}
-        .bar-lbl{width:45px;font-size:0.55rem;color:#666;font-weight:900;text-transform:uppercase}
-        .bar-track{flex:1;height:8px;background:#111;border-radius:10px;margin:0 10px;border:1px solid #222;overflow:hidden}
-        .bar-fill{height:100%;border-radius:10px;transition:width 1s cubic-bezier(0.4,0,0.2,1)}
-        .rec-phase-list { position: relative; padding-left: 25px; margin-top: 20px; }
-        .rec-phase-list::before { content: ''; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: linear-gradient(to bottom, var(--blue), var(--purple)); }
-        .phase-item { position: relative; margin-bottom: 25px; }
-        .phase-item::after { content: ''; position: absolute; left: -22px; top: 5px; width: 10px; height: 10px; background: var(--bg); border: 2px solid var(--blue); border-radius: 50%; }
-        .phase-time { font-size: 0.6rem; font-weight: 900; color: var(--blue); text-transform: uppercase; letter-spacing: 1px; }
-        .phase-title { display: block; font-size: 0.9rem; font-weight: 700; color: #fff; margin: 2px 0; }
-        .phase-detail { font-size: 0.75rem; color: #999; line-height: 1.4; display: block; }
-        .macro-pill { background: #1a1a1a; border: 1px solid #333; padding: 3px 8px; border-radius: 12px; font-size: 0.55rem; color: #888; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; white-space: nowrap; }
-        .grocery-cat { font-size: 0.85rem; color: var(--gold); text-transform: uppercase; letter-spacing: 2px; margin-top: 30px; margin-bottom: 15px; font-weight: 900; border-bottom: 1px dashed #333; padding-bottom: 8px; }
-        .grocery-item { padding: 12px 0; color: #ccc; font-size: 0.95rem; display:flex; align-items:center; border-bottom:1px solid #1a1a1a; }
-        .grocery-item span { margin-left: 12px; }
-        .snack-grid { display: flex; gap: 10px; margin-bottom: 15px; }
-        .snack-slot { flex: 1; border: 1px dashed #333; border-radius: 12px; padding: 12px 5px; text-align: center; cursor: pointer; position: relative; min-height: 60px; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(255,255,255,0.02); }
-        .snack-slot.filled { border: 1px solid var(--gold); background: #111; }
-        .snack-label { font-size: 0.65rem; color: #fff; font-weight: 700; line-height: 1.2; }
-        .snack-macro { font-size: 0.5rem; color: #666; margin-top: 4px; }
-        .remove-snack { position: absolute; top: -5px; right: -5px; background: #333; color: #aaa; border: 1px solid #222; border-radius: 50%; width: 16px; height: 16px; font-size: 9px; line-height: 14px; text-align: center; font-weight: 800; box-shadow: 0 1px 3px rgba(0,0,0,0.5); z-index: 10; transition: all 0.2s ease; }
-        .remove-snack:hover { background: #444; color: #fff; border-color:#333; }
-        .meal-img { display: block; width: 100%; max-width: 100%; height: auto; min-height: 220px; object-fit: cover; border-radius: 14px; background-color: #111; transition: opacity 0.5s ease, filter 0.5s ease; }
-        .img-loader { height: 220px; display: flex; align-items: center; justify-content: center; color: var(--gold); font-size: 0.8rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; background: rgba(255,255,255,0.02); border-radius: 14px; border: 1px dashed #333; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
-        .hist-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.7rem; color: #ccc; }
-        .hist-table th { text-align: left; color: #666; border-bottom: 1px solid #333; padding: 5px; font-weight: 800; }
-        .hist-table td { border-bottom: 1px solid #222; padding: 8px 5px; }
-        .hist-row:last-child td { border-bottom: none; }
-        .holiday-banner { background: linear-gradient(90deg, #D4AF37, #FDD835, #D4AF37); background-size: 200% 200%; animation: shine 3s infinite; color: #000; text-align: center; font-weight: 900; font-size: 0.75rem; padding: 10px; border-radius: 12px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px; box-shadow: 0 0 15px rgba(212, 175, 55, 0.3); }
-        @keyframes shine { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
-        .oura-hist-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #222; font-size: 0.7rem; color: #888; }
-        .oura-val { font-weight: 800; color: #fff; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>The Centurion | Demo</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+
+<style>
+:root{
+--bg:#050505;--card:#141414;--gold:#D4AF37;--green:#00E676;
+--blue:#00B0FF;--purple:#D500F9;--text:#fff;
+}
+*{box-sizing:border-box}
+body{
+margin:0;font-family:Inter;background:var(--bg);color:var(--text);
+padding:15px;font-size:14px;
+}
+.container{max-width:500px;margin:auto}
+h1{text-align:center;font-weight:200;letter-spacing:5px}
+.version{font-size:.55rem;color:#444;text-align:center;margin-bottom:15px}
+
+.badge-row{display:flex;gap:8px;justify-content:center;margin-bottom:10px}
+.badge{
+padding:8px 14px;border-radius:20px;
+border:1px solid #333;font-size:.6rem;font-weight:800;
+cursor:pointer;color:#666
+}
+.badge.active{color:var(--gold);border-color:var(--gold)}
+
+.controls{display:flex;gap:5px;margin-bottom:15px}
+button{
+flex:1;padding:10px;border-radius:8px;
+border:1px solid #222;background:#111;color:#888;
+font-size:.55rem;font-weight:800;cursor:pointer
+}
+
+.tabs{display:flex;gap:4px;margin-bottom:10px}
+.tab{
+flex:1;padding:8px 0;text-align:center;
+font-size:.55rem;font-weight:800;
+background:#111;border:1px solid #222;border-radius:8px;
+color:#555;cursor:pointer
+}
+.tab.active{background:#222;color:#fff}
+
+.card{
+background:var(--card);border-radius:16px;
+padding:15px;margin-bottom:10px;
+border-left:3px solid var(--gold);cursor:pointer
+}
+.label{font-size:.5rem;color:#666;font-weight:900}
+.value{font-size:.9rem;font-weight:600;margin-top:4px}
+
+.modal{
+display:none;position:fixed;top:0;left:0;width:100%;height:100%;
+background:rgba(0,0,0,.95);z-index:1000
+}
+.modal-content{
+padding:25px
+}
+.close{
+position:fixed;top:20px;right:20px;
+width:40px;height:40px;border-radius:50%;
+background:#ff5252;color:#fff;
+text-align:center;line-height:40px;font-weight:900;
+cursor:pointer
+}
+
+.ai-card{
+background:linear-gradient(135deg,#1a1a2e,#16213e);
+border-radius:16px;padding:20px;margin-bottom:15px
+}
+.ai-num{font-size:2.5rem;font-weight:900;text-align:center}
+.small{text-align:center;font-size:.6rem;color:#aaa}
+
+.intervention{
+border-left:3px solid var(--blue);
+background:rgba(255,255,255,.04);
+padding:12px;margin:10px 0;border-radius:8px
+}
+</style>
 </head>
+
 <body>
 <div class="container">
-    <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v228.14 UX Patch (Safe Mode)</span>
-        <div class="badge-row">
-            <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
-            <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
-        </div>
-    </header>
-    <div id="dateDisplay" class="status-bar">...</div>
-    <div class="controls">
-        <button class="nav-btn" onclick="changeW(-1)">PREV</button>
-        <button class="nav-btn" onclick="resetD()">TODAY</button>
-        <button class="nav-btn" onclick="changeW(1)">NEXT</button>
-        <button class="nav-btn" onclick="openBio()" style="color:var(--green)">MY DATA</button>
-    </div>
-    <div id="dayTabs" class="tabs"></div>
-    <div id="dayContent"></div>
+
+<h1>THE CENTURION</h1>
+<div class="version">Single-File Demo</div>
+
+<div class="badge-row">
+<div id="bj" class="badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
+<div id="bs" class="badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
 </div>
 
-<div id="masterModal" class="modal" onclick="closeM(event)">
-    <div class="close-btn-float" onclick="closeM()">&times;</div>
-    <div class="modal-content" onclick="event.stopPropagation()">
-        <h2 id="mTitle" style="font-size:1.5rem; margin-top:10px;"></h2>
-        <div id="mSub" style="color:var(--gold);font-size:0.85rem;margin:10px 0; text-transform:uppercase; letter-spacing:1px; font-weight:700;"></div>
-        <div id="mImgContainer"></div>
-        <div id="mBody" class="chef-steps" style="counter-reset:step"></div>
-        <div id="mTip" class="chef-tip" style="margin-top:30px; padding:15px; border:1px solid #222; background:#111; border-radius:10px; color:#888; font-style:italic;"></div>
-        <br><br><br>
-    </div>
+<div class="controls">
+<button onclick="toggleAI()">🧠 AI</button>
+<button onclick="resetD()">TODAY</button>
 </div>
+
+<div id="ai" style="display:none"></div>
+
+<div id="tabs" class="tabs"></div>
+<div id="content"></div>
+
+</div>
+
+<div id="modal" class="modal" onclick="closeM(event)">
+<div class="close" onclick="closeM()">×</div>
+<div class="modal-content">
+<h2 id="mTitle"></h2>
+<p id="mSub" style="color:var(--gold)"></p>
+<p id="mTip" style="color:#888"></p>
+</div>
+</div>
+
 <script>
-// --- GLOBAL STATE ---
-let user = localStorage.getItem('centurion_active_user') || 'J';
-let offset = 0;
-let snackLog = {}; 
-let currentSlot = 0;
-window.ouraHistory = []; // Global history store
+let user = localStorage.getItem('centurion_user') || 'J'
+let aiVisible = false
 
-// --- DUAL OURA CONFIGURATION ---
-const TOKEN_J = "WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y"; // Jermaine's Key
-const TOKEN_S = "4QSDWYJJUZFHRWRH727NCK7WH4COQJF4"; // Sophia's Key
+const meals = [
+["Ground Beef & Lentils","Protein + Fiber","Iron, gut health"],
+["Salmon Spinach Bowl","Omega-3","Brain & heart"],
+["Bison Burger","High Protein","Muscle support"]
+]
 
-function getActiveToken() {
-    if (user === 'J') {
-        return localStorage.getItem('centurion_oura_token_J') || TOKEN_J;
-    } else {
-        return TOKEN_S; 
-    }
+const users={
+J:{bio:36,score:78,life:92},
+S:{bio:34,score:62,life:88}
 }
 
-// --- UTILITIES ---
-function getCaDate() {
-    let d = new Date(new Date().toLocaleString("en-US", {timeZone: "America/Los_Angeles"}));
-    d.setHours(12, 0, 0, 0); 
-    return d;
+function switchU(u){
+user=u
+localStorage.setItem('centurion_user',u)
+document.getElementById('bj').classList.toggle('active',u==='J')
+document.getElementById('bs').classList.toggle('active',u==='S')
+render()
 }
-
-function getDateKey(d) {
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-}
-
-let selDate = getCaDate();
-
-// --- DATABASES ---
-const jDB = {
-    "PINEAPPLE GREEN Vitality": ["Digestion + Detox", "2c Spinach, 1c Pineapple, 1/2 Cucumber, Ginger, Lemon", 1, 28, 120, 1],
-    "PLASMA FLUSH Juice": ["Recovery", "3c Watermelon, 1 Lime (Peeled), Mint", 1, 32, 140, 1],
-    "TITAN RED Juice": ["Endurance", "2 Raw Beets, 2 Carrots, Pomegranate, Ginger", 2, 42, 185, 2],
-    "ZENITH GREEN Juice": ["Alkalizer", "4 Kale Leaves, 1 Cucumber, Celery, Lemon", 2, 18, 120, 1],
-    "APOLLO GOLD Juice": ["Anti-Inflammatory", "2 Pears, Turmeric Root, Ginger, Lemon", 1, 45, 195, 2]
-};
-
-const mDB = {
-    b: [
-        "Beef & Liver Sausage|80/20 Beef-Liver Blend,Sage,Thyme,Blueberries|sear|<strong>The 'Ancestral Sausage'</strong><hr><strong>INGREDIENTS</strong><br>6oz Beef/Liver Blend • 1 tsp Sage • 1/2 tsp Thyme • 1/2 Cup Berries<br><br><strong>1. MIX</strong><br>Mix herbs into the ground blend. Form into small patties.<br><br><strong>2. COOK</strong><br>Pan fry until browned. Serve with berries on the side.<br><br><strong>Longevity Win:</strong> Heme iron + Vitamin A powerhouse.|25|8|280|15",
-        "Avocado Egg Toast|Ezekiel Bread,Avocado,Egg Whites,Hemp Seeds|toast|<strong>The 'Centurion Toast'</strong><hr><strong>INGREDIENTS</strong><br>2 Slices Sprouted Bread • 1/2 Avocado • 1 Cup Egg Whites • 1 tbsp Hemp Seeds<br><br><strong>1. PREP</strong><br>Toast bread. Mash avocado with lemon.<br><br><strong>2. COOK</strong><br>Scramble egg whites separately. Serve toast topped with avo mash.|35|30|450|12",
-        "Oat Protein Pancakes|Oat Flour,Whey Isolate,Blueberries,Almond Milk|griddle|<strong>'Fluffy Pro-Cakes'</strong><hr><strong>INGREDIENTS</strong><br>1/2 Cup Oat Flour • 1 Scoop Vanilla Protein • 1/2 tsp Baking Powder • Blueberries<br><br><strong>1. MIX</strong><br>Whisk flour, protein, and baking powder. Stir in milk.<br><br><strong>2. COOK</strong><br>Pour onto hot griddle. Drop fresh blueberries into the wet batter.|35|25|380|6",
-        "Turkey Bacon Scramble|Turkey Bacon,2 Eggs,Spinach,Tomato|sear|<strong>'The Classic Plate'</strong><hr><strong>INGREDIENTS</strong><br>3 Slices Nitrate-Free Turkey Bacon • 2 Pasture-Raised Eggs • 2 Cups Spinach<br><br><strong>1. COOK</strong><br>Crisp the turkey bacon.<br><br><strong>2. SCRAMBLE</strong><br>Wilt spinach and tomato. Scramble eggs into the veg.|30|5|340|18",
-        "Turmeric Shrimp Scramble|Shrimp,Egg Whites,Turmeric,Green Onion|sear|<strong>'Golden Anti-Inflammatory'</strong><hr><strong>INGREDIENTS</strong><br>4oz Shrimp (Peeled) • 1 Cup Egg Whites • 1/2 tsp Turmeric<br><br><strong>1. PREP</strong><br>Dust shrimp with turmeric.<br><br><strong>2. COOK</strong><br>Sear shrimp. Pour in egg whites. Scramble fluffy.|35|2|290|5",
-        "Greek Yogurt Bowl|0% Greek Yogurt,Raspberries,Walnuts,Collagen|raw|<strong>'The Power Bowl'</strong><hr><strong>INGREDIENTS</strong><br>1.5 Cups Greek Yogurt • 1 Cup Raspberries • 2 tbsp Walnuts • Collagen<br><br><strong>1. ASSEMBLE</strong><br>Stir collagen into yogurt. Top with fresh berries and walnuts.|42|15|380|9",
-        "Smoked Salmon Toast|Smoked Salmon,Sprouted Toast,Cucumber,Dill|raw|<strong>'Nordic Morning'</strong><hr><strong>INGREDIENTS</strong><br>4oz Wild Smoked Salmon • 1 Slice Toast • 1/2 Cucumber • Dill<br><br><strong>1. ASSEMBLE</strong><br>Toast bread. Layer salmon, cucumber rounds, and dill.|35|15|360|10",
-        "Zucchini Mushroom Eggs|3 Eggs,Zucchini,Mushrooms,Nutritional Yeast|sear|<strong>'Volume Scramble'</strong><hr><strong>INGREDIENTS</strong><br>3 Eggs • 1 Zucchini • 1/2 Cup Mushrooms • Nutritional Yeast<br><br><strong>1. COOK</strong><br>Sauté veggies soft. Whisk eggs and pour over. Scramble.|28|8|350|18",
-        "Green Protein Smoothie|Spinach,Protein Powder,Avocado,Pineapple|blend|<strong>'Velvet Green'</strong><hr><strong>INGREDIENTS</strong><br>2 Cups Spinach • 1 Scoop Protein • 1/4 Avocado • 1/2 Cup Pineapple<br><br><strong>1. BLEND</strong><br>Blend spinach and water first. Add protein and fruit. Blend high.|35|25|390|10",
-        "Chocolate Oat Waffles|Oat Flour,Chocolate Protein,Cocoa Powder,Egg White|griddle|<strong>'Dark Choc Waffles'</strong><hr><strong>INGREDIENTS</strong><br>1/2 Cup Oat Flour • 1 Scoop Chocolate Protein • 1 tbsp Cocoa • Egg Whites<br><br><strong>1. MIX & COOK</strong><br>Combine ingredients. Cook in waffle iron until crisp.|35|30|410|7",
-        "Turkey Sausage & Apple|Turkey Sausage,Green Apple,Sage|sear|<strong>'Autumn Scramble'</strong><hr><strong>INGREDIENTS</strong><br>3 Links Turkey Sausage (Clean) • 1/2 Green Apple • Sage<br><br><strong>1. COOK</strong><br>Pan-fry sausage. Sear apple wedges. Garnish with sage.|25|15|320|12",
-        "Cottage Cheese Bowl|Cottage Cheese,Peach,Ground Flax,Cinnamon|raw|<strong>'High Pro Creamy'</strong><hr><strong>INGREDIENTS</strong><br>1 Cup Low-Fat Cottage Cheese • 1 Peach • 1 tbsp Flax<br><br><strong>1. ASSEMBLE</strong><br>Top cheese with sliced peaches and flax.|28|15|280|5",
-        "Steak & Eggs|Lean Steak,2 Eggs,Asparagus|sear|<strong>'The Builder'</strong><hr><strong>INGREDIENTS</strong><br>4oz Lean Steak • 2 Eggs • Asparagus<br><br><strong>1. COOK</strong><br>Sear steak to medium-rare. Fry eggs sunny side up. Steam asparagus.|40|2|420|20",
-        "Berry Protein Smoothie|Whey Isolate,Mixed Berries,Ground Flax,Almond Milk|blend|<strong>'Berry Alchemy'</strong><hr><strong>INGREDIENTS</strong><br>1 Scoop Isolate • 1 Cup Frozen Berries • 1 tbsp Flax<br><br><strong>1. BLEND</strong><br>Combine all ingredients. Blend smooth.|35|20|320|8",
-        "Egg White Frittata|Egg Whites,Spinach,Feta,Olives|bake|<strong>'Mediterranean Frittata'</strong><hr><strong>INGREDIENTS</strong><br>1 Cup Egg Whites • 1 Whole Egg • Spinach • Feta<br><br><strong>1. COOK</strong><br>Mix ingredients. Pour into skillet. Cook stove-top then broil.|30|3|310|10",
-        "Almond Flour Pancakes|Almond Flour,Eggs,Vanilla,Monk Fruit|griddle|<strong>'Keto Cakes'</strong><hr><strong>INGREDIENTS</strong><br>1/2 Cup Almond Flour • 2 Eggs • Vanilla<br><br><strong>1. MIX & COOK</strong><br>Whisk and cook on medium heat.|20|6|380|28",
-        "Sardines on Sourdough|Sardines,Sourdough,Lemon,Parsley|raw|<strong>'Omega Toast'</strong><hr><strong>INGREDIENTS</strong><br>1 Tin Sardines (Water) • 1 Slice Sourdough • Lemon<br><br><strong>1. ASSEMBLE</strong><br>Mash sardines onto toast. Drizzle lemon.|25|15|340|12",
-        "Mango Turmeric Shake|Protein Powder,Mango,Turmeric,Coconut Milk|blend|<strong>'Tropical Anti-Inflam'</strong><hr><strong>INGREDIENTS</strong><br>1 Scoop Vanilla Protein • 1/2 Cup Mango • 1/2 tsp Turmeric<br><br><strong>1. BLEND</strong><br>Blend with ice and coconut milk.|30|25|360|8",
-        "Turkey Bacon Wrap|Turkey Bacon,Eggs,Low-Carb Tortilla,Salsa|sear|<strong>'Morning Burrito'</strong><hr><strong>INGREDIENTS</strong><br>2 Slices Turkey Bacon • 2 Eggs • 1 High-Fiber Tortilla<br><br><strong>1. ASSEMBLE</strong><br>Scramble eggs and bacon. Roll in tortilla.|30|15|380|15",
-        "Ricotta Pear Toast|Ricotta Cheese,Pear,Cinnamon,Walnuts|toast|<strong>'Sweet Ricotta'</strong><hr><strong>INGREDIENTS</strong><br>1 Slice Toast • 1/4 Cup Ricotta • 1/2 Pear<br><br><strong>1. ASSEMBLE</strong><br>Spread ricotta on toast. Top with pear slices.|18|25|320|10",
-        "Matcha Protein Shake|Matcha Powder,Vanilla Protein,Almond Milk|blend|<strong>'Zen Shake'</strong><hr><strong>INGREDIENTS</strong><br>1 tsp Matcha • 1 Scoop Vanilla Protein • Almond Milk<br><br><strong>1. BLEND</strong><br>Blend with plenty of ice.|25|2|180|2",
-        "Egg Veggie Muffins|Egg Whites,Spinach,Peppers,Onion|bake|<strong>'Meal Prep Cups'</strong><hr><strong>INGREDIENTS</strong><br>1.5 Cups Egg Whites • Spinach • Onion<br><br><strong>1. COOK</strong><br>Pour eggs over veggies in muffin tin. Bake 350°F 20m.|30|4|160|2",
-        "Coconut Yogurt Parfait|Coconut Yogurt,Granola(Grain-Free),Blueberries|raw|<strong>'Dairy-Free Parfait'</strong><hr><strong>INGREDIENTS</strong><br>1 Cup Coconut Yogurt • Grain-Free Granola • Berries<br><br><strong>1. ASSEMBLE</strong><br>Layer yogurt and granola.|10|20|320|15",
-        "Shrimp & Grits (Cauli)|Shrimp,Cauliflower Rice,Nutritional Yeast|sear|<strong>'Low Carb Grits'</strong><hr><strong>INGREDIENTS</strong><br>4oz Shrimp • 1.5 Cups Cauli-Rice • Nutritional Yeast<br><br><strong>1. COOK</strong><br>Mash steamed cauliflower with yeast (grits). Sear shrimp.|30|10|310|6",
-        "Chocolate Avocado Mousse|Chocolate Protein,Avocado,Cocoa,Almond Milk|blend|<strong>'Keto Mousse'</strong><hr><strong>INGREDIENTS</strong><br>1 Scoop Choc Protein • 1/2 Avocado • Cocoa<br><br><strong>1. BLEND</strong><br>Blend with minimal liquid for mousse texture.|30|8|360|20",
-        "Hummus Cucumber Toast|Hummus,Toast,Cucumber,Hemp Seeds|toast|<strong>'Savory Vegan'</strong><hr><strong>INGREDIENTS</strong><br>2 tbsp Hummus • 1 Slice Toast • Cucumber<br><br><strong>1. ASSEMBLE</strong><br>Spread hummus. Top with cucumber rounds.|12|25|280|8",
-        "Coffee Walnut Shake|Cold Brew Coffee,Protein,Walnuts,Banana|blend|<strong>'Morning Buzz'</strong><hr><strong>INGREDIENTS</strong><br>1/2 Cup Cold Brew • 1 Scoop Protein • Walnuts<br><br><strong>1. BLEND</strong><br>Blend all ingredients.|30|20|340|12",
-        "Pumpkin Spice Waffles|Pumpkin Puree,Egg Whites,Oat Flour,Spice|griddle|<strong>'Pumpkin Waffles'</strong><hr><strong>INGREDIENTS</strong><br>1/4 Cup Pumpkin • Egg Whites • Oat Flour<br><br><strong>1. COOK</strong><br>Whisk and cook in waffle iron.|20|20|280|5",
-        "Turkey Kale Scramble|Ground Turkey,Kale,Onion,Garlic|sear|<strong>'Lean Green Scramble'</strong><hr><strong>INGREDIENTS</strong><br>4oz Ground Turkey • 2 Cups Kale • Onion<br><br><strong>1. COOK</strong><br>Brown turkey. Steam kale on top.|30|5|310|10",
-        "PB Strawberry Shake|Vanilla Protein,Peanut Butter Powder,Strawberries|blend|<strong>'PB&J Shake'</strong><hr><strong>INGREDIENTS</strong><br>1 Scoop Protein • PB Powder • Strawberries<br><br><strong>1. BLEND</strong><br>Blend smooth.|30|15|250|5"
-    ],
-    l: [
-        "Beef & Liver Meatballs|80/20 Beef-Liver Blend,Carrot Sticks,Cucumber|bake|<strong>'Legacy Meatballs'</strong><hr><strong>INGREDIENTS</strong><br>6oz Beef/Liver Blend (80/20) • Carrots • Cucumbers<br><br><strong>1. PREP</strong><br>Form meatballs. Bake 375°F 15m.<br><br><strong>2. SERVE</strong><br>Eat with raw veggie sticks.|25|15|340|15",
-        "Ground Beef & Lentils|96% Lean Beef,Black Lentils,Broccoli,Cauliflower|sear|<strong>The 'Super Mince'</strong><hr><strong>INGREDIENTS</strong><br>8oz Lean Ground Beef • 1/2 Cup Black Lentils • Broccoli<br><br><strong>1. COOK</strong><br>Brown beef. Add lentils and riced veggies.|50|25|550|15",
-        "Chicken Artichoke Salad|Chicken Breast,Artichoke Hearts,Arugula,Lemon|sear|<strong>'Liver Detox Bowl'</strong><hr><strong>INGREDIENTS</strong><br>6oz Chicken • 1 Cup Artichokes • Arugula<br><br><strong>1. COOK</strong><br>Sear chicken. Toss with artichokes and greens.|40|15|420|10",
-        "Seared Salmon Salad|Sockeye Salmon,Spinach,Avocado,Radish|sear|<strong>'Omega Salad XL'</strong><hr><strong>INGREDIENTS</strong><br>6oz Salmon • 4 Cups Spinach • 1/2 Avocado<br><br><strong>1. COOK</strong><br>Sear salmon. Flake over spinach.|38|12|480|22",
-        "Bison Veggie Chili|Ground Bison,Carrots,Celery,Bone Broth|stew|<strong>'No-Bean Chili'</strong><hr><strong>INGREDIENTS</strong><br>8oz Ground Bison • Carrots • Celery • Broth<br><br><strong>1. COOK</strong><br>Simmer browned bison with veggies and broth.|48|18|500|15",
-        "Turkey Lettuce Cups|Ground Turkey,Water Chestnuts,Ginger,Romaine|sear|<strong>'Crunch Lettuce Cups'</strong><hr><strong>INGREDIENTS</strong><br>6oz Lean Turkey • Water Chestnuts • Romaine<br><br><strong>1. COOK</strong><br>Stir fry turkey and chestnuts. Spoon into lettuce.|40|10|350|8",
-        "Steak & Brussels|Top Sirloin,Brussels Sprouts,Balsamic Vinegar|sear|<strong>'Steak & Green'</strong><hr><strong>INGREDIENTS</strong><br>6oz Sirloin • 2 Cups Brussels • Balsamic<br><br><strong>1. COOK</strong><br>Char sprouts face down. Sear steak.|42|15|460|18",
-        "Tuna Cucumber Boats|1 Can Tuna,Avocado,Cucumber,Celery|raw|<strong>'Tuna Boats'</strong><hr><strong>INGREDIENTS</strong><br>1 Can Tuna • 1 Avocado • 1 Large Cucumber<br><br><strong>1. ASSEMBLE</strong><br>Mix tuna and avo. Scoop into hollowed cucumber.|35|12|420|20",
-        "Shrimp Caesar Salad|Shrimp,Romaine,Tahini-Lemon Dressing|sear|<strong>'Dairy-Free Caesar'</strong><hr><strong>INGREDIENTS</strong><br>6oz Shrimp • Romaine • Tahini • Lemon<br><br><strong>1. COOK</strong><br>Sear shrimp. Toss salad with tahini dressing.|30|8|380|15",
-        "Venison Stuffed Peppers|Ground Venison,Bell Peppers,Cauli-Rice|bake|<strong>'Game Peppers'</strong><hr><strong>INGREDIENTS</strong><br>6oz Venison • 2 Peppers • Cauli-Rice<br><br><strong>1. COOK</strong><br>Stuff peppers with raw meat mix. Bake 375°F.|38|20|410|12",
-        "Cod & Cabbage Slaw|Cod Fillet,Purple Cabbage,Apple Cider Vinegar|sear|<strong>'Purple Detox'</strong><hr><strong>INGREDIENTS</strong><br>6oz Cod • 3 Cups Cabbage • ACV<br><br><strong>1. COOK</strong><br>Sear cod. Braise cabbage in ACV.|35|12|340|5",
-        "Lamb & Cucumber|Lean Lamb Loin,Cucumber,Mint,Lemon|sear|<strong>'Greek Lamb'</strong><hr><strong>INGREDIENTS</strong><br>6oz Lamb Loin • Cucumber • Mint<br><br><strong>1. COOK</strong><br>Sear lamb. Serve with cold cucumber salad.|40|5|420|20",
-        "Chicken Waldorf|Chicken Breast,Apple,Walnuts,Celery|raw|<strong>'Chicken Waldorf'</strong><hr><strong>INGREDIENTS</strong><br>6oz Cooked Chicken • 1/2 Apple • Walnuts<br><br><strong>1. ASSEMBLE</strong><br>Mix diced chicken, apple, nuts with yogurt.|35|22|440|15",
-        "Steak & Beet Jar|Sirloin,Roasted Beets,Arugula,Walnuts|sear|<strong>'Nitrate Jar'</strong><hr><strong>INGREDIENTS</strong><br>6oz Sirloin • 2 Beets • Arugula<br><br><strong>1. ASSEMBLE</strong><br>Layer beets, steak, then arugula.|40|18|450|15",
-        "Snapper & Greens|Red Snapper,Collard Greens,Garlic,Lemon|sear|<strong>'Southern Fish'</strong><hr><strong>INGREDIENTS</strong><br>6oz Snapper • Collard Greens • Garlic<br><br><strong>1. COOK</strong><br>Sauté greens. Sear snapper.|35|10|360|8",
-        "Turkey Burger & Avo|Turkey Patty,Avocado,Tomato,Lettuce Wrap|sear|<strong>'Bun-less Burger'</strong><hr><strong>INGREDIENTS</strong><br>6oz Turkey Patty • Avocado • Lettuce<br><br><strong>1. COOK</strong><br>Sear patty. Wrap in lettuce with toppings.|40|10|410|18",
-        "Bison Asparagus Stir-Fry|Bison Steak,Asparagus,Garlic|sear|<strong>'Zinc Stir-Fry'</strong><hr><strong>INGREDIENTS</strong><br>6oz Bison • Asparagus • Garlic<br><br><strong>1. COOK</strong><br>Flash fry asparagus. Sear bison strips.|42|8|430|12",
-        "Sardine Fennel Salad|Sardines,Fennel Bulb,Carrots,Lemon|raw|<strong>'Shaved Fennel Salad'</strong><hr><strong>INGREDIENTS</strong><br>1 Tin Sardines • Fennel Bulb • Carrots<br><br><strong>1. ASSEMBLE</strong><br>Shave fennel/carrots. Top with sardines.|25|15|380|15",
-        "Chicken Zoodles Pesto|Chicken Breast,Zucchini Noodles,Basil Pesto|sear|<strong>'Pesto Zoodles'</strong><hr><strong>INGREDIENTS</strong><br>6oz Chicken • 2 Zucchinis • Pesto<br><br><strong>1. COOK</strong><br>Sear chicken. Toss zoodles in hot pan 1 min.|38|10|420|18",
-        "Steak Tartare|Raw Lean Sirloin,Capers,Egg Yolk|raw|<strong>'Classic Tartare'</strong><hr><strong>INGREDIENTS</strong><br>6oz High Quality Steak • Capers • Yolk<br><br><strong>1. PREP</strong><br>Dice steak fine. Mix with capers/yolk.|38|2|350|18",
-        "Shrimp Ceviche|Shrimp,Avocado,Lime,Cilantro|sear|<strong>'Shrimp Ceviche'</strong><hr><strong>INGREDIENTS</strong><br>6oz Shrimp • 1 Avocado • Lime<br><br><strong>1. ASSEMBLE</strong><br>Mix cooked shrimp with avo and lime.|30|12|400|20",
-        "Liver Pate Plate|Beef Liver Paté,Carrot Sticks,Cucumber|raw|<strong>'Vitamin A Box'</strong><hr><strong>INGREDIENTS</strong><br>4oz Liver Paté • Carrots • Cucumber<br><br><strong>1. ASSEMBLE</strong><br>Pack paté with dipping veggies.|25|15|340|20",
-        "Venison & Squash|Venison,Butternut Squash,Sage|sear|<strong>'Hunter Plate'</strong><hr><strong>INGREDIENTS</strong><br>6oz Venison • Squash • Sage<br><br><strong>1. COOK</strong><br>Roast squash. Sear venison.|40|25|450|12",
-        "Mussels & Broth|Mussels,Garlic,Parsley,Bone Broth|steam|<strong>'Moules Frites (No Frites)'</strong><hr><strong>INGREDIENTS</strong><br>1lb Mussels • Bone Broth • Garlic<br><br><strong>1. COOK</strong><br>Steam mussels in broth.|30|5|300|8",
-        "Turkey Pear Rollups|Deli Turkey,Pear,Walnuts|raw|<strong>'Sweet Savory Roll'</strong><hr><strong>INGREDIENTS</strong><br>6oz Turkey • 1 Pear • Walnuts<br><br><strong>1. ASSEMBLE</strong><br>Wrap pear slices in turkey.|35|18|390|15",
-        "Clam Zucchini Linguine|Canned Clams,Zucchini,Garlic,Parsley|sear|<strong>'Clam Zoodles'</strong><hr><strong>INGREDIENTS</strong><br>1 Can Clams • 2 Zucchinis • Garlic<br><br><strong>1. COOK</strong><br>Toss zoodles with clams and juice.|30|10|280|5",
-        "Chicken Braised Kale|Chicken Breast,Lacinato Kale,Lemon|sear|<strong>'Iron Chicken'</strong><hr><strong>INGREDIENTS</strong><br>6oz Chicken • Kale • Lemon<br><br><strong>1. COOK</strong><br>Braise kale soft. Sear chicken.|40|12|400|10",
-        "Bison Cabbage Skillet|Ground Bison,Red Cabbage,Apple Cider Vinegar|sear|<strong>'Purple Skillet'</strong><hr><strong>INGREDIENTS</strong><br>6oz Bison • Red Cabbage • ACV<br><br><strong>1. COOK</strong><br>Brown bison. Braise cabbage.|38|15|420|18",
-        "Salmon & Broccoli|Salmon,Broccoli,Sesame Oil,Ginger|sear|<strong>'Sesame Salmon'</strong><hr><strong>INGREDIENTS</strong><br>6oz Salmon • Broccoli • Ginger<br><br><strong>1. COOK</strong><br>Sear salmon. Stir fry broccoli.|38|10|440|22",
-        "Roast Beef & Radishes|Sirloin,Radishes,Thyme|sear|<strong>'Faux Potato Roast'</strong><hr><strong>INGREDIENTS</strong><br>6oz Sirloin • Radishes • Thyme<br><br><strong>1. COOK</strong><br>Roast radishes (they taste like potato). Sear steak.|40|8|410|18"
-    ],
-    d: [
-        "Bison Portobello Burger|Ground Bison,Portobello Caps,Avocado,Lettuce Wrap|sear|<strong>'The Portobello Stack'</strong><hr><strong>INGREDIENTS</strong><br>6oz Bison • 1 Large Portobello Cap • 1/2 Avocado • Lettuce<br><br><strong>1. PREP</strong><br>Clean mushroom. Form bison patty.<br><br><strong>2. COOK</strong><br>Sear bison. Sear mushroom. Stack meat on mushroom bun.|45|8|480|22",
-        "Balsamic Beef & Mushrooms|80/20 Beef-Liver Blend,Mushrooms,Balsamic|sear|<strong>'Balsamic Beef'</strong><hr><strong>INGREDIENTS</strong><br>6oz Beef/Liver Blend (80/20) • 2 Cups Mushrooms • Balsamic<br><br><strong>1. COOK</strong><br>Sauté mushrooms. Add meat blend. Deglaze with vinegar.<br><br><strong>Longevity Win:</strong> The rich balsamic masks the liver flavor perfectly.|42|12|430|20",
-        "Filet & Lentils|Filet Mignon,Black Lentils,Asparagus,Lemon|sear|<strong>'Steak & Lentils'</strong><hr><strong>INGREDIENTS</strong><br>6oz Filet • 1/2 Cup Lentils • Asparagus<br><br><strong>1. COOK</strong><br>Sear steak. Warm lentils. Steam asparagus.|45|25|520|18",
-        "Chicken & Avocado Mash|Chicken Breast,Whole Avocado,Brussels Sprouts|sear|<strong>'Chicken Guac'</strong><hr><strong>INGREDIENTS</strong><br>6oz Chicken • 1 Avocado • Brussels<br><br><strong>1. COOK</strong><br>Sear chicken. Mash avocado on top.|42|15|550|25",
-        "Halibut White Beans|Halibut,Cannellini Beans,Kale,Garlic|bake|<strong>'White Fish Stew'</strong><hr><strong>INGREDIENTS</strong><br>6oz Halibut • 1/2 Cup Beans • Kale<br><br><strong>1. COOK</strong><br>Sauté kale/beans. Pan sear fish.|38|20|420|10",
-        "Venison Squash Bowl|Venison,Acorn Squash,Pomegranate|sear|<strong>'Harvest Bowl'</strong><hr><strong>INGREDIENTS</strong><br>6oz Venison • Squash • Pomegranate<br><br><strong>1. COOK</strong><br>Roast squash. Sear venison.|40|35|480|12",
-        "Bison Stuffed Peppers|Bison,2 Bell Peppers,Lentils|bake|<strong>'Bison Peppers'</strong><hr><strong>INGREDIENTS</strong><br>6oz Bison • 2 Peppers • Lentils<br><br><strong>1. COOK</strong><br>Stuff peppers with meat/lentils. Bake.|38|25|450|15",
-        "Salmon & Artichokes|Salmon,Artichoke Hearts,Lemon|bake|<strong>'Sheet Pan Salmon'</strong><hr><strong>INGREDIENTS</strong><br>6oz Salmon • Artichokes • Lemon<br><br><strong>1. COOK</strong><br>Bake salmon and artichokes on one pan.|38|15|460|22",
-        "Duck & Cherries|Duck Breast,Cherries,Spinach|sear|<strong>'Duck Confit Lite'</strong><hr><strong>INGREDIENTS</strong><br>6oz Duck • 1/4 Cup Cherries • Spinach<br><br><strong>1. COOK</strong><br>Sear duck skin down. Serve with warm cherries.|35|20|520|28",
-        "Scallops & Spinach|Scallops,Spinach,Bacon (Garnish)|sear|<strong>'Seared Scallops'</strong><hr><strong>INGREDIENTS</strong><br>6oz Scallops • Spinach • Bacon Crumble<br><br><strong>1. COOK</strong><br>Hard sear scallops. Sauté spinach.|30|5|350|12",
-        "Ribeye & Mushrooms|Ribeye,Mushrooms,Thyme|sear|<strong>'Keto Ribeye'</strong><hr><strong>INGREDIENTS</strong><br>6oz Ribeye • Mushrooms • Thyme<br><br><strong>1. COOK</strong><br>Sear ribeye in butter/thyme.|35|2|600|40",
-        "Turkey Meatloaf|Turkey,Almond Flour,Tomato Paste|bake|<strong>'Lean Loaf'</strong><hr><strong>INGREDIENTS</strong><br>6oz Turkey • Almond Flour • Tomato<br><br><strong>1. COOK</strong><br>Form loaf. Bake 375°F 30m.|40|10|380|15",
-        "Lamb Chops & Mint|Lamb Chops,Mint,Peas|sear|<strong>'Spring Lamb'</strong><hr><strong>INGREDIENTS</strong><br>6oz Lamb • Mint Sauce • 1/2 Cup Peas<br><br><strong>1. COOK</strong><br>Sear chops. Serve with peas.|38|15|480|25",
-        "Cod in Tomato Water|Cod,Cherry Tomatoes,Basil|poach|<strong>'Aqua Pazza'</strong><hr><strong>INGREDIENTS</strong><br>6oz Cod • Tomatoes • Basil<br><br><strong>1. COOK</strong><br>Simmer fish in tomato water.|35|8|320|5",
-        "Chicken & Asparagus|Chicken Breast,Asparagus,Lemon|sear|<strong>'Sheet Pan Chicken'</strong><hr><strong>INGREDIENTS</strong><br>6oz Chicken • Asparagus • Lemon<br><br><strong>1. COOK</strong><br>Roast everything at 400°F.|40|5|380|10",
-        "Pork Chop & Apple|Pork Chop,Apple,Fennel|sear|<strong>'Pork & Apple'</strong><hr><strong>INGREDIENTS</strong><br>6oz Pork Chop • 1/2 Apple • Fennel<br><br><strong>1. COOK</strong><br>Sear pork. Sauté apples/fennel.|38|20|450|18",
-        "Shrimp Stir Fry|Shrimp,Broccoli,Snap Peas|sear|<strong>'Shrimp Fry'</strong><hr><strong>INGREDIENTS</strong><br>6oz Shrimp • Broccoli • Snap Peas<br><br><strong>1. COOK</strong><br>High heat sear all ingredients.|35|12|350|8",
-        "Bison & Sweet Potato|Bison Steak,Sweet Potato,Kale|sear|<strong>'Bison Mash'</strong><hr><strong>INGREDIENTS</strong><br>6oz Bison • 1 Sweet Potato • Kale<br><br><strong>1. COOK</strong><br>Sear bison. Mash boiled potato.|40|30|500|15",
-        "Trout & Almonds|Trout,Almonds,Green Beans|sear|<strong>'Trout Amandine'</strong><hr><strong>INGREDIENTS</strong><br>6oz Trout • Almonds • Green Beans<br><br><strong>1. COOK</strong><br>Sear trout. Top with toasted almonds.|38|8|460|20",
-        "Chicken Curry (Lite)|Chicken,Coconut Milk,Cauliflower|stew|<strong>'Keto Curry'</strong><hr><strong>INGREDIENTS</strong><br>6oz Chicken • 1/2 Cup Coconut Milk • Cauli<br><br><strong>1. COOK</strong><br>Simmer chicken in milk/spices.|35|10|450|25",
-        "Beef & Broccoli|Flank Steak,Broccoli,Soy Sauce (gf)|sear|<strong>'Beef & Broc'</strong><hr><strong>INGREDIENTS</strong><br>6oz Flank Steak • Broccoli • Tamari<br><br><strong>1. COOK</strong><br>Flash fry steak and broccoli.|40|10|420|18",
-        "Turkey Stuffed Squash|Ground Turkey,Acorn Squash,Sage|bake|<strong>'Squash Boats'</strong><hr><strong>INGREDIENTS</strong><br>6oz Turkey • 1/2 Squash • Sage<br><br><strong>1. COOK</strong><br>Roast squash. Fill with cooked turkey.|35|25|400|12",
-        "Salmon & Cucumber|Salmon,Cucumber Salad,Dill|sear|<strong>'Cold Salmon Plate'</strong><hr><strong>INGREDIENTS</strong><br>6oz Salmon • Cucumber • Dill<br><br><strong>1. COOK</strong><br>Sear salmon. Serve with cold salad.|38|5|440|22",
-        "Liver & Onions|Beef Liver,Onions,Bacon|sear|<strong>'The Original'</strong><hr><strong>INGREDIENTS</strong><br>6oz Liver • Onions • 1 Slice Bacon<br><br><strong>1. COOK</strong><br>Soak liver in milk. Sear fast with onions.|45|12|400|15",
-        "Chicken & Zucchini|Chicken Thighs,Zucchini,Garlic|bake|<strong>'Chicken Bake'</strong><hr><strong>INGREDIENTS</strong><br>6oz Chicken Thighs • Zucchini<br><br><strong>1. COOK</strong><br>Bake until crispy.|35|5|450|25",
-        "Steak Salad|Sirloin,Mixed Greens,Vinaigrette|sear|<strong>'Steakhouse Salad'</strong><hr><strong>INGREDIENTS</strong><br>6oz Steak • Greens • Olive Oil<br><br><strong>1. COOK</strong><br>Sear steak. Slice over greens.|40|5|420|20",
-        "White Fish & Olives|Cod,Kalamata Olives,Tomatoes|bake|<strong>'Mediterranean Cod'</strong><hr><strong>INGREDIENTS</strong><br>6oz Cod • Olives • Tomatoes<br><br><strong>1. COOK</strong><br>Bake fish with toppings.|35|5|350|12",
-        "Bison & Cabbage|Ground Bison,Cabbage,Caraway|sear|<strong>'Hunter Skillet'</strong><hr><strong>INGREDIENTS</strong><br>6oz Bison • Cabbage • Caraway<br><br><strong>1. COOK</strong><br>Sauté everything in one pan.|40|10|420|15",
-        "Shrimp & Pesto|Shrimp,Zucchini Noodles,Pesto|sear|<strong>'Pesto Shrimp'</strong><hr><strong>INGREDIENTS</strong><br>6oz Shrimp • Zoodles • Pesto<br><br><strong>1. COOK</strong><br>Toss shrimp and zoodles in pesto.|30|8|380|18",
-        "Turkey & Sweet Potato|Turkey Breast,Sweet Potato,Green Beans|roast|<strong>'Thanksgiving Lite'</strong><hr><strong>INGREDIENTS</strong><br>6oz Turkey • Sweet Potato • Beans<br><br><strong>1. COOK</strong><br>Roast turkey and potato cubes.|40|30|450|10"
-    ],
-    s: [
-        "Beef Isolate Shake|Beef Isolate Protein,Water,Ice|shake|<strong>Prep:</strong> 2m<hr><strong>INGREDIENTS</strong><br>1 Scoop Beef Isolate • Water<br><br><strong>THE PROTOCOL</strong><br>Mix in shaker bottle.<br><br><strong>Longevity Win:</strong> Collagen rich.|25|0|110|0",
-        "Sardines (Water)|Sardines,Lemon,Hot Sauce|raw|<strong>Prep:</strong> 1m<hr><strong>INGREDIENTS</strong><br>1 Tin Sardines (Water)<br><br><strong>THE PROTOCOL</strong><br>Drain and eat.<br><br><strong>Longevity Win:</strong> Omega-3 powerhouse.|22|0|190|10",
-        "Avocado Cup|1/2 Avocado,Sea Salt|raw|<strong>Prep:</strong> 1m<hr><strong>INGREDIENTS</strong><br>1/2 Avocado<br><br><strong>THE PROTOCOL</strong><br>Sprinkle with salt and eat with spoon.<br><br><strong>Longevity Win:</strong> Healthy fats.|2|8|160|15",
-        "Bone Broth Cup|Bone Broth,Salt,Turmeric|heat|<strong>Prep:</strong> 3m<hr><strong>INGREDIENTS</strong><br>1 Cup Bone Broth<br><br><strong>THE PROTOCOL</strong><br>Heat and sip.<br><br><strong>Longevity Win:</strong> Gut health.|10|0|50|0",
-        "Hard Boiled Eggs|2 Eggs,Salt,Pepper|boil|<strong>Prep:</strong> 10m<hr><strong>INGREDIENTS</strong><br>2 Eggs<br><br><strong>THE PROTOCOL</strong><br>Boil 8 mins. Peel and eat.<br><br><strong>Longevity Win:</strong> Choline for brain.|12|1|140|10"
-    ]
-};
-
-const pDB={"HEAVY LIFT":[{t:"PRE",h:"Theragun",d:"Glutes, Quads, Hams. 30s each."},{t:"GYM",h:"Heavy Lift",d:"Main compound movement."},{t:"POST",h:"Chair+Sauna",d:"20m Zero-Grav + 20m Sauna."}],"BOXING":[{t:"PRE",h:"Mobility",d:"Rotator cuffs & Calves."},{t:"GYM",h:"Boxing",d:"High intensity rounds."},{t:"POST",h:"Normatec",d:"Flush legs. NO SAUNA."}],"REFORM":[{t:"PRE",h:"Sweep",d:"Light full body percussion."},{t:"GYM",h:"Reform",d:"Time under tension."},{t:"POST",h:"Sauna",d:"20m HGH Boost."}],"REFORM/YOGA":[{t:"PRE",h:"Sweep",d:"Light full body percussion."},{t:"GYM",h:"Yoga",d:"Deep fascial release."},{t:"POST",h:"Heat",d:"Sauna or Thera Knee Heat."}],"CS4":[{t:"PRE",h:"Hydrate",d:"Electrolytes."},{t:"GYM",h:"CS4",d:"Cardio Strength 4."},{t:"POST",h:"Contrast",d:"Sauna + Cold or Knee Contrast."}],"RELAX":[{t:"PRE",h:"Walk",d:"Light movement."},{t:"GYM",h:"Relax",d:"Active recovery."},{t:"POST",h:"Massage",d:"Chair or Thera Knee Heat."}]};
-
-const rDB={"Sea Moss":["92 Minerals","2 TBSP Fasted.","Thyroid & Gut support."],"Kombucha":["Probiotic","4 OZ post-Lunch.","Enzyme support."],"Aloe Vera":["Gut Soother", "2oz Pure Aloe Inner Leaf.", "Heals stomach lining."],"Golden Milk":["Anti-Inflammatory", "Coconut Milk, Turmeric, Black Pepper.", "Calms the immune system."],"Hibiscus Tea":["Blood Pressure", "Dried Hibiscus Flowers.", "Rich in antioxidants (Vitamin C)."],"Aqua Chair":["Hydro-Massage","Align body to zero-gravity.","Jets to glutes and lats.","20 Min Duration."],"Sauna":["HSP Induction","185°F Range.","20 Mins total.","Heavy metal detox sweat."],"Theragun":["Percussive","Float over muscles.","2m per limb.","Target Lats/Hips."],"Normatec":["Compression","Level 4 Intensity.","Full leg cycle.","30m Lymphatic flush."],"Pre-Workout":["Nitro-Boost","6g Citrulline Malate.","Take 20m before training."]};
-
-var defaultUH = {
-    'J': {
-        now: {bf:19.0, m:99.0, w:217.0, vf:10, bmr:2050}, 
-        goal: {bf:15.0, m:105.0, w:212.0, vf:7, bmr:2150},
-        info: {bf:{d:"Adipose tissue percentage.",f:"Rx: Caloric Deficit."},m:{d:"Skeletal muscle.",f:"Rx: Hypertrophy."},vf:{d:"Visceral Fat.",f:"Rx: No Fructose."},bmr:{d:"Basal Metabolic Rate.",f:"Rx: Build muscle."}},
-        labs: {apob:{val:95,goal:60,unit:"mg/dL",name:"ApoB",lowerIsBetter:true,desc:"Plaque particles.",fix:"Rx: Fiber >40g."},hba1c:{val:5.4,goal:5.0,unit:"%",name:"HbA1c",lowerIsBetter:true,desc:"Avg blood sugar.",fix:"Rx: Walk post-meal."}},
-        tests: {vo2:{val:45,goal:55,unit:"ml/kg",name:"VO2 Max",desc:"Oxygen efficiency.",fix:"Rx: 4x4 Intervals."},hang:{val:85,goal:120,unit:"s",name:"Dead Hang",desc:"Grip strength.",fix:"Rx: Daily hangs."}}
-    },
-    'S': {
-        now: {bf:36.1, m:49.2, w:141.5, vf:9, bmr:1250},
-        goal: {bf:22.0, m:60.0, w:135.0, vf:4, bmr:1450}, 
-        info: {bf:{d:"Adipose tissue.",f:"Rx: Deficit."},m:{d:"Muscle.",f:"Rx: Hypertrophy."},vf:{d:"Visceral fat.",f:"Rx: No seed oils."},bmr:{d:"Metabolism.",f:"Rx: Protein."}},
-        labs: {ana:{val:320,goal:40,unit:" titer",name:"ANA",lowerIsBetter:true,desc:"Autoimmune marker.",fix:"Rx: Sleep/Stress."},gluc:{val:84,goal:75,unit:"mg/dL",name:"Glucose",lowerIsBetter:true,desc:"Fasting sugar.",fix:"Rx: Post-meal walks."}},
-        tests: {vo2:{val:32,goal:50,unit:"ml/kg",name:"VO2 Max",desc:"Cardio health.",fix:"Rx: Zone 2."},hang:{val:40,goal:90,unit:"s",name:"Dead Hang",desc:"Grip.",fix:"Rx: Practice daily."}}
-    }
-};
-
-// --- DATA SAFE LOADER ---
-var uH = JSON.parse(localStorage.getItem('centurion_bio_v2'));
-if (!uH || !uH['J'].labs || !uH['J'].tests) {
-    // If old data structure is detected, reset to new default to prevent crash
-    uH = JSON.parse(JSON.stringify(defaultUH));
-    localStorage.setItem('centurion_bio_v2', JSON.stringify(uH));
-}
-
-function updateStreak(change) {
-    if(!uH['S'].streak) uH['S'].streak = 0;
-    uH['S'].streak += change;
-    if(uH['S'].streak < 0) uH['S'].streak = 0;
-    let startCRP = 1.8;
-    let newCRP = Math.max(0.5, (startCRP - (uH['S'].streak * 0.1)).toFixed(2));
-    if(uH['S'].labs && uH['S'].labs.crp) uH['S'].labs.crp.val = newCRP;
-    localStorage.setItem('centurion_bio_v2', JSON.stringify(uH));
-    renderBioTab('labs'); 
-}
-
-function updateBioVal(section, key, name) {
-    event.stopPropagation(); 
-    var current = uH[user][section][key].val;
-    var newVal = prompt("LOG NEW RESULT for " + name + ":", current);
-    if(newVal !== null && newVal !== "" && !isNaN(newVal)) {
-        uH[user][section][key].val = parseFloat(newVal);
-        localStorage.setItem('centurion_bio_v2', JSON.stringify(uH));
-        renderBioTab(section); 
-    }
-}
-
-function resetBioData() {
-    if(confirm("Reset all biometric data to defaults? This cannot be undone.")) {
-        uH = JSON.parse(JSON.stringify(defaultUH));
-        localStorage.setItem('centurion_bio_v2', JSON.stringify(uH));
-        renderBioTab('phys');
-    }
-}
-
-function calculateLifeExpectancy(uID) {
-    var u = uH[uID];
-    if (!u) return { current: 0, potential: 0 };
-    var l = u.labs;
-    var t = u.tests;
-    var f = u.now;
-    var baseAge = 78; 
-    if (t.vo2 && t.vo2.val >= 50) baseAge += 8; 
-    else if (t.vo2 && t.vo2.val >= 40) baseAge += 4; 
-    else if (t.vo2 && t.vo2.val < 30) baseAge -= 5; 
-    if (l && l.apob && l.apob.val <= 60) baseAge += 6; 
-    if (f.vf <= 6) baseAge += 3; 
-    if (baseAge > 100) baseAge = 100;
-    return { current: baseAge, potential: 100 };
-}
-
-function getHoliday(d) { return null; }
-
-function switchU(uID){ 
-    user=uID;
-    localStorage.setItem('centurion_active_user', uID);
-    document.querySelectorAll('.u-badge').forEach(b=>b.classList.remove('active')); 
-    document.getElementById('b'+uID.toLowerCase()).classList.add('active'); 
-    document.getElementById('dateDisplay').innerHTML = `<span style="color:#666">💍 LOADING...</span>`;
-    render(); 
-    setTimeout(fetchOuraData, 500);
-}
-
-function syncOffsetToSelection() {
-    let today = getCaDate(); today.setHours(0,0,0,0);
-    let todayMon = new Date(today);
-    todayMon.setDate(today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
-    let selMon = new Date(selDate);
-    selMon.setDate(selDate.getDate() - (selDate.getDay() === 0 ? 6 : selDate.getDay() - 1));
-    selMon.setHours(0,0,0,0);
-    offset = Math.round((selMon - todayMon) / (7 * 864e5));
-}
-
-function getMon(o){ 
-    let d = getCaDate(); 
-    d.setHours(0,0,0,0); 
-    let day = d.getDay(); 
-    let diff = d.getDate() - day + (day === 0 ? -6 : 1); 
-    d.setDate(diff + (o * 7)); 
-    return d; 
-}
-
-function changeW(direction) {
-    let viewMon = getMon(offset); 
-    if (direction > 0) selDate = new Date(viewMon.getTime() + (7 * 864e5)); 
-    else selDate = new Date(viewMon.getTime() - 864e5);
-    selDate.setHours(12, 0, 0, 0); syncOffsetToSelection(); render(); 
-}
-
-function resetD(){ offset=0; selDate=getCaDate(); render(); }
 
 function render(){
-    const mon=getMon(offset); const days=["MON","TUE","WED","THU","FRI","SAT","SUN"];
-    const tabs=document.getElementById('dayTabs'); tabs.innerHTML='';
-    const end=new Date(mon); end.setDate(mon.getDate()+6);
-    document.getElementById('dateDisplay').innerText=`${mon.toLocaleDateString('en-US',{month:'short',day:'numeric'})} - ${end.toLocaleDateString('en-US',{month:'short',day:'numeric'})}`;
-    
-    for(let i=0; i<7; i++){
-        let d=new Date(mon); d.setDate(mon.getDate()+i);
-        const isSelected = getDateKey(d) === getDateKey(selDate);
-        const b=document.createElement('div'); 
-        b.className='tab'+(isSelected?' active':'');
-        b.innerHTML=`${days[i]}<br>${d.getDate()}`;
-        b.onclick=()=>{ selDate=d; render() }; 
-        tabs.appendChild(b);
-        if(isSelected) showDay(d, i);
-    }
+renderTabs()
+renderMeals()
+if(aiVisible) renderAI()
 }
 
-function applyAIPLogic(mealString, type) {
-    if(user !== 'S') return mealString; 
-    if(mealString.includes("Coffee") || mealString.includes("Espresso")) {
-        return "Golden Milk|Coconut Milk,Turmeric,Collagen|heat|<strong>Prep:</strong> 5m<hr><strong>INGREDIENTS</strong><br>1 Cup Coconut Milk • 1 tsp Turmeric • 1 Scoop Collagen<br><br><strong>THE PROTOCOL</strong><br>Heat milk. Whisk in turmeric and ginger. Sip warm.<br><br><strong>Longevity Win:</strong> Curcumin reduces inflammation.|8|5|160|1";
-    }
-    let parts = mealString.split('|');
-    let name = parts[0];
-    let ingredients = parts[1];
-    let macros = { p: parseInt(parts[4]), c: parseInt(parts[5]), k: parseInt(parts[6]), f: parseInt(parts[7]||0) };
-    if(macros.f < 10 && type !== 's') { 
-        ingredients += " + 1/2 Avocado";
-        macros.f += 7;
-        macros.k += 120;
-    }
-    return `${name}|${ingredients}|${parts[2]}|${parts[3]}|${macros.p}|${macros.c}|${macros.k}|${macros.f}`;
+function renderTabs(){
+document.getElementById('tabs').innerHTML=
+["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]
+.map((d,i)=>`<div class="tab ${i===0?'active':''}">${d}</div>`).join('')
 }
 
-function showDay(dObj, idx){
-    const id=Math.floor(dObj.getTime()/864e5);
-    const dateKey = getDateKey(dObj);
-    if(!snackLog[dateKey]) snackLog[dateKey] = [null, null];
-    const snacks = snackLog[dateKey];
-    
-    let rawB = (mDB.b[Math.abs(id) % mDB.b.length] || mDB.b[0]);
-    let rawL = (mDB.l[Math.abs(id) % mDB.l.length] || mDB.l[0]);
-    let rawD = (mDB.d[Math.abs(id) % mDB.d.length] || mDB.d[0]);
-
-    let b = applyAIPLogic(rawB, 'b').split('|');
-    let l = applyAIPLogic(rawL, 'l').split('|');
-    let dn = applyAIPLogic(rawD, 'd').split('|');
-    
-    const sch=["HEAVY LIFT","BOXING","REFORM","BOXING","REFORM/YOGA","CS4","RELAX"];
-    const jcs=["PINEAPPLE GREEN Vitality","TITAN RED Juice","ZENITH GREEN Juice","TITAN RED Juice","ZENITH GREEN Juice","TITAN RED Juice","APOLLO GOLD Juice"];
-    const j=jDB[jcs[idx]]; 
-    
-    let wName = sch[idx];
-    const isHighOutput = ["HEAVY LIFT", "BOXING", "CS4"].includes(wName);
-    
-    const g=(user==='J') ? {P:165, C:isHighOutput?160:85, F:40, K:isHighOutput?2200:1800} : {P:105, C:55, F:35, K:1300};
-    const sc = (user==='J') ? 1 : 0.6; 
-
-    let sPro=0, sCarb=0, sFib=0, sCal=0;
-    snacks.forEach(sIdx => {
-        if(sIdx !== null) {
-            let sData = mDB.s[sIdx].split('|');
-            sPro += parseInt(sData[4]); 
-            sCarb += parseInt(sData[5]); 
-            sCal += parseInt(sData[6]);
-            sFib += parseInt(sData[7] || 0);
-        }
-    });
-
-    let p = Math.round((parseInt(b[4]) + parseInt(l[4]) + parseInt(dn[4]))*sc) + j[2] + sPro;
-    let c = Math.round((parseInt(b[5]) + parseInt(l[5]) + parseInt(dn[5]))*sc) + j[3] + sCarb;
-    let k = Math.round((parseInt(b[6]) + parseInt(l[6]) + parseInt(dn[6]))*sc) + j[4] + sCal;
-    let f = Math.round((parseInt(b[7]||0) + parseInt(l[7]||0) + parseInt(dn[7]||0))*sc) + (j[5]||0) + sFib;
-
-    let ptn = (user==='J') ? { l: '8oz', d: '8oz' } : { l: '5oz', d: '5oz' };
-    ptn.b = (user==='J') ? "Large" : "Small";
-
-    const proto = pDB[wName] || pDB["RELAX"];
-    
-    let snackHTML = '<div class="snack-grid">';
-    for(let i=0; i<2; i++) {
-        if(snacks[i] === null) {
-            snackHTML += `<div class="snack-slot" onclick="openSnackSelector(${i})"><span style="font-size:1.2rem; color:#333;">＋</span><span class="snack-label" style="color:#666; font-weight:500;">ADD SNACK</span></div>`;
-        } else {
-            let s = mDB.s[snacks[i]].split('|');
-            snackHTML += `<div class="snack-slot filled" onclick="openR('${s[0].replace(/'/g, "\\'")}', '${s[1]}', '${s[2]}', '${s[3].replace(/'/g, "\\'")}')"><div class="remove-snack" onclick="event.stopPropagation(); removeSnack(${i})">✕</div><span class="snack-label">${s[0]}</span><span class="snack-macro">${s[4]}P ${s[7]||0}F</span></div>`;
-        }
-    }
-    snackHTML += '</div>';
-
-    // DYNAMIC ESSENTIALS LOGIC
-    const ess1 = "Sea Moss";
-    const ess2 = (user === 'S') ? "Hibiscus Tea" : "Kombucha";
-    const ess2Emoji = (user === 'S') ? "🌺" : "🥃";
-
-    document.getElementById('dayContent').innerHTML = `
-        <div style="background:#0a0a0a; border:1px solid #222; border-bottom:4px solid var(--blue); padding:15px; border-radius:12px; margin-bottom:25px; cursor:pointer;" onclick="openRecoveryPhase('${wName}')">
-            <div style="display:flex; justify-content:space-between; align-items:center; text-align:center;">
-                <div style="flex:1"><div style="font-size:0.5rem; color:#666; font-weight:900; letter-spacing:1px">WARM UP</div><div style="font-size:0.7rem; color:#fff; margin-top:4px">${proto[0].h}</div></div>
-                <div style="color:var(--blue); font-size:0.8rem; padding:0 8px">➜</div>
-                <div style="flex:1.2"><div style="font-size:0.5rem; color:var(--blue); font-weight:900; letter-spacing:1px">WORKOUT</div><div style="font-size:0.85rem; color:#fff; font-weight:900; margin-top:4px">${wName}</div></div>
-                <div style="color:var(--blue); font-size:0.8rem; padding:0 8px">➜</div>
-                <div style="flex:1"><div style="font-size:0.5rem; color:#666; font-weight:900; letter-spacing:1px">RECOVER</div><div style="font-size:0.7rem; color:#fff; margin-top:4px">${proto[2].h}</div></div>
-            </div>
-            <div style="text-align:center; font-size:0.55rem; color:#444; margin-top:12px; letter-spacing:1px">TAP CARD FOR FULL GUIDE</div>
-        </div>
-        
-        <div class="label">🧬 Daily Essentials</div>
-        <div style="display:flex; gap:10px; margin-bottom:15px">
-            <div onclick="openM('${ess1}')" style="flex:1; background:#111; border:1px solid #333; padding:10px; border-radius:10px; text-align:center; font-size:0.8rem; font-weight:700; cursor:pointer;">${ess1} 🌿</div>
-            <div onclick="openM('${ess2}')" style="flex:1; background:#111; border:1px solid #333; padding:10px; border-radius:10px; text-align:center; font-size:0.8rem; font-weight:700; cursor:pointer;">${ess2} ${ess2Emoji}</div>
-        </div>
-
-        <div class="label">🍳 Breakfast <span class="portion-tag">• ${ptn.b}</span></div>
-        <div class="value" onclick="openR('${b[0].replace(/'/g, "\\'")}', '${b[1]}', '${b[2]}', '${b[3].replace(/'/g, "\\'")}')">
-            <span>${b[0]}</span> <span class="macro-pill">${Math.round(b[4]*sc)}P ${b[7]||0}F</span>
-        </div>
-
-        <div class="label">🥗 Lunch <span class="portion-tag">• ${ptn.l}</span></div>
-        <div class="value" onclick="openR('${l[0].replace(/'/g, "\\'")}', '${l[1]}', '${l[2]}', '${l[3].replace(/'/g, "\\'")}')">
-            <span>${l[0]} 💼</span> <span class="macro-pill">${Math.round(l[4]*sc)}P ${l[7]||0}F</span>
-        </div>
-
-        <div class="label">🍽️ Dinner <span class="portion-tag">• ${ptn.d}</span></div>
-        <div class="value" onclick="openR('${dn[0].replace(/'/g, "\\'")}', '${dn[1]}', '${dn[2]}', '${dn[3].replace(/'/g, "\\'")}')">
-            <span>${dn[0]}</span> <span class="macro-pill">${Math.round(dn[4]*sc)}P ${dn[7]||0}F</span>
-        </div>
-
-        <div class="label">🥜 Snack Options</div>
-        ${snackHTML}
-
-        <div class="macro-dashboard">
-            <div class="macro-row"><div class="macro-label"><span>PROTEIN</span><span>${p}g / ${g.P}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((p/g.P)*100,100)}%; background:var(--g-pro)"></div></div></div>
-            <div class="macro-row"><div class="macro-label"><span style="color:var(--green)">FIBER</span><span>${f}g / ${g.F}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((f/g.F)*100,100)}%; background:var(--g-fib)"></div></div></div>
-            <div class="macro-row"><div class="macro-label"><span>CARBS</span><span>${c}g / ${g.C}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((c/g.C)*100,100)}%; background:var(--g-carb)"></div></div></div>
-            <div class="macro-row"><div class="macro-label"><span>CALORIES</span><span>${k} / ${g.K}</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((k/g.K)*100,100)}%; background:var(--g-cal)"></div></div></div>
-        </div>
-
-        <div class="card" style="text-align:center"><div class="label" style="color:var(--gold)">Functional Juice</div><div class="juice-name" onclick="openJ('${jcs[idx]}')">${jcs[idx]}</div></div>`;
+function renderMeals(){
+document.getElementById('content').innerHTML=
+meals.map(m=>`
+<div class="card" onclick="openM('${m[0]}','${m[1]}','${m[2]}')">
+<div class="label">MEAL</div>
+<div class="value">${m[0]}</div>
+</div>`).join('')
 }
 
-function stableSeed(s) {
-    let h = 0;
-    for(let i = 0; i < s.length; i++) h = Math.imul(31, h) + s.charCodeAt(i) | 0;
-    return Math.abs(h);
+function openM(t,s,tip){
+modal.style.display='block'
+mTitle.innerText=t
+mSub.innerText=s
+mTip.innerText=tip
 }
 
-function openR(n, i, a, t) {
-    document.getElementById('mTitle').innerText = n;
-    document.getElementById('mSub').innerText = "";
-    const body = document.getElementById('mBody');
-    body.innerHTML = '<div class="img-loader">✨ Chef is plating...</div>'; 
-    const cleanName = n.replace(/[^a-zA-Z ]/g, "").trim();
-    const seed = stableSeed(cleanName); 
-    const prompt = encodeURIComponent(`delicious ${cleanName} plated food photo`);
-    const imgUrl = `https://image.pollinations.ai/prompt/${prompt}?width=800&height=600&seed=${seed}&nologo=true&model=turbo`; 
-    const img = document.createElement("img");
-    img.className = "meal-img";
-    img.loading = "eager"; 
-    img.alt = cleanName;
-    img.referrerPolicy = "no-referrer";
-    img.style.opacity = "0";
-    img.style.filter = "blur(10px)";
-    img.style.transition = "opacity 0.4s ease, filter 0.4s ease";
-    const safeFallback = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80";
-    const timer = setTimeout(() => {
-        if (!img.complete || img.naturalWidth === 0) { 
-            img.src = safeFallback; 
-        }
-    }, 15000); 
-    img.onload = () => {
-        clearTimeout(timer);
-        body.innerHTML = ""; 
-        body.appendChild(img);
-        setTimeout(() => {
-            img.style.opacity = "1";
-            img.style.filter = "blur(0)";
-        }, 50);
-        const txt = document.createElement("div");
-        txt.innerHTML = `<br>${t}`;
-        body.appendChild(txt);
-    };
-    img.onerror = () => { 
-        clearTimeout(timer); 
-        img.src = safeFallback; 
-        img.onload = null; 
-        img.style.opacity = "1";
-        img.style.filter = "blur(0)";
-    };
-    setTimeout(() => {
-        img.src = imgUrl;
-    }, 30);
-    document.getElementById('mTip').innerText = "";
-    document.getElementById('masterModal').style.display = 'block';
+function closeM(e){
+if(!e||e.target.id==='modal') modal.style.display='none'
 }
 
-function openSnackSelector(slotIdx) {
-    currentSlot = slotIdx; 
-    const modalBody = document.getElementById('mBody');
-    document.getElementById('mTitle').innerText = "SELECT SNACK";
-    document.getElementById('mSub').innerText = "SLOT " + (slotIdx + 1);
-    let html = '';
-    mDB.s.forEach((item, index) => {
-        let s = item.split('|');
-        html += `<div class="value" onclick="applySnack(${index})">
-            ${s[0]} 
-            <span style="float:right;font-size:0.7rem;color:#666">${s[4]}g Pro | ${s[6]} Cal</span>
-        </div>`;
-    });
-    modalBody.innerHTML = html;
-    document.getElementById('mTip').innerText = "PRO TIP: Prioritize high-protein snacks on Heavy Lift days.";
-    document.getElementById('masterModal').style.display = 'block';
+function toggleAI(){
+aiVisible=!aiVisible
+document.getElementById('ai').style.display=aiVisible?'block':'none'
+renderAI()
 }
 
-function applySnack(snackIndex) {
-    const dateKey = getDateKey(selDate);
-    if(!snackLog[dateKey]) snackLog[dateKey] = [null, null];
-    snackLog[dateKey][currentSlot] = snackIndex;
-    document.getElementById('masterModal').style.display = 'none';
-    render(); 
+function renderAI(){
+const d=users[user]
+document.getElementById('ai').innerHTML=`
+<div class="ai-card">
+<div class="small">BIO AGE</div>
+<div class="ai-num">${d.bio}</div>
+<div class="small">Longevity Score: ${d.score}</div>
+<div class="small">Projected Lifespan: ${d.life} yrs</div>
+
+<div class="intervention">
+<strong>Top Intervention</strong><br>
+Increase protein + VO₂ training
+</div>
+</div>`
 }
 
-function removeSnack(slotIdx) {
-    const dateKey = getDateKey(selDate);
-    if(snackLog[dateKey]) {
-        snackLog[dateKey][slotIdx] = null;
-        render(); 
-    }
-}
-
-function openJ(n){
-    const d=jDB[n]; document.getElementById('mTitle').innerText=n; document.getElementById('mSub').innerText=d[0];
-    document.getElementById('mBody').innerHTML=`<p><strong>Ingredients:</strong> ${d[1]}</p><p>P: ${d[2]}g | C: ${d[3]}g | Kcal: ${d[4]} | Fiber: ${d[5]}g</p>`;
-    document.getElementById('mTip').innerText = "PRO TIP: High-speed blending retains fiber while unlocking nutrients.";
-    document.getElementById('masterModal').style.display='block';
-}
-
-function openM(n){
-    const d=rDB[n]; document.getElementById('mTitle').innerText=n; document.getElementById('mSub').innerText=d[0];
-    document.getElementById('mBody').innerHTML=d.slice(1).map(x=>`<p>${x}</p>`).join('');
-    document.getElementById('mTip').innerText = "PRO TIP: Consistency beats intensity for recovery protocols.";
-    document.getElementById('masterModal').style.display='block';
-}
-
-function openRecoveryPhase(workout) {
-    const m = document.getElementById('mBody');
-    document.getElementById('mTitle').innerText = workout + " PROTOCOL";
-    document.getElementById('mSub').innerText = "V222.61 FLOW LOGIC";
-    const active = pDB[workout] || pDB["RELAX"];
-    let html = '<div class="rec-phase-list">';
-    html += `<div class="phase-item"><span class="phase-time">WARM UP</span><span class="phase-title">${active[0].h}</span><span class="phase-detail">${active[0].d}</span></div>`;
-    html += `<div class="phase-item"><span class="phase-time" style="color:#fff">TRAINING</span><span class="phase-title">${active[1].h}</span><span class="phase-detail">${active[1].d}</span></div>`;
-    html += `<div class="phase-item"><span class="phase-time" style="color:var(--purple)">RECOVERY</span><span class="phase-title">${active[2].h}</span><span class="phase-detail">${active[2].d}</span></div>`;
-    html += '</div>';
-    m.innerHTML = html;
-    document.getElementById('mTip').innerText = "TIP: Hydrate with minerals before Sauna sessions.";
-    document.getElementById('masterModal').style.display = 'block';
-}
-
-function openBio() {
-    var modalBody = document.getElementById('mBody');
-    var u = uH[user];
-    
-    document.getElementById('mTitle').innerHTML = (user === 'J' ? "JERMAINE" : "SOPHIA") + 
-        " <span onclick='resetBioData()' style='font-size:0.6rem; color:#444; border:1px solid #333; padding:4px 8px; border-radius:4px; vertical-align:middle; cursor:pointer; float:right;'>RESET DATA</span>";
-    
-    document.getElementById('mSub').innerText = "Clinical & Functional Metrics";
-    document.getElementById('mImgContainer').innerHTML = ''; 
-
-    modalBody.innerHTML = `
-        <div class="tabs" style="margin-bottom:20px;">
-            <div id="btPhys" class="tab active" onclick="renderBioTab('phys')">BODY</div>
-            <div id="btLabs" class="tab" onclick="renderBioTab('labs')">LABS</div>
-            <div id="btTests" class="tab" onclick="renderBioTab('tests')">TESTS</div>
-            <div id="btOura" class="tab" onclick="renderOuraTab()">OURA</div>
-        </div>
-        <div id="bioContentArea"></div>
-    `;
-
-    document.getElementById('mTip').innerText = "TIP: Green bars indicate you have reached the 'Centurion' standard for longevity.";
-    renderBioTab('phys'); 
-    document.getElementById('masterModal').style.display = 'block';
-}
-
-function renderOuraTab() {
-    var target = document.getElementById('bioContentArea');
-    document.querySelectorAll('[id^="bt"]').forEach(function(t){ t.classList.remove('active') });
-    document.getElementById('btOura').classList.add('active');
-
-    let historyKey = 'centurion_oura_history_' + user;
-    let rawHist = localStorage.getItem(historyKey);
-    let history = rawHist ? JSON.parse(rawHist) : [];
-    
-    history.sort((a, b) => new Date(b.date) - new Date(a.date));
-    
-    if(history.length === 0) {
-        target.innerHTML = `<div style="text-align:center; padding:40px; color:#666;">No Oura history found.<br><br>Tap the ring icon on the main screen to sync data.</div>`;
-        return;
-    }
-
-    let todayData = history[0]; 
-    const deepGoal = 90; 
-    const remGoal = 90;  
-    const actGoal = (user === 'J') ? 900 : 600; 
-
-    const drawBar = (label, val, goal, unit, lowMsg, highMsg) => {
-        let pct = Math.min((val / goal) * 100, 100);
-        let color = val >= goal ? 'var(--green)' : '#FF5252';
-        let msg = val >= goal ? highMsg : lowMsg;
-        return `
-        <div class="bio-section" style="margin-bottom:12px; padding:15px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05);">
-            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
-                <span style="font-size:0.8rem; font-weight:800; color:#fff;">${label}</span>
-                <span style="font-size:0.7rem; color:${color}; font-weight:800;">${val} / ${goal} ${unit}</span>
-            </div>
-            <div style="height:8px; background:#111; border-radius:10px; overflow:hidden; margin-bottom:8px;">
-                <div style="width:${pct}%; height:100%; background:${color}; border-radius:10px;"></div>
-            </div>
-            <div style="font-size:0.65rem; color:#888; font-style:italic;">${msg}</div>
-        </div>`;
-    };
-
-    let deepMin = Math.round(todayData.deep / 60);
-    let remMin = Math.round(todayData.rem / 60);
-    
-    let html = `<div style="margin-bottom:20px; text-align:center; color:#666; font-size:0.7rem;">LATEST SYNC: ${todayData.date}</div>`;
-    
-    html += drawBar("DEEP SLEEP", deepMin, 90, "min", 
-        "⚠️ Low: Hormone production compromised. Rx: Cool room to 65°F.", 
-        "✅ Optimal: Anabolic hormone production active.");
-        
-    html += drawBar("REM SLEEP", remMin, 90, "min", 
-        "⚠️ Low: Cognitive recovery needed. Rx: No blue light 1h before bed.", 
-        "✅ Optimal: Memory consolidation active.");
-        
-    html += drawBar("ACTIVE BURN", todayData.cal, actGoal, "kcal", 
-        "⚠️ Low: Insulin sensitivity risk. Rx: 15m post-meal walk.", 
-        "✅ Optimal: Metabolic firing rate high.");
-
-    html += `<div style="margin-top:30px; border-top:1px dashed #333; padding-top:15px;">
-        <div style="font-size:0.8rem; color:var(--gold); font-weight:900; margin-bottom:10px; letter-spacing:1px;">7-DAY TRENDS</div>
-        <div style="display:flex; justify-content:space-between; color:#666; font-size:0.6rem; font-weight:900; margin-bottom:5px; padding:0 4px;">
-            <span style="flex:1">DATE</span>
-            <span style="flex:1; text-align:center">SCORE</span>
-            <span style="flex:1; text-align:center">DEEP</span>
-            <span style="flex:1; text-align:right">BURN</span>
-        </div>`;
-        
-    history.slice(0, 7).forEach(day => {
-        let dMin = Math.round(day.deep / 60);
-        let dateStr = day.date.slice(5); 
-        html += `<div class="oura-hist-row">
-            <span class="oura-hist-date" style="flex:1">${dateStr}</span>
-            <span style="flex:1; text-align:center; color:${day.score >= 85 ? 'var(--green)' : '#aaa'}">${day.score}</span>
-            <span style="flex:1; text-align:center">${dMin}m</span>
-            <span style="flex:1; text-align:right">${day.cal}</span>
-        </div>`;
-    });
-    
-    html += `</div>`;
-    target.innerHTML = html;
-}
-
-function renderBioTab(tab) {
-    var u = uH[user];
-    var target = document.getElementById('bioContentArea');
-    document.querySelectorAll('[id^="bt"]').forEach(function(t){ t.classList.remove('active') });
-    document.getElementById('bt' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
-    
-    var html = '';
-
-    if(user === 'S' && tab === 'labs') {
-        if(!u.streak) u.streak = 0;
-        let startCRP = 1.8;
-        let projCRP = Math.max(0.5, (startCRP - (u.streak * 0.1)).toFixed(1));
-        let progress = Math.min(((startCRP - projCRP) / (startCRP - 0.5)) * 100, 100);
-        
-        html += `<div style="background:linear-gradient(180deg, #1a1a2e, #16213e); border:1px solid #30475e; border-radius:12px; padding:20px; margin-bottom:25px; text-align:center; box-shadow:0 4px 20px rgba(0,0,0,0.3);">
-            <div style="font-size:0.6rem; color:#888; letter-spacing:2px; font-weight:900; margin-bottom:10px;">THE TRIAD PROTOCOL</div>
-            <div style="font-size:1.8rem; font-weight:800; color:#fff; margin-bottom:5px;">${u.streak} DAYS CLEAN</div>
-            <div style="font-size:0.65rem; color:#a2a8d3; margin-bottom:20px;">🚫 ALCOHOL • 🚫 CAFFEINE • 🚫 SUGAR</div>
-            
-            <div style="display:flex; justify-content:space-between; align-items:end; margin-bottom:5px; padding:0 10px;">
-                <div style="text-align:left;">
-                    <div style="font-size:0.6rem; color:#ff5252; font-weight:900;">STARTING FIRE</div>
-                    <div style="font-size:1.1rem; color:#fff;">1.8 <span style="font-size:0.6rem">mg/L</span></div>
-                </div>
-                <div style="text-align:right;">
-                    <div style="font-size:0.6rem; color:#00e676; font-weight:900;">PROJECTED COOLING</div>
-                    <div style="font-size:1.4rem; color:#00e676; text-shadow:0 0 10px rgba(0,230,118,0.4);">${projCRP} <span style="font-size:0.7rem">mg/L</span></div>
-                </div>
-            </div>
-
-            <div style="height:10px; background:#111; border-radius:10px; overflow:hidden; margin-bottom:20px; border:1px solid #333; position:relative;">
-                 <div style="position:absolute; left:0; top:0; bottom:0; width:${progress}%; background:linear-gradient(90deg, #ff5252, #00e676); transition:width 0.5s ease;"></div>
-            </div>
-
-            <div style="display:flex; gap:10px;">
-                <button onclick="updateStreak(-1)" style="flex:1; background:#222; border:1px solid #333; color:#666; padding:12px; border-radius:8px; font-weight:800; font-size:0.7rem; cursor:pointer;">💔 SLIP UP</button>
-                <button onclick="updateStreak(1)" style="flex:2; background:#00e676; border:none; color:#000; padding:12px; border-radius:8px; font-weight:900; font-size:0.7rem; cursor:pointer; box-shadow:0 0 15px rgba(0,230,118,0.3);">DAY COMPLETE (+1) 🧊</button>
-            </div>
-            <div style="font-size:0.55rem; color:#666; margin-top:15px; font-style:italic;">*Est. 0.1 mg/L drop per clean day based on half-life of inflammation markers.</div>
-        </div>`;
-    }
-
-    if(tab === 'phys') {
-        var le = calculateLifeExpectancy(user);
-        var gap = le.potential - le.current;
-        var gapColor = gap > 20 ? '#FF5252' : (gap > 10 ? 'var(--gold)' : 'var(--green)');
-        html += `<div style="background:linear-gradient(135deg, #111, #000); border:1px solid #333; border-radius:12px; padding:20px; margin-bottom:20px; text-align:center;">
-            <div style="font-size:0.6rem; color:#666; font-weight:900; letter-spacing:3px; text-transform:uppercase; margin-bottom:10px;">Biological Age Projection</div>
-            <div style="display:flex; justify-content:center; align-items:center; gap:15px; margin-bottom:10px;">
-            <div><div style="font-size:3rem; line-height:1; font-weight:800; color:#fff">${le.current}</div><div style="font-size:0.55rem; color:#888; font-weight:900; margin-top:5px;">CURRENT TRAJECTORY</div></div>
-            <div style="font-size:1.2rem; color:#444;">➔</div>
-            <div><div style="font-size:3rem; line-height:1; font-weight:800; color:var(--gold); text-shadow:0 0 15px rgba(212,175,55,0.3)">${le.potential}</div><div style="font-size:0.55rem; color:var(--gold); font-weight:900; margin-top:5px;">CENTURION GOAL</div></div>
-            </div>`;
-            if(gap > 0) {
-            html += `<div style="background:rgba(255,255,255,0.05); border-radius:8px; padding:8px; display:inline-block;">
-            <span style="font-size:0.7rem; color:#ccc;">GAP: </span>
-            <span style="font-size:0.8rem; font-weight:800; color:${gapColor};">-${gap} YEARS</span>
-            <div style="font-size:0.5rem; color:#666; margin-top:4px;">OPTIMIZE APOB & VO2 MAX TO CLOSE GAP</div>
-            </div>`;
-        } else {
-            html += '<div style="font-size:0.8rem; font-weight:800; color:var(--green);">CENTURION STATUS UNLOCKED 🏆</div>';
-        }
-        html += '</div>';
-    }
-    
-    var keys = (tab === 'phys') ? ['bf', 'm', 'vf', 'bmr'] : Object.keys(u[tab]);
-    keys.forEach(function(key, idx) {
-        var m = (tab === 'phys') ? { id: key, name: (key==='bf'?'Body Fat':key==='m'?'Muscle':key==='vf'?'Visceral Fat':'BMR'), val: u.now[key], goal: u.goal[key], unit: (key==='bf'?'%':key==='m'?'lbs':key==='vf'?'lvl':'kcal'), lowerIsBetter: (key!=='m' && key!=='bmr') } : u[tab][key];
-        
-        var maxRef = Math.max(m.val, m.goal) * 1.2;
-        var pctNow = (m.val / maxRef) * 100;
-        var pctGoal = (m.goal / maxRef) * 100;
-        var colorNow = (m.lowerIsBetter ? (m.val <= m.goal * 1.05) : (m.val >= m.goal * 0.95)) ? 'var(--green)' : 'var(--gold)';
-        if (colorNow !== 'var(--green)' && tab === 'labs') colorNow = '#FF5252'; 
-
-        var itemId = 'bio_item_' + idx;
-        var label1 = (tab === 'tests') ? "EXECUTION" : "WHAT";
-        var label2 = (tab === 'tests') ? "TRAINING" : "FIX";
-        var editHTML = '';
-        if(tab === 'tests') {
-            editHTML = ' <span onclick="updateBioVal(\''+tab+'\',\''+key+'\',\''+m.name+'\')" style="font-size:0.6rem; color:var(--blue); border:1px solid var(--blue); padding:2px 6px; border-radius:4px; margin-left:8px; cursor:pointer;">TAP TO UPDATE</span>';
-        }
-        html += `<div class="bio-section" onclick="toggleBioItem('bio_${idx}')" style="margin-bottom:12px; padding:15px; cursor:pointer; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05);">
-            <div style="display:flex; justify-content:space-between; margin-bottom:10px;"><span style="font-size:0.8rem; font-weight:800; color:#fff;">${m.name}</span><span style="font-size:0.6rem; color:#555;">▼ INFO</span></div>
-            <div style="display:flex; align-items:center; margin-bottom:6px;"><div style="width:40px; font-size:0.55rem; color:#888; font-weight:900;">NOW</div><div style="flex:1; height:6px; background:#111; border-radius:4px; overflow:hidden; margin-right:8px;"><div style="width:${pctNow}%; height:100%; background:${colorNow}; border-radius:4px;"></div></div><div style="text-align:right; font-size:0.7rem; color:${colorNow}; font-weight:700;">${m.val + editHTML}</div></div>
-            <div style="display:flex; align-items:center;"><div style="width:40px; font-size:0.55rem; color:var(--blue); font-weight:900;">GOAL</div><div style="flex:1; height:6px; background:#111; border-radius:4px; overflow:hidden; margin-right:8px;"><div style="width:${pctGoal}%; height:100%; background:var(--blue); border-radius:4px; opacity:0.6;"></div></div><div style="width:40px; text-align:right; font-size:0.7rem; color:var(--blue); font-weight:700;">${m.goal}</div></div>
-            <div id="bio_${idx}" style="display:none; margin-top:15px; padding-top:10px; border-top:1px dashed #333;"><div style="font-size:0.75rem; color:#ccc; line-height:1.4"><strong style="color:var(--blue)">${label1}:</strong> <br>${m.desc||''}</div><div style="font-size:0.75rem; color:#ccc; line-height:1.4"><strong style="color:var(--green)">${label2}:</strong> ${m.fix||''}</div></div></div>`;
-    });
-    target.innerHTML = html;
-}
-
-function toggleBioItem(id) {
-    const el = document.getElementById(id);
-    el.style.display = (el.style.display === 'none') ? 'block' : 'none';
-}
-
-function closeM(e){ 
-    if (!e || e.target.className === 'modal' || e.target.className === 'close-btn-float') {
-        document.getElementById('masterModal').style.display='none'; 
-    }
-}
-
-// --- OURA AUTO-SYNC LOGIC v6.0 (7-Day History + Green Markers) ---
-async function connectOura() {
-    let currentToken = getActiveToken();
-    let name = (user === 'J') ? "JERMAINE" : "SOPHIA";
-    const token = prompt(`Paste OURA TOKEN for ${name}:`, currentToken);
-    
-    if (token && token !== currentToken) {
-        if (user === 'J') localStorage.setItem('centurion_oura_token_J', token.trim());
-        if (user === 'S') localStorage.setItem('centurion_oura_token_S', token.trim());
-        document.getElementById('dateDisplay').innerHTML = "💍 SAVING...";
-        setTimeout(fetchOuraData, 500);
-    } else {
-        await fetchOuraData();
-    }
-}
-
-async function fetchOuraData() {
-    let activeToken = getActiveToken();
-    if (!activeToken) {
-        document.getElementById('dateDisplay').innerHTML = `<span style="color:var(--blue); font-weight:800; cursor:pointer;" onclick="connectOura()">💍 TAP TO ADD ${user}'s RING</span>`;
-        return;
-    }
-    
-    const today = new Date().toISOString().split('T')[0];
-    const lookback = new Date(Date.now() - (86400000 * 8)).toISOString().split('T')[0]; // 8 Days History
-    
-    document.getElementById('dateDisplay').innerHTML = `💍 SYNCING...`;
-
-    const PROXY_URL = "https://corsproxy.io/?";
-    const headers = { 'Authorization': `Bearer ${activeToken}` };
-    const buster = `&cb=${Date.now()}`;
-
-    try {
-        const readyUrl = `https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${lookback}&end_date=${today}`;
-        const sleepUrl = `https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${lookback}&end_date=${today}`;
-        const sessionUrl = `https://api.ouraring.com/v2/usercollection/sleep?start_date=${lookback}&end_date=${today}`; // New Endpoint
-        const activityUrl = `https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${lookback}&end_date=${today}`;
-        
-        const fetchOpts = { headers, cache: "no-store" };
-
-        const [readyRes, sleepRes, sessionRes, activityRes] = await Promise.all([
-            fetch(PROXY_URL + encodeURIComponent(readyUrl) + buster, fetchOpts),
-            fetch(PROXY_URL + encodeURIComponent(sleepUrl) + buster, fetchOpts),
-            fetch(PROXY_URL + encodeURIComponent(sessionUrl) + buster, fetchOpts),
-            fetch(PROXY_URL + encodeURIComponent(activityUrl) + buster, fetchOpts)
-        ]);
-
-        const rData = await readyRes.json();
-        const sData = await sleepRes.json();
-        const sessData = await sessionRes.json();
-        const aData = await activityRes.json();
-
-        if (rData.data && rData.data.length > 0) {
-            window.ouraHistory = [];
-            
-            // Merge Data using Sleep Sessions for accurate Deep/REM
-            rData.data.forEach(dayReady => {
-                let d = dayReady.day;
-                let daySleep = sData.data.find(i => i.day === d);
-                
-                // Find matching sleep session for this day (session day is usually previous night)
-                // We look for sessions ending on this day
-                let daySessions = sessData.data.filter(s => s.day === d);
-                // Sum up deep/rem from all sessions (naps included)
-                let deepTotal = 0;
-                let remTotal = 0;
-                daySessions.forEach(sess => {
-                    deepTotal += sess.deep_sleep_duration;
-                    remTotal += sess.rem_sleep_duration;
-                });
-
-                let dayAct = aData.data.find(i => i.day === d);
-                
-                if (dayAct && daySleep) {
-                    window.ouraHistory.push({
-                        date: d,
-                        score: dayReady.score,
-                        sleepScore: daySleep.score,
-                        rhr: daySleep.lowest_heart_rate,
-                        deep: deepTotal, // Seconds from Session
-                        rem: remTotal,   // Seconds from Session
-                        cal: dayAct.active_calories,
-                        steps: dayAct.steps
-                    });
-                }
-            });
-            
-            localStorage.setItem('centurion_oura_history_' + user, JSON.stringify(window.ouraHistory));
-            
-            // Auto refresh if tab is open
-            if(document.getElementById('btOura') && document.getElementById('btOura').classList.contains('active')) {
-                renderOuraTab();
-            }
-            
-            // Update Header
-            const latest = window.ouraHistory[window.ouraHistory.length - 1];
-            let status = "OPTIMAL";
-            let color = "var(--green)";
-            if(latest.score < 85) { status = "MAINTENANCE"; color = "var(--gold)"; }
-            if(latest.score < 70) { status = "⚠️ RECOVER"; color = "#FF5252"; }
-            
-            let displayHTML = `<span style="color:${color}; cursor:pointer;" onclick="alert('User: ${user === 'J' ? 'Jermaine' : 'Sophia'}\\nLatest: ${latest.date}')">💍 ${user === 'J' ? "JERMAINE" : "SOPHIA"}: ${latest.score} (${status})</span>`;
-            if(user === 'S') displayHTML += ` <span style="font-size:0.55rem; color:#666; margin-left:5px; cursor:pointer; text-decoration:underline;" onclick="connectOura()">↻ RESET</span>`;
-
-            if(user === 'S' && latest.rhr > 60) {
-                displayHTML += ` <span style="font-size:0.6rem; color:#FF5252; border:1px solid #FF5252; padding:2px 4px; border-radius:4px;">🔥 RHR SPIKE (${latest.rhr})</span>`;
-            }
-            document.getElementById('dateDisplay').innerHTML = displayHTML;
-
-        } else {
-            document.getElementById('dateDisplay').innerHTML = `<span style="color:orange" onclick="connectOura()">💍 NO DATA</span>`;
-        }
-    } catch (e) {
-        console.error(e);
-        document.getElementById('dateDisplay').innerHTML = `<span style="color:#FF5252; cursor:pointer;" onclick="connectOura()">💍 ERROR</span>`;
-    }
-}
-
-window.onload = function() {
-    render();
-    document.querySelectorAll('.u-badge').forEach(b=>b.classList.remove('active')); 
-    document.getElementById('b'+user.toLowerCase()).classList.add('active'); 
-    if(getActiveToken()) setTimeout(fetchOuraData, 1000);
-};
+function resetD(){render()}
+render()
 </script>
 </body>
 </html>
