@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v400.0 Auto-Zones</title>
+    <title>The Centurion | v405.0 RHR Fix</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --red:#FF5252; --text:#fff;
@@ -59,7 +59,7 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v400.0 Auto-Zones</span>
+        <span class="version-tag">v405.0 RHR Fix</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -93,7 +93,7 @@
 
 <script>
 // ==========================================
-// CENTURION v400.0 CORE
+// CENTURION v405.0 CORE
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
@@ -104,6 +104,7 @@ let aiVisible = false;
 let snackLog = JSON.parse(localStorage.getItem('centurion_snack_log')) || {};
 let photoCache = JSON.parse(localStorage.getItem('centurion_photo_cache')) || {};
 window.ouraHistory = [];
+window.ouraWorkouts = [];
 
 const BIRTHDAYS = { 'J': '1983-01-13', 'S': '1987-01-25' };
 const TOKENS = { 'J': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'S': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
@@ -413,6 +414,18 @@ function hardReset() {
     }
 }
 
+function mapWorkoutType(t) {
+    if(!t) return 'Workout';
+    const map = {
+        'running': 'Run',
+        'walking': 'Walk',
+        'cycling': 'Ride',
+        'strength': 'Lift',
+        'boxing': 'Box'
+    };
+    return map[t.toLowerCase()] || t.charAt(0).toUpperCase() + t.slice(1);
+}
+
 function bioBar(label, val, goal, unit, lowerBetter=false) {
     const pct = Math.min(lowerBetter ? (goal / val) * 100 : (val / goal) * 100, 100);
     const color = pct >= 100 ? 'var(--green)' : 'var(--gold)';
@@ -455,7 +468,7 @@ function openWorkoutFlow(w) {
     const a = pDB[w];
     const dk = getDateKey(selDate);
     
-    // AUTO-ZONE MATCHING LOGIC
+    // AUTO-ZONE MATCHING LOGIC (Using Activity Data)
     let dailyData = window.ouraHistory.find(d => d.date === dk);
     if(!dailyData) dailyData = {high:0, med:0, low:0};
 
@@ -506,7 +519,7 @@ function openEssential(n){
 async function fetchOuraData() {
     const currentUser = user; const token = TOKENS[currentUser]; const bar = document.getElementById('ouraBar'); 
     
-    // FETCH 1: Readiness (Summary)
+    // FETCH 1: Readiness
     const startDate = getDateKey(new Date(Date.now() - 2592000000)); 
     const endDate = getDateKey(new Date());
     
@@ -514,19 +527,39 @@ async function fetchOuraData() {
         const rRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
         const rData = await rRes.json();
         
-        // FETCH 2: Daily Sleep (Summary)
+        // FETCH 2: Daily Sleep
         const dsRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
         const dsData = await dsRes.json();
 
-        // FETCH 3: SLEEP EPISODES (Raw Data)
+        // FETCH 3: SLEEP EPISODES
         const sRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
         const sData = await sRes.json();
         
-        // FETCH 4: Activity (Calories)
+        // FETCH 4: Activity
         const aRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
         const aData = await aRes.json();
 
+        // FETCH 5: WORKOUTS (New!)
+        const wRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/workout?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
+        const wData = await wRes.json();
+
         if(user !== currentUser) return;
+
+        // Process Workout Data First
+        window.ouraWorkouts = [];
+        if(wData.data && wData.data.length > 0) {
+            window.ouraWorkouts = wData.data.map(w => {
+                const duration = w.end_datetime && w.start_datetime ? Math.round((new Date(w.end_datetime) - new Date(w.start_datetime)) / 60000) : 0;
+                return {
+                    date: w.day || (w.start_datetime ? w.start_datetime.split('T')[0] : ''),
+                    type: mapWorkoutType(w.activity),
+                    duration: duration,
+                    avgHR: w.average_heart_rate || 0,
+                    peakHR: w.max_heart_rate || 0,
+                    calories: w.calories || 0
+                };
+            }).reverse();
+        }
 
         if(rData.data && rData.data.length > 0) {
             window.ouraHistory = rData.data.map(day => {
@@ -565,7 +598,7 @@ async function fetchOuraData() {
                 };
             }).reverse().slice(0, 7);
 
-            // SMART SELECTION: Use most recent valid data for Top Dashboard
+            // SMART SELECTION
             let lastR = window.ouraHistory.find(d => d.sleepScore !== '-' && d.sleepScore > 0);
             if(!lastR) lastR = window.ouraHistory[0];
 
