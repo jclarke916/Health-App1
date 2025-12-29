@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v325.3 Stable</title>
+    <title>The Centurion | v325.4 Full Core</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --text:#fff;
@@ -13,7 +13,6 @@
         body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);margin:0;padding:15px;font-size:14px}
         .container{max-width:500px;margin:0 auto; padding-bottom: 50px;}
         h1{text-align:center;font-weight:200;letter-spacing:5px;text-transform:uppercase;font-size:1.2rem;margin:10px 0}
-        .version-tag { display: block; text-align: center; font-size: 0.5rem; color: #444; margin-top: -8px; margin-bottom: 15px; letter-spacing: 2px; }
         .badge-row{display:flex;justify-content:center;gap:8px;margin-bottom:15px}
         .u-badge{background:#000;padding:8px 16px;border-radius:20px;border:1px solid #333;font-size:0.6rem;font-weight:800;cursor:pointer;color:#666;transition:all 0.3s;}
         .u-badge.active{border-color:var(--gold);color:var(--gold);box-shadow: 0 0 10px rgba(212,175,55,0.2);}
@@ -53,13 +52,13 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v325.3 Stable | AI + Oura Core</span>
+        <span class="version-tag">v325.4 Full Content | AI Core</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
         </div>
     </header>
-    <div id="ouraBar" class="status-bar" style="color:var(--green); margin-bottom:5px;">💍 Checking Oura...</div>
+    <div id="ouraBar" class="status-bar" style="color:var(--green); margin-bottom:5px;">💍 Syncing Oura...</div>
     <div id="dateDisplay" class="status-bar">...</div>
     
     <div id="aiDashboard" style="display:none; margin-bottom:20px;"></div>
@@ -87,7 +86,7 @@
 
 <script>
 // ==========================================
-// CORE ENGINE v325.3
+// CORE ENGINE v325.4
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
@@ -97,27 +96,142 @@ let currentSlot = 0;
 let aiVisible = false;
 let snackLog = JSON.parse(localStorage.getItem('centurion_snack_log')) || {};
 
-// --- USER DATA & TOKENS ---
+// --- USER ANCHOR DATA ---
 const BIRTHDAYS = { 'J': '1983-01-13', 'S': '1987-01-25' };
-const TOKENS = { 
-    'J': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 
-    'S': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' 
-};
+const TOKENS = { 'J': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'S': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
 
 const uH = {
     'J': { now:{bf:19.0, m:99.0, vf:10, w:217}, goal:{bf:15.0, m:105.0, vf:7, w:210}, labs:{apob:{val:95,goal:60,name:"ApoB",lowerIsBetter:true},hba1c:{val:5.4,goal:5.0,name:"HbA1c",lowerIsBetter:true}}, tests:{vo2:{val:45,goal:55,name:"VO2 Max"},hang:{val:90,goal:120,name:"Dead Hang"}} },
     'S': { now:{bf:36.1, m:49.2, vf:9, w:141}, goal:{bf:22.0, m:60.0, vf:4, w:135}, labs:{ana:{val:320,goal:40,name:"ANA",lowerIsBetter:true},hba1c:{val:5.6,goal:5.0,name:"HbA1c",lowerIsBetter:true},crp:{val:1.8,goal:0.5,name:"CRP",lowerIsBetter:true}}, tests:{vo2:{val:32,goal:50,name:"VO2 Max"},hang:{val:40,goal:90,name:"Dead Hang"}} }
 };
 
-// --- DATABASES ---
-const jDB = {"PINEAPPLE GREEN Vitality":["Detox","Spinach, Pineapple",1,28,120,1],"PLASMA FLUSH Juice":["Recovery","Watermelon, Lime",1,32,140,1],"TITAN RED Juice":["Endurance","Beets, Carrots",2,42,185,2],"ZENITH GREEN Juice":["Alkalizer","Kale, Cucumber",2,18,120,1],"APOLLO GOLD Juice":["Anti-Inflam","Pears, Turmeric",1,45,195,2]};
+// --- FULL DATABASES ---
+const jDB = {
+    "PINEAPPLE GREEN Vitality":["Detox","2c Spinach, 1c Pineapple, 1/2 Cucumber, Ginger, Lemon",1,28,120,1],
+    "PLASMA FLUSH Juice":["Recovery","3c Watermelon, 1 Lime (Peeled), Mint",1,32,140,1],
+    "TITAN RED Juice":["Endurance","2 Raw Beets, 2 Carrots, Pomegranate, Ginger",2,42,185,2],
+    "ZENITH GREEN Juice":["Alkalizer","4 Kale Leaves, 1 Cucumber, Celery, Lemon",2,18,120,1],
+    "APOLLO GOLD Juice":["Anti-Inflam","2 Pears, Turmeric Root, Ginger, Lemon",1,45,195,2]
+};
+
 const rDB = {"Sea Moss":["92 Minerals","2 TBSP Fasted.","Thyroid & Gut support."],"Kombucha":["Probiotic","4 OZ post-Lunch.","Enzyme support."],"Hibiscus Tea":["BP Control","Organic steep.","Antioxidant rich."]};
 
 const mDB = {
-    b: ["Ancestral Beef Sausage|80/20 Beef-Liver Blend, Sage, Thyme|sear|Bioavailable heme iron + Vitamin A powerhouse|25|2|280|0", "Avocado Egg Toast|Bread, Avocado, Egg Whites|toast|Fiber + healthy fats|35|15|450|12", "Oat Protein Pancakes|Oat Flour, Blueberries|griddle|Complex carbs + fast protein|35|25|380|6"],
-    l: ["Super Mince Bowl|Lean Beef, Black Lentils, Broccoli|sear|Iron + high fiber building blocks|50|25|550|15", "Chicken Artichoke Salad|Chicken, Artichoke, Arugula|sear|Liver detox support|40|15|420|10", "Seared Salmon Salad|Wild Salmon, Spinach, Avocado|sear|Omega-3 powerhouse|38|12|480|22"],
-    d: ["Bison Portobello Burger|Ground Bison, Portobello, Avocado|sear|High protein, low glycemic impact|45|8|480|5", "Filet & Lentils|Filet Mignon, Black Lentils, Asparagus|sear|Iron density + fiber|45|10|520|14", "Halibut White Beans|Halibut, White Beans, Kale|bake|Lean protein + slow carbs|38|20|420|10"],
-    s: ["Beef Isolate Shake|Beef Isolate, Water|shake|Collagen rich recovery|25|0|110|0", "Sardines|Wild Sardines, Lemon|raw|EPA/DHA brain fuel|22|0|190|0", "Avocado Cup|1/2 Avocado, Sea Salt|raw|Potassium and healthy fats|2|8|160|7"]
+    b: [
+        "Beef & Liver Sausage|80/20 Beef-Liver Blend,Sage,Thyme,Blueberries|sear|<strong>The 'Ancestral Sausage'</strong><hr>Heme iron + Vitamin A powerhouse for hormone health.|25|8|280|15",
+        "Avocado Egg Toast|Ezekiel Bread,Avocado,Egg Whites,Hemp Seeds|toast|<strong>The 'Centurion Toast'</strong><hr>High fiber + healthy fats for sustained energy.|35|30|450|12",
+        "Oat Protein Pancakes|Oat Flour,Whey Isolate,Blueberries,Almond Milk|griddle|<strong>'Fluffy Pro-Cakes'</strong><hr>Complex carbs + fast protein for workout fuel.|35|25|380|6",
+        "Turkey Bacon Scramble|Turkey Bacon,2 Eggs,Spinach,Tomato|sear|<strong>'The Classic Plate'</strong><hr>Nitrate-free protein + magnesium-rich greens.|30|5|340|18",
+        "Turmeric Shrimp Scramble|Shrimp,Egg Whites,Turmeric,Green Onion|sear|<strong>'Golden Anti-Inflammatory'</strong><hr>Curcumin + lean protein for joint recovery.|35|2|290|5",
+        "Greek Yogurt Bowl|0% Greek Yogurt,Raspberries,Walnuts,Collagen|raw|<strong>'The Power Bowl'</strong><hr>Probiotics + collagen for gut and skin health.|42|15|380|9",
+        "Smoked Salmon Toast|Smoked Salmon,Sprouted Toast,Cucumber,Dill|raw|<strong>'Nordic Morning'</strong><hr>Omega-3 fatty acids for brain function.|35|15|360|10",
+        "Zucchini Mushroom Eggs|3 Eggs,Zucchini,Mushrooms,Nutritional Yeast|sear|<strong>'Volume Scramble'</strong><hr>High volume, low calorie filling breakfast.|28|8|350|18",
+        "Green Protein Smoothie|Spinach,Protein Powder,Avocado,Pineapple|blend|<strong>'Velvet Green'</strong><hr>Chlorophyll + fast-absorbing aminos.|35|25|390|10",
+        "Chocolate Oat Waffles|Oat Flour,Chocolate Protein,Cocoa Powder,Egg White|griddle|<strong>'Dark Choc Waffles'</strong><hr>Antioxidant-rich cocoa + slow carbs.|35|30|410|7",
+        "Turkey Sausage & Apple|Turkey Sausage,Green Apple,Sage|sear|<strong>'Autumn Scramble'</strong><hr>Lean protein + pectin for digestion.|25|15|320|12",
+        "Cottage Cheese Bowl|Cottage Cheese,Peach,Ground Flax,Cinnamon|raw|<strong>'High Pro Creamy'</strong><hr>Slow-digesting casein protein for muscle sparing.|28|15|280|5",
+        "Steak & Eggs|Lean Steak,2 Eggs,Asparagus|sear|<strong>'The Builder'</strong><hr>Creatine-rich beef + choline for focus.|40|2|420|20",
+        "Berry Protein Smoothie|Whey Isolate,Mixed Berries,Ground Flax,Almond Milk|blend|<strong>'Berry Alchemy'</strong><hr>Polyphenols + lignans for cardiovascular health.|35|20|320|8",
+        "Egg White Frittata|Egg Whites,Spinach,Feta,Olives|bake|<strong>'Mediterranean Frittata'</strong><hr>Low calorie, high micronutrient density.|30|3|310|10",
+        "Almond Flour Pancakes|Almond Flour,Eggs,Vanilla,Monk Fruit|griddle|<strong>'Keto Cakes'</strong><hr>Zero grain, high healthy fats.|20|6|380|28",
+        "Sardines on Sourdough|Sardines,Sourdough,Lemon,Parsley|raw|<strong>'Omega Toast'</strong><hr>Calcium + D3 + Omega-3s.|25|15|340|12",
+        "Mango Turmeric Shake|Protein Powder,Mango,Turmeric,Coconut Milk|blend|<strong>'Tropical Anti-Inflam'</strong><hr>Joint support + vitamin C.|30|25|360|8",
+        "Turkey Bacon Wrap|Turkey Bacon,Eggs,Low-Carb Tortilla,Salsa|sear|<strong>'Morning Burrito'</strong><hr>High protein portability.|30|15|380|15",
+        "Ricotta Pear Toast|Ricotta Cheese,Pear,Cinnamon,Walnuts|toast|<strong>'Sweet Ricotta'</strong><hr>Calcium + manganese for bone health.|18|25|320|10",
+        "Matcha Protein Shake|Matcha Powder,Vanilla Protein,Almond Milk|blend|<strong>'Zen Shake'</strong><hr>L-Theanine for calm focus.|25|2|180|2",
+        "Egg Veggie Muffins|Egg Whites,Spinach,Peppers,Onion|bake|<strong>'Meal Prep Cups'</strong><hr>Easy grab-and-go nutrition.|30|4|160|2",
+        "Coconut Yogurt Parfait|Coconut Yogurt,Granola(Grain-Free),Blueberries|raw|<strong>'Dairy-Free Parfait'</strong><hr>MCTs for quick brain fuel.|10|20|320|15",
+        "Shrimp & Grits (Cauli)|Shrimp,Cauliflower Rice,Nutritional Yeast|sear|<strong>'Low Carb Grits'</strong><hr>High protein, low insulin impact.|30|10|310|6",
+        "Chocolate Avocado Mousse|Chocolate Protein,Avocado,Cocoa,Almond Milk|blend|<strong>'Keto Mousse'</strong><hr>Healthy monounsaturated fats + potassium.|30|8|360|20",
+        "Hummus Cucumber Toast|Hummus,Toast,Cucumber,Hemp Seeds|toast|<strong>'Savory Vegan'</strong><hr>Plant protein + hydration.|12|25|280|8",
+        "Coffee Walnut Shake|Cold Brew Coffee,Protein,Walnuts,Banana|blend|<strong>'Morning Buzz'</strong><hr>Metabolic boost + healthy fats.|30|20|340|12",
+        "Pumpkin Spice Waffles|Pumpkin Puree,Egg Whites,Oat Flour,Spice|griddle|<strong>'Pumpkin Waffles'</strong><hr>Beta-carotene for eye health.|20|20|280|5",
+        "Turkey Kale Scramble|Ground Turkey,Kale,Onion,Garlic|sear|<strong>'Lean Green Scramble'</strong><hr>Sulforaphane + lean aminos.|30|5|310|10",
+        "PB Strawberry Shake|Vanilla Protein,Peanut Butter Powder,Strawberries|blend|<strong>'PB&J Shake'</strong><hr>Classic flavor profile with reduced fat.|30|15|250|5"
+    ],
+    l: [
+        "Beef & Liver Meatballs|80/20 Beef-Liver Blend,Carrot Sticks,Cucumber|bake|<strong>'Legacy Meatballs'</strong><hr>Vitamin A + B12 for recovery.|25|15|340|15",
+        "Ground Beef & Lentils|96% Lean Beef,Black Lentils,Broccoli,Cauliflower|sear|<strong>The 'Super Mince'</strong><hr>Iron + Zinc + high fiber.|50|25|550|15",
+        "Chicken Artichoke Salad|Chicken Breast,Artichoke Hearts,Arugula,Lemon|sear|<strong>'Liver Detox Bowl'</strong><hr>Liver-supporting artichokes + lean protein.|40|15|420|10",
+        "Seared Salmon Salad|Sockeye Salmon,Spinach,Avocado,Radish|sear|<strong>'Omega Salad XL'</strong><hr>Cardiovascular support + potassium.|38|12|480|22",
+        "Bison Veggie Chili|Ground Bison,Carrots,Celery,Bone Broth|stew|<strong>'No-Bean Chili'</strong><hr>High-iron wild game + gut-friendly broth.|48|18|500|15",
+        "Turkey Lettuce Cups|Ground Turkey,Water Chestnuts,Ginger,Romaine|sear|<strong>'Crunch Lettuce Cups'</strong><hr>Low carb, high crunch mineral dense meal.|40|10|350|8",
+        "Steak & Brussels|Top Sirloin,Brussels Sprouts,Balsamic Vinegar|sear|<strong>'Steak & Green'</strong><hr>Sulfur-rich veggies for detox + aminos.|42|15|460|18",
+        "Tuna Cucumber Boats|Tuna,Avocado,Cucumber,Celery|raw|<strong>'Tuna Boats'</strong><hr>Lean selenium + heart-healthy fats.|35|12|420|20",
+        "Shrimp Caesar Salad|Shrimp,Romaine,Tahini-Lemon Dressing|sear|<strong>'Dairy-Free Caesar'</strong><hr>Calcium + iodine for thyroid support.|30|8|380|15",
+        "Venison Stuffed Peppers|Ground Venison,Bell Peppers,Cauli-Rice|bake|<strong>'Game Peppers'</strong><hr>Leanest game meat + vitamin C peppers.|38|20|410|12",
+        "Cod & Cabbage Slaw|Cod Fillet,Purple Cabbage,Apple Cider Vinegar|sear|<strong>'Purple Detox'</strong><hr>Anthocyanins for brain health.|35|12|340|5",
+        "Lamb & Cucumber|Lean Lamb Loin,Cucumber,Mint,Lemon|sear|<strong>'Greek Lamb'</strong><hr>CLA + hydration.|40|5|420|20",
+        "Chicken Waldorf|Chicken Breast,Apple,Walnuts,Celery|raw|<strong>'Chicken Waldorf'</strong><hr>Vitamin E for nerve health.|35|22|440|15",
+        "Steak & Beet Jar|Sirloin,Roasted Beets,Arugula,Walnuts|sear|<strong>'Nitrate Jar'</strong><hr>Nitrates for blood flow + red meat iron.|40|18|450|15",
+        "Snapper & Greens|Red Snapper,Collard Greens,Garlic,Lemon|sear|<strong>'Southern Fish'</strong><hr>Vitamin K for bone density.|35|10|360|8",
+        "Turkey Burger & Avo|Turkey Patty,Avocado,Tomato,Lettuce Wrap|sear|<strong>'Bun-less Burger'</strong><hr>Lean building blocks + satiating fats.|40|10|410|18",
+        "Bison Asparagus Stir-Fry|Bison Steak,Asparagus,Garlic|sear|<strong>'Zinc Stir-Fry'</strong><hr>Testosterone support from zinc and aminos.|42|8|430|12",
+        "Sardine Fennel Salad|Sardines,Fennel Bulb,Carrots,Lemon|raw|<strong>'Shaved Fennel Salad'</strong><hr>Digestive enzymes from fennel.|25|15|380|15",
+        "Chicken Zoodles Pesto|Chicken Breast,Zucchini Noodles,Basil Pesto|sear|<strong>'Pesto Zoodles'</strong><hr>Low calorie, antioxidant basil sauce.|38|10|420|18",
+        "Steak Tartare|Raw Lean Sirloin,Capers,Egg Yolk|raw|<strong>'Classic Tartare'</strong><hr>Maximum nutrient bioavailability.|38|2|350|18",
+        "Shrimp Ceviche|Shrimp,Avocado,Lime,Cilantro|sear|<strong>'Shrimp Ceviche'</strong><hr>Enzymatic protein digestion.|30|12|400|20",
+        "Liver Pate Plate|Beef Liver Paté,Carrot Sticks,Cucumber|raw|<strong>'Vitamin A Box'</strong><hr>Immune supporting organ meats.|25|15|340|20",
+        "Venison & Squash|Venison,Butternut Squash,Sage|sear|<strong>'Hunter Plate'</strong><hr>Cleanest protein source available.|40|25|450|12",
+        "Mussels & Broth|Mussels,Garlic,Parsley,Bone Broth|steam|<strong>'Moules (No Frites)'</strong><hr>Massive B12 + minerals.|30|5|300|8",
+        "Turkey Pear Rollups|Deli Turkey,Pear,Walnuts|raw|<strong>'Sweet Savory Roll'</strong><hr>Balanced snack/lunch on the go.|35|18|390|15",
+        "Clam Zucchini Linguine|Clams,Zucchini,Garlic,Parsley|sear|<strong>'Clam Zoodles'</strong><hr>Iron-rich shellfish + low carb fiber.|30|10|280|5",
+        "Chicken Braised Kale|Chicken Breast,Lacinato Kale,Lemon|sear|<strong>'Iron Chicken'</strong><hr>Folate + lean amino acids.|40|12|400|10",
+        "Bison Cabbage Skillet|Ground Bison,Red Cabbage,ACV|sear|<strong>'Purple Skillet'</strong><hr>Strong detox properties from cabbage.|38|15|420|18",
+        "Salmon & Broccoli|Salmon,Broccoli,Sesame Oil,Ginger|sear|<strong>'Sesame Salmon'</strong><hr>Iodine + Omega-3 brain support.|38|10|440|22",
+        "Roast Beef & Radishes|Sirloin,Radishes,Thyme|sear|<strong>'Faux Potato Roast'</strong><hr>Low calorie potato alternative.|40|8|410|4"
+    ],
+    d: [
+        "Bison & Portobello Stack|Ground Bison,Portobello Caps,Avocado,Lettuce Wrap|sear|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 12m<hr><strong>Longevity Win:</strong> Portobellos contain Ergothioneine.|45|8|480|5",
+        "Filet & Lentil Side|Filet Mignon,Black Lentils,Asparagus,Lemon|sear|<strong>Prep:</strong> 5m • <strong>Cook:</strong> 15m<hr><strong>Longevity Win:</strong> Adding lentils triples fiber.|45|25|520|14",
+        "Chicken & Avocado Mash|Chicken Breast,Whole Avocado,Brussels Sprouts|sear|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 15m<hr><strong>Longevity Win:</strong> 17g Fiber total.|42|15|550|17",
+        "Halibut & White Beans|Halibut,Cannellini Beans,Kale,Garlic|bake|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 15m<hr><strong>Longevity Win:</strong> Beans are the premier longevity food.|38|20|420|12",
+        "Venison & Squash Bowl|Venison,Acorn Squash,Pomegranate,Walnuts|sear|<strong>Prep:</strong> 15m • <strong>Cook:</strong> 25m<hr><strong>Longevity Win:</strong> Winter squash is dense in fiber.|40|35|480|11",
+        "Bison Stuffed Peppers|Bison,2 Bell Peppers,Lentils,Tomato|bake|<strong>Prep:</strong> 15m • <strong>Cook:</strong> 25m<hr><strong>Longevity Win:</strong> The 'Meat-stretcher' technique.|38|25|450|12",
+        "Salmon & Artichokes|Salmon,2 Cups Artichokes,Lemon,Dill|bake|<strong>Prep:</strong> 5m • <strong>Cook:</strong> 15m<hr><strong>Longevity Win:</strong> Artichokes are fiber kings.|38|15|440|14",
+        "Turkey 'Meat-Za'|Turkey Patty base,Tomato,Spinach,Avocado|bake|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 15m<hr><strong>Longevity Win:</strong> Avocado replaces cheese.|45|10|410|9",
+        "Cod & Lentil Stew|Cod,Black Lentils,Tomato,Spinach|stew|<strong>Prep:</strong> 5m • <strong>Cook:</strong> 15m<hr><strong>Longevity Win:</strong> One-pot digestion healer.|35|25|400|16",
+        "Sirloin & Broccoli Mt.|Sirloin,4 Cups Broccoli,Garlic,Almonds|sear|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 10m<hr><strong>Longevity Win:</strong> Volume eating.|42|15|460|14",
+        "Shrimp & Avo Salad|Shrimp,1 Whole Avocado,Cucumber,Greens|raw|<strong>Prep:</strong> 10m<hr><strong>Longevity Win:</strong> 15g fiber bomb.|35|12|450|15",
+        "Elk & Red Cabbage|Elk,1/2 Head Red Cabbage,Apple,Vinegar|sear|<strong>Prep:</strong> 12m • <strong>Cook:</strong> 20m<hr><strong>Longevity Win:</strong> Cabbage is dense insoluble fiber.|40|25|430|12",
+        "Mahi & Mango-Black Bean|Mahi Mahi,1/2 Cup Black Beans,Mango Salsa|sear|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 10m<hr><strong>Longevity Win:</strong> Black beans boost fiber.|38|20|410|10",
+        "Chicken & Cauli-Hummus|Chicken,Cauliflower,Chickpeas,Tahini|sear|<strong>Prep:</strong> 15m • <strong>Cook:</strong> 15m<hr><strong>Longevity Win:</strong> Creamy and filling.|40|15|420|11",
+        "Bison & Raspberry Salad|Bison,Spinach,1 Cup Raspberries,Walnuts|sear|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 10m<hr><strong>Longevity Win:</strong> Raspberries are highest fiber fruit.|42|15|440|12",
+        "Scallops & White Beans|Scallops,Cannellini Beans,Spinach,Lemon|sear|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 8m<hr><strong>Longevity Win:</strong> White beans replace mashed potatoes.|32|20|350|10",
+        "Heart & Black Bean Taco|Beef Heart,Black Beans,Collard 'Tortilla'|sear|<strong>Prep:</strong> 15m • <strong>Cook:</strong> 10m<hr><strong>Longevity Win:</strong> Collard wrap + beans.|38|20|400|12",
+        "Snapper & Artichoke|Snapper,1.5 Cups Artichokes,Tomato|bake|<strong>Prep:</strong> 8m • <strong>Cook:</strong> 15m<hr><strong>Longevity Win:</strong> High fiber count.|35|12|360|12",
+        "Turkey & Squash Stew|Turkey,Butternut Squash,Kale,Broth|stew|<strong>Prep:</strong> 15m • <strong>Cook:</strong> 25m<hr><strong>Longevity Win:</strong> Warm comfort food.|38|25|410|10",
+        "Trout & Lentils|Trout,Green Lentils,Dijon Mustard|sear|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 10m<hr><strong>Longevity Win:</strong> 3/4 Cup Lentils = 12g Fiber.|38|20|400|12",
+        "Lean Beef & Roots|Roast Beef,Carrots,Parsnips,Turnips|roast|<strong>Prep:</strong> 15m • <strong>Cook:</strong> 45m<hr><strong>Longevity Win:</strong> Fiber-dense root vegetables.|50|25|500|10",
+        "Chicken & Kale/Bean Soup|Chicken,Kale,White Beans,Broth|stew|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 20m<hr><strong>Longevity Win:</strong> Beans add creaminess.|40|25|380|14",
+        "Bison & Collards/Lentil|Bison,Collards,Lentils|stew|<strong>Prep:</strong> 15m • <strong>Cook:</strong> 25m<hr><strong>Longevity Win:</strong> The Southern combo.|42|20|440|13",
+        "Salmon & Asparagus/Avocado|Salmon,Asparagus,1/2 Avocado|bake|<strong>Prep:</strong> 5m • <strong>Cook:</strong> 12m<hr><strong>Longevity Win:</strong> Avocado side dish boosts fiber.|38|8|450|11",
+        "Balsamic Beef & Mushrooms ⚡|80/20 Beef-Liver Blend,Mushrooms,Balsamic|sear|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 8m<hr><strong>Longevity Win:</strong> Nutrient-dense organ blend.|42|12|430|9",
+        "Shrimp & 'Rice' Bowl|Shrimp,Cauli-Rice,Black Beans,Salsa|sear|<strong>Prep:</strong> 15m • <strong>Cook:</strong> 8m<hr><strong>Longevity Win:</strong> Beans are the anchor.|35|20|380|10",
+        "Cod & Spinach/Lentil|Cod,Spinach,Lentils,Lemon|steam|<strong>Prep:</strong> 5m • <strong>Cook:</strong> 8m<hr><strong>Longevity Win:</strong> Lentils + Spinach base.|35|18|350|12",
+        "Lamb & Eggplant/Chickpea|Lamb,Eggplant,1/2 Cup Chickpeas|stew|<strong>Prep:</strong> 15m • <strong>Cook:</strong> 25m<hr><strong>Longevity Win:</strong> Chickpeas add texture.|40|20|460|10",
+        "Chicken & Pepper/Bean|Chicken,Peppers,Black Beans|sear|<strong>Prep:</strong> 12m • <strong>Cook:</strong> 10m<hr><strong>Longevity Win:</strong> Tex-Mex style.|38|18|400|10",
+        "Bison & Radish/Greens|Bison,Radishes,Turnip Greens|sear|<strong>Prep:</strong> 10m • <strong>Cook:</strong> 15m<hr><strong>Longevity Win:</strong> Turnip greens are underrated.|40|10|420|9",
+        "Tuna & Bean Salad|Tuna Steak,White Beans,Arugula|sear|<strong>Prep:</strong> 8m • <strong>Cook:</strong> 5m<hr><strong>Longevity Win:</strong> A Tuscan classic.|42|18|410|10"
+    ],
+    s: [
+        "Beef Isolate Shake|Beef Isolate Protein,Water,Ice|shake|<strong>Prep:</strong> 2m<hr>Quick collagen-rich protein.|25|0|110|0",
+        "Sardines (Water)|Sardines,Lemon,Hot Sauce|raw|<strong>Prep:</strong> 1m<hr>Low mercury, high benefit.|22|0|190|0",
+        "Hard Boiled Eggs|2 Eggs,Sea Salt|boil|<strong>Prep:</strong> 12m<hr>Eggs provide Choline.|12|1|140|0",
+        "Avocado Cup|1/2 Avocado,Sea Salt|raw|<strong>Prep:</strong> 1m<hr>Healthy monounsaturated fats.|2|8|160|7",
+        "Turkey Slices|Roasted Turkey Breast|raw|<strong>Prep:</strong> 1m<hr>Pure lean protein.|25|0|150|0",
+        "Bone Broth|Beef Bone Broth,Salt,Turmeric|heat|<strong>Prep:</strong> 3m<hr>Glycine helps repair gut.|10|0|45|0",
+        "Biltong / Jerky|Air Dried Beef,Vinegar|raw|<strong>Prep:</strong> 0m<hr>Air-drying preserves nutrients.|30|1|150|0",
+        "Shrimp Cocktail|Shrimp,Lemon|cold|<strong>Prep:</strong> 2m<hr>Shrimp are high in Iodine.|18|2|100|0",
+        "Collagen Coffee|Black Coffee,Collagen Peptides|mix|<strong>Prep:</strong> 2m<hr>Supports skin elasticity.|10|0|40|0",
+        "Steak Bites|Cold Leftover Steak|raw|<strong>Prep:</strong> 2m<hr>Cold meat has high satiety.|20|0|180|0",
+        "Chia Gel|Chia Seeds,Water,Lemon|soak|<strong>Prep:</strong> 10m<hr>Provides hydration.|4|10|120|10",
+        "Raspberries|1 Cup Raspberries|raw|<strong>Prep:</strong> 1m<hr>Highest fiber-to-sugar ratio.|1|8|60|8",
+        "Pumpkin Seeds|Pepitas,Sea Salt|raw|<strong>Prep:</strong> 0m<hr>Natural source of Zinc.|9|4|180|2",
+        "Cucumber Spears|Cucumber,Vinegar,Salt|raw|<strong>Prep:</strong> 3m<hr>High water content.|1|4|30|1",
+        "Liver Crisps|Dried Beef Liver|raw|<strong>Prep:</strong> 0m<hr>Vitamin A and Copper.|18|2|90|0",
+        "Golden Milk|Coconut Milk,Turmeric,Collagen|heat|<strong>Prep:</strong> 5m<hr>Curcumin reduces inflammation.|8|5|160|1"
+    ]
 };
 
 const pDB = {
@@ -153,29 +267,33 @@ function switchU(uID) {
     user = uID; 
     localStorage.setItem('centurion_active_user', uID); 
     
+    // VISUAL UPDATE
     document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
     document.getElementById('b'+uID.toLowerCase()).classList.add('active');
     
-    // Wipe Data
+    // RESET DISPLAYS IMMEDIATELY
     document.getElementById('ouraBar').innerHTML = `<span style="color:#666">💍 Switching...</span>`;
     document.getElementById('aiDashboard').style.display = 'none';
     aiVisible = false;
     
     render(); 
-    setTimeout(fetchOuraData, 100); 
+    fetchOuraData(); 
 }
 
 async function fetchOuraData() {
-    const currentUser = user;
+    const currentUser = user; // Lock user ID
     const token = TOKENS[currentUser];
     const bar = document.getElementById('ouraBar'); 
+    
+    // CACHE BUSTER: We add a random timestamp to URL to force a fresh fetch
     const uniqueUrl = `https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${getDateKey(new Date(Date.now()-2592e5))}&end_date=${getDateKey(new Date())}&_t=${Date.now()}`;
     
     try {
         const res = await fetch("https://corsproxy.io/?" + encodeURIComponent(uniqueUrl), {headers:{'Authorization':`Bearer ${token}`}});
         const j = await res.json(); 
         
-        if(user !== currentUser) return; // Prevent race condition
+        // Race Condition Check
+        if(user !== currentUser) return;
 
         if(j.data && j.data.length > 0) {
             const score = j.data[j.data.length-1].score;
@@ -267,13 +385,10 @@ function toggleAI() {
     aiVisible = !aiVisible;
     const dash = document.getElementById('aiDashboard');
     dash.style.display = aiVisible ? 'block' : 'none';
-    
     if(aiVisible) {
-        const u = uH[user]; 
-        const chron = getChronAge(user);
+        const u = uH[user]; const chron = getChronAge(user);
         const bioAge = calculateBioAge(u);
         const earned = (chron - bioAge).toFixed(1);
-        
         dash.innerHTML = `
             <div class="bio-section" style="background:rgba(0,176,255,0.05); text-align:center; border:1px solid var(--blue);">
                 <div style="font-size:0.6rem; color:var(--blue); font-weight:900; letter-spacing:2px">PROJECTED BIO-AGE</div>
@@ -360,3 +475,5 @@ window.onload = () => {
     fetchOuraData(); 
 };
 </script>
+</body>
+</html>
