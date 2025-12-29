@@ -214,29 +214,49 @@ function showDay(dObj, idx) {
     const sch = ["HEAVY LIFT","BOXING","REFORM","BOXING","REFORM","CS4","RELAX"];
     const jcs=["PINEAPPLE GREEN Vitality","TITAN RED Juice","ZENITH GREEN Juice","TITAN RED Juice","ZENITH GREEN Juice","TITAN RED Juice","APOLLO GOLD Juice"];
     const w = sch[idx]; const jn = jcs[idx];
+    const sc = (user === 'J') ? 1 : 0.6;
+
+    // 1. Calculate Snack Totals
+    let sP=0, sC=0, sK=0, sF=0;
+    snacks.forEach(sIdx => {
+        if(sIdx !== null) {
+            let s = mDB.s[sIdx].split('|');
+            sP += parseInt(s[4]); sC += parseInt(s[5]); sK += parseInt(s[6]); sF += parseInt(s[7]||0);
+        }
+    });
+
+    // 2. Get Meals & Apply AIP
     const b = applyAIP(mDB.b[Math.abs(id)%mDB.b.length], 'b');
     const l = applyAIP(mDB.l[Math.abs(id)%mDB.l.length], 'l');
     const dn = applyAIP(mDB.d[Math.abs(id)%mDB.d.length], 'd');
-    const sc = (user === 'J') ? 1 : 0.6;
+    
+    // 3. Calculate Daily Totals
+    let p = Math.round((parseInt(b[4]) + parseInt(l[4]) + parseInt(dn[4])) * sc) + sP;
+    let c = Math.round((parseInt(b[5]) + parseInt(l[5]) + parseInt(dn[5])) * sc) + sC;
+    let k = Math.round((parseInt(b[6]) + parseInt(l[6]) + parseInt(dn[6])) * sc) + sK;
+    let f = Math.round((parseInt(b[7]) + parseInt(l[7]) + parseInt(dn[7])) * sc) + sF;
+
+    // 4. Targets
+    const g = (user === 'J') ? {P:165, C:160, F:40, K:2200} : {P:105, C:55, F:35, K:1300};
 
     let snackHTML = '<div class="snack-grid">';
     for(let i=0; i<2; i++){
         if(snacks[i] === null) snackHTML += `<div class="snack-slot" onclick="openSnackSelector(${i})">+ SNACK</div>`;
         else {
             let s = mDB.s[snacks[i]].split('|');
-            snackHTML += `<div class="snack-slot filled" onclick="openDBRecipe('s', ${snacks[i]})"><div class="remove-snack" onclick="event.stopPropagation(); removeSnack(${i})">✕</div>${s[0]}</div>`;
+            snackHTML += `<div class="snack-slot filled" onclick="removeSnack(${i})"><div class="remove-snack">✕</div>${s[0]}<div style="font-size:0.5rem;color:#888;margin-top:2px">${s[4]}P ${s[6]}k</div></div>`;
         }
     }
     snackHTML += '</div>';
 
     document.getElementById('dayContent').innerHTML = `
-        <div class="card" onclick="openWorkoutFlow('${w}')" style="cursor:pointer; border-bottom:3px solid var(--blue)">
+        <div class="card" onclick="openRec('${w}')" style="cursor:pointer; border-bottom:3px solid var(--blue)">
             <div style="display:flex; justify-content:space-between; align-items:center; text-align:center">
-                <div style="font-size:0.6rem; color:#666">${pDB[w][0].h.split(':')[1]||pDB[w][0].h}<br>PRE</div>
+                <div><div class="label">WARM</div>${pDB[w][0].h.split(':')[1]||pDB[w][0].h}</div>
                 <div style="color:var(--blue); font-size:1.2rem">➜</div>
                 <div style="font-weight:900; color:#fff">${w}</div>
                 <div style="color:var(--blue); font-size:1.2rem">➜</div>
-                <div style="font-size:0.6rem; color:#666">${pDB[w][2].h.split(':')[1]||pDB[w][2].h}<br>POST</div>
+                <div><div class="label">RECOVER</div>${pDB[w][2].h.split(':')[1]||pDB[w][2].h}</div>
             </div>
         </div>
 
@@ -247,20 +267,43 @@ function showDay(dObj, idx) {
         </div>
 
         <div class="label">🍳 BREAKFAST</div>
-        <div class="value" onclick="openDBRecipe('b', ${Math.abs(id)%mDB.b.length})"><span>${b[0]}</span><span class="macro-pill">${Math.round(b[4]*sc)}P</span></div>
+        <div class="value" onclick="openDBRecipe('b', ${Math.abs(id)%mDB.b.length})">
+            <span>${b[0]}</span>
+            <span class="macro-pill">${Math.round(b[4]*sc)}P ${Math.round(b[5]*sc)}C ${Math.round(b[6]*sc)}k</span>
+        </div>
         
         <div class="label">🥗 LUNCH</div>
-        <div class="value" onclick="openDBRecipe('l', ${Math.abs(id)%mDB.l.length})"><span>${l[0]}</span><span class="macro-pill">${Math.round(l[4]*sc)}P</span></div>
+        <div class="value" onclick="openDBRecipe('l', ${Math.abs(id)%mDB.l.length})">
+            <span>${l[0]}</span>
+            <span class="macro-pill">${Math.round(l[4]*sc)}P ${Math.round(l[5]*sc)}C ${Math.round(l[6]*sc)}k</span>
+        </div>
         
         <div class="label">🍽️ DINNER</div>
-        <div class="value" onclick="openDBRecipe('d', ${Math.abs(id)%mDB.d.length})"><span>${dn[0]}</span><span class="macro-pill">${Math.round(dn[4]*sc)}P</span></div>
+        <div class="value" onclick="openDBRecipe('d', ${Math.abs(id)%mDB.d.length})">
+            <span>${dn[0]}</span>
+            <span class="macro-pill">${Math.round(dn[4]*sc)}P ${Math.round(dn[5]*sc)}C ${Math.round(dn[6]*sc)}k</span>
+        </div>
         
         <div class="label">🥜 SNACKS</div>${snackHTML}
         <div class="label">🍹 JUICE</div><div class="juice-name" onclick="openJuice('${jn}')">${jn}</div>
         
         <div class="macro-dashboard">
-            <div class="macro-row"><div class="macro-label"><span>PROTEIN</span><span>${Math.round(160*sc)}g Target</span></div><div class="macro-bg"><div class="macro-fill" style="width:85%; background:var(--g-pro)"></div></div></div>
-            <div class="macro-row"><div class="macro-label"><span>CARBS</span><span>${Math.round(120*sc)}g Target</span></div><div class="macro-bg"><div class="macro-fill" style="width:60%; background:var(--g-carb)"></div></div></div>
+            <div class="macro-row">
+                <div class="macro-label"><span>PROTEIN</span><span>${p} / ${g.P}g</span></div>
+                <div class="macro-bg"><div class="macro-fill" style="width:${Math.min((p/g.P)*100,100)}%; background:var(--g-pro)"></div></div>
+            </div>
+            <div class="macro-row">
+                <div class="macro-label"><span style="color:var(--green)">FIBER</span><span>${f} / ${g.F}g</span></div>
+                <div class="macro-bg"><div class="macro-fill" style="width:${Math.min((f/g.F)*100,100)}%; background:var(--g-fib)"></div></div>
+            </div>
+            <div class="macro-row">
+                <div class="macro-label"><span>CARBS</span><span>${c} / ${g.C}g</span></div>
+                <div class="macro-bg"><div class="macro-fill" style="width:${Math.min((c/g.C)*100,100)}%; background:var(--g-carb)"></div></div>
+            </div>
+            <div class="macro-row">
+                <div class="macro-label"><span>CALORIES</span><span>${k} / ${g.K}</span></div>
+                <div class="macro-bg"><div class="macro-fill" style="width:${Math.min((k/g.K)*100,100)}%; background:var(--g-cal)"></div></div>
+            </div>
         </div>
     `;
 }
