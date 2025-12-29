@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v375.0 Factory Reset</title>
+    <title>The Centurion | v390.0 Activity Zones</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --text:#fff;
@@ -59,7 +59,7 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v375.0 Factory Reset</span>
+        <span class="version-tag">v390.0 Activity Zones</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -93,7 +93,7 @@
 
 <script>
 // ==========================================
-// CENTURION v375.0 CORE
+// CENTURION v390.0 CORE
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
@@ -167,7 +167,7 @@ function fmtTime(sec) {
     return `${h}h ${m}m`; 
 }
 
-// THE ALGORITHM (Fixed for Safety)
+// THE ALGORITHM
 function calculateLongevity(userData) {
     let base = 85.0; 
     const vo2 = userData.tests && userData.tests.vo2 ? userData.tests.vo2.val : 40;
@@ -345,7 +345,11 @@ function renderBioTab(tab) {
         area.innerHTML = Object.keys(u.tests).map(k => bioBar(u.tests[k].name, u.tests[k].val, u.tests[k].goal, " " + (u.tests[k].unit||""), false)).join('') + `<div class="nav-btn" style="text-align:center; margin-top:15px;" onclick="logTest()">📝 LOG NEW TEST</div>`;
     } else if(tab==='oura') {
         if(!window.ouraHistory || window.ouraHistory.length === 0) { area.innerHTML = "<div style='padding:20px;text-align:center;color:#666'>Syncing History...</div>"; return; }
-        const r = window.ouraHistory[0];
+        
+        // SMART DATA SELECTION: Find most recent day with valid sleep data
+        let r = window.ouraHistory.find(d => d.sleepScore !== '-' && d.sleepScore > 0);
+        if(!r) r = window.ouraHistory[0]; // Fallback
+
         let html = `
             <div class="oura-grid">
                 <div class="oura-metric"><div style="font-size:1.8rem;color:var(--green)">${r.score}</div><div style="font-size:0.5rem;color:#888">READY</div></div>
@@ -355,13 +359,23 @@ function renderBioTab(tab) {
                 <div class="oura-metric"><div style="font-size:1.5rem;color:white">${fmtTime(r.rem)}</div><div style="font-size:0.5rem;color:#888">REM</div></div>
                 <div class="oura-metric"><div style="font-size:1.5rem;color:#FFAB40">${r.cal}</div><div style="font-size:0.5rem;color:#888">BURN</div></div>
             </div>
+            
+            <div class="bio-section" style="margin-top:15px">
+                <div class="label" style="color:#fff;margin-bottom:8px">ACTIVITY ZONES (MINS)</div>
+                <div style="display:flex;gap:5px;height:40px">
+                    <div style="flex:1;background:var(--card);border:1px solid #333;border-radius:8px;display:flex;flex-direction:column;justify-content:center;align-items:center"><div style="font-size:0.5rem;color:#888">LOW</div><div style="font-weight:900;color:var(--blue)">${r.low}</div></div>
+                    <div style="flex:1;background:var(--card);border:1px solid #333;border-radius:8px;display:flex;flex-direction:column;justify-content:center;align-items:center"><div style="font-size:0.5rem;color:#888">MED</div><div style="font-weight:900;color:var(--gold)">${r.med}</div></div>
+                    <div style="flex:1;background:var(--card);border:1px solid #333;border-radius:8px;display:flex;flex-direction:column;justify-content:center;align-items:center"><div style="font-size:0.5rem;color:#888">HIGH</div><div style="font-weight:900;color:#FF5252">${r.high}</div></div>
+                </div>
+            </div>
+
             <div class="intervention-card" style="margin-top:15px">💡 7-DAY TREND</div>
             <table class="hist-table" style="font-size:0.65rem">
-                <thead><tr><th>DATE</th><th>RDY</th><th>SLP</th><th>DEEP</th><th>REM</th><th>KCAL</th></tr></thead>
+                <thead><tr><th>DATE</th><th>RDY</th><th>SLP</th><th>DEEP</th><th>REM</th><th>HI</th></tr></thead>
                 <tbody>
         `;
         window.ouraHistory.forEach(day => {
-            html += `<tr><td>${day.date.slice(5)}</td><td style="font-weight:900;color:${day.score>=85?'var(--green)':day.score>=70?'var(--gold)':'#FF5252'}">${day.score}</td><td>${day.sleepScore || '-'}</td><td style="color:#aaa">${fmtTime(day.deep)}</td><td style="color:#aaa">${fmtTime(day.rem)}</td><td style="color:#FFAB40">${day.cal}</td></tr>`;
+            html += `<tr><td>${day.date.slice(5)}</td><td style="font-weight:900;color:${day.score>=85?'var(--green)':day.score>=70?'var(--gold)':'#FF5252'}">${day.score}</td><td>${day.sleepScore || '-'}</td><td style="color:#aaa">${fmtTime(day.deep)}</td><td style="color:#aaa">${fmtTime(day.rem)}</td><td style="color:#FFAB40">${day.high}</td></tr>`;
         });
         html += "</tbody></table>";
         area.innerHTML = html;
@@ -475,12 +489,7 @@ async function fetchOuraData() {
         
         // FETCH 4: Activity (Calories)
         const aRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
-        
-        // FETCH 5: Activity (Workout)
         const aData = await aRes.json();
-        fetch("https://corsproxy.io/?" + encodeURIComponent("https://api.ouraring.com/v2/usercollection/workout?start_date=2024-12-01&end_date=2024-12-29"), {
-    headers: {'Authorization': 'Bearer WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y'}
-}).then(r => r.json()).then(d => console.log('Workout data:', d))
 
         if(user !== currentUser) return;
 
@@ -492,9 +501,15 @@ async function fetchOuraData() {
                 const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
                 
                 let burn = 0;
+                let hi = 0, med = 0, low = 0;
+
                 if(act) {
                     if(act.active_calories !== undefined) burn = act.active_calories;
                     else if(act.total_calories !== undefined) burn = act.total_calories; 
+                    
+                    if(act.high_activity_time) hi = Math.round(act.high_activity_time / 60);
+                    if(act.medium_activity_time) med = Math.round(act.medium_activity_time / 60);
+                    if(act.low_activity_time) low = Math.round(act.low_activity_time / 60);
                 }
 
                 let rhrVal = '-';
@@ -508,7 +523,10 @@ async function fetchOuraData() {
                     rhr: rhrVal,
                     deep: mainSleep ? mainSleep.deep_sleep_duration : 0,
                     rem: mainSleep ? mainSleep.rem_sleep_duration : 0,
-                    cal: burn
+                    cal: burn,
+                    high: hi,
+                    med: med,
+                    low: low
                 };
             }).reverse().slice(0, 7);
 
