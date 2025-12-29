@@ -1,9 +1,10 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v395.0 Zone Precision</title>
+    <title>The Centurion | v373</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --red:#FF5252; --text:#fff;
@@ -54,15 +55,24 @@
         .hist-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.65rem; color: #ccc; }
         .hist-table th { text-align: left; color: #666; padding-bottom: 10px; font-weight: 800; border-bottom: 1px solid #333; }
         .hist-table td { padding: 8px 0; border-bottom: 1px solid #222; }
-        .zone-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.75rem; color: #ccc; }
-        .zone-bar { height: 6px; border-radius: 4px; background: #222; overflow: hidden; margin-top: 4px; width: 100%; display: flex; }
-        .z-seg { height: 100%; }
+        .workout-badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 0.5rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-left: 8px; }
+        .workout-badge.hiit { background: linear-gradient(135deg, var(--red), #D50000); color: #fff; }
+        .workout-badge.zone2 { background: linear-gradient(135deg, var(--green), #00C853); color: #fff; }
+        .hr-zone-row { margin-bottom: 12px; }
+        .hr-zone-label { display: flex; justify-content: space-between; font-size: 0.7rem; font-weight: 700; margin-bottom: 5px; }
+        .hr-zone-bar-bg { height: 24px; background: #222; border-radius: 12px; overflow: hidden; position: relative; }
+        .hr-zone-bar { height: 100%; border-radius: 12px; display: flex; align-items: center; padding: 0 10px; color: #fff; font-size: 0.6rem; font-weight: 700; transition: width 0.8s; }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .stat-box { background: rgba(102,126,234,0.1); padding: 12px; border-radius: 10px; text-align: center; border: 1px solid rgba(102,126,234,0.3); }
+        .stat-value { font-size: 1.4rem; font-weight: 900; color: #fff; }
+        .stat-label { font-size: 0.55rem; color: #888; font-weight: 700; text-transform: uppercase; margin-top: 4px; }
+        .stat-sub { font-size: 0.5rem; color: #666; margin-top: 2px; }
     </style>
 </head>
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v395.0 Zone Precision</span>
+        <span class="version-tag">v373.0 GitHub Ready + Workout Sync</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -70,18 +80,21 @@
     </header>
     <div id="ouraBar" class="status-bar" style="color:var(--green); margin-bottom:5px;">💍 Syncing Oura...</div>
     <div id="dateDisplay" class="status-bar">...</div>
-    
-    <div id="aiDashboard" style="display:none; margin-bottom:20px;"></div>
 
-    <div class="controls">
-        <button class="nav-btn" onclick="changeW(-1)">◀ PREV</button>
-        <button class="nav-btn" onclick="resetD()">TODAY</button>
-        <button class="nav-btn" onclick="changeW(1)">NEXT ▶</button>
-        <button class="nav-btn" onclick="openBio()" style="color:var(--green)">📊 DATA</button>
-        <button class="nav-btn" onclick="toggleAI()" style="color:var(--blue)">🧠 AI</button>
-    </div>
-    <div id="dayTabs" class="tabs"></div>
-    <div id="dayContent"></div>
+```
+<div id="aiDashboard" style="display:none; margin-bottom:20px;"></div>
+
+<div class="controls">
+    <button class="nav-btn" onclick="changeW(-1)">◀ PREV</button>
+    <button class="nav-btn" onclick="resetD()">TODAY</button>
+    <button class="nav-btn" onclick="changeW(1)">NEXT ▶</button>
+    <button class="nav-btn" onclick="openBio()" style="color:var(--green)">📊 DATA</button>
+    <button class="nav-btn" onclick="toggleAI()" style="color:var(--blue)">🧠 AI</button>
+</div>
+<div id="dayTabs" class="tabs"></div>
+<div id="dayContent"></div>
+```
+
 </div>
 
 <div id="masterModal" class="modal" onclick="closeM(event)">
@@ -96,7 +109,8 @@
 
 <script>
 // ==========================================
-// CENTURION v395.0 CORE
+// CENTURION v373.0 - GITHUB READY
+// Full v370 + Workout Sync
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
@@ -106,8 +120,8 @@ let currentSlot = 0;
 let aiVisible = false;
 let snackLog = JSON.parse(localStorage.getItem('centurion_snack_log')) || {};
 let photoCache = JSON.parse(localStorage.getItem('centurion_photo_cache')) || {};
-let zoneLog = JSON.parse(localStorage.getItem('centurion_zone_log')) || {};
 window.ouraHistory = [];
+window.ouraWorkouts = [];
 
 const BIRTHDAYS = { 'J': '1983-01-13', 'S': '1987-01-25' };
 const TOKENS = { 'J': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'S': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
@@ -171,7 +185,29 @@ function fmtTime(sec) {
     return `${h}h ${m}m`; 
 }
 
-// THE ALGORITHM (Fixed for Safety)
+function getMaxHR(userID) {
+    const age = parseFloat(getChronAge(userID));
+    return Math.round(220 - age);
+}
+
+function mapWorkoutType(activity) {
+    const map = {
+        'high_intensity_interval_training': 'HIIT',
+        'cycling': 'Cycling',
+        'running': 'Running',
+        'walking': 'Walking',
+        'strength_training': 'Strength',
+        'yoga': 'Yoga',
+        'swimming': 'Swimming',
+        'boxing': 'Boxing',
+        'crossfit': 'CrossFit',
+        'rowing': 'Rowing',
+        'soccer': 'Soccer',
+        'basketball': 'Basketball'
+    };
+    return map[activity] || 'Workout';
+}
+
 function calculateLongevity(userData) {
     let base = 85.0; 
     const vo2 = userData.tests && userData.tests.vo2 ? userData.tests.vo2.val : 40;
@@ -233,6 +269,14 @@ function showDay(dObj, idx) {
     const sc = (user === 'J') ? 1 : 0.6;
     const protocol = pDB[w] || pDB["RELAX"];
 
+    // Check if workout data exists for this day
+    const workout = window.ouraWorkouts.find(wo => wo.date === dk);
+    const hasWorkoutData = !!workout;
+    const workoutBadge = hasWorkoutData ? 
+        (workout.zones.z4 + workout.zones.z5 > 15 ? 
+            '<span class="workout-badge hiit">💍 HIIT DATA</span>' : 
+            '<span class="workout-badge zone2">💍 Z2 DATA</span>') : '';
+
     let sP=0, sC=0, sK=0, sF=0;
     snacks.forEach(sIdx => {
         if(sIdx !== null && mDB.s[sIdx]) {
@@ -265,11 +309,14 @@ function showDay(dObj, idx) {
     const post = protocol[2].h.includes(":") ? protocol[2].h.split(':')[1] : protocol[2].h;
 
     document.getElementById('dayContent').innerHTML = `
-        <div class="card" onclick="openWorkoutFlow('${w}')" style="cursor:pointer; border-bottom:3px solid var(--blue)">
+        <div class="card" onclick="openWorkoutFlow('${w}', '${dk}')" style="cursor:pointer; border-bottom:3px solid var(--blue)">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px">
+                <div style="font-weight:900; color:#fff; font-size:1rem">${w}${workoutBadge}</div>
+            </div>
             <div style="display:flex; justify-content:space-between; align-items:center; text-align:center">
                 <div><div class="label">WARM</div>${pre}</div>
                 <div style="color:var(--blue); font-size:1.2rem">➜</div>
-                <div style="font-weight:900; color:#fff">${w}</div>
+                <div style="font-weight:700; color:var(--gold)">TRAIN</div>
                 <div style="color:var(--blue); font-size:1.2rem">➜</div>
                 <div><div class="label">RECOVER</div>${post}</div>
             </div>
@@ -295,242 +342,448 @@ function showDay(dObj, idx) {
         </div>`;
 }
 
-// --- MODALS ---
-function toggleAI() {
-    aiVisible = !aiVisible;
-    const dash = document.getElementById('aiDashboard');
-    dash.style.display = aiVisible ? 'block' : 'none';
-    if(aiVisible) {
-        const u = uH[user]; 
-        const projection = calculateLongevity(u);
-        const gap = (100.0 - parseFloat(projection)).toFixed(1);
-        const onTrack = parseFloat(projection) >= 100;
-        
-        dash.innerHTML = `
-            <div class="bio-section" style="background:rgba(0,176,255,0.05); text-align:center; border:1px solid var(--blue);">
-                <div style="font-size:0.6rem; color:var(--blue); font-weight:900; letter-spacing:2px">PROJECTED LIFESPAN</div>
-                <div style="font-size:3.5rem; font-weight:800; color:#fff;">${projection}</div>
-                <div style="font-size:0.7rem; color:${onTrack ? 'var(--green)' : 'var(--gold)'}; font-weight:900; margin-bottom:5px;">
-                    ${onTrack ? '🏆 CENTURION STATUS ACHIEVED' : `CHASING 100: ${gap} YEARS TO GO`}
-                </div>
-                <div class="bar-track" style="margin:10px auto; width:80%; height:6px; background:#222;">
-                    <div class="bar-fill" style="width:${Math.min((projection/100)*100, 100)}%; background:${onTrack ? 'var(--green)' : 'var(--blue)'};"></div>
-                </div>
-            </div>
-            <div class="intervention-card">
-                <strong>🔥 AI STRATEGY:</strong><br>
-                ${u.labs && u.labs.apob && u.labs.apob.val > 70 ? "ApoB is the biggest drag on your 100-year goal. Increase fiber to 40g." : 
-                  u.tests && u.tests.vo2.val < 50 ? "VO2 Max is your biggest leverage point. Push Zone 5 intensity." : 
-                  "Metabolic metrics stable. Maintain muscle mass to protect the final decade."}
-            </div>
-        `;
-    }
-}
-
-function openBio() {
-    document.getElementById('mTitle').innerHTML = (user==='J'?'JERMAINE':'SOPHIA') + " - DATA";
-    const m = document.getElementById('mBody');
-    m.innerHTML = `<div class="tabs"><div class="tab active" id="btPhys" onclick="renderBioTab('phys')">BODY</div><div class="tab" id="btLabs" onclick="renderBioTab('labs')">LABS</div><div class="tab" id="btTests" onclick="renderBioTab('tests')">TESTS</div><div class="tab" id="btOura" onclick="renderBioTab('oura')">OURA</div></div><div id="bioContentArea"></div>`;
-    setTimeout(() => { renderBioTab('phys'); }, 50);
+function openSnackSelector(slot) {
+    currentSlot = slot;
+    let opts = '';
+    mDB.s.forEach((s, i) => {
+        let p = s.split('|');
+        opts += `<div style="background:#111;padding:15px;border-radius:12px;margin-bottom:10px;cursor:pointer;border:1px solid #222" onclick="selectSnack(${i})">
+            <div style="font-weight:700;font-size:0.9rem;margin-bottom:5px">${p[0]}</div>
+            <div style="font-size:0.6rem;color:#888">${p[1]}</div>
+            <div style="font-size:0.55rem;color:var(--gold);margin-top:5px">${p[4]}P ${p[5]}C ${p[7]}F ${p[6]}k</div>
+        </div>`;
+    });
+    document.getElementById('mTitle').innerText = 'SELECT SNACK';
+    document.getElementById('mSub').innerText = 'Choose your snack';
+    document.getElementById('mBody').innerHTML = opts;
     document.getElementById('masterModal').style.display = 'block';
 }
 
-function renderBioTab(tab) {
-    const area = document.getElementById('bioContentArea'); const u = uH[user];
-    document.querySelectorAll('#masterModal .tab').forEach(t=>t.classList.remove('active'));
-    document.getElementById('bt'+tab.charAt(0).toUpperCase()+tab.slice(1)).classList.add('active');
+function selectSnack(idx) {
+    const dk = getDateKey(selDate);
+    if(!snackLog[dk]) snackLog[dk] = [null, null];
+    snackLog[dk][currentSlot] = idx;
+    localStorage.setItem('centurion_snack_log', JSON.stringify(snackLog));
+    closeM();
+    render();
+}
+
+function removeSnack(slot) {
+    const dk = getDateKey(selDate);
+    if(snackLog[dk]) {
+        snackLog[dk][slot] = null;
+        localStorage.setItem('centurion_snack_log', JSON.stringify(snackLog));
+        render();
+    }
+}
+
+function openJuice(jn) {
+    const j = jDB[jn];
+    if(!j) return;
+    const dk = getDateKey(selDate);
+    const imgSrc = photoCache[dk + '_juice'] || 'https://via.placeholder.com/400x300/1a1a1a/666?text=Add+Photo';
     
-    if(tab==='phys') {
-        area.innerHTML = `${bioBar("Body Fat", u.now.bf, u.goal.bf, "%", true)}${bioBar("Muscle", u.now.m, u.goal.m, "lbs")}${bioBar("Visceral", u.now.vf, u.goal.vf, "", true)}<div class="nav-btn" style="text-align:center; margin-top:15px;" onclick="logBodyScan()">📝 LOG NEW SCAN</div>
-        <div style="margin-top:30px; text-align:center;"><button class="nav-btn" style="background:#330000; color:#FF5252; font-size:0.6rem; border:1px solid #FF5252; width:100%;" onclick="hardReset()">🛑 FACTORY RESET APP</button></div>`;
-    } else if(tab==='labs') {
-        area.innerHTML = Object.keys(u.labs).map(k => bioBar(u.labs[k].name, u.labs[k].val, u.labs[k].goal, " " + (u.labs[k].unit||""), u.labs[k].lowerIsBetter)).join('');
-    } else if(tab==='tests') {
-        area.innerHTML = Object.keys(u.tests).map(k => bioBar(u.tests[k].name, u.tests[k].val, u.tests[k].goal, " " + (u.tests[k].unit||""), false)).join('') + `<div class="nav-btn" style="text-align:center; margin-top:15px;" onclick="logTest()">📝 LOG NEW TEST</div>`;
-    } else if(tab==='oura') {
-        if(!window.ouraHistory || window.ouraHistory.length === 0) { area.innerHTML = "<div style='padding:20px;text-align:center;color:#666'>Syncing History...</div>"; return; }
-        
-        let r = window.ouraHistory.find(d => d.sleepScore !== '-' && d.sleepScore > 0);
-        if(!r) r = window.ouraHistory[0];
-
-        let html = `
-            <div class="oura-grid">
-                <div class="oura-metric"><div style="font-size:1.8rem;color:var(--green)">${r.score}</div><div style="font-size:0.5rem;color:#888">READY</div></div>
-                <div class="oura-metric"><div style="font-size:1.8rem;color:var(--blue)">${r.sleepScore}</div><div style="font-size:0.5rem;color:#888">SLEEP</div></div>
-                <div class="oura-metric"><div style="font-size:1.5rem;color:#FFAB40">${r.rhr}</div><div style="font-size:0.5rem;color:#888">RHR</div></div>
-                <div class="oura-metric"><div style="font-size:1.5rem;color:white">${fmtTime(r.deep)}</div><div style="font-size:0.5rem;color:#888">DEEP</div></div>
-                <div class="oura-metric"><div style="font-size:1.5rem;color:white">${fmtTime(r.rem)}</div><div style="font-size:0.5rem;color:#888">REM</div></div>
-                <div class="oura-metric"><div style="font-size:1.5rem;color:#FFAB40">${r.cal}</div><div style="font-size:0.5rem;color:#888">BURN</div></div>
-            </div>
-            
-            <div class="bio-section" style="margin-top:15px">
-                <div class="label" style="color:#fff;margin-bottom:8px">ACTIVITY ZONES (MINS)</div>
-                <div style="display:flex;gap:5px;height:40px">
-                    <div style="flex:1;background:var(--card);border:1px solid #333;border-radius:8px;display:flex;flex-direction:column;justify-content:center;align-items:center"><div style="font-size:0.5rem;color:#888">LOW</div><div style="font-weight:900;color:var(--blue)">${r.low}</div></div>
-                    <div style="flex:1;background:var(--card);border:1px solid #333;border-radius:8px;display:flex;flex-direction:column;justify-content:center;align-items:center"><div style="font-size:0.5rem;color:#888">MED</div><div style="font-weight:900;color:var(--gold)">${r.med}</div></div>
-                    <div style="flex:1;background:var(--card);border:1px solid #333;border-radius:8px;display:flex;flex-direction:column;justify-content:center;align-items:center"><div style="font-size:0.5rem;color:#888">HIGH</div><div style="font-weight:900;color:#FF5252">${r.high}</div></div>
-                </div>
-            </div>
-
-            <div class="intervention-card" style="margin-top:15px">💡 7-DAY TREND</div>
-            <table class="hist-table" style="font-size:0.65rem">
-                <thead><tr><th>DATE</th><th>RDY</th><th>SLP</th><th>DEEP</th><th>REM</th><th>HI</th></tr></thead>
-                <tbody>
-        `;
-        window.ouraHistory.forEach(day => {
-            html += `<tr><td>${day.date.slice(5)}</td><td style="font-weight:900;color:${day.score>=85?'var(--green)':day.score>=70?'var(--gold)':'#FF5252'}">${day.score}</td><td>${day.sleepScore || '-'}</td><td style="color:#aaa">${fmtTime(day.deep)}</td><td style="color:#aaa">${fmtTime(day.rem)}</td><td style="color:#FFAB40">${day.high}</td></tr>`;
-        });
-        html += "</tbody></table>";
-        area.innerHTML = html;
-    }
+    document.getElementById('mTitle').innerText = jn;
+    document.getElementById('mSub').innerText = j[0];
+    document.getElementById('mBody').innerHTML = `
+        <img src="${imgSrc}" class="meal-img" onclick="capturePhoto('${dk}_juice')">
+        <div style="margin-bottom:20px">
+            <div style="font-size:0.7rem;color:#888;margin-bottom:10px;font-weight:700">INGREDIENTS</div>
+            <div style="font-size:0.85rem;line-height:1.6">${j[1]}</div>
+        </div>
+        <div class="macro-dashboard">
+            <div class="macro-row"><div class="macro-label"><span>PROTEIN</span><span>${j[2]}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:100%; background:var(--g-pro)"></div></div></div>
+            <div class="macro-row"><div class="macro-label"><span>CARBS</span><span>${j[3]}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:100%; background:var(--g-carb)"></div></div></div>
+            <div class="macro-row"><div class="macro-label"><span>CALORIES</span><span>${j[4]}</span></div><div class="macro-bg"><div class="macro-fill" style="width:100%; background:var(--g-cal)"></div></div></div>
+            <div class="macro-row"><div class="macro-label"><span>FIBER</span><span>${j[5]}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:100%; background:var(--g-fib)"></div></div></div>
+        </div>`;
+    document.getElementById('masterModal').style.display = 'block';
 }
 
-function logBodyScan() {
-    const bf = prompt("Enter Body Fat %:");
-    if(bf) {
-        uH[user].now.bf = parseFloat(bf);
-        uH[user].now.m = parseFloat(prompt("Enter Muscle Mass (lbs):"));
-        uH[user].now.vf = parseFloat(prompt("Enter Visceral Fat Level:"));
-        localStorage.setItem('centurion_bio_v7', JSON.stringify(uH));
-        renderBioTab('phys');
-    }
-}
-
-function logTest() {
-    const keys = ['vo2', 'hang', 'wallsit'];
-    const choice = prompt("Select Test to Update:\n1. VO2 Max\n2. Dead Hang\n3. Wall Sit");
-    if(choice && keys[choice-1]) {
-        const k = keys[choice-1];
-        const val = prompt(`Enter new ${uH[user].tests[k].name} value (${uH[user].tests[k].unit}):`);
-        if(val) {
-            uH[user].tests[k].val = parseFloat(val);
-            localStorage.setItem('centurion_bio_v7', JSON.stringify(uH));
-            renderBioTab('tests');
-        }
-    }
-}
-
-function hardReset() {
-    if(confirm("⚠ FACTORY RESET: This will wipe all local data, logs, and cached photos. Continue?")) {
-        localStorage.clear();
-        location.reload();
-    }
-}
-
-function bioBar(label, val, goal, unit, lowerBetter=false) {
-    const pct = Math.min(lowerBetter ? (goal / val) * 100 : (val / goal) * 100, 100);
-    const color = pct >= 100 ? 'var(--green)' : 'var(--gold)';
-    return `<div class="bio-section"><div class="label" style="color:white; margin-bottom:10px">${label}</div><div class="bar-row"><div class="bar-lbl">NOW</div><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div><div class="bar-lbl" style="text-align:right">${val}${unit}</div></div><div class="bar-row"><div class="bar-lbl" style="color:var(--blue)">GOAL</div><div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--blue);opacity:0.25"></div></div><div class="bar-lbl" style="text-align:right;color:var(--blue)">${goal}${unit}</div></div></div>`;
+function openEssential(name) {
+    const r = rDB[name];
+    if(!r) return;
+    document.getElementById('mTitle').innerText = name;
+    document.getElementById('mSub').innerText = r[0];
+    document.getElementById('mBody').innerHTML = `
+        <div style="background:rgba(0,230,118,0.05);border-left:3px solid var(--green);padding:20px;border-radius:12px;margin-bottom:20px">
+            <div style="font-size:0.7rem;color:#888;margin-bottom:10px;font-weight:700">PROTOCOL</div>
+            <div style="font-size:0.9rem;line-height:1.6;margin-bottom:15px">${r[1]}</div>
+            <div style="font-size:0.7rem;color:#888;margin-bottom:5px;font-weight:700">BENEFIT</div>
+            <div style="font-size:0.85rem;line-height:1.6">${r[2]}</div>
+        </div>`;
+    document.getElementById('masterModal').style.display = 'block';
 }
 
 function openDBRecipe(type, idx) {
-    const raw = mDB[type][idx]; const data = applyAIP(raw, type);
-    const name = data[0];
-    document.getElementById('mTitle').innerText = name.toUpperCase();
-    document.getElementById('mSub').innerText = "CENTURION NUTRITION";
-    
-    document.getElementById('mBody').innerHTML = `<div style="padding:50px;text-align:center;color:#444;font-size:0.7rem;letter-spacing:2px;border:1px dashed #222;border-radius:14px;margin-bottom:15px">PATIENCE PROTOCOL<br>GENERATING NEURAL IMAGERY...</div>`;
-    document.getElementById('bioContentArea').innerHTML = '';
-    document.getElementById('masterModal').style.display = 'block';
+    const meals = {b:'Breakfast', l:'Lunch', d:'Dinner'};
+    const mealArr = mDB[type][idx].split('|');
+    const sc = (user === 'J') ? 1 : 0.6;
+    const dk = getDateKey(selDate);
+    const imgKey = dk + '_' + type;
+    const imgSrc = photoCache[imgKey] || 'https://via.placeholder.com/400x300/1a1a1a/666?text=Add+Photo';
 
-    let imgUrl = photoCache[name];
-    if(!imgUrl) {
-        const prompt = encodeURIComponent(`high end food photography ${name.replace(/[^a-zA-Z ]/g, "")} plated dark background`);
-        imgUrl = `https://image.pollinations.ai/prompt/${prompt}?nologo=true&model=turbo&seed=${Math.floor(Math.random()*1000)}`;
-        photoCache[name] = imgUrl;
-        localStorage.setItem('centurion_photo_cache', JSON.stringify(photoCache));
+    document.getElementById('mTitle').innerText = mealArr[0];
+    document.getElementById('mSub').innerText = meals[type];
+    document.getElementById('mBody').innerHTML = `
+        <img src="${imgSrc}" class="meal-img" onclick="capturePhoto('${imgKey}')">
+        <div style="margin-bottom:20px">
+            <div style="font-size:0.7rem;color:#888;margin-bottom:10px;font-weight:700">INGREDIENTS</div>
+            <div style="font-size:0.85rem;line-height:1.6;margin-bottom:15px">${mealArr[1]}</div>
+            <div style="font-size:0.7rem;color:#888;margin-bottom:5px;font-weight:700">METHOD</div>
+            <div style="font-size:0.8rem;line-height:1.5;margin-bottom:15px;color:#aaa">${mealArr[2]}</div>
+            <div class="intervention-card">${mealArr[3]}</div>
+        </div>
+        <div class="macro-dashboard">
+            <div class="macro-row"><div class="macro-label"><span>PROTEIN</span><span>${Math.round(mealArr[4]*sc)}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:100%; background:var(--g-pro)"></div></div></div>
+            <div class="macro-row"><div class="macro-label"><span>CARBS</span><span>${Math.round(mealArr[5]*sc)}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:100%; background:var(--g-carb)"></div></div></div>
+            <div class="macro-row"><div class="macro-label"><span>CALORIES</span><span>${Math.round(mealArr[6]*sc)}</span></div><div class="macro-bg"><div class="macro-fill" style="width:100%; background:var(--g-cal)"></div></div></div>
+            <div class="macro-row"><div class="macro-label"><span>FIBER</span><span>${Math.round(mealArr[7]*sc)}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:100%; background:var(--g-fib)"></div></div></div>
+        </div>`;
+    document.getElementById('masterModal').style.display = 'block';
+}
+
+function openWorkoutFlow(workout, dateKey) {
+    const proto = pDB[workout] || pDB["RELAX"];
+    
+    // Find workout data for this date
+    const workoutData = window.ouraWorkouts.find(wo => wo.date === dateKey);
+    const maxHR = getMaxHR(user);
+    
+    let workoutStatsHTML = '';
+    if(workoutData) {
+        const totalZoneTime = workoutData.zones.z1 + workoutData.zones.z2 + workoutData.zones.z3 + workoutData.zones.z4 + workoutData.zones.z5;
+        
+        workoutStatsHTML = `
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="stat-value">${workoutData.duration}</div>
+                    <div class="stat-label">Minutes</div>
+                    <div class="stat-sub">${workoutData.type}</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">${workoutData.avgHR}</div>
+                    <div class="stat-label">Avg HR</div>
+                    <div class="stat-sub">${workoutData.peakHR} peak</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">${workoutData.calories}</div>
+                    <div class="stat-label">Calories</div>
+                    <div class="stat-sub">${workoutData.intensity}</div>
+                </div>
+            </div>
+            
+            <div style="margin-bottom:20px">
+                <div style="font-size:0.7rem;color:#888;margin-bottom:12px;font-weight:700">HEART RATE ZONES</div>
+                
+                <div class="hr-zone-row">
+                    <div class="hr-zone-label">
+                        <span>Zone 1 (${Math.round(maxHR*0.5)}-${Math.round(maxHR*0.6)} bpm)</span>
+                        <span>${workoutData.zones.z1} min</span>
+                    </div>
+                    <div class="hr-zone-bar-bg">
+                        <div class="hr-zone-bar" style="width:${(workoutData.zones.z1/totalZoneTime)*100}%; background:linear-gradient(90deg, #4CAF50, #2E7D32)">${workoutData.zones.z1}m</div>
+                    </div>
+                </div>
+                
+                <div class="hr-zone-row">
+                    <div class="hr-zone-label">
+                        <span>Zone 2 (${Math.round(maxHR*0.6)}-${Math.round(maxHR*0.7)} bpm)</span>
+                        <span>${workoutData.zones.z2} min</span>
+                    </div>
+                    <div class="hr-zone-bar-bg">
+                        <div class="hr-zone-bar" style="width:${(workoutData.zones.z2/totalZoneTime)*100}%; background:linear-gradient(90deg, #8BC34A, #558B2F)">${workoutData.zones.z2}m</div>
+                    </div>
+                </div>
+                
+                <div class="hr-zone-row">
+                    <div class="hr-zone-label">
+                        <span>Zone 3 (${Math.round(maxHR*0.7)}-${Math.round(maxHR*0.8)} bpm)</span>
+                        <span>${workoutData.zones.z3} min</span>
+                    </div>
+                    <div class="hr-zone-bar-bg">
+                        <div class="hr-zone-bar" style="width:${(workoutData.zones.z3/totalZoneTime)*100}%; background:linear-gradient(90deg, #FFC107, #F57C00)">${workoutData.zones.z3}m</div>
+                    </div>
+                </div>
+                
+                <div class="hr-zone-row">
+                    <div class="hr-zone-label">
+                        <span>Zone 4 (${Math.round(maxHR*0.8)}-${Math.round(maxHR*0.9)} bpm)</span>
+                        <span>${workoutData.zones.z4} min</span>
+                    </div>
+                    <div class="hr-zone-bar-bg">
+                        <div class="hr-zone-bar" style="width:${(workoutData.zones.z4/totalZoneTime)*100}%; background:linear-gradient(90deg, #FF9800, #E65100)">${workoutData.zones.z4}m</div>
+                    </div>
+                </div>
+                
+                <div class="hr-zone-row">
+                    <div class="hr-zone-label">
+                        <span>Zone 5 (${Math.round(maxHR*0.9)}+ bpm)</span>
+                        <span>${workoutData.zones.z5} min</span>
+                    </div>
+                    <div class="hr-zone-bar-bg">
+                        <div class="hr-zone-bar" style="width:${(workoutData.zones.z5/totalZoneTime)*100}%; background:linear-gradient(90deg, #FF5252, #D50000)">${workoutData.zones.z5}m</div>
+                    </div>
+                </div>
+            </div>`;
+    } else {
+        workoutStatsHTML = '<div style="text-align:center;padding:20px;color:#666;font-size:0.8rem">No Oura workout data for this day</div>';
+    }
+    
+    let protocolHTML = '<div style="margin-bottom:25px">';
+    proto.forEach((step, i) => {
+        const colors = ['var(--blue)', 'var(--gold)', 'var(--purple)'];
+        protocolHTML += `
+            <div style="background:rgba(255,255,255,0.03);border-left:3px solid ${colors[i]};padding:15px;margin-bottom:15px;border-radius:8px">
+                <div style="font-size:0.7rem;color:${colors[i]};margin-bottom:8px;font-weight:900">${step.h}</div>
+                <div style="font-size:0.8rem;line-height:1.5;color:#ccc">${step.d}</div>
+            </div>`;
+    });
+    protocolHTML += '</div>';
+
+    document.getElementById('mTitle').innerText = workout;
+    document.getElementById('mSub').innerText = 'Optimized Flow Protocol';
+    document.getElementById('mBody').innerHTML = workoutStatsHTML + protocolHTML;
+    document.getElementById('masterModal').style.display = 'block';
+}
+
+function openBio() {
+    const userData = uH[user];
+    const age = getChronAge(user);
+    const longevity = calculateLongevity(userData);
+    
+    let labsHTML = '<div class="bio-section"><h3 style="color:var(--gold);font-size:0.8rem;font-weight:900;margin-bottom:15px">🩸 BLOODWORK</h3>';
+    Object.values(userData.labs).forEach(lab => {
+        const progress = lab.lowerIsBetter ? 
+            Math.max(0, 100 - ((lab.val / lab.goal) * 100)) : 
+            Math.min(100, (lab.val / lab.goal) * 100);
+        const barColor = progress >= 80 ? 'var(--green)' : progress >= 60 ? 'var(--gold)' : 'var(--red)';
+        labsHTML += `<div class="bar-row">
+            <div class="bar-lbl">${lab.name}</div>
+            <div class="bar-track"><div class="bar-fill" style="width:${progress}%; background:${barColor}"></div></div>
+            <div style="font-size:0.6rem;width:80px;text-align:right;color:#888;font-weight:700">${lab.val} ${lab.unit}</div>
+        </div>`;
+    });
+    labsHTML += '</div>';
+
+    let testsHTML = '<div class="bio-section"><h3 style="color:var(--blue);font-size:0.8rem;font-weight:900;margin-bottom:15px">🏃 PERFORMANCE</h3>';
+    Object.values(userData.tests).forEach(test => {
+        const progress = Math.min(100, (test.val / test.goal) * 100);
+        const barColor = progress >= 80 ? 'var(--green)' : progress >= 60 ? 'var(--gold)' : 'var(--red)';
+        testsHTML += `<div class="bar-row">
+            <div class="bar-lbl">${test.name}</div>
+            <div class="bar-track"><div class="bar-fill" style="width:${progress}%; background:${barColor}"></div></div>
+            <div style="font-size:0.6rem;width:80px;text-align:right;color:#888;font-weight:700">${test.val} ${test.unit}</div>
+        </div>`;
+    });
+    testsHTML += '</div>';
+
+    let compHTML = '<div class="bio-section"><h3 style="color:var(--purple);font-size:0.8rem;font-weight:900;margin-bottom:15px">📊 BODY COMPOSITION</h3>';
+    ['Body Fat', 'Muscle', 'Visceral Fat', 'Weight'].forEach((metric, i) => {
+        const keys = ['bf', 'm', 'vf', 'w'];
+        const units = ['%', 'kg', '', 'lbs'];
+        const now = userData.now[keys[i]];
+        const goal = userData.goal[keys[i]];
+        const isLower = i === 0 || i === 2 || i === 3;
+        const progress = isLower ? 
+            Math.max(0, 100 - ((now / goal) * 100)) : 
+            Math.min(100, (now / goal) * 100);
+        const barColor = progress >= 80 ? 'var(--green)' : progress >= 60 ? 'var(--gold)' : 'var(--red)';
+        compHTML += `<div class="bar-row">
+            <div class="bar-lbl">${metric}</div>
+            <div class="bar-track"><div class="bar-fill" style="width:${progress}%; background:${barColor}"></div></div>
+            <div style="font-size:0.6rem;width:80px;text-align:right;color:#888;font-weight:700">${now} ${units[i]}</div>
+        </div>`;
+    });
+    compHTML += '</div>';
+
+    let ouraHTML = '';
+    if(window.ouraHistory && window.ouraHistory.length > 0) {
+        const last7 = window.ouraHistory.slice(0, 7);
+        const avgReady = Math.round(last7.reduce((sum, d) => sum + d.score, 0) / last7.length);
+        const avgSleep = Math.round(last7.reduce((sum, d) => sum + (d.sleepScore !== '-' ? d.sleepScore : 0), 0) / last7.length);
+        const avgRHR = Math.round(last7.reduce((sum, d) => sum + (typeof d.rhr === 'number' ? d.rhr : 0), 0) / last7.length);
+        
+        ouraHTML = `<div class="bio-section"><h3 style="color:var(--green);font-size:0.8rem;font-weight:900;margin-bottom:15px">💍 OURA (7-DAY AVG)</h3>
+            <div class="oura-grid">
+                <div class="oura-metric">
+                    <div style="font-size:1.5rem;font-weight:900;color:${avgReady>=85?'var(--green)':avgReady>=70?'var(--gold)':'var(--red)'}">${avgReady}</div>
+                    <div style="font-size:0.5rem;color:#666;margin-top:5px;font-weight:700">READINESS</div>
+                </div>
+                <div class="oura-metric">
+                    <div style="font-size:1.5rem;font-weight:900;color:${avgSleep>=85?'var(--green)':avgSleep>=70?'var(--gold)':'var(--red)'}">${avgSleep}</div>
+                    <div style="font-size:0.5rem;color:#666;margin-top:5px;font-weight:700">SLEEP</div>
+                </div>
+                <div class="oura-metric">
+                    <div style="font-size:1.5rem;font-weight:900;color:var(--blue)">${avgRHR}</div>
+                    <div style="font-size:0.5rem;color:#666;margin-top:5px;font-weight:700">RHR</div>
+                </div>
+            </div>
+            
+            <table class="hist-table">
+                <thead><tr><th>DATE</th><th>READY</th><th>SLEEP</th><th>RHR</th><th>STEPS</th></tr></thead>
+                <tbody>
+                    ${last7.map(d => `<tr>
+                        <td>${d.date.slice(5)}</td>
+                        <td style="color:${d.score>=85?'var(--green)':d.score>=70?'var(--gold)':'var(--red)'}">${d.score}</td>
+                        <td>${d.sleepScore !== '-' ? d.sleepScore : '-'}</td>
+                        <td>${typeof d.rhr === 'number' ? d.rhr : '-'}</td>
+                        <td>${d.steps || '-'}</td>
+                    </tr>`).join('')}
+                </tbody>
+            </table>
+        </div>`;
     }
 
-    const img = new Image();
-    img.src = imgUrl;
-    img.onload = () => {
-        if(document.getElementById('mTitle').innerText === name.toUpperCase()) {
-            document.getElementById('mBody').innerHTML = `
-                <img src="${imgUrl}" class="meal-img">
-                <div class="intervention-card" style="border-left-color:var(--gold)"><strong>PROTOCOL:</strong><br>${data[3]}</div>
-                <div style="display:flex; justify-content:space-between; margin-top:15px; font-size:0.8rem; color:#888;">
-                    <span>PRO: ${data[4]}g</span><span>CARB: ${data[5]}g</span><span>FAT: ${data[7]||0}g</span>
-                </div>`;
-        }
-    };
-}
-
-function openWorkoutFlow(w) {
-    const a = pDB[w];
-    const dk = getDateKey(selDate);
-    const saved = zoneLog[dk] || {z5:0,z4:0,z3:0,z2:0,z1:0};
-    
-    document.getElementById('mTitle').innerText = w;
-    document.getElementById('mSub').innerText = "OPTIMIZED FLOW & ZONES";
-    
-    // Zone Tracking UI
-    let zoneHtml = `
-        <div class="bio-section" style="margin-bottom:15px;">
-            <div class="label" style="color:#fff;margin-bottom:10px">ZONE TRACKING (MINS)</div>
-            ${['z5','z4','z3','z2','z1'].map((z,i) => `
-                <div class="bar-row" style="margin-bottom:6px">
-                    <div class="bar-lbl" style="width:25px;color:${i<2?'#FF5252':i<3?'var(--gold)':'var(--blue)'}">Z${5-i}</div>
-                    <div class="bar-track" style="background:#222;height:25px;border:none;display:flex;align-items:center;padding:0 5px;justify-content:space-between">
-                        <span onclick="updZone('${dk}','${z}',-1)" style="font-size:1.2rem;cursor:pointer;color:#444">−</span>
-                        <span id="val_${z}" style="font-weight:900;color:#fff">${saved[z]}m</span>
-                        <span onclick="updZone('${dk}','${z}',1)" style="font-size:1.2rem;cursor:pointer;color:#444">+</span>
-                    </div>
-                </div>`).join('')}
-        </div>`;
-
-    document.getElementById('mBody').innerHTML = `
-        <div class="intervention-card" style="border-left:3px solid var(--blue)"><div style="color:var(--blue); font-weight:900; margin-bottom:5px">PRE-WORKOUT</div><strong>${a[0].h}</strong><br>${a[0].d}</div>
-        <div class="intervention-card" style="border-left:3px solid #fff"><div style="color:#fff; font-weight:900; margin-bottom:5px">TRAINING</div><strong>${a[1].h}</strong><br>${a[1].d}</div>
-        <div class="intervention-card" style="border-left:3px solid var(--purple)"><div style="color:var(--purple); font-weight:900; margin-bottom:5px">RECOVERY</div><strong>${a[2].h}</strong><br>${a[2].d}</div>
-        ${zoneHtml}`;
-        
-    document.getElementById('bioContentArea').innerHTML = '';
+    document.getElementById('mTitle').innerText = `${user === 'J' ? 'JERMAINE' : 'SOPHIA'} BIOMETRICS`;
+    document.getElementById('mSub').innerHTML = `AGE: ${age} | PROJECTED LONGEVITY: <span style="color:var(--gold)">${longevity}</span>`;
+    document.getElementById('mBody').innerHTML = ouraHTML + compHTML + labsHTML + testsHTML;
     document.getElementById('masterModal').style.display = 'block';
 }
 
-function updZone(dk, z, delta) {
-    if(!zoneLog[dk]) zoneLog[dk] = {z5:0,z4:0,z3:0,z2:0,z1:0};
-    zoneLog[dk][z] = Math.max(0, zoneLog[dk][z] + delta);
-    document.getElementById('val_'+z).innerText = zoneLog[dk][z] + 'm';
-    localStorage.setItem('centurion_zone_log', JSON.stringify(zoneLog));
+function toggleAI() {
+    aiVisible = !aiVisible;
+    const dash = document.getElementById('aiDashboard');
+    if(aiVisible) {
+        const userData = uH[user];
+        const age = getChronAge(user);
+        const longevity = calculateLongevity(userData);
+        
+        let insights = [];
+        if(userData.labs.apob && userData.labs.apob.val > 80) 
+            insights.push({type:'warning', text:`ApoB elevated at ${userData.labs.apob.val}. Consider increasing fiber to 40g+ daily and omega-3 supplementation.`});
+        if(userData.tests.vo2 && userData.tests.vo2.val < 45) 
+            insights.push({type:'warning', text:`VO2 Max at ${userData.tests.vo2.val}. Add 2x weekly Zone 2 cardio (60-70% max HR) for 45+ minutes.`});
+        if(userData.now.vf > 8) 
+            insights.push({type:'warning', text:`Visceral fat at ${userData.now.vf}. Prioritize HIIT workouts and reduce refined carbs.`});
+        
+        if(window.ouraHistory && window.ouraHistory.length > 0) {
+            const recent = window.ouraHistory.slice(0, 7);
+            const avgReady = Math.round(recent.reduce((s, d) => s + d.score, 0) / recent.length);
+            if(avgReady < 70) 
+                insights.push({type:'warning', text:`7-day readiness averaging ${avgReady}. Consider adding rest day or reducing training volume.`});
+        }
+        
+        if(insights.length === 0) 
+            insights.push({type:'success', text:`All biomarkers trending well! Projected longevity: ${longevity} years. Continue current protocol.`});
+        
+        let html = '<div style="background:rgba(102,126,234,0.05);border:1px solid rgba(102,126,234,0.2);border-radius:15px;padding:20px">';
+        html += `<div style="font-size:0.7rem;color:#667EEA;font-weight:900;margin-bottom:15px">🧠 AI INSIGHTS</div>`;
+        insights.forEach(i => {
+            const color = i.type === 'success' ? 'var(--green)' : 'var(--gold)';
+            html += `<div class="intervention-card" style="border-left-color:${color};margin-bottom:10px">${i.text}</div>`;
+        });
+        html += '</div>';
+        dash.innerHTML = html;
+        dash.style.display = 'block';
+    } else {
+        dash.style.display = 'none';
+    }
 }
 
-function openJuice(n){
-    const d=jDB[n]; document.getElementById('mTitle').innerText=n; document.getElementById('mBody').innerHTML=`<p style="font-size:1.1rem; color:#fff">${d[1]}</p><p style="color:var(--gold)">Kcal: ${d[4]} | Carb: ${d[3]}g | Fiber: ${d[5]}g</p>`;
-    document.getElementById('bioContentArea').innerHTML = ''; document.getElementById('masterModal').style.display='block';
+function capturePhoto(key) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.capture = 'camera';
+    input.onchange = e => {
+        const file = e.target.files[0];
+        if(file) {
+            const reader = new FileReader();
+            reader.onload = ev => {
+                photoCache[key] = ev.target.result;
+                localStorage.setItem('centurion_photo_cache', JSON.stringify(photoCache));
+                render();
+                closeM();
+                setTimeout(() => {
+                    if(key.includes('_juice')) {
+                        const jn = document.querySelector('.juice-name').innerText;
+                        openJuice(jn);
+                    } else {
+                        const type = key.split('_')[1];
+                        const idx = Math.abs(Math.floor(selDate.getTime()/864e5)) % mDB[type].length;
+                        openDBRecipe(type, idx);
+                    }
+                }, 100);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+    input.click();
 }
 
-function openEssential(n){
-    const d=rDB[n]; document.getElementById('mTitle').innerText=n; document.getElementById('mBody').innerHTML=`<div class="intervention-card"><strong>DOSE:</strong> ${d[1]}</div><div class="intervention-card"><strong>WHY:</strong> ${d[2]}</div>`;
-    document.getElementById('bioContentArea').innerHTML = ''; document.getElementById('masterModal').style.display='block';
+function closeM(e) {
+    if(!e || e.target.id === 'masterModal') {
+        document.getElementById('masterModal').style.display = 'none';
+    }
 }
 
+// ==========================================
+// OURA SYNC - v370 PATTERN + WORKOUT
+// ==========================================
 async function fetchOuraData() {
-    const currentUser = user; const token = TOKENS[currentUser]; const bar = document.getElementById('ouraBar'); 
+    const currentUser = user; 
+    const token = TOKENS[currentUser]; 
+    const bar = document.getElementById('ouraBar');
     
-    // FETCH 1: Readiness
     const startDate = getDateKey(new Date(Date.now() - 2592000000)); 
     const endDate = getDateKey(new Date());
     
     try {
+        // EXACT v370 PATTERN - 4 WORKING FETCHES
+        bar.innerHTML = '💍 Fetching readiness...';
         const rRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
         const rData = await rRes.json();
         
-        // FETCH 2: Daily Sleep (Summary)
+        bar.innerHTML = '💍 Fetching sleep scores...';
         const dsRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
         const dsData = await dsRes.json();
 
-        // FETCH 3: SLEEP EPISODES (Raw Data)
+        bar.innerHTML = '💍 Fetching sleep details...';
         const sRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
         const sData = await sRes.json();
         
-        // FETCH 4: Activity (Calories)
+        bar.innerHTML = '💍 Fetching activity...';
         const aRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
         const aData = await aRes.json();
 
+        // NEW: 5TH FETCH - WORKOUTS (same exact pattern)
+        bar.innerHTML = '💍 Fetching workouts...';
+        const wRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/workout?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
+        const wData = await wRes.json();
+
         if(user !== currentUser) return;
 
+        // Process workout data
+        window.ouraWorkouts = [];
+        if(wData.data && wData.data.length > 0) {
+            window.ouraWorkouts = wData.data.map(w => {
+                const duration = w.end_datetime && w.start_datetime ? 
+                    Math.round((new Date(w.end_datetime) - new Date(w.start_datetime)) / 60000) : 0;
+                
+                return {
+                    date: w.day || (w.start_datetime ? w.start_datetime.split('T')[0] : ''),
+                    type: mapWorkoutType(w.activity),
+                    duration: duration,
+                    avgHR: w.average_heart_rate || 0,
+                    peakHR: w.max_heart_rate || 0,
+                    zones: {
+                        z1: Math.round((w.heart_rate_zone_1_duration || 0) / 60) || 0,
+                        z2: Math.round((w.heart_rate_zone_2_duration || 0) / 60) || 0,
+                        z3: Math.round((w.heart_rate_zone_3_duration || 0) / 60) || 0,
+                        z4: Math.round((w.heart_rate_zone_4_duration || 0) / 60) || 0,
+                        z5: Math.round((w.heart_rate_zone_5_duration || 0) / 60) || 0
+                    },
+                    calories: w.calories || 0,
+                    intensity: w.intensity || 'moderate'
+                };
+            }).reverse();
+        }
+
+        // Process main data (v370 pattern)
         if(rData.data && rData.data.length > 0) {
+            bar.innerHTML = '💍 Processing data...';
+            
             window.ouraHistory = rData.data.map(day => {
                 const dailySleep = dsData.data ? dsData.data.find(s => s.day === day.day) : null;
                 const sleepEpisodes = sData.data ? sData.data.filter(s => s.day === day.day) : [];
@@ -538,15 +791,9 @@ async function fetchOuraData() {
                 const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
                 
                 let burn = 0;
-                let hi = 0, med = 0, low = 0;
-
                 if(act) {
                     if(act.active_calories !== undefined) burn = act.active_calories;
                     else if(act.total_calories !== undefined) burn = act.total_calories; 
-                    
-                    if(act.high_activity_time) hi = Math.round(act.high_activity_time / 60);
-                    if(act.medium_activity_time) med = Math.round(act.medium_activity_time / 60);
-                    if(act.low_activity_time) low = Math.round(act.low_activity_time / 60);
                 }
 
                 let rhrVal = '-';
@@ -560,43 +807,37 @@ async function fetchOuraData() {
                     rhr: rhrVal,
                     deep: mainSleep ? mainSleep.deep_sleep_duration : 0,
                     rem: mainSleep ? mainSleep.rem_sleep_duration : 0,
-                    cal: burn,
-                    high: hi,
-                    med: med,
-                    low: low
+                    light: mainSleep ? mainSleep.light_sleep_duration : 0,
+                    total: mainSleep ? mainSleep.total_sleep_duration : 0,
+                    bedtime: mainSleep ? mainSleep.bedtime_start : '-',
+                    latency: mainSleep ? mainSleep.sleep_onset_latency : 0,
+                    efficiency: mainSleep ? mainSleep.sleep_efficiency : 0,
+                    burn: burn,
+                    steps: act && act.steps !== undefined ? act.steps : 0,
+                    active: act && act.active_calories !== undefined ? act.active_calories : 0,
+                    move: act && act.equivalent_walking_distance !== undefined ? Math.round(act.equivalent_walking_distance / 1609) : 0
                 };
-            }).reverse().slice(0, 7);
+            }).reverse();
 
-            // SMART SELECTION: Use most recent valid data for Top Dashboard
-            let lastR = window.ouraHistory.find(d => d.sleepScore !== '-' && d.sleepScore > 0);
-            if(!lastR) lastR = window.ouraHistory[0];
-
+            const lastR = window.ouraHistory[0];
             let color = lastR.score >= 85 ? 'var(--green)' : lastR.score >= 70 ? 'var(--gold)' : '#FF5252';
             bar.innerHTML = `💍 ${currentUser==='J'?'JERMAINE':'SOPHIA'} READINESS: <span style="color:${color}; font-weight:900">${lastR.score}</span>`;
             
-            if(document.getElementById('btOura') && document.getElementById('btOura').classList.contains('active')) {
-                renderBioTab('oura');
-            }
+            console.log('✅ Oura sync complete:', window.ouraHistory.length, 'days,', window.ouraWorkouts.length, 'workouts');
+            render();
         } else {
-            bar.innerText = `💍 ${currentUser==='J'?'JERMAINE':'SOPHIA'}: No Data`;
+            bar.innerHTML = '<span style="color:#FF5252">💍 No Oura data found</span>';
         }
-    } catch(e) { 
-        if(user === currentUser) bar.innerText = "💍 Sync Failed"; 
+        
+    } catch(err) {
+        console.error('❌ Oura sync error:', err);
+        bar.innerHTML = '<span style="color:#FF5252">💍 SYNC FAILED</span>';
     }
 }
 
-function openSnackSelector(s) { currentSlot=s; document.getElementById('mTitle').innerText="SNACK"; document.getElementById('mBody').innerHTML=mDB.s.map((x,i)=>`<div class="value" onclick="applySnack(${i})">${x.split('|')[0]}</div>`).join(''); document.getElementById('bioContentArea').innerHTML=''; document.getElementById('masterModal').style.display='block'; }
-function applySnack(i) { snackLog[getDateKey(selDate)][currentSlot]=i; localStorage.setItem('centurion_snack_log', JSON.stringify(snackLog)); closeM(); render(); }
-function removeSnack(s) { snackLog[getDateKey(selDate)][s]=null; localStorage.setItem('centurion_snack_log', JSON.stringify(snackLog)); render(); }
-function closeM() { document.getElementById('masterModal').style.display='none'; }
-
-// Init
-window.onload = () => { 
-    document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
-    document.getElementById('b' + user.toLowerCase()).classList.add('active');
-    render(); 
-    fetchOuraData(); 
-};
+// Auto-load on start
+fetchOuraData();
 </script>
+
 </body>
 </html>
