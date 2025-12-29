@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v350.0 Full Macros</title>
+    <title>The Centurion | v355.0 Cached Core</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --text:#fff;
@@ -41,7 +41,8 @@
         .bar-track{flex:1;height:8px;background:#111;border-radius:10px;margin:0 10px;border:1px solid #222;overflow:hidden}
         .bar-fill{height:100%;border-radius:10px;transition:width 1s cubic-bezier(0.4,0,0.2,1)}
         .intervention-card{background:rgba(0,176,255,0.05);border-left:3px solid var(--blue);padding:15px;margin:10px 0;border-radius:8px;font-size:0.8rem;line-height:1.4;}
-        .meal-img { width: 100%; border-radius: 14px; margin-bottom: 15px; background: #111; min-height: 220px; object-fit: cover;}
+        .meal-img { width: 100%; border-radius: 14px; margin-bottom: 15px; background: #111; min-height: 220px; object-fit: cover; animation: fadeIn 0.8s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         .snack-grid { display: flex; gap: 10px; margin-bottom: 15px; }
         .snack-slot { flex: 1; border: 1px dashed #333; border-radius: 12px; padding: 12px 5px; text-align: center; cursor: pointer; position: relative; min-height: 60px; display: flex; flex-direction: column; justify-content: center; background: rgba(255,255,255,0.02); }
         .snack-slot.filled { border: 1px solid var(--gold); background: #111; }
@@ -58,7 +59,7 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v350.0 Macro Master</span>
+        <span class="version-tag">v355.0 Patience Protocol</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -92,7 +93,7 @@
 
 <script>
 // ==========================================
-// CENTURION v350.0 CORE
+// CENTURION v355.0 CORE
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
@@ -101,6 +102,7 @@ let selDate = getCaDate();
 let currentSlot = 0;
 let aiVisible = false;
 let snackLog = JSON.parse(localStorage.getItem('centurion_snack_log')) || {};
+let photoCache = JSON.parse(localStorage.getItem('centurion_photo_cache')) || {};
 window.ouraHistory = [];
 
 const BIRTHDAYS = { 'J': '1983-01-13', 'S': '1987-01-25' };
@@ -363,10 +365,38 @@ function bioBar(label, val, goal, unit, lowerBetter=false) {
 
 function openDBRecipe(type, idx) {
     const raw = mDB[type][idx]; const data = applyAIP(raw, type);
-    document.getElementById('mTitle').innerText = data[0]; document.getElementById('mSub').innerText = "CENTURION NUTRITION";
-    const prompt = encodeURIComponent(`high end food photography ${data[0].replace(/[^a-zA-Z ]/g, "")} plated dark background`);
-    document.getElementById('mBody').innerHTML = `<img src="https://image.pollinations.ai/prompt/${prompt}?nologo=true&model=turbo" class="meal-img"><div class="intervention-card" style="border-left-color:var(--gold)"><strong>PROTOCOL:</strong><br>${data[3]}</div><div style="display:flex; justify-content:space-between; margin-top:15px; font-size:0.8rem; color:#888;"><span>PRO: ${data[4]}g</span><span>CARB: ${data[5]}g</span><span>FAT: ${data[7]||0}g</span></div>`;
-    document.getElementById('bioContentArea').innerHTML = ''; document.getElementById('masterModal').style.display = 'block';
+    const name = data[0];
+    document.getElementById('mTitle').innerText = name.toUpperCase();
+    document.getElementById('mSub').innerText = "CENTURION NUTRITION";
+    
+    // PATIENCE PROTOCOL: Initial Loader
+    document.getElementById('mBody').innerHTML = `<div style="padding:50px;text-align:center;color:#444;font-size:0.7rem;letter-spacing:2px;border:1px dashed #222;border-radius:14px;margin-bottom:15px">PATIENCE PROTOCOL<br>GENERATING NEURAL IMAGERY...</div>`;
+    document.getElementById('bioContentArea').innerHTML = '';
+    document.getElementById('masterModal').style.display = 'block';
+
+    // Image Caching Logic
+    let imgUrl = photoCache[name];
+    if(!imgUrl) {
+        const prompt = encodeURIComponent(`high end food photography ${name.replace(/[^a-zA-Z ]/g, "")} plated dark background`);
+        imgUrl = `https://image.pollinations.ai/prompt/${prompt}?nologo=true&model=turbo&seed=${Math.floor(Math.random()*1000)}`;
+        photoCache[name] = imgUrl;
+        localStorage.setItem('centurion_photo_cache', JSON.stringify(photoCache));
+    }
+
+    // Preload & Swap
+    const img = new Image();
+    img.src = imgUrl;
+    img.onload = () => {
+        // Only update if user hasn't closed modal
+        if(document.getElementById('mTitle').innerText === name.toUpperCase()) {
+            document.getElementById('mBody').innerHTML = `
+                <img src="${imgUrl}" class="meal-img">
+                <div class="intervention-card" style="border-left-color:var(--gold)"><strong>PROTOCOL:</strong><br>${data[3]}</div>
+                <div style="display:flex; justify-content:space-between; margin-top:15px; font-size:0.8rem; color:#888;">
+                    <span>PRO: ${data[4]}g</span><span>CARB: ${data[5]}g</span><span>FAT: ${data[7]||0}g</span>
+                </div>`;
+        }
+    };
 }
 
 function openWorkoutFlow(w) {
