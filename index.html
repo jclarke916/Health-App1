@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v370.0 Unified Sync</title>
+    <title>The Centurion | v375.0 Factory Reset</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --text:#fff;
@@ -59,7 +59,7 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v370.0 Unified Sync</span>
+        <span class="version-tag">v375.0 Factory Reset</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -93,7 +93,7 @@
 
 <script>
 // ==========================================
-// CENTURION v370.0 CORE
+// CENTURION v375.0 CORE
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
@@ -337,7 +337,8 @@ function renderBioTab(tab) {
     document.getElementById('bt'+tab.charAt(0).toUpperCase()+tab.slice(1)).classList.add('active');
     
     if(tab==='phys') {
-        area.innerHTML = `${bioBar("Body Fat", u.now.bf, u.goal.bf, "%", true)}${bioBar("Muscle", u.now.m, u.goal.m, "lbs")}${bioBar("Visceral", u.now.vf, u.goal.vf, "", true)}<div class="nav-btn" style="text-align:center; margin-top:15px;" onclick="logBodyScan()">📝 LOG NEW SCAN</div>`;
+        area.innerHTML = `${bioBar("Body Fat", u.now.bf, u.goal.bf, "%", true)}${bioBar("Muscle", u.now.m, u.goal.m, "lbs")}${bioBar("Visceral", u.now.vf, u.goal.vf, "", true)}<div class="nav-btn" style="text-align:center; margin-top:15px;" onclick="logBodyScan()">📝 LOG NEW SCAN</div>
+        <div style="margin-top:30px; text-align:center;"><button class="nav-btn" style="background:#330000; color:#FF5252; font-size:0.6rem; border:1px solid #FF5252; width:100%;" onclick="hardReset()">🛑 FACTORY RESET APP</button></div>`;
     } else if(tab==='labs') {
         area.innerHTML = Object.keys(u.labs).map(k => bioBar(u.labs[k].name, u.labs[k].val, u.labs[k].goal, " " + (u.labs[k].unit||""), u.labs[k].lowerIsBetter)).join('');
     } else if(tab==='tests') {
@@ -389,6 +390,13 @@ function logTest() {
             localStorage.setItem('centurion_bio_v7', JSON.stringify(uH));
             renderBioTab('tests');
         }
+    }
+}
+
+function hardReset() {
+    if(confirm("⚠ FACTORY RESET: This will wipe all local data, logs, and cached photos. Continue?")) {
+        localStorage.clear();
+        location.reload();
     }
 }
 
@@ -457,11 +465,11 @@ async function fetchOuraData() {
         const rRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
         const rData = await rRes.json();
         
-        // FETCH 2: Daily Sleep (Score Summary)
+        // FETCH 2: Daily Sleep (Summary)
         const dsRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
         const dsData = await dsRes.json();
 
-        // FETCH 3: SLEEP EPISODES (Raw Deep/REM/RHR) - THE MISSING LINK
+        // FETCH 3: SLEEP EPISODES (Raw Data)
         const sRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
         const sData = await sRes.json();
         
@@ -473,13 +481,9 @@ async function fetchOuraData() {
 
         if(rData.data && rData.data.length > 0) {
             window.ouraHistory = rData.data.map(day => {
-                // Match Summary Score
                 const dailySleep = dsData.data ? dsData.data.find(s => s.day === day.day) : null;
-                
-                // Match Detailed Sleep Episode (Find longest for the day)
                 const sleepEpisodes = sData.data ? sData.data.filter(s => s.day === day.day) : [];
                 const mainSleep = sleepEpisodes.length > 0 ? sleepEpisodes.reduce((prev, current) => (prev.total_sleep_duration > current.total_sleep_duration) ? prev : current) : null;
-                
                 const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
                 
                 let burn = 0;
@@ -489,7 +493,6 @@ async function fetchOuraData() {
                 }
 
                 let rhrVal = '-';
-                // Try Period first (more accurate), then Daily Summary
                 if(mainSleep && mainSleep.lowest_heart_rate) rhrVal = mainSleep.lowest_heart_rate;
                 else if(dailySleep && dailySleep.lowest_heart_rate) rhrVal = dailySleep.lowest_heart_rate;
 
