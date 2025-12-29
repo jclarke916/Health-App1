@@ -1,81 +1,75 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>v400 Feed</title>
 
 <style>
-body {
-    margin:0;
-    font-family: Inter, system-ui, sans-serif;
-    background:#0b0b0d;
-    color:#fff;
-}
-.feed {
-    max-width:720px;
-    margin:0 auto;
-    padding:16px;
-}
-.card {
-    background:#121216;
-    border-radius:14px;
-    margin-bottom:16px;
-    overflow:hidden;
-    cursor:pointer;
-    border:1px solid #1f1f25;
-}
-.card-img {
-    width:100%;
-    height:180px;
-    background:#0f0f13;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    color:#555;
-    font-size:0.8rem;
-}
-.card-img img {
-    width:100%;
-    height:100%;
-    object-fit:cover;
-}
-.card-body {
-    padding:14px;
-}
-.card-title {
-    font-weight:800;
-    letter-spacing:0.02em;
-}
-.card-sub {
-    font-size:0.8rem;
-    color:#aaa;
-    margin-top:4px;
+:root{
+  --bg:#0b0b0b;
+  --card:#141414;
+  --muted:#777;
+  --gold:#d4af37;
 }
 
-/* modal */
-.modal {
-    position:fixed;
-    inset:0;
-    background:rgba(0,0,0,0.7);
-    display:none;
-    align-items:center;
-    justify-content:center;
+body{
+  margin:0;
+  font-family:Inter,system-ui;
+  background:var(--bg);
+  color:#fff;
 }
-.modal-box {
-    background:#121216;
-    width:90%;
-    max-width:600px;
-    border-radius:16px;
-    padding:18px;
+
+.feed{
+  max-width:420px;
+  margin:auto;
+  padding:16px;
 }
-.modal h2 {
-    margin:0;
+
+.card{
+  background:var(--card);
+  border-radius:14px;
+  margin-bottom:18px;
+  overflow:hidden;
 }
-.close {
-    float:right;
-    font-size:1.2rem;
-    cursor:pointer;
+
+.card-body{
+  padding:14px;
+}
+
+.title{
+  font-weight:800;
+  letter-spacing:.5px;
+}
+
+.sub{
+  font-size:.75rem;
+  color:var(--muted);
+  margin-top:4px;
+}
+
+.img-wrap{
+  position:relative;
+  width:100%;
+  aspect-ratio:4/3;
+  background:#0f0f0f;
+}
+
+.loader{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:.7rem;
+  color:#888;
+}
+
+img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:none;
 }
 </style>
 </head>
@@ -84,83 +78,85 @@ body {
 
 <div class="feed" id="feed"></div>
 
-<div class="modal" id="modal">
-    <div class="modal-box">
-        <span class="close" onclick="closeModal()">✕</span>
-        <h2 id="mTitle"></h2>
-        <p id="mSub"></p>
-        <div id="mBody"></div>
-        <p style="color:#777;font-size:0.8rem" id="mTip"></p>
-    </div>
-</div>
-
 <script>
-/* ===== DATABASE ===== */
-const meals = [
-    {
-        name:"Grilled Salmon Bowl",
-        sub:"Omega-3 • Longevity",
-        desc:"Wild salmon, quinoa, olive oil, greens.",
-        tip:"Omega-3s support brain + cardiovascular longevity."
-    },
-    {
-        name:"Grass-Fed Steak Plate",
-        sub:"Muscle • Recovery",
-        desc:"Ribeye, sweet potato, sautéed greens.",
-        tip:"Iron + creatine preserve strength with age."
-    },
-    {
-        name:"Mediterranean Chickpea Salad",
-        sub:"Gut • Anti-Inflammation",
-        desc:"Chickpeas, olive oil, herbs, lemon.",
-        tip:"Fiber diversity feeds the microbiome."
-    }
+/* -----------------------------
+   DATA (Scalable)
+----------------------------- */
+const FEED = [
+  {
+    name:"Grilled Salmon Bowl",
+    note:"Omega-3 • Longevity Fuel",
+    text:"Wild salmon, quinoa, olive oil, greens"
+  },
+  {
+    name:"Mediterranean Chicken",
+    note:"Lean Protein",
+    text:"Herbs, lemon, farro"
+  },
+  {
+    name:"Grass-Fed Steak Plate",
+    note:"Iron + Muscle",
+    text:"Sweet potato, greens"
+  }
 ];
 
-/* ===== FEED RENDER ===== */
-const feed = document.getElementById("feed");
+/* -----------------------------
+   IMAGE LOADER (v400)
+----------------------------- */
+function loadImage(container, mealName){
+  const img = container.querySelector("img");
+  const loader = container.querySelector(".loader");
 
-meals.forEach((m, i) => {
+  const seed = mealName.length * 777;
+  const prompt = encodeURIComponent(
+    mealName + " plated food michelin photography"
+  );
+
+  const url =
+    `https://image.pollinations.ai/prompt/${prompt}` +
+    `?width=800&height=600&seed=${seed}&nologo=true&enhance=false`;
+
+  img.src = url;
+
+  img.onload = () => {
+    loader.remove();
+    img.style.display = "block";
+  };
+
+  img.onerror = () => {
+    loader.innerText = "Image unavailable";
+  };
+}
+
+/* -----------------------------
+   RENDER
+----------------------------- */
+function render(){
+  const feed = document.getElementById("feed");
+  feed.innerHTML = "";
+
+  FEED.forEach(item=>{
     const card = document.createElement("div");
     card.className = "card";
-    card.onclick = () => openMeal(m);
 
-    const imgWrap = document.createElement("div");
-    imgWrap.className = "card-img";
-    imgWrap.innerText = "Loading image…";
-
-    // async image (non-blocking)
-    const img = new Image();
-    const prompt = encodeURIComponent(m.name + " cooked food professional photography");
-    img.src = `https://image.pollinations.ai/prompt/${prompt}?width=800&height=600&seed=${i+400}&enhance=false`;
-    img.onload = () => {
-        imgWrap.innerHTML = "";
-        imgWrap.appendChild(img);
-    };
-
-    const body = document.createElement("div");
-    body.className = "card-body";
-    body.innerHTML = `
-        <div class="card-title">${m.name}</div>
-        <div class="card-sub">${m.sub}</div>
+    card.innerHTML = `
+      <div class="img-wrap">
+        <div class="loader">Generating image…</div>
+        <img alt="${item.name}">
+      </div>
+      <div class="card-body">
+        <div class="title">${item.name}</div>
+        <div class="sub">${item.note}</div>
+        <div class="sub" style="margin-top:6px">${item.text}</div>
+      </div>
     `;
 
-    card.appendChild(imgWrap);
-    card.appendChild(body);
     feed.appendChild(card);
-});
+    loadImage(card.querySelector(".img-wrap"), item.name);
+  });
+}
 
-/* ===== MODAL ===== */
-function openMeal(m) {
-    document.getElementById("mTitle").innerText = m.name;
-    document.getElementById("mSub").innerText = m.sub;
-    document.getElementById("mBody").innerText = m.desc;
-    document.getElementById("mTip").innerText = m.tip;
-    document.getElementById("modal").style.display = "flex";
-}
-function closeModal() {
-    document.getElementById("modal").style.display = "none";
-}
+render();
 </script>
 
 </body>
