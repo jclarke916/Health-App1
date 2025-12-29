@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v325.4 Full Core</title>
+    <title>The Centurion | v330.0 Bio-Data</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --text:#fff;
@@ -13,6 +13,7 @@
         body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);margin:0;padding:15px;font-size:14px}
         .container{max-width:500px;margin:0 auto; padding-bottom: 50px;}
         h1{text-align:center;font-weight:200;letter-spacing:5px;text-transform:uppercase;font-size:1.2rem;margin:10px 0}
+        .version-tag { display: block; text-align: center; font-size: 0.5rem; color: #444; margin-top: -8px; margin-bottom: 15px; letter-spacing: 2px; }
         .badge-row{display:flex;justify-content:center;gap:8px;margin-bottom:15px}
         .u-badge{background:#000;padding:8px 16px;border-radius:20px;border:1px solid #333;font-size:0.6rem;font-weight:800;cursor:pointer;color:#666;transition:all 0.3s;}
         .u-badge.active{border-color:var(--gold);color:var(--gold);box-shadow: 0 0 10px rgba(212,175,55,0.2);}
@@ -47,12 +48,14 @@
         .macro-pill { background: #1a1a1a; border: 1px solid #333; padding: 3px 8px; border-radius: 12px; font-size: 0.55rem; color: #888; font-weight: 800; text-transform: uppercase; white-space: nowrap; }
         .remove-snack { position: absolute; top: -5px; right: -5px; background: #FF5252; color: #fff; border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; line-height: 18px; text-align: center; }
         .juice-name{font-size:1.1rem;font-weight:900;color:#fff;text-align:center;text-transform:uppercase;cursor:pointer;border:1px dashed #333;padding:10px;border-radius:12px}
+        .oura-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .oura-metric { background: #111; padding: 15px; border-radius: 12px; text-align: center; border: 1px solid #222; }
     </style>
 </head>
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v325.4 Full Content | AI Core</span>
+        <span class="version-tag">v330.0 Bio-Data | Scan Log</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -86,52 +89,71 @@
 
 <script>
 // ==========================================
-// CENTURION v330.0 (UI & BUG FIXES)
+// CENTURION v330.0 ENGINE
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
 let offset = 0;
-let selDate = getCaDate(); // Fix: Force timezone alignment on load
+let selDate = new Date();
 let currentSlot = 0;
 let aiVisible = false;
 let snackLog = JSON.parse(localStorage.getItem('centurion_snack_log')) || {};
 
-// --- CONSTANTS ---
+// --- USER ANCHOR DATA ---
 const BIRTHDAYS = { 'J': '1983-01-13', 'S': '1987-01-25' };
 const TOKENS = { 'J': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'S': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
 
-const uH = {
-    'J': { now:{bf:19.0, m:99.0, vf:10, w:217}, goal:{bf:15.0, m:105.0, vf:7, w:210}, labs:{apob:{val:95,goal:60,name:"ApoB",lowerIsBetter:true},hba1c:{val:5.4,goal:5.0,name:"HbA1c",lowerIsBetter:true}}, tests:{vo2:{val:45,goal:55,name:"VO2 Max"},hang:{val:90,goal:120,name:"Dead Hang"}} },
-    'S': { now:{bf:36.1, m:49.2, vf:9, w:141}, goal:{bf:22.0, m:60.0, vf:4, w:135}, labs:{ana:{val:320,goal:40,name:"ANA",lowerIsBetter:true},hba1c:{val:5.6,goal:5.0,name:"HbA1c",lowerIsBetter:true},crp:{val:1.8,goal:0.5,name:"CRP",lowerIsBetter:true}}, tests:{vo2:{val:32,goal:50,name:"VO2 Max"},hang:{val:40,goal:90,name:"Dead Hang"}} }
-};
+// Initialize Bio Data if empty
+let uH = JSON.parse(localStorage.getItem('centurion_bio_v4'));
+if (!uH) {
+    uH = {
+        'J': { 
+            now:{bf:19.0, m:99.0, vf:10, w:217}, 
+            goal:{bf:15.0, m:105.0, vf:7, w:210}, 
+            labs:{apob:{val:95,goal:60,name:"ApoB",unit:"mg/dL",lowerIsBetter:true}, hba1c:{val:5.4,goal:5.0,name:"HbA1c",unit:"%",lowerIsBetter:true}, test:{val:650,goal:850,name:"Testosterone",unit:"ng/dL",lowerIsBetter:false}}, 
+            tests:{vo2:{val:45,goal:55,name:"VO2 Max"}, hang:{val:90,goal:120,name:"Dead Hang"}} 
+        },
+        'S': { 
+            now:{bf:36.1, m:49.2, vf:9, w:141}, 
+            goal:{bf:22.0, m:60.0, vf:4, w:135}, 
+            labs:{
+                ana:{val:320,goal:40,name:"ANA Titer",unit:"",lowerIsBetter:true},
+                hba1c:{val:5.6,goal:5.0,name:"HbA1c",unit:"%",lowerIsBetter:true},
+                crp:{val:1.8,goal:0.5,name:"hs-CRP",unit:"mg/L",lowerIsBetter:true},
+                tsh:{val:2.4,goal:1.5,name:"TSH",unit:"mIU/L",lowerIsBetter:true},
+                vitd:{val:38,goal:60,name:"Vitamin D",unit:"ng/mL",lowerIsBetter:false},
+                ferr:{val:40,goal:70,name:"Ferritin",unit:"ng/mL",lowerIsBetter:false}
+            }, 
+            tests:{vo2:{val:32,goal:50,name:"VO2 Max"}, hang:{val:40,goal:90,name:"Dead Hang"}}, 
+            streak:0 
+        }
+    };
+    localStorage.setItem('centurion_bio_v4', JSON.stringify(uH));
+}
 
-// --- DATA ---
+// --- DATABASES ---
 const jDB = {"PINEAPPLE GREEN Vitality":["Detox","Spinach, Pineapple",1,28,120,1],"PLASMA FLUSH Juice":["Recovery","Watermelon, Lime",1,32,140,1],"TITAN RED Juice":["Endurance","Beets, Carrots",2,42,185,2],"ZENITH GREEN Juice":["Alkalizer","Kale, Cucumber",2,18,120,1],"APOLLO GOLD Juice":["Anti-Inflam","Pears, Turmeric",1,45,195,2]};
 const rDB = {"Sea Moss":["92 Minerals","2 TBSP Fasted.","Thyroid & Gut support."],"Kombucha":["Probiotic","4 OZ post-Lunch.","Enzyme support."],"Hibiscus Tea":["BP Control","Organic steep.","Antioxidant rich."]};
-
 const mDB = {
     b: ["Ancestral Beef Sausage|80/20 Beef-Liver Blend, Sage, Thyme|sear|Bioavailable heme iron + Vitamin A powerhouse|25|2|280|0", "Avocado Egg Toast|Bread, Avocado, Egg Whites|toast|Fiber + healthy fats|35|15|450|12", "Oat Protein Pancakes|Oat Flour, Blueberries|griddle|Complex carbs + fast protein|35|25|380|6"],
     l: ["Super Mince Bowl|Lean Beef, Black Lentils, Broccoli|sear|Iron + high fiber building blocks|50|25|550|15", "Chicken Artichoke Salad|Chicken, Artichoke, Arugula|sear|Liver detox support|40|15|420|10", "Seared Salmon Salad|Wild Salmon, Spinach, Avocado|sear|Omega-3 powerhouse|38|12|480|22"],
     d: ["Bison Portobello Burger|Ground Bison, Portobello, Avocado|sear|High protein, low glycemic impact|45|8|480|5", "Filet & Lentils|Filet Mignon, Black Lentils, Asparagus|sear|Iron density + fiber|45|10|520|14", "Halibut White Beans|Halibut, White Beans, Kale|bake|Lean protein + slow carbs|38|20|420|10"],
     s: ["Beef Isolate Shake|Beef Isolate, Water|shake|Collagen rich recovery|25|0|110|0", "Sardines|Wild Sardines, Lemon|raw|EPA/DHA brain fuel|22|0|190|0", "Avocado Cup|1/2 Avocado, Sea Salt|raw|Potassium and healthy fats|2|8|160|7"]
 };
-
 const pDB = {
-    "HEAVY LIFT":[{h:"Theragun",d:"Glutes/Hams"},{h:"Heavy Lift",d:"5x5 Compounds"},{h:"Sauna",d:"20m Heat"}],
-    "BOXING":[{h:"Mobility",d:"Rotator Cuffs"},{h:"Boxing",d:"HIIT Rounds"},{h:"Normatec",d:"Flush Legs"}],
-    "REFORM":[{h:"Sweep",d:"Percussion"},{h:"Reform",d:"Time-Under-Tension"},{h:"HGH",d:"Sauna Session"}],
-    "CS4":[{h:"Hydrate",d:"Electrolytes"},{h:"CS4",d:"VO2 Intervals"},{h:"Contrast",d:"Hot/Cold"}],
-    "RELAX":[{h:"Walk",d:"Nature"},{h:"Active",d:"Low HR"},{h:"Zero-G",d:"Massage Chair"}]
+    "HEAVY LIFT":[{h:"PRE: Theragun",d:"2m Percussion on Glutes/Hams."},{h:"TRAIN: Heavy Lift",d:"Main compound movements (1-5 Reps)."},{h:"POST: Sauna",d:"20m Heat stress @ 180°F."}],
+    "BOXING":[{h:"PRE: Mobility",d:"Rotator cuffs & Calves dynamic stretch."},{h:"TRAIN: Boxing",d:"High output intervals. Max HR focus."},{h:"POST: Normatec",d:"Flush legs. No heat."}],
+    "REFORM":[{h:"PRE: Sweep",d:"Light full body percussion."},{h:"TRAIN: Reform",d:"Time under tension. Pilates/Lagree."},{h:"POST: Sauna",d:"20m HGH Boost."}],
+    "CS4":[{h:"PRE: Hydrate",d:"Electrolytes + 16oz Water."},{h:"TRAIN: CS4",d:"VO2 Max Intervals."},{h:"POST: Contrast",d:"Sauna + Cold Plunge cycle."}],
+    "RELAX":[{h:"PRE: Walk",d:"10m Nature exposure."},{h:"TRAIN: Active",d:"Low HR flow or stretching."},{h:"POST: Zero-G",d:"20m Massage chair."}]
 };
 
 // --- CORE UTILITIES ---
-function getCaDate() { 
-    let d = new Date(new Date().toLocaleString("en-US", {timeZone: "America/Los_Angeles"}));
-    d.setHours(12, 0, 0, 0); return d; 
+function getChronAge(uID) {
+    const dob = new Date(BIRTHDAYS[uID]);
+    const diff = Date.now() - dob.getTime();
+    return (diff / (1000 * 60 * 60 * 24 * 365.25)).toFixed(1);
 }
-function getDateKey(d) { return d.toISOString().split('T')[0]; }
-function getMon(o) { let d = getCaDate(); d.setHours(0,0,0,0); let day = d.getDay(); let diff = d.getDate() - day + (day === 0 ? -6 : 1); d.setDate(diff + (o * 7)); return d; }
-function getChronAge(uID) { return ((Date.now() - new Date(BIRTHDAYS[uID]).getTime()) / (31557600000)).toFixed(1); }
 
 function calculateBioAge(userData) {
     const chron = parseFloat(getChronAge(user));
@@ -142,7 +164,11 @@ function calculateBioAge(userData) {
     return (chron + delta).toFixed(1);
 }
 
-// --- SWITCHING ---
+function getCaDate() { return new Date(new Date().toLocaleString("en-US", {timeZone: "America/Los_Angeles"})); }
+function getDateKey(d) { return d.toISOString().split('T')[0]; }
+function getMon(o) { let d = getCaDate(); d.setHours(0,0,0,0); let day = d.getDay(); let diff = d.getDate() - day + (day === 0 ? -6 : 1); d.setDate(diff + (o * 7)); return d; }
+
+// --- ENGINE LOGIC ---
 function switchU(uID) { 
     user = uID; 
     localStorage.setItem('centurion_active_user', uID); 
@@ -150,10 +176,22 @@ function switchU(uID) {
     document.getElementById('b'+uID.toLowerCase()).classList.add('active');
     document.getElementById('ouraBar').innerHTML = `<span style="color:#666">💍 Switching...</span>`;
     document.getElementById('aiDashboard').style.display = 'none'; aiVisible = false;
-    render(); fetchOuraData(); 
+    render(); 
+    setTimeout(fetchOuraData, 500); 
 }
 
-// --- RENDERING ---
+function changeW(d) { offset += d; render(); }
+function resetD() { offset = 0; selDate = getCaDate(); render(); }
+
+function applyAIP(mealStr, type) {
+    if(user !== 'S') return mealStr.split('|');
+    let p = mealStr.split('|');
+    if(p[0].includes("Coffee")) return ["Golden Milk","Coconut Milk,Turmeric","heat","Anti-inflammatory boost","8","5","160","1"];
+    let macros = {p:parseInt(p[4]), c:parseInt(p[5]), k:parseInt(p[6]), f:parseInt(p[7]||0)};
+    if(macros.f < 10 && type !== 's') { p[1] += " + 1/2 Avocado"; macros.f += 7; macros.k += 120; }
+    return [p[0], p[1], p[2], p[3], macros.p, macros.c, macros.k, macros.f];
+}
+
 function render() {
     const mon = getMon(offset); const tabs = document.getElementById('dayTabs'); tabs.innerHTML = '';
     const end = new Date(mon); end.setDate(mon.getDate() + 6);
@@ -168,31 +206,15 @@ function render() {
     }
 }
 
-function applyAIP(mealStr, type) {
-    if(user !== 'S') return mealStr.split('|');
-    let p = mealStr.split('|');
-    if(p[0].includes("Coffee")) return ["Golden Milk","Coconut Milk,Turmeric","heat","Anti-inflammatory boost","8","5","160","1"];
-    let macros = {p:parseInt(p[4]), c:parseInt(p[5]), k:parseInt(p[6]), f:parseInt(p[7]||0)};
-    if(macros.f < 10 && type !== 's') { p[1] += " + 1/2 Avocado"; macros.f += 7; macros.k += 120; }
-    return [p[0], p[1], p[2], p[3], macros.p, macros.c, macros.k, macros.f];
-}
-
 function showDay(dObj, idx) {
     const id = Math.floor(dObj.getTime()/864e5); const dk = getDateKey(dObj);
     const snacks = snackLog[dk] || [null, null];
-    
-    // Indices for Safe Lookup
-    const bIdx = Math.abs(id)%mDB.b.length;
-    const lIdx = Math.abs(id)%mDB.l.length;
-    const dnIdx = Math.abs(id)%mDB.d.length;
-
     const sch = ["HEAVY LIFT","BOXING","REFORM","BOXING","REFORM","CS4","RELAX"];
     const jcs=["PINEAPPLE GREEN Vitality","TITAN RED Juice","ZENITH GREEN Juice","TITAN RED Juice","ZENITH GREEN Juice","TITAN RED Juice","APOLLO GOLD Juice"];
     const w = sch[idx]; const jn = jcs[idx];
-    
-    const b = applyAIP(mDB.b[bIdx], 'b');
-    const l = applyAIP(mDB.l[lIdx], 'l');
-    const dn = applyAIP(mDB.d[dnIdx], 'd');
+    const b = applyAIP(mDB.b[Math.abs(id)%mDB.b.length], 'b');
+    const l = applyAIP(mDB.l[Math.abs(id)%mDB.l.length], 'l');
+    const dn = applyAIP(mDB.d[Math.abs(id)%mDB.d.length], 'd');
     const sc = (user === 'J') ? 1 : 0.6;
 
     let snackHTML = '<div class="snack-grid">';
@@ -200,38 +222,27 @@ function showDay(dObj, idx) {
         if(snacks[i] === null) snackHTML += `<div class="snack-slot" onclick="openSnackSelector(${i})">+ SNACK</div>`;
         else {
             let s = mDB.s[snacks[i]].split('|');
-            // Safe Recipe Click using 's' and index
-            snackHTML += `<div class="snack-slot filled" onclick="openDBRecipe('s', ${snacks[i]})"><div class="remove-snack" onclick="event.stopPropagation(); removeSnack(${i})">✕</div>${s[0]}</div>`;
+            snackHTML += `<div class="snack-slot filled" onclick="removeSnack(${i})"><div class="remove-snack">✕</div>${s[0]}</div>`;
         }
     }
     snackHTML += '</div>';
 
     document.getElementById('dayContent').innerHTML = `
-        <div class="card" onclick="openWorkoutFlow('${w}')" style="cursor:pointer; border-bottom:3px solid var(--blue)">
-            <div style="display:flex; justify-content:space-between; align-items:center; text-align:center">
-                <div style="font-size:0.6rem; color:#666">${pDB[w][0].h}<br>PRE</div>
-                <div style="color:var(--blue); font-size:1.2rem">➜</div>
-                <div style="font-weight:900; color:#fff">${w}</div>
-                <div style="color:var(--blue); font-size:1.2rem">➜</div>
-                <div style="font-size:0.6rem; color:#666">${pDB[w][2].h}<br>POST</div>
+        <div class="card" onclick="openRec('${w}')" style="cursor:pointer; border-bottom:3px solid var(--blue)">
+            <div style="display:flex; justify-content:space-between; text-align:center">
+                <div><div class="label">WARM</div>${pDB[w][0].h.split(':')[1] || pDB[w][0].h}</div>
+                <div style="color:var(--blue); font-weight:900">➜ ${w}</div>
+                <div><div class="label">RECOVER</div>${pDB[w][2].h.split(':')[1] || pDB[w][2].h}</div>
             </div>
         </div>
-
         <div class="label">🧬 DAILY ESSENTIALS</div>
         <div style="display:flex; gap:10px; margin-bottom:15px">
             <div class="value" style="flex:1; justify-content:center" onclick="openEssential('Sea Moss')">Sea Moss</div>
             <div class="value" style="flex:1; justify-content:center" onclick="openEssential('${user==='S'?'Hibiscus Tea':'Kombucha'}')">${user==='S'?'Hibiscus':'Kombucha'}</div>
         </div>
-
-        <div class="label">🍳 BREAKFAST</div>
-        <div class="value" onclick="openDBRecipe('b', ${bIdx})"><span>${b[0]}</span><span class="macro-pill">${Math.round(b[4]*sc)}P</span></div>
-        
-        <div class="label">🥗 LUNCH</div>
-        <div class="value" onclick="openDBRecipe('l', ${lIdx})"><span>${l[0]}</span><span class="macro-pill">${Math.round(l[4]*sc)}P</span></div>
-        
-        <div class="label">🍽️ DINNER</div>
-        <div class="value" onclick="openDBRecipe('d', ${dnIdx})"><span>${dn[0]}</span><span class="macro-pill">${Math.round(dn[4]*sc)}P</span></div>
-        
+        <div class="label">🍳 BREAKFAST</div><div class="value" onclick="openR('${b[0]}','','','${b[3]}')"><span>${b[0]}</span><span class="macro-pill">${Math.round(b[4]*sc)}P</span></div>
+        <div class="label">🥗 LUNCH</div><div class="value" onclick="openR('${l[0]}','','','${l[3]}')"><span>${l[0]}</span><span class="macro-pill">${Math.round(l[4]*sc)}P</span></div>
+        <div class="label">🍽️ DINNER</div><div class="value" onclick="openR('${dn[0]}','','','${dn[3]}')"><span>${dn[0]}</span><span class="macro-pill">${Math.round(dn[4]*sc)}P</span></div>
         <div class="label">🥜 SNACKS</div>${snackHTML}
         <div class="label">🍹 JUICE</div><div class="juice-name" onclick="openJuice('${jn}')">${jn}</div>
         
@@ -242,67 +253,7 @@ function showDay(dObj, idx) {
     `;
 }
 
-// --- MODAL LOGIC ---
-function openDBRecipe(type, idx) {
-    const raw = mDB[type][idx];
-    // Re-apply AIP logic if needed for display
-    const data = applyAIP(raw, type);
-    
-    document.getElementById('mTitle').innerText = data[0];
-    document.getElementById('mSub').innerText = "CENTURION NUTRITION";
-    const prompt = encodeURIComponent(`high end food photography ${data[0].replace(/[^a-zA-Z ]/g, "")} plated dark background`);
-    
-    document.getElementById('mBody').innerHTML = `
-        <img src="https://image.pollinations.ai/prompt/${prompt}?nologo=true&model=turbo" class="meal-img">
-        <div class="intervention-card" style="border-left-color:var(--gold)">
-            <strong>PROTOCOL:</strong><br>${data[3]}
-        </div>
-        <div style="display:flex; justify-content:space-between; margin-top:15px; font-size:0.8rem; color:#888;">
-            <span>PRO: ${data[4]}g</span><span>CARB: ${data[5]}g</span><span>FAT: ${data[7]||0}g</span>
-        </div>
-    `;
-    document.getElementById('bioContentArea').innerHTML = '';
-    document.getElementById('masterModal').style.display = 'block';
-}
-
-function openWorkoutFlow(w) {
-    const a = pDB[w];
-    document.getElementById('mTitle').innerText = w;
-    document.getElementById('mSub').innerText = "OPTIMIZED FLOW";
-    document.getElementById('mBody').innerHTML = `
-        <div class="intervention-card" style="border-left:3px solid var(--blue)">
-            <div style="color:var(--blue); font-weight:900; margin-bottom:5px">PRE-WORKOUT</div>
-            <strong>${a[0].h}</strong><br>${a[0].d}
-        </div>
-        <div class="intervention-card" style="border-left:3px solid #fff">
-            <div style="color:#fff; font-weight:900; margin-bottom:5px">TRAINING</div>
-            <strong>${a[1].h}</strong><br>${a[1].d}
-        </div>
-        <div class="intervention-card" style="border-left:3px solid var(--purple)">
-            <div style="color:var(--purple); font-weight:900; margin-bottom:5px">RECOVERY</div>
-            <strong>${a[2].h}</strong><br>${a[2].d}
-        </div>
-    `;
-    document.getElementById('bioContentArea').innerHTML = '';
-    document.getElementById('masterModal').style.display = 'block';
-}
-
-function openJuice(n){
-    const d=jDB[n]; document.getElementById('mTitle').innerText=n;
-    document.getElementById('mSub').innerText = d[0] + " BLEND";
-    document.getElementById('mBody').innerHTML=`<p style="font-size:1.1rem; color:#fff">${d[1]}</p><p style="color:var(--gold)">Kcal: ${d[4]} | Carb: ${d[3]}g | Fiber: ${d[5]}g</p>`;
-    document.getElementById('bioContentArea').innerHTML = '';
-    document.getElementById('masterModal').style.display='block';
-}
-
-function openEssential(n){
-    const d=rDB[n]; document.getElementById('mTitle').innerText=n;
-    document.getElementById('mSub').innerText = "DAILY OPTIMIZER";
-    document.getElementById('mBody').innerHTML=`<div class="intervention-card"><strong>DOSE:</strong> ${d[1]}</div><div class="intervention-card"><strong>WHY:</strong> ${d[2]}</div>`;
-    document.getElementById('bioContentArea').innerHTML = '';
-    document.getElementById('masterModal').style.display='block';
-}
-
+// --- MODALS ---
 function toggleAI() {
     aiVisible = !aiVisible;
     const dash = document.getElementById('aiDashboard');
@@ -327,7 +278,7 @@ function openBio() {
     document.getElementById('mTitle').innerHTML = (user==='J'?'JERMAINE':'SOPHIA') + " - CLINICAL";
     document.getElementById('mSub').innerText = "BIOMETRIC MONITORING";
     const m = document.getElementById('mBody');
-    m.innerHTML = `<div class="tabs"><div class="tab active" id="btPhys" onclick="renderBioTab('phys')">BODY</div><div class="tab" id="btLabs" onclick="renderBioTab('labs')">LABS</div></div><div id="bioContentArea"></div>`;
+    m.innerHTML = `<div class="tabs"><div class="tab active" id="btPhys" onclick="renderBioTab('phys')">BODY</div><div class="tab" id="btLabs" onclick="renderBioTab('labs')">LABS</div><div class="tab" id="btOura" onclick="renderBioTab('oura')">OURA</div></div><div id="bioContentArea"></div>`;
     setTimeout(() => { renderBioTab('phys'); }, 50);
     document.getElementById('masterModal').style.display = 'block';
 }
@@ -336,8 +287,42 @@ function renderBioTab(tab) {
     const area = document.getElementById('bioContentArea'); const u = uH[user];
     document.querySelectorAll('#masterModal .tab').forEach(t=>t.classList.remove('active'));
     document.getElementById('bt'+tab.charAt(0).toUpperCase()+tab.slice(1)).classList.add('active');
-    if(tab==='phys') area.innerHTML = bioBar("Body Fat", u.now.bf, u.goal.bf, "%", true) + bioBar("Muscle", u.now.m, u.goal.m, "lbs") + bioBar("Visceral", u.now.vf, u.goal.vf, "", true);
-    else area.innerHTML = Object.keys(u.labs).map(k => bioBar(u.labs[k].name, u.labs[k].val, u.labs[k].goal, " " + (u.labs[k].unit||""), u.labs[k].lowerIsBetter)).join('');
+    
+    if(tab==='phys') {
+        area.innerHTML = `
+            ${bioBar("Body Fat", u.now.bf, u.goal.bf, "%", true)}
+            ${bioBar("Muscle", u.now.m, u.goal.m, "lbs")}
+            ${bioBar("Visceral", u.now.vf, u.goal.vf, "", true)}
+            <div class="nav-btn" style="text-align:center; margin-top:15px;" onclick="logBodyScan()">📝 LOG NEW SCAN</div>
+        `;
+    } else if(tab==='labs') {
+        area.innerHTML = Object.keys(u.labs).map(k => bioBar(u.labs[k].name, u.labs[k].val, u.labs[k].goal, " " + (u.labs[k].unit||""), u.labs[k].lowerIsBetter)).join('');
+    } else if(tab==='oura') {
+        // Oura Tab Logic
+        if(!window.ouraData) { area.innerHTML = "<div style='padding:20px;text-align:center;color:#666'>Syncing...</div>"; return; }
+        const r = window.ouraData.readiness;
+        const s = window.ouraData.sleep;
+        area.innerHTML = `
+            <div class="oura-grid">
+                <div class="oura-metric"><div style="font-size:2rem;color:var(--green)">${r.score}</div><div style="font-size:0.6rem;color:#888">READINESS</div></div>
+                <div class="oura-metric"><div style="font-size:2rem;color:var(--blue)">${s.score}</div><div style="font-size:0.6rem;color:#888">SLEEP SCORE</div></div>
+                <div class="oura-metric"><div style="font-size:1.5rem;color:white">${s.lowest_heart_rate}</div><div style="font-size:0.6rem;color:#888">RHR</div></div>
+                <div class="oura-metric"><div style="font-size:1.5rem;color:white">${s.average_hrv}</div><div style="font-size:0.6rem;color:#888">HRV</div></div>
+            </div>
+            <div class="intervention-card" style="margin-top:15px">💡 Recovery Tip: ${r.score < 80 ? "Focus on deep sleep tonight. No caffeine after 12pm." : "Systems go. Push intensity today."}</div>
+        `;
+    }
+}
+
+function logBodyScan() {
+    const bf = prompt("Enter Body Fat %:");
+    if(bf) {
+        uH[user].now.bf = parseFloat(bf);
+        uH[user].now.m = parseFloat(prompt("Enter Muscle Mass (lbs):"));
+        uH[user].now.vf = parseFloat(prompt("Enter Visceral Fat Level:"));
+        localStorage.setItem('centurion_bio_v4', JSON.stringify(uH));
+        renderBioTab('phys');
+    }
 }
 
 function bioBar(label, val, goal, unit, lowerBetter=false) {
@@ -350,26 +335,77 @@ function bioBar(label, val, goal, unit, lowerBetter=false) {
     </div>`;
 }
 
+function openR(n, i, a, t) {
+    document.getElementById('mTitle').innerText = n;
+    document.getElementById('mSub').innerText = "CENTURION RECIPE";
+    const prompt = encodeURIComponent(`delicious plated ${n}, dark high end food photography`);
+    document.getElementById('mBody').innerHTML = `<img src="https://image.pollinations.ai/prompt/${prompt}?nologo=true&model=turbo" class="meal-img"><p style="color:#ccc; line-height:1.6">${t}</p>`;
+    document.getElementById('bioContentArea').innerHTML = ''; 
+    document.getElementById('masterModal').style.display = 'block';
+}
+
+function openRec(w) {
+    const a = pDB[w]; document.getElementById('mTitle').innerText = w + " PROTOCOL";
+    document.getElementById('mSub').innerText = "WORKOUT FLOW";
+    document.getElementById('mBody').innerHTML = `<div class="intervention-card"><strong>PRE:</strong> ${a[0].h}<br>${a[0].d}</div><div class="intervention-card"><strong>TRAIN:</strong> ${a[1].h}<br>${a[1].d}</div><div class="intervention-card"><strong>POST:</strong> ${a[2].h}<br>${a[2].d}</div>`;
+    document.getElementById('bioContentArea').innerHTML = '';
+    document.getElementById('masterModal').style.display = 'block';
+}
+
+function openJuice(n){
+    const d=jDB[n]; document.getElementById('mTitle').innerText=n;
+    document.getElementById('mSub').innerText = d[0] + " BLEND";
+    document.getElementById('mBody').innerHTML=`<p style="font-size:1.1rem; color:#fff">${d[1]}</p><p style="color:var(--gold)">Kcal: ${d[4]} | Carb: ${d[3]}g | Fiber: ${d[5]}g</p>`;
+    document.getElementById('bioContentArea').innerHTML = '';
+    document.getElementById('masterModal').style.display='block';
+}
+
+function openEssential(n){
+    const d=rDB[n]; document.getElementById('mTitle').innerText=n;
+    document.getElementById('mSub').innerText = "DAILY OPTIMIZER";
+    document.getElementById('mBody').innerHTML=`<div class="intervention-card"><strong>DOSE:</strong> ${d[1]}</div><div class="intervention-card"><strong>WHY:</strong> ${d[2]}</div>`;
+    document.getElementById('bioContentArea').innerHTML = '';
+    document.getElementById('masterModal').style.display='block';
+}
+
 async function fetchOuraData() {
     const currentUser = user;
     const token = TOKENS[currentUser];
     const bar = document.getElementById('ouraBar'); 
-    const uniqueUrl = `https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${getDateKey(new Date(Date.now()-2592e5))}&end_date=${getDateKey(new Date())}&_t=${Date.now()}`;
+    const u = `https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${getDateKey(new Date(Date.now()-2592e5))}&end_date=${getDateKey(new Date())}&_t=${Date.now()}`;
+    const s = `https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${getDateKey(new Date(Date.now()-2592e5))}&end_date=${getDateKey(new Date())}&_t=${Date.now()}`;
+    
     try {
-        const res = await fetch("https://corsproxy.io/?" + encodeURIComponent(uniqueUrl), {headers:{'Authorization':`Bearer ${token}`}});
-        const j = await res.json(); 
+        const [rRes, sRes] = await Promise.all([
+            fetch("https://corsproxy.io/?" + encodeURIComponent(u), {headers:{'Authorization':`Bearer ${token}`}}),
+            fetch("https://corsproxy.io/?" + encodeURIComponent(s), {headers:{'Authorization':`Bearer ${token}`}})
+        ]);
+        const rData = await rRes.json();
+        const sData = await sRes.json();
+        
         if(user !== currentUser) return;
-        if(j.data && j.data.length > 0) {
-            const score = j.data[j.data.length-1].score;
-            let color = score >= 85 ? 'var(--green)' : score >= 70 ? 'var(--gold)' : '#FF5252';
-            bar.innerHTML = `💍 ${currentUser==='J'?'JERMAINE':'SOPHIA'} READINESS: <span style="color:${color}; font-weight:900">${score}</span>`;
-        } else {
-            bar.innerText = `💍 ${currentUser==='J'?'JERMAINE':'SOPHIA'}: No Data`;
+
+        if(rData.data && rData.data.length > 0) {
+            const lastR = rData.data[rData.data.length-1];
+            const lastS = sData.data[sData.data.length-1];
+            
+            // Store globally for Oura Tab
+            window.ouraData = { readiness: lastR, sleep: lastS };
+            
+            let color = lastR.score >= 85 ? 'var(--green)' : lastR.score >= 70 ? 'var(--gold)' : '#FF5252';
+            bar.innerHTML = `💍 ${currentUser==='J'?'JERMAINE':'SOPHIA'} READINESS: <span style="color:${color}; font-weight:900">${lastR.score}</span>`;
+            
+            // Auto-refresh the tab if it's open
+            if(document.getElementById('btOura') && document.getElementById('btOura').classList.contains('active')) {
+                renderBioTab('oura');
+            }
         }
-    } catch(e) { if(user === currentUser) bar.innerText = "💍 Sync Failed"; }
+    } catch(e) { 
+        if(user === currentUser) bar.innerText = "💍 Sync Failed"; 
+    }
 }
 
-function openSnackSelector(s) { currentSlot=s; document.getElementById('mTitle').innerText="SNACK"; document.getElementById('mSub').innerText="HIGH PROTEIN BOOST"; document.getElementById('mBody').innerHTML=mDB.s.map((x,i)=>`<div class="value" onclick="applySnack(${i})">${x.split('|')[0]}</div>`).join(''); document.getElementById('bioContentArea').innerHTML=''; document.getElementById('masterModal').style.display='block'; }
+function openSnackSelector(s) { currentSlot=s; document.getElementById('mTitle').innerText="SNACK"; document.getElementById('mBody').innerHTML=mDB.s.map((x,i)=>`<div class="value" onclick="applySnack(${i})">${x.split('|')[0]}</div>`).join(''); document.getElementById('bioContentArea').innerHTML=''; document.getElementById('masterModal').style.display='block'; }
 function applySnack(i) { snackLog[getDateKey(selDate)][currentSlot]=i; localStorage.setItem('centurion_snack_log', JSON.stringify(snackLog)); closeM(); render(); }
 function removeSnack(s) { snackLog[getDateKey(selDate)][s]=null; localStorage.setItem('centurion_snack_log', JSON.stringify(snackLog)); render(); }
 function closeM() { document.getElementById('masterModal').style.display='none'; }
