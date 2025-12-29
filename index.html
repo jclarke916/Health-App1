@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v390.0 Activity Zones</title>
+    <title>The Centurion | v395.0 Zone Precision</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-        :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --text:#fff;
+        :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --red:#FF5252; --text:#fff;
         --g-pro:linear-gradient(90deg,#FF5252,#D50000); --g-carb:linear-gradient(90deg,#FFAB40,#FF6D00);
         --g-cal:linear-gradient(90deg,#B388FF,#6200EA); --g-fib:linear-gradient(90deg,#00E676,#00C853);}
         *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -54,12 +54,15 @@
         .hist-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.65rem; color: #ccc; }
         .hist-table th { text-align: left; color: #666; padding-bottom: 10px; font-weight: 800; border-bottom: 1px solid #333; }
         .hist-table td { padding: 8px 0; border-bottom: 1px solid #222; }
+        .zone-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.75rem; color: #ccc; }
+        .zone-bar { height: 6px; border-radius: 4px; background: #222; overflow: hidden; margin-top: 4px; width: 100%; display: flex; }
+        .z-seg { height: 100%; }
     </style>
 </head>
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v390.0 Activity Zones</span>
+        <span class="version-tag">v395.0 Zone Precision</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -93,7 +96,7 @@
 
 <script>
 // ==========================================
-// CENTURION v390.0 CORE
+// CENTURION v395.0 CORE
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
@@ -103,6 +106,7 @@ let currentSlot = 0;
 let aiVisible = false;
 let snackLog = JSON.parse(localStorage.getItem('centurion_snack_log')) || {};
 let photoCache = JSON.parse(localStorage.getItem('centurion_photo_cache')) || {};
+let zoneLog = JSON.parse(localStorage.getItem('centurion_zone_log')) || {};
 window.ouraHistory = [];
 
 const BIRTHDAYS = { 'J': '1983-01-13', 'S': '1987-01-25' };
@@ -167,7 +171,7 @@ function fmtTime(sec) {
     return `${h}h ${m}m`; 
 }
 
-// THE ALGORITHM
+// THE ALGORITHM (Fixed for Safety)
 function calculateLongevity(userData) {
     let base = 85.0; 
     const vo2 = userData.tests && userData.tests.vo2 ? userData.tests.vo2.val : 40;
@@ -346,9 +350,8 @@ function renderBioTab(tab) {
     } else if(tab==='oura') {
         if(!window.ouraHistory || window.ouraHistory.length === 0) { area.innerHTML = "<div style='padding:20px;text-align:center;color:#666'>Syncing History...</div>"; return; }
         
-        // SMART DATA SELECTION: Find most recent day with valid sleep data
         let r = window.ouraHistory.find(d => d.sleepScore !== '-' && d.sleepScore > 0);
-        if(!r) r = window.ouraHistory[0]; // Fallback
+        if(!r) r = window.ouraHistory[0];
 
         let html = `
             <div class="oura-grid">
@@ -453,9 +456,43 @@ function openDBRecipe(type, idx) {
 }
 
 function openWorkoutFlow(w) {
-    const a = pDB[w]; document.getElementById('mTitle').innerText = w; document.getElementById('mSub').innerText = "OPTIMIZED FLOW";
-    document.getElementById('mBody').innerHTML = `<div class="intervention-card" style="border-left:3px solid var(--blue)"><div style="color:var(--blue); font-weight:900; margin-bottom:5px">PRE-WORKOUT</div><strong>${a[0].h}</strong><br>${a[0].d}</div><div class="intervention-card" style="border-left:3px solid #fff"><div style="color:#fff; font-weight:900; margin-bottom:5px">TRAINING</div><strong>${a[1].h}</strong><br>${a[1].d}</div><div class="intervention-card" style="border-left:3px solid var(--purple)"><div style="color:var(--purple); font-weight:900; margin-bottom:5px">RECOVERY</div><strong>${a[2].h}</strong><br>${a[2].d}</div>`;
-    document.getElementById('bioContentArea').innerHTML = ''; document.getElementById('masterModal').style.display = 'block';
+    const a = pDB[w];
+    const dk = getDateKey(selDate);
+    const saved = zoneLog[dk] || {z5:0,z4:0,z3:0,z2:0,z1:0};
+    
+    document.getElementById('mTitle').innerText = w;
+    document.getElementById('mSub').innerText = "OPTIMIZED FLOW & ZONES";
+    
+    // Zone Tracking UI
+    let zoneHtml = `
+        <div class="bio-section" style="margin-bottom:15px;">
+            <div class="label" style="color:#fff;margin-bottom:10px">ZONE TRACKING (MINS)</div>
+            ${['z5','z4','z3','z2','z1'].map((z,i) => `
+                <div class="bar-row" style="margin-bottom:6px">
+                    <div class="bar-lbl" style="width:25px;color:${i<2?'#FF5252':i<3?'var(--gold)':'var(--blue)'}">Z${5-i}</div>
+                    <div class="bar-track" style="background:#222;height:25px;border:none;display:flex;align-items:center;padding:0 5px;justify-content:space-between">
+                        <span onclick="updZone('${dk}','${z}',-1)" style="font-size:1.2rem;cursor:pointer;color:#444">−</span>
+                        <span id="val_${z}" style="font-weight:900;color:#fff">${saved[z]}m</span>
+                        <span onclick="updZone('${dk}','${z}',1)" style="font-size:1.2rem;cursor:pointer;color:#444">+</span>
+                    </div>
+                </div>`).join('')}
+        </div>`;
+
+    document.getElementById('mBody').innerHTML = `
+        <div class="intervention-card" style="border-left:3px solid var(--blue)"><div style="color:var(--blue); font-weight:900; margin-bottom:5px">PRE-WORKOUT</div><strong>${a[0].h}</strong><br>${a[0].d}</div>
+        <div class="intervention-card" style="border-left:3px solid #fff"><div style="color:#fff; font-weight:900; margin-bottom:5px">TRAINING</div><strong>${a[1].h}</strong><br>${a[1].d}</div>
+        <div class="intervention-card" style="border-left:3px solid var(--purple)"><div style="color:var(--purple); font-weight:900; margin-bottom:5px">RECOVERY</div><strong>${a[2].h}</strong><br>${a[2].d}</div>
+        ${zoneHtml}`;
+        
+    document.getElementById('bioContentArea').innerHTML = '';
+    document.getElementById('masterModal').style.display = 'block';
+}
+
+function updZone(dk, z, delta) {
+    if(!zoneLog[dk]) zoneLog[dk] = {z5:0,z4:0,z3:0,z2:0,z1:0};
+    zoneLog[dk][z] = Math.max(0, zoneLog[dk][z] + delta);
+    document.getElementById('val_'+z).innerText = zoneLog[dk][z] + 'm';
+    localStorage.setItem('centurion_zone_log', JSON.stringify(zoneLog));
 }
 
 function openJuice(n){
@@ -471,7 +508,7 @@ function openEssential(n){
 async function fetchOuraData() {
     const currentUser = user; const token = TOKENS[currentUser]; const bar = document.getElementById('ouraBar'); 
     
-    // FETCH 1: Readiness (Summary)
+    // FETCH 1: Readiness
     const startDate = getDateKey(new Date(Date.now() - 2592000000)); 
     const endDate = getDateKey(new Date());
     
@@ -530,7 +567,10 @@ async function fetchOuraData() {
                 };
             }).reverse().slice(0, 7);
 
-            const lastR = window.ouraHistory[0];
+            // SMART SELECTION: Use most recent valid data for Top Dashboard
+            let lastR = window.ouraHistory.find(d => d.sleepScore !== '-' && d.sleepScore > 0);
+            if(!lastR) lastR = window.ouraHistory[0];
+
             let color = lastR.score >= 85 ? 'var(--green)' : lastR.score >= 70 ? 'var(--gold)' : '#FF5252';
             bar.innerHTML = `💍 ${currentUser==='J'?'JERMAINE':'SOPHIA'} READINESS: <span style="color:${color}; font-weight:900">${lastR.score}</span>`;
             
