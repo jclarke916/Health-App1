@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v355.3 Oura Fix</title>
+    <title>The Centurion | v360.0 Data Flow</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --text:#fff;
@@ -59,7 +59,7 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v355.3 Resilient Sync</span>
+        <span class="version-tag">v360.0 Data Flow Fix</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -93,7 +93,7 @@
 
 <script>
 // ==========================================
-// CENTURION v355.3 CORE
+// CENTURION v360.0 CORE
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
@@ -161,7 +161,7 @@ function getDateKey(d) { return d.toISOString().split('T')[0]; }
 function getMon(o) { let d = getCaDate(); d.setHours(0,0,0,0); let day = d.getDay(); let diff = d.getDate() - day + (day === 0 ? -6 : 1); d.setDate(diff + (o * 7)); return d; }
 function getChronAge(uID) { return ((Date.now() - new Date(BIRTHDAYS[uID]).getTime()) / 31557600000).toFixed(1); }
 function fmtTime(sec) { 
-    if(sec === undefined || sec === null) return "-";
+    if(!sec) return "0h 0m";
     const h = Math.floor(sec/3600); 
     const m = Math.floor((sec%3600)/60); 
     return `${h}h ${m}m`; 
@@ -447,63 +447,53 @@ function openEssential(n){
 }
 
 async function fetchOuraData() {
-    const currentUser = user; 
-    const token = TOKENS[currentUser]; 
-    const bar = document.getElementById('ouraBar'); 
+    const currentUser = user; const token = TOKENS[currentUser]; const bar = document.getElementById('ouraBar'); 
     
-    // Increased range to 14 days to ensure overlap
-    const startDate = getDateKey(new Date(Date.now() - 12096e5)); // 14 days ago
+    // FETCH 1: Readiness (Most Critical)
+    const startDate = getDateKey(new Date(Date.now() - 2592000000)); // 30 days
     const endDate = getDateKey(new Date());
     
-    const u = `https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${startDate}&end_date=${endDate}`;
-    const s = `https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${startDate}&end_date=${endDate}`;
-    const a = `https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${startDate}&end_date=${endDate}`;
-    
-    // Independent Fetching to prevent cascade failure
-    let rData = { data: [] }, sData = { data: [] }, aData = { data: [] };
-
     try {
-        const rRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(u), {headers:{'Authorization':`Bearer ${token}`}});
-        if(rRes.ok) rData = await rRes.json();
-    } catch(e) { console.log("Readiness fetch failed"); }
-
-    try {
-        const sRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(s), {headers:{'Authorization':`Bearer ${token}`}});
-        if(sRes.ok) sData = await sRes.json();
-    } catch(e) { console.log("Sleep fetch failed"); }
-
-    try {
-        const aRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(a), {headers:{'Authorization':`Bearer ${token}`}});
-        if(aRes.ok) aData = await aRes.json();
-    } catch(e) { console.log("Activity fetch failed"); }
-
-    if(user !== currentUser) return;
-
-    if(rData.data && rData.data.length > 0) {
-        // Map based on Readiness dates, finding matching sleep/activity by date string
-        window.ouraHistory = rData.data.map(day => {
-            const sleep = sData.data.find(s => s.day === day.day);
-            const act = aData.data.find(ac => ac.day === day.day);
-            return {
-                date: day.day,
-                score: day.score,
-                sleepScore: sleep ? sleep.score : '-',
-                rhr: sleep ? sleep.lowest_heart_rate : '-',
-                deep: sleep ? sleep.deep_sleep_duration : 0,
-                rem: sleep ? sleep.rem_sleep_duration : 0,
-                cal: act ? act.active_calories : '-'
-            };
-        }).reverse().slice(0, 7); // Keep last 7 days
-
-        const lastR = window.ouraHistory[0];
-        let color = lastR.score >= 85 ? 'var(--green)' : lastR.score >= 70 ? 'var(--gold)' : '#FF5252';
-        bar.innerHTML = `💍 ${currentUser==='J'?'JERMAINE':'SOPHIA'} READINESS: <span style="color:${color}; font-weight:900">${lastR.score}</span>`;
+        const rRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
+        const rData = await rRes.json();
         
-        if(document.getElementById('btOura') && document.getElementById('btOura').classList.contains('active')) {
-            renderBioTab('oura');
+        // FETCH 2: Sleep (Detailed)
+        const sRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
+        const sData = await sRes.json();
+        
+        // FETCH 3: Activity (Calorie Burn)
+        const aRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
+        const aData = await aRes.json();
+
+        if(user !== currentUser) return;
+
+        if(rData.data && rData.data.length > 0) {
+            window.ouraHistory = rData.data.map(day => {
+                const sleep = sData.data ? sData.data.find(s => s.day === day.day) : null;
+                const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
+                return {
+                    date: day.day,
+                    score: day.score,
+                    sleepScore: sleep ? sleep.score : '-',
+                    rhr: sleep ? sleep.lowest_heart_rate : '-',
+                    deep: sleep ? sleep.deep_sleep_duration : 0,
+                    rem: sleep ? sleep.rem_sleep_duration : 0,
+                    cal: act ? act.active_calories : '-'
+                };
+            }).reverse().slice(0, 7);
+
+            const lastR = window.ouraHistory[0];
+            let color = lastR.score >= 85 ? 'var(--green)' : lastR.score >= 70 ? 'var(--gold)' : '#FF5252';
+            bar.innerHTML = `💍 ${currentUser==='J'?'JERMAINE':'SOPHIA'} READINESS: <span style="color:${color}; font-weight:900">${lastR.score}</span>`;
+            
+            if(document.getElementById('btOura') && document.getElementById('btOura').classList.contains('active')) {
+                renderBioTab('oura');
+            }
+        } else {
+            bar.innerText = `💍 ${currentUser==='J'?'JERMAINE':'SOPHIA'}: No Data`;
         }
-    } else {
-        bar.innerText = `💍 ${currentUser==='J'?'JERMAINE':'SOPHIA'}: No Data`;
+    } catch(e) { 
+        if(user === currentUser) bar.innerText = "💍 Sync Failed"; 
     }
 }
 
