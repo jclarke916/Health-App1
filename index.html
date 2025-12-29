@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v355.1 Chasing 100</title>
+    <title>The Centurion | v355.2 AI Fix</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --text:#fff;
@@ -59,7 +59,7 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v355.1 Chasing 100</span>
+        <span class="version-tag">v355.2 AI Fix | Stable</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -93,7 +93,7 @@
 
 <script>
 // ==========================================
-// CENTURION v355.1 CORE
+// CENTURION v355.2 CORE
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
@@ -108,7 +108,8 @@ window.ouraHistory = [];
 const BIRTHDAYS = { 'J': '1983-01-13', 'S': '1987-01-25' };
 const TOKENS = { 'J': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'S': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
 
-let uH = JSON.parse(localStorage.getItem('centurion_bio_v6'));
+// Initialize Data - FORCED UPDATE to V7 to fix AI crash
+let uH = JSON.parse(localStorage.getItem('centurion_bio_v7'));
 if (!uH) {
     uH = {
         'J': { 
@@ -132,7 +133,7 @@ if (!uH) {
             streak:0 
         }
     };
-    localStorage.setItem('centurion_bio_v6', JSON.stringify(uH));
+    localStorage.setItem('centurion_bio_v7', JSON.stringify(uH));
 }
 
 // --- DATABASES ---
@@ -162,28 +163,34 @@ function getMon(o) { let d = getCaDate(); d.setHours(0,0,0,0); let day = d.getDa
 function getChronAge(uID) { return ((Date.now() - new Date(BIRTHDAYS[uID]).getTime()) / 31557600000).toFixed(1); }
 function fmtTime(sec) { if(!sec) return "-"; const h = Math.floor(sec/3600); const m = Math.floor((sec%3600)/60); return `${h}h ${m}m`; }
 
-// THE CENTURION PROJECTION ALGORITHM
+// THE ALGORITHM (Fixed for Safety)
 function calculateLongevity(userData) {
-    let base = 85.0; // Baseline
+    let base = 85.0; 
     
+    // Safety checks for missing data
+    const vo2 = userData.tests && userData.tests.vo2 ? userData.tests.vo2.val : 40;
+    const apob = userData.labs && userData.labs.apob ? userData.labs.apob.val : 90;
+    const hba1c = userData.labs && userData.labs.hba1c ? userData.labs.hba1c.val : 5.5;
+    const vf = userData.now ? userData.now.vf : 10;
+
     // VO2 Max (30%)
-    if(userData.tests.vo2.val >= 55) base += 6.0;
-    else if(userData.tests.vo2.val >= 45) base += 3.5;
-    else if(userData.tests.vo2.val < 35) base -= 2.0;
+    if(vo2 >= 55) base += 6.0;
+    else if(vo2 >= 45) base += 3.5;
+    else if(vo2 < 35) base -= 2.0;
 
     // ApoB (25%)
-    if(userData.labs.apob && userData.labs.apob.val <= 60) base += 5.0;
-    else if(userData.labs.apob && userData.labs.apob.val <= 80) base += 2.0;
-    else if(userData.labs.apob && userData.labs.apob.val > 100) base -= 3.0;
+    if(apob <= 60) base += 5.0;
+    else if(apob <= 80) base += 2.0;
+    else if(apob > 100) base -= 3.0;
 
     // HbA1c (20%)
-    if(userData.labs.hba1c.val <= 5.0) base += 4.0;
-    else if(userData.labs.hba1c.val <= 5.4) base += 1.5;
-    else if(userData.labs.hba1c.val > 5.7) base -= 2.0;
+    if(hba1c <= 5.0) base += 4.0;
+    else if(hba1c <= 5.4) base += 1.5;
+    else if(hba1c > 5.7) base -= 2.0;
     
     // Visceral Fat (15%)
-    if(userData.now.vf <= 6) base += 3.0;
-    else if(userData.now.vf > 10) base -= 3.0;
+    if(vf <= 6) base += 3.0;
+    else if(vf > 10) base -= 3.0;
 
     return base.toFixed(1);
 }
@@ -320,8 +327,8 @@ function toggleAI() {
             </div>
             <div class="intervention-card">
                 <strong>🔥 AI STRATEGY:</strong><br>
-                ${u.labs.apob && u.labs.apob.val > 70 ? "ApoB is the biggest drag on your 100-year goal. Increase fiber to 40g." : 
-                  u.tests.vo2.val < 50 ? "VO2 Max is your biggest leverage point. Push Zone 5 intensity." : 
+                ${u.labs && u.labs.apob && u.labs.apob.val > 70 ? "ApoB is the biggest drag on your 100-year goal. Increase fiber to 40g." : 
+                  u.tests && u.tests.vo2.val < 50 ? "VO2 Max is your biggest leverage point. Push Zone 5 intensity." : 
                   "Metabolic metrics stable. Maintain muscle mass to protect the final decade."}
             </div>
         `;
@@ -378,7 +385,7 @@ function logBodyScan() {
         uH[user].now.bf = parseFloat(bf);
         uH[user].now.m = parseFloat(prompt("Enter Muscle Mass (lbs):"));
         uH[user].now.vf = parseFloat(prompt("Enter Visceral Fat Level:"));
-        localStorage.setItem('centurion_bio_v6', JSON.stringify(uH));
+        localStorage.setItem('centurion_bio_v7', JSON.stringify(uH));
         renderBioTab('phys');
     }
 }
@@ -391,7 +398,7 @@ function logTest() {
         const val = prompt(`Enter new ${uH[user].tests[k].name} value (${uH[user].tests[k].unit}):`);
         if(val) {
             uH[user].tests[k].val = parseFloat(val);
-            localStorage.setItem('centurion_bio_v6', JSON.stringify(uH));
+            localStorage.setItem('centurion_bio_v7', JSON.stringify(uH));
             renderBioTab('tests');
         }
     }
