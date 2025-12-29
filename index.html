@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v340.0 Complete</title>
+    <title>The Centurion | v340.1 Oura Deep Dive</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --text:#fff;
@@ -47,24 +47,24 @@
         .macro-pill { background: #1a1a1a; border: 1px solid #333; padding: 3px 8px; border-radius: 12px; font-size: 0.55rem; color: #888; font-weight: 800; text-transform: uppercase; white-space: nowrap; }
         .remove-snack { position: absolute; top: -5px; right: -5px; background: #FF5252; color: #fff; border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; line-height: 18px; text-align: center; }
         .juice-name{font-size:1.1rem;font-weight:900;color:#fff;text-align:center;text-transform:uppercase;cursor:pointer;border:1px dashed #333;padding:10px;border-radius:12px}
-        .oura-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
-        .oura-metric { background: #111; padding: 15px; border-radius: 12px; text-align: center; border: 1px solid #222; }
-        .hist-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.75rem; color: #ccc; }
+        .oura-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 15px; }
+        .oura-metric { background: #111; padding: 10px; border-radius: 10px; text-align: center; border: 1px solid #222; min-height: 70px; display: flex; flex-direction: column; justify-content: center; }
+        .hist-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.7rem; color: #ccc; }
         .hist-table th { text-align: left; color: #666; padding-bottom: 10px; font-weight: 800; border-bottom: 1px solid #333; }
-        .hist-table td { padding: 12px 0; border-bottom: 1px solid #222; }
+        .hist-table td { padding: 8px 0; border-bottom: 1px solid #222; }
         .version-tag { display: block; text-align: center; font-size: 0.45rem; color: #333; margin-bottom: 20px; letter-spacing: 3px; text-transform: uppercase; opacity: 0.7; }
     </style>
 </head>
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v340.0 Complete | Oura + Tests</span>
+        <span class="version-tag">v340.1 Oura Deep Dive</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
         </div>
     </header>
-    <div id="ouraBar" class="status-bar" style="color:var(--green); margin-bottom:5px;">💍 Syncing Oura...</div>
+    <div id="ouraBar" class="status-bar" style="color:var(--green); margin-bottom:5px;">💍 Syncing...</div>
     <div id="dateDisplay" class="status-bar">...</div>
     
     <div id="aiDashboard" style="display:none; margin-bottom:20px;"></div>
@@ -92,12 +92,12 @@
 
 <script>
 // ==========================================
-// CENTURION v340.0 CORE
+// CENTURION v340.1 CORE
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
 let offset = 0;
-let selDate = getCaDate(); // Auto-load CA timezone
+let selDate = getCaDate(); 
 let currentSlot = 0;
 let aiVisible = false;
 let snackLog = JSON.parse(localStorage.getItem('centurion_snack_log')) || {};
@@ -132,13 +132,6 @@ if (!uH) {
         }
     };
     localStorage.setItem('centurion_bio_v6', JSON.stringify(uH));
-} else {
-    // Migration check for tests
-    if(!uH['J'].tests.wallsit) {
-        uH['J'].tests.wallsit = {val:60,goal:180,name:"Wall Sit",unit:"sec"};
-        uH['S'].tests.wallsit = {val:45,goal:120,name:"Wall Sit",unit:"sec"};
-        localStorage.setItem('centurion_bio_v6', JSON.stringify(uH));
-    }
 }
 
 // --- DATA ---
@@ -166,29 +159,16 @@ function getCaDate() {
 function getDateKey(d) { return d.toISOString().split('T')[0]; }
 function getMon(o) { let d = getCaDate(); d.setHours(0,0,0,0); let day = d.getDay(); let diff = d.getDate() - day + (day === 0 ? -6 : 1); d.setDate(diff + (o * 7)); return d; }
 function getChronAge(uID) { return ((Date.now() - new Date(BIRTHDAYS[uID]).getTime()) / 31557600000).toFixed(1); }
+function fmtTime(sec) { if(!sec) return "-"; const h = Math.floor(sec/3600); const m = Math.floor((sec%3600)/60); return `${h}h ${m}m`; }
 
 // THE ALGORITHM (Medicine 3.0 Logic)
 function calculateBioAge(userData) {
     const chron = parseFloat(getChronAge(user));
     let delta = 0;
-    
-    // VO2 Max (Weight: 30%)
-    if(userData.tests.vo2.val >= 55) delta -= 4;
-    else if(userData.tests.vo2.val >= 45) delta -= 2;
-    else delta += 3;
-    
-    // ApoB (Weight: 25%)
-    if(userData.labs.apob && userData.labs.apob.val <= 60) delta -= 3;
-    else if(userData.labs.apob && userData.labs.apob.val > 90) delta += 4;
-    
-    // HbA1c (Weight: 20%)
-    if(userData.labs.hba1c.val <= 5.0) delta -= 2;
-    else if(userData.labs.hba1c.val > 5.5) delta += 3;
-    
-    // Visceral Fat (Weight: 15%)
-    if(userData.now.vf <= 6) delta -= 2;
-    else if(userData.now.vf > 10) delta += 4;
-
+    if(userData.tests.vo2.val >= 55) delta -= 4; else if(userData.tests.vo2.val >= 45) delta -= 2; else delta += 3;
+    if(userData.labs.apob && userData.labs.apob.val <= 60) delta -= 3; else if(userData.labs.apob && userData.labs.apob.val > 90) delta += 4;
+    if(userData.labs.hba1c.val <= 5.0) delta -= 2; else if(userData.labs.hba1c.val > 5.5) delta += 3;
+    if(userData.now.vf <= 6) delta -= 2; else if(userData.now.vf > 10) delta += 4;
     return (chron + delta).toFixed(1);
 }
 
@@ -244,7 +224,6 @@ function showDay(dObj, idx) {
         if(snacks[i] === null) snackHTML += `<div class="snack-slot" onclick="openSnackSelector(${i})">+ SNACK</div>`;
         else {
             let s = mDB.s[snacks[i]].split('|');
-            // Safe Recipe Click using 's' and index
             snackHTML += `<div class="snack-slot filled" onclick="openDBRecipe('s', ${snacks[i]})"><div class="remove-snack" onclick="event.stopPropagation(); removeSnack(${i})">✕</div>${s[0]}</div>`;
         }
     }
@@ -299,10 +278,10 @@ function toggleAI() {
             <div class="bio-section" style="background:rgba(0,176,255,0.05); text-align:center; border:1px solid var(--blue);">
                 <div style="font-size:0.6rem; color:var(--blue); font-weight:900; letter-spacing:2px">PROJECTED BIO-AGE</div>
                 <div style="font-size:3rem; font-weight:800; color:#fff;">${bioAge}</div>
-                <div style="font-size:0.7rem; color:var(--green); font-weight:900;">🏆 ${earned} YEARS EARNED</div>
+                <div style="font-size:0.7rem; color:var(--green); font-weight:900;">🏆 ${earned > 0 ? earned : 0} YEARS EARNED</div>
                 <div style="font-size:0.55rem; color:#666; margin-top:5px;">ACTUAL: ${chron} YEARS</div>
             </div>
-            <div class="intervention-card">🔥 AI: ApoB is primary lifespan friction. Increase daily fiber to reach goal.</div>
+            <div class="intervention-card">🔥 AI: ${u.labs.apob && u.labs.apob.val > 80 ? "ApoB is primary lifespan friction. Hit 15g fiber targets." : "Systems stable. Prioritize Zone 2 maintenance."}</div>
         `;
     }
 }
@@ -336,8 +315,12 @@ function renderBioTab(tab) {
         const r = window.ouraHistory[0];
         let html = `
             <div class="oura-grid">
-                <div class="oura-metric"><div style="font-size:2rem;color:var(--green)">${r.score}</div><div style="font-size:0.6rem;color:#888">READINESS</div></div>
-                <div class="oura-metric"><div style="font-size:2rem;color:var(--blue)">${r.sleepScore || '-'}</div><div style="font-size:0.6rem;color:#888">SLEEP</div></div>
+                <div class="oura-metric"><div style="font-size:1.8rem;color:var(--green)">${r.score}</div><div style="font-size:0.5rem;color:#888">READY</div></div>
+                <div class="oura-metric"><div style="font-size:1.8rem;color:var(--blue)">${r.sleepScore}</div><div style="font-size:0.5rem;color:#888">SLEEP</div></div>
+                <div class="oura-metric"><div style="font-size:1.5rem;color:white">${r.rhr}</div><div style="font-size:0.5rem;color:#888">RHR</div></div>
+                <div class="oura-metric"><div style="font-size:1.5rem;color:white">${fmtTime(r.deep)}</div><div style="font-size:0.5rem;color:#888">DEEP</div></div>
+                <div class="oura-metric"><div style="font-size:1.5rem;color:white">${fmtTime(r.rem)}</div><div style="font-size:0.5rem;color:#888">REM</div></div>
+                <div class="oura-metric"><div style="font-size:1.5rem;color:#FFAB40">${r.cal}</div><div style="font-size:0.5rem;color:#888">BURN</div></div>
             </div>
             <div class="intervention-card" style="margin-top:15px">💡 7-DAY TREND</div>
             <table class="hist-table"><thead><tr><th>DATE</th><th>READY</th><th>SLEEP</th></tr></thead><tbody>
@@ -430,29 +413,36 @@ function openEssential(n){
 }
 
 async function fetchOuraData() {
-    const currentUser = user;
-    const token = TOKENS[currentUser];
+    const currentUser = user; const token = TOKENS[currentUser];
     const bar = document.getElementById('ouraBar'); 
     const u = `https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${getDateKey(new Date(Date.now()-6048e5))}&end_date=${getDateKey(new Date())}&_t=${Date.now()}`;
     const s = `https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${getDateKey(new Date(Date.now()-6048e5))}&end_date=${getDateKey(new Date())}&_t=${Date.now()}`;
+    const a = `https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${getDateKey(new Date(Date.now()-6048e5))}&end_date=${getDateKey(new Date())}&_t=${Date.now()}`;
     
     try {
-        const [rRes, sRes] = await Promise.all([
+        const [rRes, sRes, aRes] = await Promise.all([
             fetch("https://corsproxy.io/?" + encodeURIComponent(u), {headers:{'Authorization':`Bearer ${token}`}}),
-            fetch("https://corsproxy.io/?" + encodeURIComponent(s), {headers:{'Authorization':`Bearer ${token}`}})
+            fetch("https://corsproxy.io/?" + encodeURIComponent(s), {headers:{'Authorization':`Bearer ${token}`}}),
+            fetch("https://corsproxy.io/?" + encodeURIComponent(a), {headers:{'Authorization':`Bearer ${token}`}})
         ]);
         const rData = await rRes.json();
         const sData = await sRes.json();
+        const aData = await aRes.json();
         
         if(user !== currentUser) return;
 
         if(rData.data && rData.data.length > 0) {
             window.ouraHistory = rData.data.map(day => {
                 const sleep = sData.data.find(s => s.day === day.day);
+                const act = aData.data.find(ac => ac.day === day.day);
                 return {
                     date: day.day,
                     score: day.score,
-                    sleepScore: sleep ? sleep.score : '-'
+                    sleepScore: sleep ? sleep.score : '-',
+                    rhr: sleep ? sleep.lowest_heart_rate : '-',
+                    deep: sleep ? sleep.deep_sleep_duration : 0,
+                    rem: sleep ? sleep.rem_sleep_duration : 0,
+                    cal: act ? act.active_calories : '-'
                 };
             }).reverse();
 
