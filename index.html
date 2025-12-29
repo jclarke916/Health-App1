@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v360.0 Data Flow</title>
+    <title>The Centurion | v365.0 Data Plumber</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --text:#fff;
@@ -59,7 +59,7 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v360.0 Data Flow Fix</span>
+        <span class="version-tag">v365.0 Data Plumber</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -93,7 +93,7 @@
 
 <script>
 // ==========================================
-// CENTURION v360.0 CORE
+// CENTURION v365.0 CORE
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
@@ -349,7 +349,7 @@ function renderBioTab(tab) {
             <div class="oura-grid">
                 <div class="oura-metric"><div style="font-size:1.8rem;color:var(--green)">${r.score}</div><div style="font-size:0.5rem;color:#888">READY</div></div>
                 <div class="oura-metric"><div style="font-size:1.8rem;color:var(--blue)">${r.sleepScore}</div><div style="font-size:0.5rem;color:#888">SLEEP</div></div>
-                <div class="oura-metric"><div style="font-size:1.5rem;color:white">${r.rhr}</div><div style="font-size:0.5rem;color:#888">RHR</div></div>
+                <div class="oura-metric"><div style="font-size:1.5rem;color:#FFAB40">${r.rhr}</div><div style="font-size:0.5rem;color:#888">RHR</div></div>
                 <div class="oura-metric"><div style="font-size:1.5rem;color:white">${fmtTime(r.deep)}</div><div style="font-size:0.5rem;color:#888">DEEP</div></div>
                 <div class="oura-metric"><div style="font-size:1.5rem;color:white">${fmtTime(r.rem)}</div><div style="font-size:0.5rem;color:#888">REM</div></div>
                 <div class="oura-metric"><div style="font-size:1.5rem;color:#FFAB40">${r.cal}</div><div style="font-size:0.5rem;color:#888">BURN</div></div>
@@ -457,7 +457,7 @@ async function fetchOuraData() {
         const rRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
         const rData = await rRes.json();
         
-        // FETCH 2: Sleep (Detailed)
+        // FETCH 2: Sleep (Detailed) - FORCE Sleep Data Fetch
         const sRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
         const sData = await sRes.json();
         
@@ -471,14 +471,26 @@ async function fetchOuraData() {
             window.ouraHistory = rData.data.map(day => {
                 const sleep = sData.data ? sData.data.find(s => s.day === day.day) : null;
                 const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
+                
+                // CALORIE FALLBACK LOGIC
+                let burn = '-';
+                if(act) {
+                    if(act.active_calories) burn = act.active_calories;
+                    else if(act.total_calories) burn = act.total_calories; // Fallback to total if active is missing
+                }
+
+                // RHR FALLBACK LOGIC
+                let rhrVal = '-';
+                if(sleep && sleep.lowest_heart_rate) rhrVal = sleep.lowest_heart_rate;
+
                 return {
                     date: day.day,
                     score: day.score,
                     sleepScore: sleep ? sleep.score : '-',
-                    rhr: sleep ? sleep.lowest_heart_rate : '-',
+                    rhr: rhrVal,
                     deep: sleep ? sleep.deep_sleep_duration : 0,
                     rem: sleep ? sleep.rem_sleep_duration : 0,
-                    cal: act ? act.active_calories : '-'
+                    cal: burn
                 };
             }).reverse().slice(0, 7);
 
