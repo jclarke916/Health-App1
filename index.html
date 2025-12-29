@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v355.2 AI Fix</title>
+    <title>The Centurion | v355.3 Oura Fix</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --text:#fff;
@@ -59,7 +59,7 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v355.2 AI Fix | Stable</span>
+        <span class="version-tag">v355.3 Resilient Sync</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -93,7 +93,7 @@
 
 <script>
 // ==========================================
-// CENTURION v355.2 CORE
+// CENTURION v355.3 CORE
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
@@ -108,7 +108,6 @@ window.ouraHistory = [];
 const BIRTHDAYS = { 'J': '1983-01-13', 'S': '1987-01-25' };
 const TOKENS = { 'J': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'S': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
 
-// Initialize Data - FORCED UPDATE to V7 to fix AI crash
 let uH = JSON.parse(localStorage.getItem('centurion_bio_v7'));
 if (!uH) {
     uH = {
@@ -161,36 +160,25 @@ function getCaDate() {
 function getDateKey(d) { return d.toISOString().split('T')[0]; }
 function getMon(o) { let d = getCaDate(); d.setHours(0,0,0,0); let day = d.getDay(); let diff = d.getDate() - day + (day === 0 ? -6 : 1); d.setDate(diff + (o * 7)); return d; }
 function getChronAge(uID) { return ((Date.now() - new Date(BIRTHDAYS[uID]).getTime()) / 31557600000).toFixed(1); }
-function fmtTime(sec) { if(!sec) return "-"; const h = Math.floor(sec/3600); const m = Math.floor((sec%3600)/60); return `${h}h ${m}m`; }
+function fmtTime(sec) { 
+    if(sec === undefined || sec === null) return "-";
+    const h = Math.floor(sec/3600); 
+    const m = Math.floor((sec%3600)/60); 
+    return `${h}h ${m}m`; 
+}
 
 // THE ALGORITHM (Fixed for Safety)
 function calculateLongevity(userData) {
     let base = 85.0; 
-    
-    // Safety checks for missing data
     const vo2 = userData.tests && userData.tests.vo2 ? userData.tests.vo2.val : 40;
     const apob = userData.labs && userData.labs.apob ? userData.labs.apob.val : 90;
     const hba1c = userData.labs && userData.labs.hba1c ? userData.labs.hba1c.val : 5.5;
     const vf = userData.now ? userData.now.vf : 10;
 
-    // VO2 Max (30%)
-    if(vo2 >= 55) base += 6.0;
-    else if(vo2 >= 45) base += 3.5;
-    else if(vo2 < 35) base -= 2.0;
-
-    // ApoB (25%)
-    if(apob <= 60) base += 5.0;
-    else if(apob <= 80) base += 2.0;
-    else if(apob > 100) base -= 3.0;
-
-    // HbA1c (20%)
-    if(hba1c <= 5.0) base += 4.0;
-    else if(hba1c <= 5.4) base += 1.5;
-    else if(hba1c > 5.7) base -= 2.0;
-    
-    // Visceral Fat (15%)
-    if(vf <= 6) base += 3.0;
-    else if(vf > 10) base -= 3.0;
+    if(vo2 >= 55) base += 6.0; else if(vo2 >= 45) base += 3.5; else if(vo2 < 35) base -= 2.0;
+    if(apob <= 60) base += 5.0; else if(apob <= 80) base += 2.0; else if(apob > 100) base -= 3.0;
+    if(hba1c <= 5.0) base += 4.0; else if(hba1c <= 5.4) base += 1.5; else if(hba1c > 5.7) base -= 2.0;
+    if(vf <= 6) base += 3.0; else if(vf > 10) base -= 3.0;
 
     return base.toFixed(1);
 }
@@ -459,35 +447,32 @@ function openEssential(n){
 }
 
 async function fetchOuraData() {
-    const currentUser = user; const token = TOKENS[currentUser]; const bar = document.getElementById('ouraBar'); 
-    const u = `https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${getDateKey(new Date(Date.now()-6048e5))}&end_date=${getDateKey(new Date())}&_t=${Date.now()}`;
-    const s = `https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${getDateKey(new Date(Date.now()-6048e5))}&end_date=${getDateKey(new Date())}&_t=${Date.now()}`;
-    const a = `https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${getDateKey(new Date(Date.now()-6048e5))}&end_date=${getDateKey(new Date())}&_t=${Date.now()}`;
+    const currentUser = user; 
+    const token = TOKENS[currentUser]; 
+    const bar = document.getElementById('ouraBar'); 
+    
+    // Increased range to 14 days to ensure overlap
+    const startDate = getDateKey(new Date(Date.now() - 12096e5)); // 14 days ago
+    const endDate = getDateKey(new Date());
+    
+    const u = `https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${startDate}&end_date=${endDate}`;
+    const s = `https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${startDate}&end_date=${endDate}`;
+    const a = `https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${startDate}&end_date=${endDate}`;
+    
+    // Independent Fetching to prevent cascade failure
+    let rData = { data: [] }, sData = { data: [] }, aData = { data: [] };
+
     try {
-        const [rRes, sRes, aRes] = await Promise.all([fetch("https://corsproxy.io/?" + encodeURIComponent(u), {headers:{'Authorization':`Bearer ${token}`}}), fetch("https://corsproxy.io/?" + encodeURIComponent(s), {headers:{'Authorization':`Bearer ${token}`}}), fetch("https://corsproxy.io/?" + encodeURIComponent(a), {headers:{'Authorization':`Bearer ${token}`}})]);
-        const rData = await rRes.json(); const sData = await sRes.json(); const aData = await aRes.json();
-        if(user !== currentUser) return;
-        if(rData.data && rData.data.length > 0) {
-            window.ouraHistory = rData.data.map(day => { const sleep = sData.data.find(s => s.day === day.day); const act = aData.data.find(ac => ac.day === day.day); return { date: day.day, score: day.score, sleepScore: sleep ? sleep.score : '-', rhr: sleep ? sleep.lowest_heart_rate : '-', deep: sleep ? sleep.deep_sleep_duration : 0, rem: sleep ? sleep.rem_sleep_duration : 0, cal: act ? act.active_calories : '-' }; }).reverse();
-            const lastR = rData.data[rData.data.length-1];
-            bar.innerHTML = `💍 ${currentUser==='J'?'JERMAINE':'SOPHIA'} READINESS: <span style="color:${lastR.score>=85?'var(--green)':lastR.score>=70?'var(--gold)':'#FF5252'}; font-weight:900">${lastR.score}</span>`;
-            if(document.getElementById('btOura') && document.getElementById('btOura').classList.contains('active')) renderBioTab('oura');
-        } else { bar.innerText = `💍 ${currentUser==='J'?'JERMAINE':'SOPHIA'}: No Data`; }
-    } catch(e) { if(user === currentUser) bar.innerText = "💍 Sync Failed"; }
-}
+        const rRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(u), {headers:{'Authorization':`Bearer ${token}`}});
+        if(rRes.ok) rData = await rRes.json();
+    } catch(e) { console.log("Readiness fetch failed"); }
 
-function openSnackSelector(s) { currentSlot=s; document.getElementById('mTitle').innerText="SNACK"; document.getElementById('mBody').innerHTML=mDB.s.map((x,i)=>`<div class="value" onclick="applySnack(${i})">${x.split('|')[0]}</div>`).join(''); document.getElementById('bioContentArea').innerHTML=''; document.getElementById('masterModal').style.display='block'; }
-function applySnack(i) { snackLog[getDateKey(selDate)][currentSlot]=i; localStorage.setItem('centurion_snack_log', JSON.stringify(snackLog)); closeM(); render(); }
-function removeSnack(s) { snackLog[getDateKey(selDate)][s]=null; localStorage.setItem('centurion_snack_log', JSON.stringify(snackLog)); render(); }
-function closeM() { document.getElementById('masterModal').style.display='none'; }
+    try {
+        const sRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(s), {headers:{'Authorization':`Bearer ${token}`}});
+        if(sRes.ok) sData = await sRes.json();
+    } catch(e) { console.log("Sleep fetch failed"); }
 
-// Init
-window.onload = () => { 
-    document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
-    document.getElementById('b' + user.toLowerCase()).classList.add('active');
-    render(); 
-    fetchOuraData(); 
-};
-</script>
-</body>
-</html>
+    try {
+        const aRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(a), {headers:{'Authorization':`Bearer ${token}`}});
+        if(aRes.ok) aData = await aRes.json();
+    } catch(e) { console.log("Activity fetch failed"); }
