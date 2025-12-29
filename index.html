@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v330.0 Bio-Data</title>
+    <title>The Centurion | v335.0 History + Instant Load</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --text:#fff;
@@ -13,7 +13,6 @@
         body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);margin:0;padding:15px;font-size:14px}
         .container{max-width:500px;margin:0 auto; padding-bottom: 50px;}
         h1{text-align:center;font-weight:200;letter-spacing:5px;text-transform:uppercase;font-size:1.2rem;margin:10px 0}
-        .version-tag { display: block; text-align: center; font-size: 0.5rem; color: #444; margin-top: -8px; margin-bottom: 15px; letter-spacing: 2px; }
         .badge-row{display:flex;justify-content:center;gap:8px;margin-bottom:15px}
         .u-badge{background:#000;padding:8px 16px;border-radius:20px;border:1px solid #333;font-size:0.6rem;font-weight:800;cursor:pointer;color:#666;transition:all 0.3s;}
         .u-badge.active{border-color:var(--gold);color:var(--gold);box-shadow: 0 0 10px rgba(212,175,55,0.2);}
@@ -50,12 +49,15 @@
         .juice-name{font-size:1.1rem;font-weight:900;color:#fff;text-align:center;text-transform:uppercase;cursor:pointer;border:1px dashed #333;padding:10px;border-radius:12px}
         .oura-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
         .oura-metric { background: #111; padding: 15px; border-radius: 12px; text-align: center; border: 1px solid #222; }
+        .hist-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.75rem; color: #ccc; }
+        .hist-table th { text-align: left; color: #666; padding-bottom: 10px; font-weight: 800; border-bottom: 1px solid #333; }
+        .hist-table td { padding: 12px 0; border-bottom: 1px solid #222; }
     </style>
 </head>
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v330.0 Bio-Data | Scan Log</span>
+        <span class="version-tag">v335.0 Precision | History Enabled</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -89,57 +91,58 @@
 
 <script>
 // ==========================================
-// CENTURION v330.0 ENGINE
+// CENTURION v335.0 CORE
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
 let offset = 0;
-let selDate = new Date();
+// CRITICAL FIX: Ensure valid date object on load
+let selDate = new Date(new Date().toLocaleString("en-US", {timeZone: "America/Los_Angeles"}));
+selDate.setHours(12,0,0,0);
+
 let currentSlot = 0;
 let aiVisible = false;
 let snackLog = JSON.parse(localStorage.getItem('centurion_snack_log')) || {};
+window.ouraHistory = []; // Store history here
 
-// --- USER ANCHOR DATA ---
+// --- USER DATA ---
 const BIRTHDAYS = { 'J': '1983-01-13', 'S': '1987-01-25' };
 const TOKENS = { 'J': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'S': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
 
-// Initialize Bio Data if empty
-let uH = JSON.parse(localStorage.getItem('centurion_bio_v4'));
-if (!uH) {
-    uH = {
-        'J': { 
-            now:{bf:19.0, m:99.0, vf:10, w:217}, 
-            goal:{bf:15.0, m:105.0, vf:7, w:210}, 
-            labs:{apob:{val:95,goal:60,name:"ApoB",unit:"mg/dL",lowerIsBetter:true}, hba1c:{val:5.4,goal:5.0,name:"HbA1c",unit:"%",lowerIsBetter:true}, test:{val:650,goal:850,name:"Testosterone",unit:"ng/dL",lowerIsBetter:false}}, 
-            tests:{vo2:{val:45,goal:55,name:"VO2 Max"}, hang:{val:90,goal:120,name:"Dead Hang"}} 
-        },
-        'S': { 
-            now:{bf:36.1, m:49.2, vf:9, w:141}, 
-            goal:{bf:22.0, m:60.0, vf:4, w:135}, 
-            labs:{
-                ana:{val:320,goal:40,name:"ANA Titer",unit:"",lowerIsBetter:true},
-                hba1c:{val:5.6,goal:5.0,name:"HbA1c",unit:"%",lowerIsBetter:true},
-                crp:{val:1.8,goal:0.5,name:"hs-CRP",unit:"mg/L",lowerIsBetter:true},
-                tsh:{val:2.4,goal:1.5,name:"TSH",unit:"mIU/L",lowerIsBetter:true},
-                vitd:{val:38,goal:60,name:"Vitamin D",unit:"ng/mL",lowerIsBetter:false},
-                ferr:{val:40,goal:70,name:"Ferritin",unit:"ng/mL",lowerIsBetter:false}
-            }, 
-            tests:{vo2:{val:32,goal:50,name:"VO2 Max"}, hang:{val:40,goal:90,name:"Dead Hang"}}, 
-            streak:0 
-        }
-    };
-    localStorage.setItem('centurion_bio_v4', JSON.stringify(uH));
-}
+const uH = JSON.parse(localStorage.getItem('centurion_bio_v5')) || {
+    'J': { 
+        now:{bf:19.0, m:99.0, vf:10, w:217}, 
+        goal:{bf:15.0, m:105.0, vf:7, w:210}, 
+        labs:{apob:{val:95,goal:60,name:"ApoB",unit:"mg/dL",lowerIsBetter:true}, hba1c:{val:5.4,goal:5.0,name:"HbA1c",unit:"%",lowerIsBetter:true}, test:{val:650,goal:850,name:"Testosterone",unit:"ng/dL",lowerIsBetter:false}}, 
+        tests:{vo2:{val:45,goal:55,name:"VO2 Max"}, hang:{val:90,goal:120,name:"Dead Hang"}} 
+    },
+    'S': { 
+        now:{bf:36.1, m:49.2, vf:9, w:141}, 
+        goal:{bf:22.0, m:60.0, vf:4, w:135}, 
+        labs:{
+            ana:{val:320,goal:40,name:"ANA Titer",unit:"",lowerIsBetter:true},
+            hba1c:{val:5.6,goal:5.0,name:"HbA1c",unit:"%",lowerIsBetter:true},
+            crp:{val:1.8,goal:0.5,name:"hs-CRP",unit:"mg/L",lowerIsBetter:true},
+            tsh:{val:2.4,goal:1.5,name:"TSH",unit:"mIU/L",lowerIsBetter:true},
+            vitd:{val:38,goal:60,name:"Vitamin D",unit:"ng/mL",lowerIsBetter:false},
+            ferr:{val:40,goal:70,name:"Ferritin",unit:"ng/mL",lowerIsBetter:false}
+        }, 
+        tests:{vo2:{val:32,goal:50,name:"VO2 Max"}, hang:{val:40,goal:90,name:"Dead Hang"}}, 
+        streak:0 
+    }
+};
 
 // --- DATABASES ---
 const jDB = {"PINEAPPLE GREEN Vitality":["Detox","Spinach, Pineapple",1,28,120,1],"PLASMA FLUSH Juice":["Recovery","Watermelon, Lime",1,32,140,1],"TITAN RED Juice":["Endurance","Beets, Carrots",2,42,185,2],"ZENITH GREEN Juice":["Alkalizer","Kale, Cucumber",2,18,120,1],"APOLLO GOLD Juice":["Anti-Inflam","Pears, Turmeric",1,45,195,2]};
 const rDB = {"Sea Moss":["92 Minerals","2 TBSP Fasted.","Thyroid & Gut support."],"Kombucha":["Probiotic","4 OZ post-Lunch.","Enzyme support."],"Hibiscus Tea":["BP Control","Organic steep.","Antioxidant rich."]};
+
 const mDB = {
     b: ["Ancestral Beef Sausage|80/20 Beef-Liver Blend, Sage, Thyme|sear|Bioavailable heme iron + Vitamin A powerhouse|25|2|280|0", "Avocado Egg Toast|Bread, Avocado, Egg Whites|toast|Fiber + healthy fats|35|15|450|12", "Oat Protein Pancakes|Oat Flour, Blueberries|griddle|Complex carbs + fast protein|35|25|380|6"],
     l: ["Super Mince Bowl|Lean Beef, Black Lentils, Broccoli|sear|Iron + high fiber building blocks|50|25|550|15", "Chicken Artichoke Salad|Chicken, Artichoke, Arugula|sear|Liver detox support|40|15|420|10", "Seared Salmon Salad|Wild Salmon, Spinach, Avocado|sear|Omega-3 powerhouse|38|12|480|22"],
     d: ["Bison Portobello Burger|Ground Bison, Portobello, Avocado|sear|High protein, low glycemic impact|45|8|480|5", "Filet & Lentils|Filet Mignon, Black Lentils, Asparagus|sear|Iron density + fiber|45|10|520|14", "Halibut White Beans|Halibut, White Beans, Kale|bake|Lean protein + slow carbs|38|20|420|10"],
     s: ["Beef Isolate Shake|Beef Isolate, Water|shake|Collagen rich recovery|25|0|110|0", "Sardines|Wild Sardines, Lemon|raw|EPA/DHA brain fuel|22|0|190|0", "Avocado Cup|1/2 Avocado, Sea Salt|raw|Potassium and healthy fats|2|8|160|7"]
 };
+
 const pDB = {
     "HEAVY LIFT":[{h:"PRE: Theragun",d:"2m Percussion on Glutes/Hams."},{h:"TRAIN: Heavy Lift",d:"Main compound movements (1-5 Reps)."},{h:"POST: Sauna",d:"20m Heat stress @ 180°F."}],
     "BOXING":[{h:"PRE: Mobility",d:"Rotator cuffs & Calves dynamic stretch."},{h:"TRAIN: Boxing",d:"High output intervals. Max HR focus."},{h:"POST: Normatec",d:"Flush legs. No heat."}],
@@ -164,11 +167,15 @@ function calculateBioAge(userData) {
     return (chron + delta).toFixed(1);
 }
 
-function getCaDate() { return new Date(new Date().toLocaleString("en-US", {timeZone: "America/Los_Angeles"})); }
+function getCaDate() { 
+    let d = new Date(new Date().toLocaleString("en-US", {timeZone: "America/Los_Angeles"}));
+    d.setHours(12, 0, 0, 0); 
+    return d; 
+}
 function getDateKey(d) { return d.toISOString().split('T')[0]; }
 function getMon(o) { let d = getCaDate(); d.setHours(0,0,0,0); let day = d.getDay(); let diff = d.getDate() - day + (day === 0 ? -6 : 1); d.setDate(diff + (o * 7)); return d; }
 
-// --- ENGINE LOGIC ---
+// --- ENGINE ---
 function switchU(uID) { 
     user = uID; 
     localStorage.setItem('centurion_active_user', uID); 
@@ -177,7 +184,7 @@ function switchU(uID) {
     document.getElementById('ouraBar').innerHTML = `<span style="color:#666">💍 Switching...</span>`;
     document.getElementById('aiDashboard').style.display = 'none'; aiVisible = false;
     render(); 
-    setTimeout(fetchOuraData, 500); 
+    fetchOuraData(); 
 }
 
 function changeW(d) { offset += d; render(); }
@@ -298,19 +305,24 @@ function renderBioTab(tab) {
     } else if(tab==='labs') {
         area.innerHTML = Object.keys(u.labs).map(k => bioBar(u.labs[k].name, u.labs[k].val, u.labs[k].goal, " " + (u.labs[k].unit||""), u.labs[k].lowerIsBetter)).join('');
     } else if(tab==='oura') {
-        // Oura Tab Logic
-        if(!window.ouraData) { area.innerHTML = "<div style='padding:20px;text-align:center;color:#666'>Syncing...</div>"; return; }
-        const r = window.ouraData.readiness;
-        const s = window.ouraData.sleep;
-        area.innerHTML = `
+        if(!window.ouraHistory || window.ouraHistory.length === 0) { area.innerHTML = "<div style='padding:20px;text-align:center;color:#666'>Syncing History...</div>"; return; }
+        const r = window.ouraHistory[0];
+        
+        let html = `
             <div class="oura-grid">
                 <div class="oura-metric"><div style="font-size:2rem;color:var(--green)">${r.score}</div><div style="font-size:0.6rem;color:#888">READINESS</div></div>
-                <div class="oura-metric"><div style="font-size:2rem;color:var(--blue)">${s.score}</div><div style="font-size:0.6rem;color:#888">SLEEP SCORE</div></div>
-                <div class="oura-metric"><div style="font-size:1.5rem;color:white">${s.lowest_heart_rate}</div><div style="font-size:0.6rem;color:#888">RHR</div></div>
-                <div class="oura-metric"><div style="font-size:1.5rem;color:white">${s.average_hrv}</div><div style="font-size:0.6rem;color:#888">HRV</div></div>
+                <div class="oura-metric"><div style="font-size:2rem;color:var(--blue)">${r.sleepScore || '-'}</div><div style="font-size:0.6rem;color:#888">SLEEP</div></div>
             </div>
-            <div class="intervention-card" style="margin-top:15px">💡 Recovery Tip: ${r.score < 80 ? "Focus on deep sleep tonight. No caffeine after 12pm." : "Systems go. Push intensity today."}</div>
+            <div class="intervention-card" style="margin-top:15px">💡 7-DAY TREND</div>
+            <table class="hist-table"><thead><tr><th>DATE</th><th>READY</th><th>SLEEP</th></tr></thead><tbody>
         `;
+        
+        window.ouraHistory.forEach(day => {
+            html += `<tr><td>${day.date}</td><td style="font-weight:900;color:${day.score>80?'var(--green)':'var(--gold)'}">${day.score}</td><td>${day.sleepScore || '-'}</td></tr>`;
+        });
+        
+        html += "</tbody></table>";
+        area.innerHTML = html;
     }
 }
 
@@ -372,8 +384,9 @@ async function fetchOuraData() {
     const currentUser = user;
     const token = TOKENS[currentUser];
     const bar = document.getElementById('ouraBar'); 
-    const u = `https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${getDateKey(new Date(Date.now()-2592e5))}&end_date=${getDateKey(new Date())}&_t=${Date.now()}`;
-    const s = `https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${getDateKey(new Date(Date.now()-2592e5))}&end_date=${getDateKey(new Date())}&_t=${Date.now()}`;
+    // Fetch 7 days of history now
+    const u = `https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${getDateKey(new Date(Date.now()-6048e5))}&end_date=${getDateKey(new Date())}&_t=${Date.now()}`;
+    const s = `https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${getDateKey(new Date(Date.now()-6048e5))}&end_date=${getDateKey(new Date())}&_t=${Date.now()}`;
     
     try {
         const [rRes, sRes] = await Promise.all([
@@ -386,19 +399,25 @@ async function fetchOuraData() {
         if(user !== currentUser) return;
 
         if(rData.data && rData.data.length > 0) {
+            // Build History Object
+            window.ouraHistory = rData.data.map(day => {
+                const sleep = sData.data.find(s => s.day === day.day);
+                return {
+                    date: day.day,
+                    score: day.score,
+                    sleepScore: sleep ? sleep.score : '-'
+                };
+            }).reverse();
+
             const lastR = rData.data[rData.data.length-1];
-            const lastS = sData.data[sData.data.length-1];
-            
-            // Store globally for Oura Tab
-            window.ouraData = { readiness: lastR, sleep: lastS };
-            
             let color = lastR.score >= 85 ? 'var(--green)' : lastR.score >= 70 ? 'var(--gold)' : '#FF5252';
             bar.innerHTML = `💍 ${currentUser==='J'?'JERMAINE':'SOPHIA'} READINESS: <span style="color:${color}; font-weight:900">${lastR.score}</span>`;
             
-            // Auto-refresh the tab if it's open
             if(document.getElementById('btOura') && document.getElementById('btOura').classList.contains('active')) {
                 renderBioTab('oura');
             }
+        } else {
+            bar.innerText = `💍 ${currentUser==='J'?'JERMAINE':'SOPHIA'}: No Data`;
         }
     } catch(e) { 
         if(user === currentUser) bar.innerText = "💍 Sync Failed"; 
