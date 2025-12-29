@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v355.0 Cached Core</title>
+    <title>The Centurion | v355.1 Chasing 100</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --text:#fff;
@@ -59,7 +59,7 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v355.0 Patience Protocol</span>
+        <span class="version-tag">v355.1 Chasing 100</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -93,7 +93,7 @@
 
 <script>
 // ==========================================
-// CENTURION v355.0 CORE
+// CENTURION v355.1 CORE
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
@@ -162,63 +162,30 @@ function getMon(o) { let d = getCaDate(); d.setHours(0,0,0,0); let day = d.getDa
 function getChronAge(uID) { return ((Date.now() - new Date(BIRTHDAYS[uID]).getTime()) / 31557600000).toFixed(1); }
 function fmtTime(sec) { if(!sec) return "-"; const h = Math.floor(sec/3600); const m = Math.floor((sec%3600)/60); return `${h}h ${m}m`; }
 
-// 1. NEW ALGORITHM: THE CENTURION PROJECTION
+// THE CENTURION PROJECTION ALGORITHM
 function calculateLongevity(userData) {
-    let base = 85.0; // Baseline for health-conscious human
+    let base = 85.0; // Baseline
     
-    // VO2 Max (The Engine - Highest Weight)
+    // VO2 Max (30%)
     if(userData.tests.vo2.val >= 55) base += 6.0;
     else if(userData.tests.vo2.val >= 45) base += 3.5;
     else if(userData.tests.vo2.val < 35) base -= 2.0;
 
-    // ApoB (The Vascular System)
+    // ApoB (25%)
     if(userData.labs.apob && userData.labs.apob.val <= 60) base += 5.0;
     else if(userData.labs.apob && userData.labs.apob.val <= 80) base += 2.0;
     else if(userData.labs.apob && userData.labs.apob.val > 100) base -= 3.0;
 
-    // HbA1c (Metabolic Aging)
+    // HbA1c (20%)
     if(userData.labs.hba1c.val <= 5.0) base += 4.0;
     else if(userData.labs.hba1c.val <= 5.4) base += 1.5;
     else if(userData.labs.hba1c.val > 5.7) base -= 2.0;
     
-    // Visceral Fat (Systemic Inflammation)
+    // Visceral Fat (15%)
     if(userData.now.vf <= 6) base += 3.0;
     else if(userData.now.vf > 10) base -= 3.0;
 
     return base.toFixed(1);
-}
-
-// 2. UPDATED AI DASHBOARD UI
-function toggleAI() {
-    aiVisible = !aiVisible;
-    const dash = document.getElementById('aiDashboard');
-    dash.style.display = aiVisible ? 'block' : 'none';
-    
-    if(aiVisible) {
-        const u = uH[user];
-        const projection = calculateLongevity(u);
-        const gap = (100.0 - projection).toFixed(1);
-        const onTrack = parseFloat(projection) >= 100;
-        
-        dash.innerHTML = `
-            <div class="bio-section" style="background:rgba(0,176,255,0.05); text-align:center; border:1px solid var(--blue);">
-                <div style="font-size:0.6rem; color:var(--blue); font-weight:900; letter-spacing:2px">PROJECTED LIFESPAN</div>
-                <div style="font-size:3.5rem; font-weight:800; color:#fff;">${projection}</div>
-                <div style="font-size:0.7rem; color:${onTrack ? 'var(--green)' : 'var(--gold)'}; font-weight:900; margin-bottom:5px;">
-                    ${onTrack ? '🏆 CENTURION STATUS ACHIEVED' : `CHASING 100: ${gap} YEARS TO GO`}
-                </div>
-                <div class="bar-track" style="margin:10px auto; width:80%; height:6px; background:#222;">
-                    <div class="bar-fill" style="width:${Math.min((projection/100)*100, 100)}%; background:${onTrack ? 'var(--green)' : 'var(--blue)'};"></div>
-                </div>
-            </div>
-            <div class="intervention-card">
-                <strong>🔥 AI STRATEGY:</strong><br>
-                ${u.labs.apob && u.labs.apob.val > 70 ? "ApoB is the biggest drag on your 100-year goal. Increase fiber to 40g." : 
-                  u.tests.vo2.val < 50 ? "VO2 Max is your biggest leverage point. Push Zone 5 intensity." : 
-                  "Metabolic metrics stable. Maintain muscle mass to protect the final decade."}
-            </div>
-        `;
-    }
 }
 
 // --- ENGINE ---
@@ -335,17 +302,28 @@ function toggleAI() {
     const dash = document.getElementById('aiDashboard');
     dash.style.display = aiVisible ? 'block' : 'none';
     if(aiVisible) {
-        const u = uH[user]; const chron = getChronAge(user);
-        const bioAge = calculateBioAge(u);
-        const earned = (chron - bioAge).toFixed(1);
+        const u = uH[user]; 
+        const projection = calculateLongevity(u);
+        const gap = (100.0 - parseFloat(projection)).toFixed(1);
+        const onTrack = parseFloat(projection) >= 100;
+        
         dash.innerHTML = `
             <div class="bio-section" style="background:rgba(0,176,255,0.05); text-align:center; border:1px solid var(--blue);">
-                <div style="font-size:0.6rem; color:var(--blue); font-weight:900; letter-spacing:2px">PROJECTED BIO-AGE</div>
-                <div style="font-size:3rem; font-weight:800; color:#fff;">${bioAge}</div>
-                <div style="font-size:0.7rem; color:var(--green); font-weight:900;">🏆 ${earned > 0 ? earned : 0} YEARS EARNED</div>
-                <div style="font-size:0.55rem; color:#666; margin-top:5px;">ACTUAL: ${chron} YEARS</div>
+                <div style="font-size:0.6rem; color:var(--blue); font-weight:900; letter-spacing:2px">PROJECTED LIFESPAN</div>
+                <div style="font-size:3.5rem; font-weight:800; color:#fff;">${projection}</div>
+                <div style="font-size:0.7rem; color:${onTrack ? 'var(--green)' : 'var(--gold)'}; font-weight:900; margin-bottom:5px;">
+                    ${onTrack ? '🏆 CENTURION STATUS ACHIEVED' : `CHASING 100: ${gap} YEARS TO GO`}
+                </div>
+                <div class="bar-track" style="margin:10px auto; width:80%; height:6px; background:#222;">
+                    <div class="bar-fill" style="width:${Math.min((projection/100)*100, 100)}%; background:${onTrack ? 'var(--green)' : 'var(--blue)'};"></div>
+                </div>
             </div>
-            <div class="intervention-card">🔥 AI: ${u.labs.apob && u.labs.apob.val > 80 ? "ApoB is primary lifespan friction. Hit 15g fiber targets." : "Systems stable. Prioritize Zone 2 maintenance."}</div>
+            <div class="intervention-card">
+                <strong>🔥 AI STRATEGY:</strong><br>
+                ${u.labs.apob && u.labs.apob.val > 70 ? "ApoB is the biggest drag on your 100-year goal. Increase fiber to 40g." : 
+                  u.tests.vo2.val < 50 ? "VO2 Max is your biggest leverage point. Push Zone 5 intensity." : 
+                  "Metabolic metrics stable. Maintain muscle mass to protect the final decade."}
+            </div>
         `;
     }
 }
@@ -368,7 +346,7 @@ function renderBioTab(tab) {
     } else if(tab==='labs') {
         area.innerHTML = Object.keys(u.labs).map(k => bioBar(u.labs[k].name, u.labs[k].val, u.labs[k].goal, " " + (u.labs[k].unit||""), u.labs[k].lowerIsBetter)).join('');
     } else if(tab==='tests') {
-        area.innerHTML = Object.keys(u.tests).map(k => bioBar(u.tests[k].name, u.tests[k].val, u.tests[k].goal, " " + (u.tests[k].unit||""), false)).join('');
+        area.innerHTML = Object.keys(u.tests).map(k => bioBar(u.tests[k].name, u.tests[k].val, u.tests[k].goal, " " + (u.tests[k].unit||""), false)).join('') + `<div class="nav-btn" style="text-align:center; margin-top:15px;" onclick="logTest()">📝 LOG NEW TEST</div>`;
     } else if(tab==='oura') {
         if(!window.ouraHistory || window.ouraHistory.length === 0) { area.innerHTML = "<div style='padding:20px;text-align:center;color:#666'>Syncing History...</div>"; return; }
         const r = window.ouraHistory[0];
@@ -405,6 +383,20 @@ function logBodyScan() {
     }
 }
 
+function logTest() {
+    const keys = ['vo2', 'hang', 'wallsit'];
+    const choice = prompt("Select Test to Update:\n1. VO2 Max\n2. Dead Hang\n3. Wall Sit");
+    if(choice && keys[choice-1]) {
+        const k = keys[choice-1];
+        const val = prompt(`Enter new ${uH[user].tests[k].name} value (${uH[user].tests[k].unit}):`);
+        if(val) {
+            uH[user].tests[k].val = parseFloat(val);
+            localStorage.setItem('centurion_bio_v6', JSON.stringify(uH));
+            renderBioTab('tests');
+        }
+    }
+}
+
 function bioBar(label, val, goal, unit, lowerBetter=false) {
     const pct = Math.min(lowerBetter ? (goal / val) * 100 : (val / goal) * 100, 100);
     const color = pct >= 100 ? 'var(--green)' : 'var(--gold)';
@@ -417,12 +409,10 @@ function openDBRecipe(type, idx) {
     document.getElementById('mTitle').innerText = name.toUpperCase();
     document.getElementById('mSub').innerText = "CENTURION NUTRITION";
     
-    // PATIENCE PROTOCOL: Initial Loader
     document.getElementById('mBody').innerHTML = `<div style="padding:50px;text-align:center;color:#444;font-size:0.7rem;letter-spacing:2px;border:1px dashed #222;border-radius:14px;margin-bottom:15px">PATIENCE PROTOCOL<br>GENERATING NEURAL IMAGERY...</div>`;
     document.getElementById('bioContentArea').innerHTML = '';
     document.getElementById('masterModal').style.display = 'block';
 
-    // Image Caching Logic
     let imgUrl = photoCache[name];
     if(!imgUrl) {
         const prompt = encodeURIComponent(`high end food photography ${name.replace(/[^a-zA-Z ]/g, "")} plated dark background`);
@@ -431,11 +421,9 @@ function openDBRecipe(type, idx) {
         localStorage.setItem('centurion_photo_cache', JSON.stringify(photoCache));
     }
 
-    // Preload & Swap
     const img = new Image();
     img.src = imgUrl;
     img.onload = () => {
-        // Only update if user hasn't closed modal
         if(document.getElementById('mTitle').innerText === name.toUpperCase()) {
             document.getElementById('mBody').innerHTML = `
                 <img src="${imgUrl}" class="meal-img">
