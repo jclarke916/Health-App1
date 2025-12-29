@@ -2,78 +2,90 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>v400 Feed</title>
 
 <style>
+:root {
+  --bg:#0b0b0b;
+  --card:#151515;
+  --txt:#fff;
+  --muted:#888;
+}
+
 body {
   margin:0;
-  font-family: Inter, system-ui, -apple-system;
-  background:#000;
-  color:#fff;
+  font-family: Inter, system-ui, sans-serif;
+  background:var(--bg);
+  color:var(--txt);
 }
+
 .feed {
-  max-width:420px;
-  margin:0 auto;
-  padding:12px;
+  padding:16px;
+  display:grid;
+  gap:16px;
 }
+
 .card {
-  background:#111;
-  border-radius:16px;
-  padding:14px;
-  margin-bottom:16px;
+  background:var(--card);
+  border-radius:14px;
+  overflow:hidden;
   cursor:pointer;
 }
-.card h3 {
-  margin:0 0 6px;
-  font-size:1rem;
-}
-.card p {
-  margin:0;
-  font-size:0.8rem;
-  color:#aaa;
-}
+
 .img-wrap {
-  margin-top:10px;
-  border-radius:12px;
-  overflow:hidden;
-  background:#0a0a0a;
-  min-height:180px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
+  position:relative;
+  width:100%;
+  aspect-ratio:4/3;
+  background:linear-gradient(
+    90deg,
+    #1a1a1a 25%,
+    #222 37%,
+    #1a1a1a 63%
+  );
+  background-size:400% 100%;
+  animation: shimmer 1.4s ease infinite;
 }
-.img-wrap.loading::after {
-  content:"Loading image…";
-  font-size:0.7rem;
-  color:#555;
+
+@keyframes shimmer {
+  0% { background-position:100% 0 }
+  100% { background-position:0 0 }
 }
+
 .img-wrap img {
   width:100%;
+  height:100%;
+  object-fit:cover;
   display:none;
 }
-.img-wrap.loaded img {
-  display:block;
+
+.card h3 {
+  margin:12px;
+  font-size:1rem;
 }
+
 .modal {
   position:fixed;
   inset:0;
-  background:rgba(0,0,0,0.85);
+  background:rgba(0,0,0,.85);
   display:none;
   align-items:center;
   justify-content:center;
 }
+
 .modal-content {
   background:#111;
-  padding:20px;
-  border-radius:16px;
   max-width:90%;
+  border-radius:16px;
+  padding:16px;
 }
-.close {
-  margin-top:12px;
-  color:#888;
-  font-size:0.8rem;
-  text-align:center;
+
+button {
+  background:#222;
+  color:#fff;
+  border:none;
+  padding:10px 14px;
+  border-radius:8px;
 }
 </style>
 </head>
@@ -84,81 +96,74 @@ body {
 
 <div class="modal" id="modal" onclick="closeModal()">
   <div class="modal-content" onclick="event.stopPropagation()">
-    <div id="modalBody"></div>
-    <div class="close">Tap anywhere to close</div>
+    <h2 id="modalTitle"></h2>
+    <button onclick="closeModal()">Close</button>
   </div>
 </div>
 
 <script>
-/* ---------- DATA (REPLACE WITH YOUR 312 FEED) ---------- */
-const FEED = [
-  {
-    title: "Grilled Salmon Bowl",
-    desc: "Omega-3 rich longevity meal",
-    prompt: "grilled salmon bowl michelin plated"
-  },
-  {
-    title: "Mediterranean Chicken",
-    desc: "Lean protein + polyphenols",
-    prompt: "mediterranean chicken olive oil herbs"
-  },
-  {
-    title: "Plant Power Lentils",
-    desc: "Fiber + longevity carbs",
-    prompt: "lentil vegetable bowl fine dining"
-  }
+const meals = [
+  "Grilled Salmon Bowl",
+  "Mediterranean Chicken",
+  "Steak with Chimichurri",
+  "Miso Glazed Cod",
+  "Turkey Power Plate"
 ];
 
-/* ---------- IMAGE LOADER (NO TIMEOUTS) ---------- */
-function loadImage(container, prompt) {
+function buildImageURL(name) {
+  const prompt = encodeURIComponent(name + " michelin plated food");
   const seed = Math.floor(Math.random()*99999);
-  const url =
-    `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}`
-    + `?width=800&height=600&seed=${seed}&enhance=false&nologo=true`;
-
-  const img = new Image();
-  img.decoding = "async";
-  img.loading = "eager";
-  img.src = url;
-
-  img.onload = () => {
-    container.classList.remove("loading");
-    container.classList.add("loaded");
-    container.appendChild(img);
-  };
+  return `https://image.pollinations.ai/prompt/${prompt}?width=800&height=600&seed=${seed}&enhance=false&nologo=true`;
 }
 
-/* ---------- FEED RENDER ---------- */
-const feedEl = document.getElementById("feed");
-
-FEED.forEach(item => {
+function createCard(name) {
   const card = document.createElement("div");
   card.className = "card";
-  card.innerHTML = `
-    <h3>${item.title}</h3>
-    <p>${item.desc}</p>
-    <div class="img-wrap loading"></div>
-  `;
-  const imgWrap = card.querySelector(".img-wrap");
 
-  // defer image load until AFTER paint
-  requestAnimationFrame(() => loadImage(imgWrap, item.prompt));
+  const wrap = document.createElement("div");
+  wrap.className = "img-wrap";
 
-  card.onclick = () => openModal(item);
-  feedEl.appendChild(card);
-});
+  const img = new Image();
+  img.loading = "lazy";
+  img.alt = name;
 
-/* ---------- MODAL ---------- */
-function openModal(item) {
-  document.getElementById("modalBody").innerHTML = `
-    <h3>${item.title}</h3>
-    <p style="color:#aaa;font-size:0.85rem">${item.desc}</p>
-  `;
+  const url = buildImageURL(name);
+
+  img.onload = () => {
+    wrap.style.animation = "none";
+    img.style.display = "block";
+  };
+
+  img.onerror = () => {
+    wrap.style.animation = "none";
+    wrap.style.background = "#222";
+  };
+
+  img.src = url;
+
+  wrap.appendChild(img);
+  card.appendChild(wrap);
+
+  const title = document.createElement("h3");
+  title.textContent = name;
+  card.appendChild(title);
+
+  card.onclick = () => openModal(name);
+
+  return card;
+}
+
+function openModal(name) {
+  document.getElementById("modalTitle").innerText = name;
   document.getElementById("modal").style.display = "flex";
 }
+
 function closeModal() {
   document.getElementById("modal").style.display = "none";
 }
+
+const feed = document.getElementById("feed");
+meals.forEach(m => feed.appendChild(createCard(m)));
 </script>
 
 </body>
