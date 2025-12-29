@@ -320,7 +320,8 @@ function renderBioTab(tab) {
     } else if(tab==='labs') {
         area.innerHTML = Object.keys(u.labs).map(k => bioBar(u.labs[k].name, u.labs[k].val, u.labs[k].goal, " " + (u.labs[k].unit||""), u.labs[k].lowerIsBetter)).join('');
     } else if(tab==='tests') {
-        area.innerHTML = Object.keys(u.tests).map(k => bioBar(u.tests[k].name, u.tests[k].val, u.tests[k].goal, " " + (u.tests[k].unit||""), false)).join('');
+        // Updated to include the Log Button
+        area.innerHTML = Object.keys(u.tests).map(k => bioBar(u.tests[k].name, u.tests[k].val, u.tests[k].goal, " " + (u.tests[k].unit||""), false)).join('') + `<div class="nav-btn" style="text-align:center; margin-top:15px;" onclick="logTest()">📝 LOG NEW TEST</div>`;
     } else if(tab==='oura') {
         if(!window.ouraHistory || window.ouraHistory.length === 0) { area.innerHTML = "<div style='padding:20px;text-align:center;color:#666'>Syncing History...</div>"; return; }
         const r = window.ouraHistory[0];
@@ -356,7 +357,20 @@ function logBodyScan() {
         renderBioTab('phys');
     }
 }
-
+function logTest() {
+    const keys = ['vo2', 'hang', 'wallsit'];
+    const choice = prompt("Select Test to Update:\n1. VO2 Max\n2. Dead Hang\n3. Wall Sit");
+    
+    if(choice && keys[choice-1]) {
+        const k = keys[choice-1];
+        const val = prompt(`Enter new ${uH[user].tests[k].name} value (${uH[user].tests[k].unit}):`);
+        if(val) {
+            uH[user].tests[k].val = parseFloat(val);
+            localStorage.setItem('centurion_bio_v6', JSON.stringify(uH));
+            renderBioTab('tests');
+        }
+    }
+}
 function bioBar(label, val, goal, unit, lowerBetter=false) {
     const pct = Math.min(lowerBetter ? (goal / val) * 100 : (val / goal) * 100, 100);
     const color = pct >= 100 ? 'var(--green)' : 'var(--gold)';
