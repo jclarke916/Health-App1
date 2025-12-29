@@ -476,3 +476,49 @@ async function fetchOuraData() {
         const aRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(a), {headers:{'Authorization':`Bearer ${token}`}});
         if(aRes.ok) aData = await aRes.json();
     } catch(e) { console.log("Activity fetch failed"); }
+
+    if(user !== currentUser) return;
+
+    if(rData.data && rData.data.length > 0) {
+        // Map based on Readiness dates, finding matching sleep/activity by date string
+        window.ouraHistory = rData.data.map(day => {
+            const sleep = sData.data.find(s => s.day === day.day);
+            const act = aData.data.find(ac => ac.day === day.day);
+            return {
+                date: day.day,
+                score: day.score,
+                sleepScore: sleep ? sleep.score : '-',
+                rhr: sleep ? sleep.lowest_heart_rate : '-',
+                deep: sleep ? sleep.deep_sleep_duration : 0,
+                rem: sleep ? sleep.rem_sleep_duration : 0,
+                cal: act ? act.active_calories : '-'
+            };
+        }).reverse().slice(0, 7); // Keep last 7 days
+
+        const lastR = window.ouraHistory[0];
+        let color = lastR.score >= 85 ? 'var(--green)' : lastR.score >= 70 ? 'var(--gold)' : '#FF5252';
+        bar.innerHTML = `💍 ${currentUser==='J'?'JERMAINE':'SOPHIA'} READINESS: <span style="color:${color}; font-weight:900">${lastR.score}</span>`;
+        
+        if(document.getElementById('btOura') && document.getElementById('btOura').classList.contains('active')) {
+            renderBioTab('oura');
+        }
+    } else {
+        bar.innerText = `💍 ${currentUser==='J'?'JERMAINE':'SOPHIA'}: No Data`;
+    }
+}
+
+function openSnackSelector(s) { currentSlot=s; document.getElementById('mTitle').innerText="SNACK"; document.getElementById('mBody').innerHTML=mDB.s.map((x,i)=>`<div class="value" onclick="applySnack(${i})">${x.split('|')[0]}</div>`).join(''); document.getElementById('bioContentArea').innerHTML=''; document.getElementById('masterModal').style.display='block'; }
+function applySnack(i) { snackLog[getDateKey(selDate)][currentSlot]=i; localStorage.setItem('centurion_snack_log', JSON.stringify(snackLog)); closeM(); render(); }
+function removeSnack(s) { snackLog[getDateKey(selDate)][s]=null; localStorage.setItem('centurion_snack_log', JSON.stringify(snackLog)); render(); }
+function closeM() { document.getElementById('masterModal').style.display='none'; }
+
+// Init
+window.onload = () => { 
+    document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
+    document.getElementById('b' + user.toLowerCase()).classList.add('active');
+    render(); 
+    fetchOuraData(); 
+};
+</script>
+</body>
+</html>
