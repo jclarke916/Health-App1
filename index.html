@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v365.1 Endpoint Swap</title>
+    <title>The Centurion | v370.0 Unified Sync</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --text:#fff;
@@ -59,7 +59,7 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v365.1 Endpoint Swap</span>
+        <span class="version-tag">v370.0 Unified Sync</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -93,7 +93,7 @@
 
 <script>
 // ==========================================
-// CENTURION v365.1 CORE
+// CENTURION v370.0 CORE
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
@@ -449,7 +449,7 @@ function openEssential(n){
 async function fetchOuraData() {
     const currentUser = user; const token = TOKENS[currentUser]; const bar = document.getElementById('ouraBar'); 
     
-    // FETCH 1: Readiness
+    // FETCH 1: Readiness (Summary)
     const startDate = getDateKey(new Date(Date.now() - 2592000000)); 
     const endDate = getDateKey(new Date());
     
@@ -457,11 +457,15 @@ async function fetchOuraData() {
         const rRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
         const rData = await rRes.json();
         
-        // FETCH 2: SLEEP PERIODS (Raw Data Source)
+        // FETCH 2: Daily Sleep (Score Summary)
+        const dsRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
+        const dsData = await dsRes.json();
+
+        // FETCH 3: SLEEP EPISODES (Raw Deep/REM/RHR) - THE MISSING LINK
         const sRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
         const sData = await sRes.json();
         
-        // FETCH 3: Activity
+        // FETCH 4: Activity (Calories)
         const aRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
         const aData = await aRes.json();
 
@@ -469,9 +473,12 @@ async function fetchOuraData() {
 
         if(rData.data && rData.data.length > 0) {
             window.ouraHistory = rData.data.map(day => {
-                // Find matching sleep session (Look for longest sleep of that day)
-                const sleeps = sData.data ? sData.data.filter(s => s.day === day.day) : [];
-                const sleep = sleeps.length > 0 ? sleeps.reduce((prev, current) => (prev.total_sleep_duration > current.total_sleep_duration) ? prev : current) : null;
+                // Match Summary Score
+                const dailySleep = dsData.data ? dsData.data.find(s => s.day === day.day) : null;
+                
+                // Match Detailed Sleep Episode (Find longest for the day)
+                const sleepEpisodes = sData.data ? sData.data.filter(s => s.day === day.day) : [];
+                const mainSleep = sleepEpisodes.length > 0 ? sleepEpisodes.reduce((prev, current) => (prev.total_sleep_duration > current.total_sleep_duration) ? prev : current) : null;
                 
                 const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
                 
@@ -482,15 +489,17 @@ async function fetchOuraData() {
                 }
 
                 let rhrVal = '-';
-                if(sleep && sleep.lowest_heart_rate) rhrVal = sleep.lowest_heart_rate;
+                // Try Period first (more accurate), then Daily Summary
+                if(mainSleep && mainSleep.lowest_heart_rate) rhrVal = mainSleep.lowest_heart_rate;
+                else if(dailySleep && dailySleep.lowest_heart_rate) rhrVal = dailySleep.lowest_heart_rate;
 
                 return {
                     date: day.day,
                     score: day.score,
-                    sleepScore: sleep ? sleep.score : '-',
+                    sleepScore: dailySleep ? dailySleep.score : '-',
                     rhr: rhrVal,
-                    deep: sleep ? sleep.deep_sleep_duration : 0,
-                    rem: sleep ? sleep.rem_sleep_duration : 0,
+                    deep: mainSleep ? mainSleep.deep_sleep_duration : 0,
+                    rem: mainSleep ? mainSleep.rem_sleep_duration : 0,
                     cal: burn
                 };
             }).reverse().slice(0, 7);
