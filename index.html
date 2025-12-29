@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v365.0 Data Plumber</title>
+    <title>The Centurion | v365.1 Endpoint Swap</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --text:#fff;
@@ -59,7 +59,7 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v365.0 Data Plumber</span>
+        <span class="version-tag">v365.1 Endpoint Swap</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -93,7 +93,7 @@
 
 <script>
 // ==========================================
-// CENTURION v365.0 CORE
+// CENTURION v365.1 CORE
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
@@ -449,19 +449,19 @@ function openEssential(n){
 async function fetchOuraData() {
     const currentUser = user; const token = TOKENS[currentUser]; const bar = document.getElementById('ouraBar'); 
     
-    // FETCH 1: Readiness (Most Critical)
-    const startDate = getDateKey(new Date(Date.now() - 2592000000)); // 30 days
+    // FETCH 1: Readiness
+    const startDate = getDateKey(new Date(Date.now() - 2592000000)); 
     const endDate = getDateKey(new Date());
     
     try {
         const rRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
         const rData = await rRes.json();
         
-        // FETCH 2: Sleep (Detailed) - FORCE Sleep Data Fetch
-        const sRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
+        // FETCH 2: SLEEP PERIODS (Raw Data Source)
+        const sRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
         const sData = await sRes.json();
         
-        // FETCH 3: Activity (Calorie Burn)
+        // FETCH 3: Activity
         const aRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
         const aData = await aRes.json();
 
@@ -469,17 +469,18 @@ async function fetchOuraData() {
 
         if(rData.data && rData.data.length > 0) {
             window.ouraHistory = rData.data.map(day => {
-                const sleep = sData.data ? sData.data.find(s => s.day === day.day) : null;
+                // Find matching sleep session (Look for longest sleep of that day)
+                const sleeps = sData.data ? sData.data.filter(s => s.day === day.day) : [];
+                const sleep = sleeps.length > 0 ? sleeps.reduce((prev, current) => (prev.total_sleep_duration > current.total_sleep_duration) ? prev : current) : null;
+                
                 const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
                 
-                // CALORIE FALLBACK LOGIC
-                let burn = '-';
+                let burn = 0;
                 if(act) {
-                    if(act.active_calories) burn = act.active_calories;
-                    else if(act.total_calories) burn = act.total_calories; // Fallback to total if active is missing
+                    if(act.active_calories !== undefined) burn = act.active_calories;
+                    else if(act.total_calories !== undefined) burn = act.total_calories; 
                 }
 
-                // RHR FALLBACK LOGIC
                 let rhrVal = '-';
                 if(sleep && sleep.lowest_heart_rate) rhrVal = sleep.lowest_heart_rate;
 
