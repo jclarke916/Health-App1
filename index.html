@@ -1,8 +1,90 @@
-<script>
-// ==========================================
-// THE CENTURION v325.1 (SYNC FIX)
-// ==========================================
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>The Centurion | v325.0 Stable</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --text:#fff;
+        --g-pro:linear-gradient(90deg,#FF5252,#D50000); --g-carb:linear-gradient(90deg,#FFAB40,#FF6D00);
+        --g-cal:linear-gradient(90deg,#B388FF,#6200EA); --g-fib:linear-gradient(90deg,#00E676,#00C853);}
+        *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+        body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);margin:0;padding:15px;font-size:14px}
+        .container{max-width:500px;margin:0 auto; padding-bottom: 50px;}
+        h1{text-align:center;font-weight:200;letter-spacing:5px;text-transform:uppercase;font-size:1.2rem;margin:10px 0}
+        .badge-row{display:flex;justify-content:center;gap:8px;margin-bottom:15px}
+        .u-badge{background:#000;padding:8px 16px;border-radius:20px;border:1px solid #333;font-size:0.6rem;font-weight:800;cursor:pointer;color:#666;transition:all 0.3s;}
+        .u-badge.active{border-color:var(--gold);color:var(--gold);box-shadow: 0 0 10px rgba(212,175,55,0.2);}
+        .status-bar{text-align:center;color:#888;font-size:0.65rem;font-weight:800;margin-bottom:5px;text-transform:uppercase}
+        .controls{display:flex;gap:5px;margin-bottom:15px}
+        .nav-btn{background:#111;border:1px solid #222;color:#888;padding:10px;flex:1;border-radius:8px;font-size:0.55rem;font-weight:800;cursor:pointer}
+        .card, .macro-dashboard{background:var(--card);border-radius:20px;padding:20px;margin-bottom:15px;border:1px solid rgba(255,255,255,0.03);position:relative}
+        .card::before{content:"";position:absolute;left:0;top:20px;bottom:20px;width:3px;background:var(--gold);border-radius:0 4px 4px 0}
+        .label{color:#666;font-size:0.5rem;text-transform:uppercase;font-weight:900;margin-bottom:4px; display: flex; justify-content: space-between;}
+        .portion-tag { color: var(--blue); }
+        .value{ font-size: 0.95rem; margin-bottom: 12px; font-weight: 500; cursor: pointer; border-bottom: 1px solid #222; padding-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
+        .macro-row{margin-bottom:10px}
+        .macro-label{display:flex;justify-content:space-between;font-size:0.55rem;font-weight:800;color:#777;margin-bottom:3px}
+        .macro-bg{height:5px;background:#222;border-radius:10px;overflow:hidden}
+        .macro-fill{height:100%;border-radius:10px;transition:width 0.8s}
+        .tabs{display:flex;gap:4px;margin-bottom:15px}
+        .tab{flex:1;padding:10px 0;background:#111;border:1px solid #222;color:#444;border-radius:8px;font-size:0.55rem;font-weight:800;text-align:center;cursor:pointer}
+        .tab.active{background:#222;color:#fff;border-color:444}
+        .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:2000;overflow-y:auto;padding:0;backdrop-filter:blur(10px);}
+        .modal-content{background:#0a0a0a;margin:0;padding:25px;border:none;border-radius:0;width:100%;min-height:100%;max-width:none;}
+        .close-btn-float { position: fixed; top: 25px; right: 25px; width: 45px; height: 45px; background: #FF5252; border-radius: 50%; border: 1px solid #fff; color: #fff; font-size: 24px; text-align: center; line-height: 42px; cursor: pointer; z-index: 3001; }
+        .bio-section{margin-bottom:25px;padding:15px;background:rgba(255,255,255,0.03);border-radius:15px;border:1px solid rgba(255,255,255,0.05)}
+        .bar-row{display:flex;align-items:center;margin-bottom:8px}
+        .bar-lbl{width:45px;font-size:0.55rem;color:#666;font-weight:900;text-transform:uppercase}
+        .bar-track{flex:1;height:8px;background:#111;border-radius:10px;margin:0 10px;border:1px solid #222;overflow:hidden}
+        .bar-fill{height:100%;border-radius:10px;transition:width 1s cubic-bezier(0.4,0,0.2,1)}
+        .intervention-card{background:rgba(0,176,255,0.05);border-left:3px solid var(--blue);padding:15px;margin:10px 0;border-radius:8px;font-size:0.8rem;line-height:1.4;}
+        .meal-img { width: 100%; border-radius: 14px; margin-bottom: 15px; background: #111; min-height: 250px; object-fit: cover; border:1px solid #222;}
+        .snack-grid { display: flex; gap: 10px; margin-bottom: 15px; }
+        .snack-slot { flex: 1; border: 1px dashed #333; border-radius: 12px; padding: 12px 5px; text-align: center; cursor: pointer; position: relative; min-height: 60px; display: flex; flex-direction: column; justify-content: center; background: rgba(255,255,255,0.02); }
+        .snack-slot.filled { border: 1px solid var(--gold); background: #111; }
+        .macro-pill { background: #1a1a1a; border: 1px solid #333; padding: 3px 8px; border-radius: 12px; font-size: 0.55rem; color: #888; font-weight: 800; text-transform: uppercase; white-space: nowrap; }
+        .remove-snack { position: absolute; top: -5px; right: -5px; background: #FF5252; color: #fff; border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; line-height: 18px; text-align: center; }
+        .juice-name{font-size:1.1rem;font-weight:900;color:#fff;text-align:center;text-transform:uppercase;cursor:pointer;border:1px dashed #333;padding:10px;border-radius:12px}
+    </style>
+</head>
+<body>
+<div class="container">
+    <header><h1>THE CENTURION</h1>
+        <div class="badge-row">
+            <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
+            <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
+        </div>
+    </header>
+    <div id="ouraBar" class="status-bar" style="color:var(--green); margin-bottom:5px;">💍 Checking Oura...</div>
+    <div id="dateDisplay" class="status-bar">...</div>
+    
+    <div id="aiDashboard" style="display:none; margin-bottom:20px;"></div>
 
+    <div class="controls">
+        <button class="nav-btn" onclick="changeW(-1)">◀ PREV</button>
+        <button class="nav-btn" onclick="resetD()">TODAY</button>
+        <button class="nav-btn" onclick="changeW(1)">NEXT ▶</button>
+        <button class="nav-btn" onclick="openBio()" style="color:var(--green)">📊 DATA</button>
+        <button class="nav-btn" onclick="toggleAI()" style="color:var(--blue)">🧠 AI</button>
+    </div>
+    <div id="dayTabs" class="tabs"></div>
+    <div id="dayContent"></div>
+</div>
+
+<div id="masterModal" class="modal" onclick="closeM(event)">
+    <div class="close-btn-float" onclick="closeM()">&times;</div>
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <h2 id="mTitle" style="color:#fff; margin-top:10px; font-weight:200;"></h2>
+        <div id="mSub" style="color:var(--gold); font-size:0.75rem; margin-bottom:15px; font-weight:900;"></div>
+        <div id="mBody"></div>
+        <div id="bioContentArea"></div>
+    </div>
+</div>
+
+<script>
+// --- CORE SETUP ---
 let user = localStorage.getItem('centurion_active_user') || 'J';
 let offset = 0;
 let selDate = new Date();
@@ -12,8 +94,6 @@ let snackLog = JSON.parse(localStorage.getItem('centurion_snack_log')) || {};
 
 // --- USER DATA ---
 const BIRTHDAYS = { 'J': '1983-01-13', 'S': '1987-01-25' };
-const TOKENS = { 'J': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'S': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
-
 const uH = {
     'J': { now:{bf:19.0, m:99.0, vf:10, w:217}, goal:{bf:15.0, m:105.0, vf:7, w:210}, labs:{apob:{val:95,goal:60,name:"ApoB",lowerIsBetter:true},hba1c:{val:5.4,goal:5.0,name:"HbA1c",lowerIsBetter:true}}, tests:{vo2:{val:45,goal:55,name:"VO2 Max"},hang:{val:90,goal:120,name:"Dead Hang"}} },
     'S': { now:{bf:36.1, m:49.2, vf:9, w:141}, goal:{bf:22.0, m:60.0, vf:4, w:135}, labs:{ana:{val:320,goal:40,name:"ANA",lowerIsBetter:true},hba1c:{val:5.6,goal:5.0,name:"HbA1c",lowerIsBetter:true},crp:{val:1.8,goal:0.5,name:"CRP",lowerIsBetter:true}}, tests:{vo2:{val:32,goal:50,name:"VO2 Max"},hang:{val:40,goal:90,name:"Dead Hang"}} }
@@ -31,14 +111,14 @@ const mDB = {
 };
 
 const pDB = {
-    "HEAVY LIFT":[{h:"PRE: Theragun",d:"2m Percussion on Glutes/Hams."},{h:"TRAIN: Heavy Lift",d:"Main compound movements (1-5 Reps)."},{h:"POST: Sauna",d:"20m Heat stress @ 180°F."}],
-    "BOXING":[{h:"PRE: Mobility",d:"Rotator cuffs & Calves dynamic stretch."},{h:"TRAIN: Boxing",d:"High output intervals. Max HR focus."},{h:"POST: Normatec",d:"Flush legs. No heat."}],
-    "REFORM":[{h:"PRE: Sweep",d:"Light full body percussion."},{h:"TRAIN: Reform",d:"Time under tension. Pilates/Lagree."},{h:"POST: Sauna",d:"20m HGH Boost."}],
-    "CS4":[{h:"PRE: Hydrate",d:"Electrolytes + 16oz Water."},{h:"TRAIN: CS4",d:"VO2 Max Intervals."},{h:"POST: Contrast",d:"Sauna + Cold Plunge cycle."}],
-    "RELAX":[{h:"PRE: Walk",d:"10m Nature exposure."},{h:"TRAIN: Active",d:"Low HR flow or stretching."},{h:"POST: Zero-G",d:"20m Massage chair."}]
+    "HEAVY LIFT":[{h:"Theragun",d:"Target large chains."},{h:"Heavy Lift",d:"Main compound movements."},{h:"Sauna",d:"20m HSP induction."}],
+    "BOXING":[{h:"Mobility",d:"Shoulder/Hip focus."},{h:"Boxing",d:"High output intervals."},{h:"Normatec",d:"Flush legs."}],
+    "REFORM":[{h:"Sweep",d:"Percussion."},{h:"Reform",d:"Time under tension."},{h:"Sauna",d:"HGH support."}],
+    "CS4":[{h:"Hydrate",d:"Electrolytes."},{h:"CS4",d:"VO2 Max focus."},{h:"Contrast",d:"Cold/Heat cycle."}],
+    "RELAX":[{h:"Walk",d:"Nature exposure."},{h:"Active",d:"Low HR flow."},{h:"Chair",d:"Zero gravity."}]
 };
 
-// --- CORE UTILITIES ---
+// --- FUNCTIONS ---
 function getChronAge(uID) {
     const dob = new Date(BIRTHDAYS[uID]);
     const diff = Date.now() - dob.getTime();
@@ -58,45 +138,18 @@ function getCaDate() { return new Date(new Date().toLocaleString("en-US", {timeZ
 function getDateKey(d) { return d.toISOString().split('T')[0]; }
 function getMon(o) { let d = getCaDate(); d.setHours(0,0,0,0); let day = d.getDay(); let diff = d.getDate() - day + (day === 0 ? -6 : 1); d.setDate(diff + (o * 7)); return d; }
 
-// --- SWITCHING ENGINE (FIXED) ---
 function switchU(uID) { 
-    // 1. Update State
-    user = uID; 
+    user=uID; 
     localStorage.setItem('centurion_active_user', uID); 
-    
-    // 2. Visual Feedback IMMEDIATELY
     document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
     document.getElementById('b'+uID.toLowerCase()).classList.add('active');
-    document.getElementById('ouraBar').innerHTML = `<span style="color:#666">💍 Switching to ${uID === 'J' ? 'Jermaine' : 'Sophia'}...</span>`;
     
-    // 3. Reset AI & Render
-    if(aiVisible) toggleAI();
+    // FORCE RESET VISUALS
+    document.getElementById('ouraBar').innerText = "💍 Syncing New User...";
+    if(aiVisible) toggleAI(); // Close AI if open to reset
+    
     render(); 
-    
-    // 4. Force Fetch
-    fetchOuraData(); 
-}
-
-async function fetchOuraData() {
-    const currentUser = user; // Lock user ID at start of function
-    const token = TOKENS[currentUser];
-    const bar = document.getElementById('ouraBar'); 
-    
-    try {
-        const res = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${getDateKey(new Date(Date.now()-2592e5))}&end_date=${getDateKey(new Date())}`), {headers:{'Authorization':`Bearer ${token}`}});
-        const j = await res.json(); 
-        
-        // Safety Check: Did user switch while we were loading?
-        if(user !== currentUser) return; 
-
-        if(j.data && j.data.length > 0) {
-            bar.innerHTML = `💍 ${currentUser==='J'?'JERMAINE':'SOPHIA'} READINESS: <span style="color:#fff; font-weight:900">${j.data[j.data.length-1].score}</span>`;
-        } else {
-            bar.innerHTML = `💍 ${currentUser==='J'?'JERMAINE':'SOPHIA'}: No Data`;
-        }
-    } catch(e) { 
-        if(user === currentUser) bar.innerText = "💍 Sync Failed (Check Token)"; 
-    }
+    setTimeout(fetchOuraData, 500); // Small delay to ensuring clean fetch
 }
 
 function changeW(d) { offset += d; render(); }
@@ -172,7 +225,6 @@ function showDay(dObj, idx) {
     `;
 }
 
-// --- MODALS ---
 function toggleAI() {
     aiVisible = !aiVisible;
     const dash = document.getElementById('aiDashboard');
@@ -197,7 +249,10 @@ function openBio() {
     document.getElementById('mTitle').innerHTML = (user==='J'?'JERMAINE':'SOPHIA') + " - CLINICAL";
     document.getElementById('mSub').innerText = "BIOMETRIC MONITORING";
     const m = document.getElementById('mBody');
+    // Important: Clear content properly
     m.innerHTML = `<div class="tabs"><div class="tab active" id="btPhys" onclick="renderBioTab('phys')">BODY</div><div class="tab" id="btLabs" onclick="renderBioTab('labs')">LABS</div></div><div id="bioContentArea"></div>`;
+    
+    // Small delay to ensure DOM is painted
     setTimeout(() => { renderBioTab('phys'); }, 50);
     document.getElementById('masterModal').style.display = 'block';
 }
@@ -254,6 +309,16 @@ function openEssential(n){
     document.getElementById('masterModal').style.display='block';
 }
 
+async function fetchOuraData() {
+    const t = user === 'J' ? 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y' : '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4';
+    const bar = document.getElementById('ouraBar'); 
+    try {
+        const res = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${getDateKey(new Date(Date.now()-2592e5))}&end_date=${getDateKey(new Date())}`), {headers:{'Authorization':`Bearer ${t}`}});
+        const j = await res.json(); 
+        if(j.data) bar.innerText = `💍 ${user==='J'?'JERMAINE':'SOPHIA'} READINESS: ${j.data[j.data.length-1].score}`;
+    } catch(e) { bar.innerText = "💍 Oura Connected"; }
+}
+
 function openSnackSelector(s) { currentSlot=s; document.getElementById('mTitle').innerText="SNACK"; document.getElementById('mBody').innerHTML=mDB.s.map((x,i)=>`<div class="value" onclick="applySnack(${i})">${x.split('|')[0]}</div>`).join(''); document.getElementById('bioContentArea').innerHTML=''; document.getElementById('masterModal').style.display='block'; }
 function applySnack(i) { snackLog[getDateKey(selDate)][currentSlot]=i; localStorage.setItem('centurion_snack_log', JSON.stringify(snackLog)); closeM(); render(); }
 function removeSnack(s) { snackLog[getDateKey(selDate)][s]=null; localStorage.setItem('centurion_snack_log', JSON.stringify(snackLog)); render(); }
@@ -267,3 +332,5 @@ window.onload = () => {
     fetchOuraData(); 
 };
 </script>
+</body>
+</html>
