@@ -1,256 +1,194 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>The Centurion v400</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>v400 Meal Feed</title>
 
 <style>
-:root {
+:root{
   --bg:#000;
-  --card:#141414;
-  --glass:rgba(255,255,255,0.06);
+  --card:#0f0f0f;
   --text:#fff;
-  --muted:#aaa;
+  --muted:#888;
+  --gold:#d4af37;
 }
 
-* { box-sizing:border-box }
-body {
+body{
   margin:0;
+  font-family:Inter,system-ui,sans-serif;
   background:var(--bg);
   color:var(--text);
-  font-family:Inter,sans-serif;
 }
 
-.container {
-  max-width:420px;
-  margin:0 auto;
-  padding:30px 16px 120px;
+.feed{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+  gap:16px;
+  padding:16px;
 }
 
-h1 {
-  text-align:center;
-  font-weight:300;
-  letter-spacing:6px;
-  margin-bottom:30px;
-}
-
-.feed {
-  display:flex;
-  flex-direction:column;
-  gap:14px;
-}
-
-/* FEED CARD */
-.feed-card {
-  position:relative;
-  height:64px;
-  border-radius:22px;
+.card{
+  background:var(--card);
+  border-radius:14px;
   overflow:hidden;
-  background:var(--glass);
   cursor:pointer;
+  transition:transform .15s ease;
 }
+.card:hover{transform:scale(1.02)}
 
-.feed-bg {
-  position:absolute;
-  inset:0;
-  background-size:cover;
-  background-position:center;
-  filter:blur(12px) brightness(0.6);
-  transform:scale(1.1);
-}
-
-.feed-overlay {
-  position:absolute;
-  inset:0;
-  background:linear-gradient(
-    to right,
-    rgba(0,0,0,0.75),
-    rgba(0,0,0,0.35),
-    rgba(0,0,0,0.75)
-  );
-}
-
-.feed-content {
+.img-wrap{
   position:relative;
-  z-index:2;
+  aspect-ratio:4/3;
+  background:#111;
+}
+.img-wrap::after{
+  content:'';
+  position:absolute;
+  inset:0;
+  background:linear-gradient(to bottom,transparent 60%,rgba(0,0,0,.8));
+}
+.img-wrap img{
+  width:100%;
   height:100%;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:0 18px;
+  object-fit:cover;
+  opacity:0;
+  transition:opacity .4s ease;
 }
+.img-wrap img.loaded{opacity:1}
 
-.feed-left {
-  display:flex;
-  gap:10px;
-  align-items:center;
+.card-body{
+  padding:14px;
 }
-
-.feed-icon {
-  font-size:20px;
+.card-title{
+  font-weight:700;
+  font-size:1rem;
 }
-
-.feed-title {
-  font-weight:600;
-}
-
-.feed-sub {
-  font-size:12px;
+.card-meta{
+  font-size:.75rem;
   color:var(--muted);
-}
-
-.feed-macro {
-  font-weight:600;
+  margin-top:4px;
 }
 
 /* MODAL */
-.modal {
+.modal{
   position:fixed;
   inset:0;
-  background:rgba(0,0,0,0.9);
+  background:rgba(0,0,0,.85);
   display:none;
   align-items:center;
   justify-content:center;
-  z-index:1000;
+  z-index:10;
 }
-
-.modal.active { display:flex }
-
-.modal-box {
+.modal.open{display:flex}
+.modal-box{
+  background:#111;
+  max-width:520px;
+  width:92%;
+  border-radius:14px;
+  overflow:hidden;
+}
+.modal-box img{
   width:100%;
-  max-width:420px;
-  padding:24px;
+  display:block;
 }
-
-.modal-img {
-  width:100%;
-  height:220px;
-  border-radius:18px;
-  background-size:cover;
-  background-position:center;
-  margin-bottom:16px;
+.modal-content{
+  padding:16px;
 }
-
-.modal h2 { margin:0 0 6px }
-.modal p { color:#ccc; line-height:1.5 }
-
-.close {
-  margin-top:20px;
-  text-align:center;
-  opacity:0.6;
+.modal-close{
+  position:absolute;
+  top:16px;
+  right:16px;
+  color:#fff;
+  font-size:1.5rem;
+  cursor:pointer;
 }
 </style>
 </head>
 
 <body>
-<div class="container">
-  <h1>THE CENTURION</h1>
-  <div id="feed" class="feed"></div>
-</div>
 
-<div id="modal" class="modal" onclick="closeModal()">
-  <div class="modal-box" onclick="event.stopPropagation()">
-    <div id="modalImg" class="modal-img"></div>
-    <h2 id="modalTitle"></h2>
-    <p id="modalText"></p>
-    <div class="close">Tap anywhere to close</div>
+<div class="feed" id="feed"></div>
+
+<div class="modal" id="modal">
+  <div class="modal-box">
+    <div class="modal-close" onclick="closeModal()">✕</div>
+    <img id="modalImg">
+    <div class="modal-content">
+      <h2 id="modalTitle"></h2>
+      <p id="modalMeta"></p>
+    </div>
   </div>
 </div>
 
 <script>
-/* -------------------------
-   FEED DATA (SCALABLE)
-------------------------- */
-
+/* ========= DATA ========= */
 const FEED = [
-  {
-    type:"meal",
-    icon:"🥗",
-    title:"Seared Salmon Bowl",
-    sub:"Omega-3 recovery meal",
-    protein:"38g P",
-    img:"high end plated seared salmon bowl photography",
-    desc:"Wild salmon, leafy greens, olive oil and micronutrients supporting heart and brain longevity."
-  },
-  {
-    type:"meal",
-    icon:"🍽️",
-    title:"Bison Power Plate",
-    sub:"Iron-dense strength fuel",
-    protein:"45g P",
-    img:"luxury plated bison steak meal photography",
-    desc:"Lean bison with slow carbs and fiber to support muscle, insulin sensitivity and recovery."
-  },
-  {
-    type:"workout",
-    icon:"🏋🏾‍♂️",
-    title:"Heavy Lift Day",
-    sub:"Strength + VO₂ preservation",
-    protein:"",
-    img:"elite gym training cinematic lighting",
-    desc:"Compound lifts, controlled volume, followed by sauna and parasympathetic recovery."
-  }
+  { name:"Grilled Salmon Bowl", meta:"High Protein • Omega-3" },
+  { name:"Steak & Sweet Potato", meta:"Strength Day Fuel" },
+  { name:"Mediterranean Chicken", meta:"Longevity Focus" },
+  { name:"Shrimp Avocado Plate", meta:"Low Inflammation" },
+  { name:"Grass-Fed Beef Bowl", meta:"Muscle Support" }
 ];
 
-/* -------------------------
-   RENDER
-------------------------- */
+/* ========= IMAGE BUILDER ========= */
+function buildImgURL(name){
+  const prompt = encodeURIComponent(
+    name + " plated food professional photography natural lighting"
+  );
+  return `https://image.pollinations.ai/prompt/${prompt}?width=800&height=600&seed=${hash(name)}&enhance=false&nologo=true`;
+}
 
-const feedEl = document.getElementById("feed");
+/* Stable seed (prevents regeneration delay) */
+function hash(str){
+  let h=0;
+  for(let i=0;i<str.length;i++) h=((h<<5)-h)+str.charCodeAt(i);
+  return Math.abs(h);
+}
 
-FEED.forEach(item => {
-  const card = document.createElement("div");
-  card.className = "feed-card";
+/* ========= FEED RENDER ========= */
+const feedEl=document.getElementById('feed');
 
-  card.innerHTML = `
-    <div class="feed-bg" data-img="${item.img}"></div>
-    <div class="feed-overlay"></div>
-    <div class="feed-content">
-      <div class="feed-left">
-        <div class="feed-icon">${item.icon}</div>
-        <div>
-          <div class="feed-title">${item.title}</div>
-          <div class="feed-sub">${item.sub}</div>
-        </div>
-      </div>
-      <div class="feed-macro">${item.protein || ""}</div>
-    </div>
+FEED.forEach(item=>{
+  const card=document.createElement('div');
+  card.className='card';
+
+  const imgWrap=document.createElement('div');
+  imgWrap.className='img-wrap';
+
+  const img=document.createElement('img');
+  img.src=buildImgURL(item.name);
+  img.loading='lazy';
+  img.onload=()=>img.classList.add('loaded');
+
+  imgWrap.appendChild(img);
+
+  const body=document.createElement('div');
+  body.className='card-body';
+  body.innerHTML=`
+    <div class="card-title">${item.name}</div>
+    <div class="card-meta">${item.meta}</div>
   `;
 
-  card.onclick = () => openModal(item);
+  card.appendChild(imgWrap);
+  card.appendChild(body);
+
+  card.onclick=()=>openModal(item,img.src);
+
   feedEl.appendChild(card);
 });
 
-/* -------------------------
-   IMAGE LAYER (NON-BLOCKING)
-------------------------- */
-
-requestAnimationFrame(() => {
-  document.querySelectorAll(".feed-bg").forEach(bg => {
-    const prompt = encodeURIComponent(bg.dataset.img);
-    bg.style.backgroundImage =
-      `url(https://image.pollinations.ai/prompt/${prompt}?nologo=true&model=turbo)`;
-  });
-});
-
-/* -------------------------
-   MODAL
-------------------------- */
-
-function openModal(item) {
-  document.getElementById("modal").classList.add("active");
-  document.getElementById("modalTitle").innerText = item.title;
-  document.getElementById("modalText").innerText = item.desc;
-  document.getElementById("modalImg").style.backgroundImage =
-    `url(https://image.pollinations.ai/prompt/${encodeURIComponent(item.img)}?nologo=true&model=turbo)`;
+/* ========= MODAL ========= */
+function openModal(item,src){
+  document.getElementById('modalImg').src=src;
+  document.getElementById('modalTitle').innerText=item.name;
+  document.getElementById('modalMeta').innerText=item.meta;
+  document.getElementById('modal').classList.add('open');
 }
-
-function closeModal() {
-  document.getElementById("modal").classList.remove("active");
+function closeModal(){
+  document.getElementById('modal').classList.remove('open');
 }
 </script>
+
 </body>
 </html>
