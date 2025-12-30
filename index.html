@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v570.0 Daisy-Chain Sync</title>
+    <title>The Centurion | v580.0 Hybrid Stable</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --red:#FF5252; --text:#fff;
@@ -73,6 +73,7 @@
         .nutrition-card { background: var(--card); border: 1px solid rgba(255,255,255,0.03); }
         .nutrition-card::before { content:""; position:absolute; left:0; top:20px; bottom:20px; width:3px; background:var(--green); border-radius:0 4px 4px 0; }
         .ai-card { background: linear-gradient(135deg, rgba(0,176,255,0.1), rgba(124,77,255,0.05)); border: 1px solid rgba(0,176,255,0.3); }
+        
         .goal-header, .nutrition-header, .ai-header { display: flex; justify-content: space-between; align-items: center; }
         .goal-score { font-size: 2.5rem; font-weight: 900; display: flex; align-items: center; gap: 10px; }
         .goal-score.excellent { color: var(--green); }
@@ -98,7 +99,7 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v570.0 Daisy-Chain Sync</span>
+        <span class="version-tag">v580.0 Hybrid Stable</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -132,7 +133,7 @@
 
 <script>
 // ==========================================
-// CENTURION v570.0 CORE
+// CENTURION v580.0 CORE
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
@@ -204,7 +205,6 @@ if (!uH) {
     uH = { 'J': defaultJ, 'S': defaultS };
     localStorage.setItem('centurion_bio_v7', JSON.stringify(uH));
 } else {
-    // FORCE INJECTION
     let updated = false;
     if (!uH['J'] || !uH['J'].protocol) { uH['J'] = defaultJ; updated = true; }
     if (!uH['S'] || !uH['S'].protocol) { uH['S'] = defaultS; updated = true; }
@@ -416,6 +416,15 @@ function showDay(dObj, idx) {
     const projection = calculateLongevity(userData);
     const predictions = predictBiomarkers(userData, user);
     let aiBody = '';
+    
+    // Calculate weekly totals based on CURRENT history (safe)
+    let wHigh = 0, wMed = 0;
+    if(window.ouraHistory.length > 0) {
+        const last7 = window.ouraHistory.slice(0, 7);
+        wHigh = last7.reduce((sum, d) => sum + d.high, 0);
+        wMed = last7.reduce((sum, d) => sum + d.med, 0);
+    }
+
     if(predictions && predictions.compliance > 0) {
         const milestone = predictions.nextMilestone.replace('month', 'Month ');
         const weeksToGo = predictions.nextMilestone === 'month3' ? (12 - predictions.currentWeek) : (24 - predictions.currentWeek);
@@ -498,7 +507,6 @@ function showDay(dObj, idx) {
                     const status = actual >= target * 0.8 ? 'success' : actual >= target * 0.5 ? 'warning' : 'error';
                     const statusIcon = status === 'success' ? '✅' : status === 'warning' ? '⚠️' : '❌';
                     const statusColor = status==='success'?'var(--green)':status==='warning'?'var(--gold)':'var(--red)';
-                    
                     zoneComplianceHTML += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:8px;background:rgba(255,255,255,0.02);border-radius:8px"><div style="flex:1"><div style="font-size:0.55rem;color:#888;margin-bottom:3px">${zoneNames[zidx]}</div><div style="font-size:0.8rem;font-weight:900;color:#fff">Actual: <span style="color:${statusColor}">${actual}min</span></div></div><div style="text-align:right"><div style="font-size:0.5rem;color:#666;margin-bottom:3px">TARGET</div><div style="font-size:0.7rem;font-weight:700;color:var(--blue)">${target}min</div></div><div style="margin-left:10px;font-size:1.2rem">${statusIcon}</div></div>`;
                 }
             });
@@ -589,39 +597,76 @@ async function fetchOuraData() {
     const startDate = getDateKey(new Date(Date.now() - 2592000000)); 
     const endDate = getDateKey(new Date());
     
+    // Safety check for token
+    if (!token) {
+        bar.innerHTML = '💍 API Token Missing';
+        render(); return;
+    }
+
     try {
-        bar.innerHTML = '💍 Loading Sleep...';
-        // SEQUENTIAL FETCHING TO AVOID RATE LIMITS WITH INDIVIDUAL TRY/CATCH
-        let rData = {}, dsData = {}, sData = {}, aData = {}, wData = {};
-        
+        // --- 1. READINESS ---
+        bar.innerHTML = '💍 Loading Readiness...';
+        let rData = {};
         try {
             const rRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${startDate}&end_date=${endDate}&_t=${Date.now()}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
             rData = await rRes.json();
         } catch(e) { console.log('Readiness fail'); }
-        await new Promise(r => setTimeout(r, 250)); // Tiny pause
 
+        // --- 2. SLEEP ---
+        bar.innerHTML = '💍 Loading Sleep...';
+        let dsData = {};
         try {
             const dsRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${startDate}&end_date=${endDate}&_t=${Date.now()}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
             dsData = await dsRes.json();
         } catch(e) { console.log('DS fail'); }
-        await new Promise(r => setTimeout(r, 250));
-
-        bar.innerHTML = '💍 Loading Activity...';
         
+        let sData = {};
+        try {
+             const sRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${startDate}&end_date=${endDate}&_t=${Date.now()}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
+             sData = await sRes.json();
+        } catch(e) { console.log('Sleep details fail'); }
+
+        // --- 3. ACTIVITY ---
+        bar.innerHTML = '💍 Loading Activity...';
+        let aData = {};
         try {
              const aRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${startDate}&end_date=${endDate}&_t=${Date.now()}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
              aData = await aRes.json();
         } catch(e) { console.log('Activity fail'); }
-        await new Promise(r => setTimeout(r, 250));
 
+        // --- 4. WORKOUTS (Often fails, so isolated) ---
+        bar.innerHTML = '💍 Loading Workouts...';
+        let wData = {};
         try {
-             const sRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${startDate}&end_date=${endDate}&_t=${Date.now()}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
-             sData = await sRes.json();
-        } catch(e) { console.log('Sleep fail'); }
+             const wRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/workout?start_date=${startDate}&end_date=${endDate}&_t=${Date.now()}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
+             wData = await wRes.json();
+        } catch(e) { console.log('Workout fail - token may lack scope'); }
 
         if(user !== currentUser) return;
 
-        window.ouraWorkouts = []; // Reset workouts
+        // Process Data
+        window.ouraWorkouts = [];
+        if(wData.data && wData.data.length > 0) {
+            window.ouraWorkouts = wData.data.map(w => {
+                const duration = w.end_datetime && w.start_datetime ? Math.round((new Date(w.end_datetime) - new Date(w.start_datetime)) / 60000) : 0;
+                return {
+                    date: w.day || (w.start_datetime ? w.start_datetime.split('T')[0] : ''),
+                    type: mapWorkoutType(w.activity),
+                    duration: duration,
+                    avgHR: w.average_heart_rate || 0,
+                    peakHR: w.max_heart_rate || 0,
+                    zones: {
+                        z1: Math.round((w.heart_rate_zone_1_duration || 0) / 60) || 0,
+                        z2: Math.round((w.heart_rate_zone_2_duration || 0) / 60) || 0,
+                        z3: Math.round((w.heart_rate_zone_3_duration || 0) / 60) || 0,
+                        z4: Math.round((w.heart_rate_zone_4_duration || 0) / 60) || 0,
+                        z5: Math.round((w.heart_rate_zone_5_duration || 0) / 60) || 0
+                    },
+                    calories: w.calories || 0,
+                    intensity: w.intensity || 'moderate'
+                };
+            }).reverse();
+        }
 
         if(rData.data && rData.data.length > 0) {
             window.weeklyStats = { high: 0, medium: 0, low: 0 };
@@ -637,6 +682,7 @@ async function fetchOuraData() {
                 const sleepEpisodes = (sData && sData.data) ? sData.data.filter(s => s.day === day.day) : [];
                 const mainSleep = sleepEpisodes.length > 0 ? sleepEpisodes.reduce((prev, current) => (prev.total_sleep_duration > current.total_sleep_duration) ? prev : current) : null;
                 const act = (aData && aData.data) ? aData.data.find(ac => ac.day === day.day) : null;
+                
                 let burn = 0, hi = 0, med = 0, low = 0;
                 if(act) {
                     if(act.active_calories !== undefined) burn = act.active_calories;
@@ -645,6 +691,7 @@ async function fetchOuraData() {
                     if(act.medium_activity_time) med = Math.round(act.medium_activity_time / 60);
                     if(act.low_activity_time) low = Math.round(act.low_activity_time / 60);
                 }
+                
                 let rhrVal = '-';
                 if(mainSleep && mainSleep.lowest_heart_rate) rhrVal = mainSleep.lowest_heart_rate;
                 else if(dailySleep && dailySleep.lowest_heart_rate) rhrVal = dailySleep.lowest_heart_rate;
@@ -660,6 +707,7 @@ async function fetchOuraData() {
             if(!lastR) lastR = window.ouraHistory[0];
             let color = lastR.score >= 85 ? 'var(--green)' : lastR.score >= 70 ? 'var(--gold)' : '#FF5252';
             bar.innerHTML = `💍 ${currentUser==='J'?'JERMAINE':'SOPHIA'} READINESS: <span style="color:${color}; font-weight:900">${lastR.score}</span>`;
+            
             if(document.getElementById('btOura') && document.getElementById('btOura').classList.contains('active')) renderBioTab('oura');
             render(); 
         } else {
