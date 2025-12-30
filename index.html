@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v391</title>
+    <title>The Centurion | v393</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --red:#FF5252; --text:#fff;
@@ -82,7 +82,7 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v391 Error Handling</span>
+        <span class="version-tag">v393 Duplicate Code Removal</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -118,7 +118,7 @@
 <script>
 let user = localStorage.getItem('centurion_active_user') || 'J';
 let offset = 0;
-let selDate = getCaDate(); 
+let selDate; // Initialize after getCaDate is defined
 let currentSlot = 0;
 let aiVisible = false;
 let snackLog = JSON.parse(localStorage.getItem('centurion_snack_log')) || {};
@@ -559,83 +559,6 @@ function showDay(dObj, idx) {
         }
         
         goalHTML += '</div></div></div>';
-        const scoreColor = dailyScore >= 85 ? 'var(--green)' : dailyScore >= 70 ? 'var(--gold)' : 'var(--red)';
-        
-        goalHTML = '<div class="goal-card"><div class="goal-header"><div><div style="font-size:0.6rem;color:var(--gold);font-weight:900;text-transform:uppercase;letter-spacing:1px">Daily Performance</div><div style="font-size:0.5rem;color:#666;margin-top:2px">' + dk + '</div></div><div class="goal-score ' + scoreClass + '">' + dailyScore + '%</div></div>';
-        
-        // COLLAPSIBLE: Calorie Balance
-        const calBalanceScore = balanceText;
-        const calBalanceColor = balanceStatus === 'success' ? 'var(--green)' : balanceStatus === 'warning' ? 'var(--gold)' : 'var(--red)';
-        goalHTML += '<div class="collapsible-section"><div class="collapsible-header" onclick="toggleCollapse(\'cal\')"><div><div class="collapsible-title">🔥 Calorie Balance</div><div class="collapsible-score" style="color:' + calBalanceColor + '">' + calBalanceScore + '</div></div><div class="collapsible-chevron" id="chevron-cal">▼</div></div><div class="collapsible-content" id="content-cal"><div class="collapsible-inner"><div style="font-size:0.55rem;color:#888;margin-bottom:8px">' + consumed + ' in • ' + burned + ' out • Target: ' + targetText + '</div><div style="font-size:0.5rem;color:#666;font-style:italic">' + bodyCompStrategy + '</div></div></div></div>';
-        
-        // COLLAPSIBLE: Protocol & Zones
-        const protocolScore = workoutText;
-        const protocolColor = workoutCompliance === 'success' ? 'var(--green)' : workoutCompliance === 'warning' ? 'var(--gold)' : 'var(--red)';
-        goalHTML += '<div class="collapsible-section"><div class="collapsible-header" onclick="toggleCollapse(\'protocol\')"><div><div class="collapsible-title">💪 Protocol: ' + w.toUpperCase() + '</div><div class="collapsible-score" style="color:' + protocolColor + '">' + protocolScore + '</div></div><div class="collapsible-chevron" id="chevron-protocol">▼</div></div><div class="collapsible-content" id="content-protocol"><div class="collapsible-inner"><div style="font-size:0.55rem;color:#888;margin-bottom:8px">Target: ' + (protocolTarget ? protocolTarget.duration : 45) + 'min</div>' + zoneComplianceHTML + '</div></div></div>';
-        
-        // COLLAPSIBLE: Macro Targets
-        const macroScoreText = macroScore + '%';
-        const macroColor = macroScore >= 90 ? 'var(--green)' : macroScore >= 75 ? 'var(--gold)' : 'var(--red)';
-        goalHTML += '<div class="collapsible-section"><div class="collapsible-header" onclick="toggleCollapse(\'macros\')"><div><div class="collapsible-title">📊 Macro Targets</div><div class="collapsible-score" style="color:' + macroColor + '">' + macroScoreText + '</div></div><div class="collapsible-chevron" id="chevron-macros">▼</div></div><div class="collapsible-content" id="content-macros"><div class="collapsible-inner"><div style="font-size:0.55rem;color:#888;margin-bottom:8px">' + Math.round(p) + '/' + g.P + 'P • ' + Math.round(c) + '/' + g.C + 'C • ' + Math.round(f) + '/' + g.F + 'F</div></div></div></div>';
-        
-        // COLLAPSIBLE: Recovery
-        const recoveryScoreText = recoveryText;
-        const recoveryColor = recoveryStatus === 'success' ? 'var(--green)' : recoveryStatus === 'warning' ? 'var(--gold)' : 'var(--red)';
-        goalHTML += '<div class="collapsible-section"><div class="collapsible-header" onclick="toggleCollapse(\'recovery\')"><div><div class="collapsible-title">😴 Recovery</div><div class="collapsible-score" style="color:' + recoveryColor + '">' + recoveryScoreText + '</div></div><div class="collapsible-chevron" id="chevron-recovery">▼</div></div><div class="collapsible-content" id="content-recovery"><div class="collapsible-inner"><div style="font-size:0.55rem;color:#888">Readiness ' + (hasOuraData ? ouraData.score : '-') + ' • Sleep ' + (hasOuraData && ouraData.sleepScore !== '-' ? ouraData.sleepScore : '-') + '</div></div></div></div>';
-        
-        // COLLAPSIBLE: Protocol Predictions
-        const predictions = predictBiomarkers(userData, user);
-        if(predictions && predictions.compliance > 0) {
-            const milestone = predictions.nextMilestone.replace('month', 'Month ');
-            const weeksToGo = predictions.nextMilestone === 'month3' ? (12 - predictions.currentWeek) : 
-                              predictions.nextMilestone === 'month6' ? (24 - predictions.currentWeek) : (52 - predictions.currentWeek);
-            
-            const complianceColor = predictions.compliance >= 85 ? 'var(--green)' : predictions.compliance >= 70 ? 'var(--gold)' : 'var(--red)';
-            const protocolTitle = 'Week ' + predictions.currentWeek + ' • ' + predictions.compliance + '% Pace';
-            
-            let predictionsContent = '<div style="display:flex;justify-content:space-between;margin-bottom:15px;font-size:0.55rem;color:#888"><div>Week ' + predictions.currentWeek + ' of 52</div><div>' + weeksToGo + 'w to ' + milestone + '</div></div>';
-            predictionsContent += '<div style="font-size:0.5rem;color:#666;margin-bottom:8px;font-weight:700">TOP PRIORITIES → ' + milestone.toUpperCase() + '</div>';
-            
-            if(predictions.predictedChanges.vo2) {
-                const current = userData.tests.vo2.val;
-                const predicted = predictions.predictedChanges.vo2.toFixed(1);
-                const target = userData.protocol[predictions.nextMilestone].vo2;
-                const status = parseFloat(predicted) >= target * 0.9 ? 'success' : parseFloat(predicted) >= target * 0.75 ? 'warning' : 'error';
-                const statusColor = status === 'success' ? 'var(--green)' : status === 'warning' ? 'var(--gold)' : 'var(--red)';
-                predictionsContent += '<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:0.55rem;padding:8px;background:rgba(255,255,255,0.02);border-radius:8px"><span style="color:#888">🫁 VO2 Max (+8 yrs)</span><span style="color:' + statusColor + ';font-weight:700">' + current + ' → ' + predicted + ' / ' + target + '</span></div>';
-            }
-            
-            if(predictions.predictedChanges.vf) {
-                const current = userData.now.vf;
-                const predicted = predictions.predictedChanges.vf.toFixed(1);
-                const target = userData.protocol[predictions.nextMilestone].vf;
-                const status = parseFloat(predicted) <= target * 1.1 ? 'success' : parseFloat(predicted) <= target * 1.25 ? 'warning' : 'error';
-                const statusColor = status === 'success' ? 'var(--green)' : status === 'warning' ? 'var(--gold)' : 'var(--red)';
-                predictionsContent += '<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:0.55rem;padding:8px;background:rgba(255,255,255,0.02);border-radius:8px"><span style="color:#888">🔥 Visceral Fat (+4 yrs)</span><span style="color:' + statusColor + ';font-weight:700">' + current + ' → ' + predicted + ' / ' + target + '</span></div>';
-            }
-            
-            if(predictions.predictedChanges.hba1c) {
-                const current = userData.labs.hba1c.val;
-                const predicted = predictions.predictedChanges.hba1c.toFixed(2);
-                const target = userData.protocol[predictions.nextMilestone].hba1c;
-                const status = parseFloat(predicted) <= target * 1.05 ? 'success' : parseFloat(predicted) <= target * 1.1 ? 'warning' : 'error';
-                const statusColor = status === 'success' ? 'var(--green)' : status === 'warning' ? 'var(--gold)' : 'var(--red)';
-                predictionsContent += '<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:0.55rem;padding:8px;background:rgba(255,255,255,0.02);border-radius:8px"><span style="color:#888">📊 HbA1c (+3 yrs)</span><span style="color:' + statusColor + ';font-weight:700">' + current + ' → ' + predicted + ' / ' + target + '%</span></div>';
-            }
-            
-            if(predictions.predictedChanges.lifeExp) {
-                const current = user === 'J' ? 85 : 64;
-                const predicted = predictions.predictedChanges.lifeExp.toFixed(0);
-                const target = userData.protocol[predictions.nextMilestone].lifeExp;
-                const status = parseFloat(predicted) >= target * 0.95 ? 'success' : parseFloat(predicted) >= target * 0.85 ? 'warning' : 'error';
-                const statusColor = status === 'success' ? 'var(--green)' : status === 'warning' ? 'var(--gold)' : 'var(--red)';
-                predictionsContent += '<div style="display:flex;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.1);font-size:0.6rem;font-weight:900;padding:8px;background:rgba(212,175,55,0.05);border-radius:8px"><span style="color:var(--gold)">⏳ LIFE EXPECTANCY</span><span style="color:' + statusColor + '">' + current + ' → ' + predicted + ' / ' + target + ' yrs</span></div>';
-            }
-            
-            goalHTML += '<div class="collapsible-section"><div class="collapsible-header" onclick="toggleCollapse(\'predictions\')"><div><div class="collapsible-title">🎯 PROTOCOL: ' + milestone.toUpperCase() + '</div><div class="collapsible-score" style="color:' + complianceColor + '">' + protocolTitle + '</div></div><div class="collapsible-chevron" id="chevron-predictions">▼</div></div><div class="collapsible-content" id="content-predictions"><div class="collapsible-inner">' + predictionsContent + '</div></div></div>';
-        }
-        
-        goalHTML += '</div>';
     }
 
     document.getElementById('dayContent').innerHTML = goalHTML + 
@@ -1133,6 +1056,7 @@ function removeSnack(s) { if(snackLog[getDateKey(selDate)]) snackLog[getDateKey(
 function closeM(e) { if(!e || e.target.id === 'masterModal') document.getElementById('masterModal').style.display='none'; }
 
 window.onload = () => { 
+    selDate = getCaDate(); // Initialize selDate now that function exists
     document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
     document.getElementById('b' + user.toLowerCase()).classList.add('active');
     render(); 
