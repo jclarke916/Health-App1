@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v470.0 AI Protocol</title>
+    <title>The Centurion | v480.0 Dual Protocol</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --red:#FF5252; --text:#fff;
@@ -84,7 +84,7 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v470.0 AI Protocol</span>
+        <span class="version-tag">v480.0 Dual Protocol</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -118,7 +118,7 @@
 
 <script>
 // ==========================================
-// CENTURION v470.0 CORE
+// CENTURION v480.0 CORE
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
@@ -144,9 +144,10 @@ if (!uH) {
             labs:{apob:{val:95,goal:60,name:"ApoB",unit:"mg/dL",lowerIsBetter:true}, hba1c:{val:5.4,goal:5.0,name:"HbA1c",unit:"%",lowerIsBetter:true}, test:{val:650,goal:850,name:"Testosterone",unit:"ng/dL",lowerIsBetter:false}}, 
             tests:{vo2:{val:45,goal:55,name:"VO2 Max",unit:"ml/kg"}, hang:{val:90,goal:120,name:"Dead Hang",unit:"sec"}, wallsit:{val:60,goal:180,name:"Wall Sit",unit:"sec"}},
             protocol: {
-                month3: {vo2:52, vf:9, hba1c:5.2, muscle:101, lifeExp:89},
-                month6: {vo2:54, vf:8, hba1c:5.1, muscle:103, lifeExp:92},
-                month12: {vo2:55, vf:7, hba1c:5.0, muscle:105, lifeExp:95}
+                startDate: '2024-12-29',
+                month3: {vo2:48, vf:9, hba1c:5.3, apob:85, test:700, lifeExp:87},
+                month6: {vo2:50, vf:8, hba1c:5.2, apob:75, test:750, lifeExp:90},
+                month12: {vo2:55, vf:7, hba1c:5.0, apob:60, test:850, lifeExp:95}
             }
         },
         'S': { 
@@ -259,39 +260,49 @@ function predictBiomarkers(userData, uID) {
     };
     
     // Determine milestone
+    let target, baseline, weekProgress;
+    
     if(weeksSinceStart < 12) {
         predictions.nextMilestone = 'month3';
-        var weekProgress = weeksSinceStart / 12;
-        var target = userData.protocol.month3;
-        var baseline = { 
+        weekProgress = weeksSinceStart / 12;
+        target = userData.protocol.month3;
+        baseline = { 
             vo2: userData.tests.vo2.val, 
             vf: userData.now.vf, 
             hba1c: userData.labs.hba1c.val,
             muscle: userData.now.m,
             crp: userData.labs.crp ? userData.labs.crp.val : 1.8,
             wallsit: userData.tests.wallsit.val,
-            lifeExp: 64
+            apob: userData.labs.apob ? userData.labs.apob.val : 95,
+            test: userData.labs.test ? userData.labs.test.val : 650,
+            lifeExp: uID === 'J' ? 85 : 64
         };
     } else if(weeksSinceStart < 24) {
         predictions.nextMilestone = 'month6';
-        var weekProgress = (weeksSinceStart - 12) / 12;
-        var target = userData.protocol.month6;
-        var baseline = userData.protocol.month3;
+        weekProgress = (weeksSinceStart - 12) / 12;
+        target = userData.protocol.month6;
+        baseline = userData.protocol.month3;
     } else {
         predictions.nextMilestone = 'month12';
-        var weekProgress = Math.min(1, (weeksSinceStart - 24) / 28);
-        var target = userData.protocol.month12;
-        var baseline = userData.protocol.month6;
+        weekProgress = Math.min(1, (weeksSinceStart - 24) / 28);
+        target = userData.protocol.month12;
+        baseline = userData.protocol.month6;
     }
     
     predictions.predictedChanges.vo2 = baseline.vo2 + ((target.vo2 - baseline.vo2) * weekProgress * progressMultiplier);
     predictions.predictedChanges.vf = baseline.vf - ((baseline.vf - target.vf) * weekProgress * progressMultiplier);
     predictions.predictedChanges.hba1c = baseline.hba1c - ((baseline.hba1c - target.hba1c) * weekProgress * progressMultiplier);
-    predictions.predictedChanges.muscle = baseline.muscle + ((target.muscle - baseline.muscle) * weekProgress * progressMultiplier);
+    
     if(uID === 'S') {
+        predictions.predictedChanges.muscle = baseline.muscle + ((target.muscle - baseline.muscle) * weekProgress * progressMultiplier);
         predictions.predictedChanges.crp = baseline.crp - ((baseline.crp - target.crp) * weekProgress * progressMultiplier);
         predictions.predictedChanges.wallsit = baseline.wallsit + ((target.wallsit - baseline.wallsit) * weekProgress * progressMultiplier);
+    } else {
+        // Jermaine Specifics
+        predictions.predictedChanges.apob = baseline.apob - ((baseline.apob - target.apob) * weekProgress * progressMultiplier);
+        predictions.predictedChanges.test = baseline.test + ((target.test - baseline.test) * weekProgress * progressMultiplier);
     }
+    
     predictions.predictedChanges.lifeExp = baseline.lifeExp + ((target.lifeExp - baseline.lifeExp) * weekProgress * progressMultiplier);
     
     return predictions;
@@ -344,6 +355,7 @@ function showDay(dObj, idx) {
     const sc = (user === 'J') ? 1 : 0.6;
     const protocol = pDB[w] || pDB["RELAX"];
 
+    // Check workout data (Visual Badge)
     const dailyData = window.ouraHistory.find(d => d.date === dk);
     const hasWorkoutData = dailyData && (dailyData.high > 10 || dailyData.med > 30);
     const workoutBadge = hasWorkoutData ? 
@@ -382,6 +394,7 @@ function showDay(dObj, idx) {
     const pre = protocol[0].h.includes(":") ? protocol[0].h.split(':')[1] : protocol[0].h;
     const post = protocol[2].h.includes(":") ? protocol[2].h.split(':')[1] : protocol[2].h;
 
+    // GOAL CARD LOGIC
     const protocolTarget = protocolTargets[w];
     let goalHTML = '';
     const hasOuraData = dailyData && dailyData.cal !== undefined;
@@ -428,7 +441,7 @@ function showDay(dObj, idx) {
             
             protocolScore = Math.round(zoneScores.reduce((a,b)=>a+b,0)/zoneScores.length);
             workoutCompliance = protocolScore >= 80 ? 'success' : protocolScore >= 50 ? 'warning' : 'error';
-            workoutText = 'Activity ' + totalZoneTime + 'min';
+            workoutText = window.ouraWorkouts.find(wo => wo.date === dk) ? window.ouraWorkouts.find(wo => wo.date === dk).type + ' ' + totalZoneTime + 'min' : 'Activity ' + totalZoneTime + 'min';
             
             const zoneNames = ['Low HR','Medium HR','High HR'];
             const zoneKeys = ['low','medium','high'];
@@ -448,7 +461,7 @@ function showDay(dObj, idx) {
                     zoneComplianceHTML += '<div style="margin-left:10px;font-size:1.2rem">' + statusIcon + '</div></div>';
                 }
             });
-            zoneComplianceHTML += '</div>';
+            zoneComplianceHTML += '<div style="margin-top:8px;font-size:0.55rem;color:#666;font-style:italic">' + protocolTarget.focus + '</div></div>';
         }
         
         const recoveryScore = !hasOuraData ? 0 : Math.round((dailyData.score + (dailyData.sleepScore !== '-' ? dailyData.sleepScore : 0)) / 2);
