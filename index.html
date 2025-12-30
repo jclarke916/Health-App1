@@ -376,12 +376,46 @@ function showDay(dObj, idx) {
     let goalHTML = '';
     
     if(ouraData) {
-        // Calculate consumed calories (from meal plan - ASSUMED eaten)
+        // CALORIE BALANCE - Based on body composition goals
+        const userData = uH[user];
         const consumed = k; // Total from meal plan
         const burned = ouraData.burn || 0; // From Oura activity
-        const balance = consumed - burned;
-        const balanceStatus = balance < -100 ? 'success' : balance > 100 ? 'warning' : 'success';
-        const balanceText = balance > 0 ? `+${balance} surplus` : `${balance} deficit`;
+        
+        // Determine if user should be in surplus or deficit based on goals
+        const currentBF = userData.now.bf;
+        const goalBF = userData.goal.bf;
+        const currentMuscle = userData.now.m;
+        const goalMuscle = userData.goal.m;
+        
+        // If trying to lose fat OR gain muscle, calculate ideal balance
+        let targetBalance = 0;
+        let balanceRationale = '';
+        
+        if(currentBF > goalBF && currentMuscle < goalMuscle) {
+            // Recomp: slight deficit while maintaining protein
+            targetBalance = -200;
+            balanceRationale = 'Recomp: Small deficit for fat loss while building muscle';
+        } else if(currentBF > goalBF) {
+            // Cut: moderate deficit
+            targetBalance = -300;
+            balanceRationale = 'Cut: Deficit for fat loss';
+        } else if(currentMuscle < goalMuscle) {
+            // Bulk: slight surplus
+            targetBalance = 200;
+            balanceRationale = 'Bulk: Surplus for muscle gain';
+        } else {
+            // Maintenance
+            targetBalance = 0;
+            balanceRationale = 'Maintenance: At body comp goals';
+        }
+        
+        const actualBalance = consumed - burned;
+        const balanceDiff = actualBalance - targetBalance;
+        
+        // Status based on how close to target
+        const balanceStatus = Math.abs(balanceDiff) <= 100 ? 'success' : Math.abs(balanceDiff) <= 200 ? 'warning' : 'error';
+        const balanceText = actualBalance > 0 ? `+${actualBalance}` : `${actualBalance}`;
+        const targetText = targetBalance > 0 ? `+${targetBalance}` : targetBalance < 0 ? `${targetBalance}` : '0';
         
         // DETAILED WORKOUT PROTOCOL COMPLIANCE
         let workoutCompliance = 'warning';
@@ -443,7 +477,7 @@ function showDay(dObj, idx) {
         // Overall daily score
         const macroScore = Math.min(100, Math.round(((p/g.P) + (c/g.C) + (f/g.F) + (k/g.K)) / 4 * 100));
         const workoutScore = hasWorkoutData ? protocolScore : 50;
-        const calorieScore = Math.abs(balance) < 200 ? 100 : Math.abs(balance) < 400 ? 75 : 50;
+        const calorieScore = Math.abs(balanceDiff) < 100 ? 100 : Math.abs(balanceDiff) < 200 ? 85 : Math.abs(balanceDiff) < 300 ? 70 : 50;
         const dailyScore = Math.round((macroScore + workoutScore + calorieScore + recoveryScore) / 4);
         const scoreClass = dailyScore >= 85 ? 'excellent' : dailyScore >= 70 ? 'good' : 'poor';
         
@@ -458,9 +492,10 @@ function showDay(dObj, idx) {
                 </div>
                 
                 <div class="goal-metric">
-                    <div>
+                    <div style="flex:1">
                         <div class="goal-metric-label">🔥 Calorie Balance</div>
-                        <div class="goal-subtext">${consumed} consumed • ${burned} burned</div>
+                        <div class="goal-subtext">${consumed} in • ${burned} out • Target: ${targetText}</div>
+                        <div style="font-size:0.5rem;color:#666;margin-top:2px;font-style:italic">${balanceRationale}</div>
                     </div>
                     <div class="goal-metric-value ${balanceStatus}">${balanceText}</div>
                 </div>
