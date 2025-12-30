@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v480.0 Dual Protocol</title>
+    <title>The Centurion | v485.0 J-Protocol Active</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --red:#FF5252; --text:#fff;
@@ -84,7 +84,7 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v480.0 Dual Protocol</span>
+        <span class="version-tag">v485.0 J-Protocol Active</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -118,7 +118,7 @@
 
 <script>
 // ==========================================
-// CENTURION v480.0 CORE
+// CENTURION v485.0 CORE
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
@@ -441,7 +441,7 @@ function showDay(dObj, idx) {
             
             protocolScore = Math.round(zoneScores.reduce((a,b)=>a+b,0)/zoneScores.length);
             workoutCompliance = protocolScore >= 80 ? 'success' : protocolScore >= 50 ? 'warning' : 'error';
-            workoutText = window.ouraWorkouts.find(wo => wo.date === dk) ? window.ouraWorkouts.find(wo => wo.date === dk).type + ' ' + totalZoneTime + 'min' : 'Activity ' + totalZoneTime + 'min';
+            workoutText = 'Activity ' + totalZoneTime + 'min';
             
             const zoneNames = ['Low HR','Medium HR','High HR'];
             const zoneKeys = ['low','medium','high'];
@@ -466,9 +466,13 @@ function showDay(dObj, idx) {
         
         const recoveryScore = !hasOuraData ? 0 : Math.round((dailyData.score + (dailyData.sleepScore !== '-' ? dailyData.sleepScore : 0)) / 2);
         const recoveryStatus = !hasOuraData ? 'warning' : recoveryScore >= 80 ? 'success' : recoveryScore >= 65 ? 'warning' : 'error';
-        const dailyScore = Math.round((protocolScore + (Math.abs(balanceDiff)<200?100:70) + recoveryScore) / 3);
+        const recoveryText = !hasOuraData ? 'Syncing...' : recoveryScore + '/100';
         
-        goalHTML = '<div class="goal-card"><div class="goal-header"><div><div style="font-size:0.6rem;color:var(--gold);font-weight:900;text-transform:uppercase;letter-spacing:1px">Daily Performance</div><div style="font-size:0.5rem;color:#666;margin-top:2px">' + dk + '</div></div><div class="goal-score ' + (dailyScore>=85?'excellent':'good') + '">' + dailyScore + '%</div></div>';
+        const macroScore = Math.min(100, Math.round(((p/g.P) + (c/g.C) + (f/g.F) + (k/g.K)) / 4 * 100));
+        const dailyScore = Math.round((macroScore + (totalZoneTime>0?protocolScore:50) + (Math.abs(balanceDiff)<100?100:70) + recoveryScore) / 4);
+        const scoreClass = dailyScore >= 85 ? 'excellent' : dailyScore >= 70 ? 'good' : 'poor';
+        
+        goalHTML = '<div class="goal-card"><div class="goal-header"><div><div style="font-size:0.6rem;color:var(--gold);font-weight:900;text-transform:uppercase;letter-spacing:1px">Daily Performance</div><div style="font-size:0.5rem;color:#666;margin-top:2px">' + dk + '</div></div><div class="goal-score ' + scoreClass + '">' + dailyScore + '%</div></div>';
         goalHTML += '<div class="goal-metric"><div style="flex:1"><div class="goal-metric-label">🔥 Calorie Balance</div><div class="goal-subtext">' + consumed + ' in • ' + burned + ' out • Target: ' + (targetBalance>0?'+':"") + targetBalance + '</div><div style="font-size:0.5rem;color:#666;margin-top:2px;font-style:italic">' + balanceRationale + '</div></div><div class="goal-metric-value ' + balanceStatus + '">' + balanceText + '</div></div>';
         goalHTML += '<div class="goal-metric" style="flex-direction:column;align-items:stretch"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:' + (zoneComplianceHTML?'5px':'0') + '"><div><div class="goal-metric-label">💪 Protocol: ' + w + '</div><div class="goal-subtext">Target: ' + (protocolTarget?protocolTarget.duration:0) + 'min</div></div><div class="goal-metric-value ' + workoutCompliance + '">' + workoutText + '</div></div>' + zoneComplianceHTML + '</div>';
         goalHTML += '<div class="goal-metric"><div><div class="goal-metric-label">📊 Macro Targets</div><div class="goal-subtext">' + p + '/' + g.P + 'P • ' + c + '/' + g.C + 'C • ' + f + '/' + g.F + 'F</div></div><div class="goal-metric-value ' + (Math.min(100,Math.round(p/g.P*100)) >= 85 ? 'success' : 'warning') + '">' + Math.min(100,Math.round(p/g.P*100)) + '%</div></div>';
@@ -535,6 +539,16 @@ function toggleAI() {
             
             if(predictions.predictedChanges.vo2) predictionHTML += `<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:0.6rem"><span style="color:#888">VO2 Max</span><span style="color:var(--green)">${predictions.predictedChanges.vo2.toFixed(1)} → ${u.protocol[predictions.nextMilestone].vo2}</span></div>`;
             if(predictions.predictedChanges.vf) predictionHTML += `<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:0.6rem"><span style="color:#888">Visceral Fat</span><span style="color:var(--green)">${predictions.predictedChanges.vf.toFixed(1)} → ${u.protocol[predictions.nextMilestone].vf}</span></div>`;
+            
+            // Render Jermaine specific biomarkers
+            if(predictions.predictedChanges.apob) predictionHTML += `<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:0.6rem"><span style="color:#888">ApoB</span><span style="color:var(--green)">${predictions.predictedChanges.apob.toFixed(1)} → ${u.protocol[predictions.nextMilestone].apob}</span></div>`;
+            if(predictions.predictedChanges.test) predictionHTML += `<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:0.6rem"><span style="color:#888">Testosterone</span><span style="color:var(--green)">${predictions.predictedChanges.test.toFixed(0)} → ${u.protocol[predictions.nextMilestone].test}</span></div>`;
+            
+            // Render Sophia specific biomarkers
+            if(predictions.predictedChanges.hba1c) predictionHTML += `<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:0.6rem"><span style="color:#888">HbA1c</span><span style="color:var(--green)">${predictions.predictedChanges.hba1c.toFixed(2)} → ${u.protocol[predictions.nextMilestone].hba1c}</span></div>`;
+            if(predictions.predictedChanges.muscle) predictionHTML += `<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:0.6rem"><span style="color:#888">Muscle Mass</span><span style="color:var(--green)">${predictions.predictedChanges.muscle.toFixed(1)} → ${u.protocol[predictions.nextMilestone].muscle} lbs</span></div>`;
+            if(predictions.predictedChanges.crp) predictionHTML += `<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:0.6rem"><span style="color:#888">hs-CRP</span><span style="color:var(--green)">${predictions.predictedChanges.crp.toFixed(1)} → ${u.protocol[predictions.nextMilestone].crp}</span></div>`;
+            
             if(predictions.predictedChanges.lifeExp) predictionHTML += `<div style="display:flex;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.1);font-size:0.65rem;font-weight:900"><span style="color:var(--gold)">LIFE EXPECTANCY</span><span style="color:var(--green)">${predictions.predictedChanges.lifeExp.toFixed(1)} → ${u.protocol[predictions.nextMilestone].lifeExp} years</span></div>`;
             predictionHTML += `</div></div>`;
         }
@@ -582,7 +596,11 @@ function renderBioTab(tab) {
         let bodyHTML = '';
         if(predictions && predictions.predictedChanges.vf) {
              bodyHTML += bioBarWithPrediction("Body Fat", u.now.bf, u.now.bf - (u.now.vf - predictions.predictedChanges.vf)*1.5, u.goal.bf, "%", true, predictions.currentWeek);
-             bodyHTML += bioBarWithPrediction("Muscle", u.now.m, predictions.predictedChanges.muscle, u.goal.m, " lbs", false, predictions.currentWeek);
+             if(predictions.predictedChanges.muscle) {
+                 bodyHTML += bioBarWithPrediction("Muscle", u.now.m, predictions.predictedChanges.muscle, u.goal.m, " lbs", false, predictions.currentWeek);
+             } else {
+                 bodyHTML += bioBar("Muscle", u.now.m, u.goal.m, " lbs", false);
+             }
              bodyHTML += bioBarWithPrediction("Visceral", u.now.vf, predictions.predictedChanges.vf, u.goal.vf, "", true, predictions.currentWeek);
         } else {
              bodyHTML += bioBar("Body Fat", u.now.bf, u.goal.bf, "%", true);
