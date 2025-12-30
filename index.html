@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v387</title>
+    <title>The Centurion | v388</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --red:#FF5252; --text:#fff;
@@ -82,7 +82,7 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v387 Collapsible Dashboard</span>
+        <span class="version-tag">v388 Selective Collapse</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -98,8 +98,6 @@
     <button class="nav-btn" onclick="changeW(-1)">◀ PREV</button>
     <button class="nav-btn" onclick="resetD()">TODAY</button>
     <button class="nav-btn" onclick="changeW(1)">NEXT ▶</button>
-    <button class="nav-btn" onclick="openBio()" style="color:var(--green)">📊 DATA</button>
-    <button class="nav-btn" onclick="toggleAI()" style="color:var(--blue)">🧠 AI</button>
 </div>
 <div id="dayTabs" class="tabs"></div>
 <div id="dayContent"></div>
@@ -497,6 +495,72 @@ function showDay(dObj, idx) {
         const scoreClass = dailyScore >= 85 ? 'excellent' : dailyScore >= 70 ? 'good' : 'poor';
         const scoreColor = dailyScore >= 85 ? 'var(--green)' : dailyScore >= 70 ? 'var(--gold)' : 'var(--red)';
         
+        // COLLAPSIBLE: Daily Performance Dashboard
+        goalHTML = '<div class="collapsible-section"><div class="collapsible-header" onclick="toggleCollapse(\'dashboard\')"><div><div class="collapsible-title">Daily Performance</div><div style="font-size:0.5rem;color:#666;margin-top:2px">' + dk + '</div></div><div style="display:flex;align-items:center;gap:15px"><div class="collapsible-score" style="color:' + scoreColor + '">' + dailyScore + '%</div><div class="collapsible-chevron" id="chevron-dashboard">▼</div></div></div><div class="collapsible-content expanded" id="content-dashboard"><div class="collapsible-inner">';
+        
+        goalHTML += '<div class="goal-metric"><div style="flex:1"><div class="goal-metric-label">🔥 Calorie Balance</div><div class="goal-subtext">' + consumed + ' in • ' + burned + ' out • Target: ' + targetText + '</div><div style="font-size:0.5rem;color:#666;margin-top:2px;font-style:italic">' + bodyCompStrategy + '</div></div><div class="goal-metric-value ' + balanceStatus + '">' + balanceText + '</div></div>';
+        
+        goalHTML += '<div class="goal-metric" style="flex-direction:column;align-items:stretch"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:' + (zoneComplianceHTML?'5px':'0') + '"><div><div class="goal-metric-label">💪 Protocol: ' + w + '</div><div class="goal-subtext">Target: ' + (protocolTarget ? protocolTarget.duration : 45) + 'min</div></div><div class="goal-metric-value ' + workoutCompliance + '">' + workoutText + '</div></div>' + zoneComplianceHTML + '</div>';
+        
+        goalHTML += '<div class="goal-metric"><div><div class="goal-metric-label">📊 Macro Targets</div><div class="goal-subtext">' + Math.round(p) + '/' + g.P + 'P • ' + Math.round(c) + '/' + g.C + 'C • ' + Math.round(f) + '/' + g.F + 'F</div></div><div class="goal-metric-value ' + (macroScore >= 85 ? 'success' : macroScore >= 70 ? 'warning' : 'error') + '">' + macroScore + '%</div></div>';
+        
+        goalHTML += '<div class="goal-metric"><div><div class="goal-metric-label">😴 Recovery</div><div class="goal-subtext">Readiness ' + (hasOuraData ? ouraData.score : '-') + ' • Sleep ' + (hasOuraData && ouraData.sleepScore !== '-' ? ouraData.sleepScore : '-') + '</div></div><div class="goal-metric-value ' + recoveryStatus + '">' + recoveryText + '</div></div>';
+        
+        // Add protocol predictions if available
+        const predictions = predictBiomarkers(userData, user);
+        if(predictions && predictions.compliance > 0) {
+            const milestone = predictions.nextMilestone.replace('month', 'Month ');
+            const weeksToGo = predictions.nextMilestone === 'month3' ? (12 - predictions.currentWeek) : 
+                              predictions.nextMilestone === 'month6' ? (24 - predictions.currentWeek) : (52 - predictions.currentWeek);
+            
+            const complianceColor = predictions.compliance >= 85 ? 'success' : predictions.compliance >= 70 ? 'warning' : 'error';
+            
+            goalHTML += '<div style="margin-top:15px;padding-top:15px;border-top:1px solid rgba(255,255,255,0.1)"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div class="goal-metric-label">🎯 PROTOCOL: ' + milestone.toUpperCase() + '</div><div style="display:flex;gap:10px"><div style="text-align:center"><div style="font-size:0.45rem;color:#666">WEEK</div><div style="font-size:0.8rem;font-weight:900;color:#fff">' + predictions.currentWeek + '</div></div><div style="text-align:center"><div style="font-size:0.45rem;color:#666">LEFT</div><div style="font-size:0.8rem;font-weight:900;color:var(--blue)">' + weeksToGo + 'w</div></div><div style="text-align:center"><div style="font-size:0.45rem;color:#666">PACE</div><div class="goal-metric-value ' + complianceColor + '" style="font-size:0.8rem">' + predictions.compliance + '%</div></div></div></div>';
+            
+            goalHTML += '<div style="font-size:0.5rem;color:#666;margin-bottom:5px;font-weight:700">TOP PRIORITIES → ' + milestone.toUpperCase() + '</div>';
+            
+            // Priority 1: VO2 Max (biggest longevity impact)
+            if(predictions.predictedChanges.vo2) {
+                const current = userData.tests.vo2.val;
+                const predicted = predictions.predictedChanges.vo2.toFixed(1);
+                const target = userData.protocol[predictions.nextMilestone].vo2;
+                const status = parseFloat(predicted) >= target * 0.9 ? 'success' : parseFloat(predicted) >= target * 0.75 ? 'warning' : 'error';
+                goalHTML += '<div style="display:flex;justify-content:space-between;margin-bottom:3px;font-size:0.55rem"><span style="color:#888">🫁 VO2 Max (+8 yrs)</span><span class="goal-metric-value ' + status + '" style="font-size:0.55rem">' + current + ' → ' + predicted + ' / ' + target + '</span></div>';
+            }
+            
+            // Priority 2: Visceral Fat (major health marker)
+            if(predictions.predictedChanges.vf) {
+                const current = userData.now.vf;
+                const predicted = predictions.predictedChanges.vf.toFixed(1);
+                const target = userData.protocol[predictions.nextMilestone].vf;
+                const status = parseFloat(predicted) <= target * 1.1 ? 'success' : parseFloat(predicted) <= target * 1.25 ? 'warning' : 'error';
+                goalHTML += '<div style="display:flex;justify-content:space-between;margin-bottom:3px;font-size:0.55rem"><span style="color:#888">🔥 Visceral Fat (+4 yrs)</span><span class="goal-metric-value ' + status + '" style="font-size:0.55rem">' + current + ' → ' + predicted + ' / ' + target + '</span></div>';
+            }
+            
+            // Priority 3: HbA1c (metabolic health)
+            if(predictions.predictedChanges.hba1c) {
+                const current = userData.labs.hba1c.val;
+                const predicted = predictions.predictedChanges.hba1c.toFixed(2);
+                const target = userData.protocol[predictions.nextMilestone].hba1c;
+                const status = parseFloat(predicted) <= target * 1.05 ? 'success' : parseFloat(predicted) <= target * 1.1 ? 'warning' : 'error';
+                goalHTML += '<div style="display:flex;justify-content:space-between;margin-bottom:3px;font-size:0.55rem"><span style="color:#888">📊 HbA1c (+3 yrs)</span><span class="goal-metric-value ' + status + '" style="font-size:0.55rem">' + current + ' → ' + predicted + ' / ' + target + '%</span></div>';
+            }
+            
+            // Priority 4: Life Expectancy (overall projection)
+            if(predictions.predictedChanges.lifeExp) {
+                const current = user === 'J' ? 85 : 64;
+                const predicted = predictions.predictedChanges.lifeExp.toFixed(0);
+                const target = userData.protocol[predictions.nextMilestone].lifeExp;
+                const status = parseFloat(predicted) >= target * 0.95 ? 'success' : parseFloat(predicted) >= target * 0.85 ? 'warning' : 'error';
+                goalHTML += '<div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.1);font-size:0.6rem;font-weight:900"><span style="color:var(--gold)">⏳ LIFE EXPECTANCY</span><span class="goal-metric-value ' + status + '" style="font-size:0.6rem">' + current + ' → ' + predicted + ' / ' + target + ' yrs</span></div>';
+            }
+            
+            goalHTML += '</div>';
+        }
+        
+        goalHTML += '</div></div></div>';
+        const scoreColor = dailyScore >= 85 ? 'var(--green)' : dailyScore >= 70 ? 'var(--gold)' : 'var(--red)';
+        
         goalHTML = '<div class="goal-card"><div class="goal-header"><div><div style="font-size:0.6rem;color:var(--gold);font-weight:900;text-transform:uppercase;letter-spacing:1px">Daily Performance</div><div style="font-size:0.5rem;color:#666;margin-top:2px">' + dk + '</div></div><div class="goal-score ' + scoreClass + '">' + dailyScore + '%</div></div>';
         
         // COLLAPSIBLE: Calorie Balance
@@ -574,7 +638,108 @@ function showDay(dObj, idx) {
         goalHTML += '</div>';
     }
 
-    document.getElementById('dayContent').innerHTML = goalHTML + '<div class="card" onclick="openWorkoutFlow(\'' + w + '\')" style="cursor:pointer; border-bottom:3px solid var(--blue)"><div style="display:flex; justify-content:space-between; align-items:center; text-align:center"><div><div class="label">WARM</div>' + pre + '</div><div style="color:var(--blue); font-size:1.2rem">➜</div><div style="font-weight:900; color:#fff">' + w + '</div><div style="color:var(--blue); font-size:1.2rem">➜</div><div><div class="label">RECOVER</div>' + post + '</div></div></div><div class="label">🧬 DAILY ESSENTIALS</div><div style="display:flex; gap:10px; margin-bottom:15px"><div class="value" style="flex:1; justify-content:center" onclick="openEssential(\'Sea Moss\')">Sea Moss</div><div class="value" style="flex:1; justify-content:center" onclick="openEssential(\'' + (user==='S'?'Hibiscus Tea':'Kombucha') + '\')">' + (user==='S'?'Hibiscus':'Kombucha') + '</div></div><div class="label">🍳 BREAKFAST</div><div class="value" onclick="openDBRecipe(\'b\', ' + (Math.abs(id)%mDB.b.length) + ')"><span>' + b[0] + '</span><span class="macro-pill">' + Math.round(b[4]*sc) + 'P ' + Math.round(b[5]*sc) + 'C ' + Math.round(b[7]*sc) + 'F ' + Math.round(b[6]*sc) + 'k</span></div><div class="label">🥗 LUNCH</div><div class="value" onclick="openDBRecipe(\'l\', ' + (Math.abs(id)%mDB.l.length) + ')"><span>' + l[0] + '</span><span class="macro-pill">' + Math.round(l[4]*sc) + 'P ' + Math.round(l[5]*sc) + 'C ' + Math.round(l[7]*sc) + 'F ' + Math.round(l[6]*sc) + 'k</span></div><div class="label">🍽️ DINNER</div><div class="value" onclick="openDBRecipe(\'d\', ' + (Math.abs(id)%mDB.d.length) + ')"><span>' + dn[0] + '</span><span class="macro-pill">' + Math.round(dn[4]*sc) + 'P ' + Math.round(dn[5]*sc) + 'C ' + Math.round(dn[7]*sc) + 'F ' + Math.round(dn[6]*sc) + 'k</span></div><div class="label">🥜 SNACKS</div>' + snackHTML + '<div class="label">🍹 JUICE</div><div class="juice-name" onclick="openJuice(\'' + jn + '\')">' + jn + '</div><div class="macro-dashboard"><div class="macro-row"><div class="macro-label"><span>PROTEIN</span><span>' + p + ' / ' + g.P + 'g</span></div><div class="macro-bg"><div class="macro-fill" style="width:' + Math.min((p/g.P)*100,100) + '%; background:var(--g-pro)"></div></div></div><div class="macro-row"><div class="macro-label"><span style="color:var(--green)">FIBER</span><span>' + f + ' / ' + g.F + 'g</span></div><div class="macro-bg"><div class="macro-fill" style="width:' + Math.min((f/g.F)*100,100) + '%; background:var(--g-fib)"></div></div></div><div class="macro-row"><div class="macro-label"><span>CARBS</span><span>' + c + ' / ' + g.C + 'g</span></div><div class="macro-bg"><div class="macro-fill" style="width:' + Math.min((c/g.C)*100,100) + '%; background:var(--g-carb)"></div></div></div><div class="macro-row"><div class="macro-label"><span>CALORIES</span><span>' + k + ' / ' + g.K + '</span></div><div class="macro-bg"><div class="macro-fill" style="width:' + Math.min((k/g.K)*100,100) + '%; background:var(--g-cal)"></div></div></div></div>';
+    document.getElementById('dayContent').innerHTML = goalHTML + 
+    
+    // COLLAPSIBLE: AI Projection (shows life expectancy when collapsed)
+    '<div class="collapsible-section" style="margin-top:15px"><div class="collapsible-header" onclick="toggleCollapse(\'ai\')"><div><div class="collapsible-title">🧠 AI PROJECTION</div></div><div style="display:flex;align-items:center;gap:15px"><div class="collapsible-score" style="color:var(--blue);font-size:1.2rem">' + calculateLongevity(uH[user]) + ' yrs</div><div class="collapsible-chevron" id="chevron-ai">▼</div></div></div><div class="collapsible-content" id="content-ai"><div class="collapsible-inner" id="aiDashboard"></div></div></div>' +
+    
+    // COLLAPSIBLE: Data & Biometrics
+    '<div class="collapsible-section"><div class="collapsible-header" onclick="toggleCollapse(\'data\');if(!document.getElementById(\'content-data\').classList.contains(\'expanded\')){setTimeout(()=>openMasterModal(),300)}"><div><div class="collapsible-title">📊 DATA & BIOMETRICS</div></div><div style="display:flex;align-items:center;gap:15px"><div class="collapsible-score" style="color:var(--gold);font-size:0.8rem">View Stats</div><div class="collapsible-chevron" id="chevron-data">▼</div></div></div><div class="collapsible-content" id="content-data"><div class="collapsible-inner"><div style="text-align:center;padding:20px;color:#888;font-size:0.7rem">Click header again to open full data modal</div></div></div></div>' +
+    
+    '<div class="card" onclick="openWorkoutFlow(\'' + w + '\')" style="cursor:pointer; border-bottom:3px solid var(--blue)"><div style="display:flex; justify-content:space-between; align-items:center; text-align:center"><div><div class="label">WARM</div>' + pre + '</div><div style="color:var(--blue); font-size:1.2rem">➜</div><div style="font-weight:900; color:#fff">' + w + '</div><div style="color:var(--blue); font-size:1.2rem">➜</div><div><div class="label">RECOVER</div>' + post + '</div></div></div>' +
+    
+    '<div class="label">🧬 DAILY ESSENTIALS</div><div style="display:flex; gap:10px; margin-bottom:15px"><div class="value" style="flex:1; justify-content:center" onclick="openEssential(\'Sea Moss\')">Sea Moss</div><div class="value" style="flex:1; justify-content:center" onclick="openEssential(\'' + (user==='S'?'Hibiscus Tea':'Kombucha') + '\')">' + (user==='S'?'Hibiscus':'Kombucha') + '</div></div>' +
+    
+    // COLLAPSIBLE: Meals
+    '<div class="collapsible-section"><div class="collapsible-header" onclick="toggleCollapse(\'meals\')"><div><div class="collapsible-title">🍽️ MEALS</div></div><div style="display:flex;align-items:center;gap:15px"><div class="collapsible-score" style="color:' + (macroScore >= 85 ? 'var(--green)' : macroScore >= 70 ? 'var(--gold)' : 'var(--red)') + ';font-size:1.2rem">' + macroScore + '%</div><div class="collapsible-chevron" id="chevron-meals">▼</div></div></div><div class="collapsible-content expanded" id="content-meals"><div class="collapsible-inner">' +
+    
+    '<div class="label">🍳 BREAKFAST</div><div class="value" onclick="openDBRecipe(\'b\', ' + (Math.abs(id)%mDB.b.length) + ')"><span>' + b[0] + '</span><span class="macro-pill">' + Math.round(b[4]*sc) + 'P ' + Math.round(b[5]*sc) + 'C ' + Math.round(b[7]*sc) + 'F ' + Math.round(b[6]*sc) + 'k</span></div>' +
+    
+    '<div class="label">🥗 LUNCH</div><div class="value" onclick="openDBRecipe(\'l\', ' + (Math.abs(id)%mDB.l.length) + ')"><span>' + l[0] + '</span><span class="macro-pill">' + Math.round(l[4]*sc) + 'P ' + Math.round(l[5]*sc) + 'C ' + Math.round(l[7]*sc) + 'F ' + Math.round(l[6]*sc) + 'k</span></div>' +
+    
+    '<div class="label">🍽️ DINNER</div><div class="value" onclick="openDBRecipe(\'d\', ' + (Math.abs(id)%mDB.d.length) + ')"><span>' + dn[0] + '</span><span class="macro-pill">' + Math.round(dn[4]*sc) + 'P ' + Math.round(dn[5]*sc) + 'C ' + Math.round(dn[7]*sc) + 'F ' + Math.round(dn[6]*sc) + 'k</span></div>' +
+    
+    '<div class="label">🥜 SNACKS</div>' + snackHTML +
+    
+    '<div class="label">🍹 JUICE</div><div class="juice-name" onclick="openJuice(\'' + jn + '\')">' + jn + '</div>' +
+    
+    '<div class="macro-dashboard"><div class="macro-row"><div class="macro-label"><span>PROTEIN</span><span>' + p + ' / ' + g.P + 'g</span></div><div class="macro-bg"><div class="macro-fill" style="width:' + Math.min((p/g.P)*100,100) + '%; background:var(--g-pro)"></div></div></div><div class="macro-row"><div class="macro-label"><span style="color:var(--green)">FIBER</span><span>' + f + ' / ' + g.F + 'g</span></div><div class="macro-bg"><div class="macro-fill" style="width:' + Math.min((f/g.F)*100,100) + '%; background:var(--g-fib)"></div></div></div><div class="macro-row"><div class="macro-label"><span>CARBS</span><span>' + c + ' / ' + g.C + 'g</span></div><div class="macro-bg"><div class="macro-fill" style="width:' + Math.min((c/g.C)*100,100) + '%; background:var(--g-carb)"></div></div></div><div class="macro-row"><div class="macro-label"><span>CALORIES</span><span>' + k + ' / ' + g.K + '</span></div><div class="macro-bg"><div class="macro-fill" style="width:' + Math.min((k/g.K)*100,100) + '%; background:var(--g-cal)"></div></div></div></div>' +
+    
+    '</div></div></div>';
+}
+
+function toggleCollapse(section) {
+    const content = document.getElementById('content-' + section);
+    const chevron = document.getElementById('chevron-' + section);
+    
+    if(content.classList.contains('expanded')) {
+        content.classList.remove('expanded');
+        chevron.classList.remove('expanded');
+        
+        // Clear AI dashboard when closing
+        if(section === 'ai') {
+            document.getElementById('aiDashboard').innerHTML = '';
+        }
+    } else {
+        content.classList.add('expanded');
+        chevron.classList.add('expanded');
+        
+        // Load AI dashboard when opening
+        if(section === 'ai') {
+            const u = uH[user];
+            const projection = calculateLongevity(u);
+            const gap = (100.0 - parseFloat(projection)).toFixed(1);
+            const onTrack = parseFloat(projection) >= 100;
+            
+            const predictions = predictBiomarkers(u, user);
+            
+            let predictionHTML = '';
+            if(predictions && predictions.compliance > 0) {
+                const milestone = predictions.nextMilestone.replace('month', 'Month ');
+                const weeksToGo = predictions.nextMilestone === 'month3' ? (12 - predictions.currentWeek) : 
+                                  predictions.nextMilestone === 'month6' ? (24 - predictions.currentWeek) : (52 - predictions.currentWeek);
+                
+                const complianceColor = predictions.compliance >= 85 ? 'var(--green)' : predictions.compliance >= 70 ? 'var(--gold)' : 'var(--red)';
+                
+                predictionHTML = '<div class="bio-section" style="margin-top:15px;background:rgba(212,175,55,0.05);border:1px solid var(--gold)"><div style="font-size:0.6rem;color:var(--gold);font-weight:900;letter-spacing:2px;margin-bottom:10px">PROTOCOL PROGRESS</div><div style="display:flex;justify-content:space-between;margin-bottom:10px"><div><div style="font-size:0.5rem;color:#888">WEEK</div><div style="font-size:1.5rem;font-weight:900;color:#fff">' + predictions.currentWeek + '</div></div><div><div style="font-size:0.5rem;color:#888">COMPLIANCE</div><div style="font-size:1.5rem;font-weight:900;color:' + complianceColor + '">' + predictions.compliance + '%</div></div><div><div style="font-size:0.5rem;color:#888">TO ' + milestone.toUpperCase() + '</div><div style="font-size:1.5rem;font-weight:900;color:var(--blue)">' + weeksToGo + 'w</div></div></div>';
+                
+                predictionHTML += '<div style="margin-top:15px;padding-top:15px;border-top:1px solid rgba(255,255,255,0.1)"><div style="font-size:0.55rem;color:#666;margin-bottom:8px;font-weight:700">PREDICTED ' + milestone.toUpperCase() + ' BIOMARKERS</div>';
+                
+                if(predictions.predictedChanges.vo2) {
+                    const target = u.protocol[predictions.nextMilestone].vo2;
+                    predictionHTML += '<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:0.6rem"><span style="color:#888">VO2 Max</span><span style="color:var(--green)">' + predictions.predictedChanges.vo2.toFixed(1) + ' → ' + target + '</span></div>';
+                }
+                if(predictions.predictedChanges.vf) {
+                    const target = u.protocol[predictions.nextMilestone].vf;
+                    predictionHTML += '<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:0.6rem"><span style="color:#888">Visceral Fat</span><span style="color:var(--green)">' + predictions.predictedChanges.vf.toFixed(1) + ' → ' + target + '</span></div>';
+                }
+                if(predictions.predictedChanges.hba1c) {
+                    const target = u.protocol[predictions.nextMilestone].hba1c;
+                    predictionHTML += '<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:0.6rem"><span style="color:#888">HbA1c</span><span style="color:var(--green)">' + predictions.predictedChanges.hba1c.toFixed(2) + ' → ' + target + '</span></div>';
+                }
+                if(predictions.predictedChanges.muscle) {
+                    const target = u.protocol[predictions.nextMilestone].muscle;
+                    predictionHTML += '<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:0.6rem"><span style="color:#888">Muscle Mass</span><span style="color:var(--green)">' + predictions.predictedChanges.muscle.toFixed(1) + ' → ' + target + ' lbs</span></div>';
+                }
+                if(predictions.predictedChanges.crp) {
+                    const target = u.protocol[predictions.nextMilestone].crp;
+                    predictionHTML += '<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:0.6rem"><span style="color:#888">hs-CRP</span><span style="color:var(--green)">' + predictions.predictedChanges.crp.toFixed(1) + ' → ' + target + '</span></div>';
+                }
+                if(predictions.predictedChanges.wallsit) {
+                    const target = u.protocol[predictions.nextMilestone].wallsit;
+                    predictionHTML += '<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:0.6rem"><span style="color:#888">Wall Sit</span><span style="color:var(--green)">' + Math.round(predictions.predictedChanges.wallsit) + ' → ' + target + ' sec</span></div>';
+                }
+                if(predictions.predictedChanges.lifeExp) {
+                    const target = u.protocol[predictions.nextMilestone].lifeExp;
+                    predictionHTML += '<div style="display:flex;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.1);font-size:0.65rem;font-weight:900"><span style="color:var(--gold)">LIFE EXPECTANCY</span><span style="color:var(--gold)">' + predictions.predictedChanges.lifeExp.toFixed(1) + ' → ' + target + ' years</span></div>';
+                }
+                
+                predictionHTML += '</div></div>';
+            }
+            
+            document.getElementById('aiDashboard').innerHTML = '<div class="bio-section" style="background:rgba(0,176,255,0.05); text-align:center; border:1px solid var(--blue);"><div style="font-size:0.6rem; color:var(--blue); font-weight:900; letter-spacing:2px">CURRENT PROJECTION</div><div style="font-size:3.5rem; font-weight:800; color:#fff;">' + projection + '</div><div style="font-size:0.7rem; color:' + (onTrack ? 'var(--green)' : 'var(--gold)') + '; font-weight:900; margin-bottom:5px;">' + (onTrack ? '🏆 CENTURION STATUS ACHIEVED' : 'CHASING 100: ' + gap + ' YEARS TO GO') + '</div><div class="bar-track" style="margin:10px auto; width:80%; height:6px; background:#222;"><div class="bar-fill" style="width:' + Math.min((projection/100)*100, 100) + '%; background:' + (onTrack ? 'var(--green)' : 'var(--blue)') + ';"></div></div></div>' + predictionHTML + '<div class="intervention-card"><strong>🔥 AI STRATEGY:</strong><br>' + (u.labs && u.labs.apob && u.labs.apob.val > 70 ? "ApoB is the biggest drag on your 100-year goal. Increase fiber to 40g." : u.tests && u.tests.vo2.val < 50 ? "VO2 Max is your biggest leverage point. Push Zone 5 intensity." : "Metabolic metrics stable. Maintain muscle mass to protect the final decade.") + '</div>';
+        }
+    }
 }
 
 function toggleCollapse(section) {
