@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v1110.5 Nutrients Restore</title>
+    <title>The Centurion | v1110.6 HR Zone Fix</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -16,7 +16,6 @@
             --green: #30D158;
             --blue: #0A84FF;
             --red: #FF453A;
-            --purple: #BF5AF2;
             --radius: 24px;
         }
 
@@ -34,10 +33,10 @@
         .nav-btn { background: var(--glass); border: 1px solid var(--border); color: var(--text-sub); padding: 12px; flex: 1; border-radius: 16px; font-size: 0.6rem; font-weight: 700; cursor: pointer; text-transform: uppercase; }
 
         .tabs { display: flex; gap: 6px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none;}
-        .tab { flex: 1; min-width: 45px; padding: 12px 0; background: transparent; color: #555; border-radius: 16px; font-size: 0.6rem; font-weight: 700; text-align: center; cursor: pointer; transition: all 0.3s; }
+        .tab { flex: 1; min-width: 45px; padding: 12px 0; background: transparent; color: #555; border-radius: 16px; font-size: 0.6rem; font-weight: 700; text-align: center; cursor: pointer; }
         .tab.active { background: var(--glass); color: #fff; border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
 
-        .premium-card { background: var(--glass); backdrop-filter: blur(20px); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 12px; overflow: hidden; cursor: pointer; }
+        .premium-card { background: var(--glass); backdrop-filter: blur(20px); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 12px; overflow: hidden; cursor: pointer; transition: transform 0.2s; }
         .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .card-title { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-sub); }
         .card-val-lg { font-size: 1.6rem; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
@@ -55,6 +54,10 @@
         .status-pill { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
         .pill-win { background: rgba(48, 209, 88, 0.15); color: var(--green); border: 1px solid rgba(48, 209, 88, 0.3); }
         .pill-rest { background: rgba(255, 69, 58, 0.15); color: var(--red); border: 1px solid rgba(255, 69, 58, 0.3); }
+
+        .directive-box { margin-top: 15px; padding: 12px; background: rgba(255, 214, 10, 0.06); border-left: 2px solid var(--gold); border-radius: 4px; font-size: 0.75rem; color: #ddd; line-height: 1.4; }
+        .directive-label { display: block; font-weight: 800; text-transform: uppercase; font-size: 0.6rem; color: var(--gold); margin-bottom: 4px; letter-spacing: 1px; }
+
         .chevron { font-size: 0.8rem; color: #444; transition: transform 0.3s ease; margin-left: 10px; }
         .premium-card.collapsed .card-body { display: none; }
         .premium-card.collapsed .chevron { transform: rotate(-90deg); }
@@ -79,7 +82,7 @@
     
     <div id="dayTabs" class="tabs"></div>
     <div id="dayContent"></div>
-    <div style="text-align:center; color:#333; font-size:10px; margin-top:30px; opacity:0.4;">v1110.5 Nutrients Restore</div>
+    <div style="text-align:center; color:#333; font-size:10px; margin-top:30px; opacity:0.4;">v1110.6 Master Sync</div>
 </div>
 
 <script>
@@ -87,8 +90,9 @@ let user = localStorage.getItem('centurion_active_user') || 'J';
 let offset = 0;
 let selDate = getCaDate(); 
 
+// Global Expansion States
 let isPlanCollapsed = false;
-let isWorkoutCollapsed = true;
+let isWorkoutCollapsed = false; // Opened by default to confirm fix
 let isNutCollapsed = true;
 let isAICollapsed = true;
 let isBioCollapsed = true;
@@ -166,7 +170,7 @@ function showDay(dObj, idx) {
     <div class="premium-card ${isPlanCollapsed?'collapsed':''}" onclick="isPlanCollapsed=!isPlanCollapsed;render()">
         <div class="card-header"><div><div class="card-title accent-gold">DAILY PROTOCOL</div><div class="card-subtitle">${dayData.focus}</div></div><div class="card-val-lg">${hasData ? (isActive?'ACTIVE':'REST') : '-'} <span class="chevron">▼</span></div></div>
         <div class="card-body">
-            <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:center;"><span class="status-pill ${hasData ? (isActive?'pill-win':'pill-rest') : 'pill-fail'}">${hasData ? (isActive?'ACTIVE PROTOCOL':'REST PROTOCOL') : 'SYNCING...'}</span><span style="font-size:0.7rem; color:#888;">READINESS: ${rawOura.score}</span></div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:center;"><span class="status-pill ${hasData ? (isActive?'pill-win':'pill-rest') : 'pill-fail'}">${hasData ? (isActive?'ACTIVE':'REST') : 'SYNCING'}</span><span style="font-size:0.7rem; color:#888;">READINESS: ${rawOura.score}</span></div>
             <div style="font-size:0.8rem; color:#ddd; line-height:1.5;">${dayData.tasks}</div>
         </div>
     </div>`;
@@ -177,6 +181,7 @@ function showDay(dObj, idx) {
         <div class="card-body">
             ${bioBar("High Intensity (Z4-Z5)", rawOura.high, dayData.zT.h, "m")}
             ${bioBar("Med/Zone 2 (Z3)", rawOura.med, dayData.zT.m, "m")}
+            <div class="directive-box"><span class="directive-label">Target Directive</span>${rawOura.high < dayData.zT.h ? `Protocol stimuli gap: need ${dayData.zT.h - rawOura.high}m more High Intensity.` : "Adherence confirmed. Target reached."}</div>
         </div>
     </div>`;
 
@@ -187,7 +192,7 @@ function showDay(dObj, idx) {
 
     const nutHTML = `
     <div class="premium-card ${isNutCollapsed?'collapsed':''}" onclick="isNutCollapsed=!isNutCollapsed;render()">
-        <div class="card-header"><div><div class="card-title accent-green">NUTRITION</div><div class="card-subtitle">PROTOCOL MEALS</div></div><div class="card-val-lg">${gP} <span style="font-size:0.9rem; opacity:0.7">G PRO</span> <span class="chevron">▼</span></div></div>
+        <div class="card-header"><div><div class="card-title accent-green">NUTRITION</div><div class="card-subtitle">DAILY PROTOCOL</div></div><div class="card-val-lg">${gP} <span style="font-size:0.9rem; opacity:0.7">G PRO</span> <span class="chevron">▼</span></div></div>
         <div class="card-body">
             <div class="section-header">DAILY NUTRIENTS</div>
             <div class="data-row"><div class="data-label">SEA MOSS</div><div class="data-val">2 TBSP</div></div>
@@ -221,6 +226,7 @@ function showDay(dObj, idx) {
     document.getElementById('dayContent').innerHTML = protocolHTML + workoutHTML + nutHTML + aiHTML + bioHTML;
 }
 
+// THE LITERAL V510 FETCH BLOCK
 function switchU(uID) {
     localStorage.removeItem(`centurion_oura_cache_${uID}`);
     user = uID;
