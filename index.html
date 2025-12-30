@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v900.0 Isolated Workout</title>
+    <title>The Centurion | v950.0 Fully Unified</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --red:#FF5252; --text:#fff;
@@ -68,14 +68,16 @@
         .stat-sub { font-size: 0.5rem; color: #666; margin-top: 2px; }
         
         /* CARD STYLES */
-        .goal-card, .nutrition-card, .ai-card, .workout-card { border-radius: 20px; padding: 20px; margin-bottom: 15px; position: relative; transition: all 0.3s; cursor: pointer; }
+        .goal-card, .nutrition-card, .ai-card, .workout-card, .bio-card { border-radius: 20px; padding: 20px; margin-bottom: 15px; position: relative; transition: all 0.3s; cursor: pointer; }
         .goal-card { background: linear-gradient(135deg, rgba(102,126,234,0.1), rgba(212,175,55,0.05)); border: 1px solid rgba(102,126,234,0.3); }
         .nutrition-card { background: var(--card); border: 1px solid rgba(255,255,255,0.03); }
         .nutrition-card::before { content:""; position:absolute; left:0; top:20px; bottom:20px; width:3px; background:var(--green); border-radius:0 4px 4px 0; }
         .ai-card { background: linear-gradient(135deg, rgba(0,176,255,0.1), rgba(124,77,255,0.05)); border: 1px solid rgba(0,176,255,0.3); }
         .workout-card { background: linear-gradient(135deg, rgba(255,82,82,0.1), rgba(212,175,55,0.05)); border: 1px solid rgba(255,82,82,0.3); }
+        .bio-card { background: var(--card); border: 1px solid rgba(255,255,255,0.05); }
+        .bio-card::before { content:""; position:absolute; left:0; top:20px; bottom:20px; width:3px; background:var(--purple); border-radius:0 4px 4px 0; }
         
-        .goal-header, .nutrition-header, .ai-header, .workout-header { display: flex; justify-content: space-between; align-items: center; }
+        .goal-header, .nutrition-header, .ai-header, .workout-header, .bio-header { display: flex; justify-content: space-between; align-items: center; }
         .goal-score { font-size: 2.5rem; font-weight: 900; display: flex; align-items: center; gap: 10px; }
         .goal-score.excellent { color: var(--green); }
         .goal-score.good { color: var(--gold); }
@@ -92,17 +94,17 @@
         .goal-subtext { font-size: 0.55rem; color: #666; margin-top: 2px; }
         
         /* Collapsible Logic */
-        .goal-body, .nutrition-body, .ai-body, .workout-body { margin-top: 20px; animation: slideDown 0.3s ease-out; }
-        .goal-card.collapsed .goal-body, .nutrition-card.collapsed .nutrition-body, .ai-card.collapsed .ai-body, .workout-card.collapsed .workout-body { display: none; }
+        .goal-body, .nutrition-body, .ai-body, .workout-body, .bio-body { margin-top: 20px; animation: slideDown 0.3s ease-out; }
+        .goal-card.collapsed .goal-body, .nutrition-card.collapsed .nutrition-body, .ai-card.collapsed .ai-body, .workout-card.collapsed .workout-body, .bio-card.collapsed .bio-body { display: none; }
         .chevron { transition: transform 0.3s; font-size: 1rem; color: #666; }
-        .goal-card.collapsed .chevron, .nutrition-card.collapsed .chevron, .ai-card.collapsed .chevron, .workout-card.collapsed .chevron { transform: rotate(-90deg); }
+        .goal-card.collapsed .chevron, .nutrition-card.collapsed .chevron, .ai-card.collapsed .chevron, .workout-card.collapsed .chevron, .bio-card.collapsed .chevron { transform: rotate(-90deg); }
         @keyframes slideDown { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v900.0 Isolated Workout</span>
+        <span class="version-tag">v950.0 Fully Unified</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -115,7 +117,6 @@
         <button class="nav-btn" onclick="changeW(-1)">◀ PREV</button>
         <button class="nav-btn" onclick="resetD()">TODAY</button>
         <button class="nav-btn" onclick="changeW(1)">NEXT ▶</button>
-        <button class="nav-btn" onclick="openBio()" style="color:var(--green)">📊 DATA</button>
     </div>
     <div id="dayTabs" class="tabs"></div>
     <div id="dayContent"></div>
@@ -133,7 +134,7 @@
 
 <script>
 // ==========================================
-// CENTURION v900.0 CORE
+// CENTURION v950.0 CORE
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
@@ -144,6 +145,7 @@ let isGoalCollapsed = false;
 let isNutCollapsed = false; 
 let isAICollapsed = true; 
 let isWorkoutCollapsed = true; 
+let isBioCollapsed = true; // Biometrics default closed
 let snackLog = JSON.parse(localStorage.getItem('centurion_snack_log')) || {};
 let photoCache = JSON.parse(localStorage.getItem('centurion_photo_cache')) || {};
 window.ouraHistory = [];
@@ -357,6 +359,7 @@ function toggleGoal() { isGoalCollapsed = !isGoalCollapsed; render(); }
 function toggleNutrition() { isNutCollapsed = !isNutCollapsed; render(); }
 function toggleAICollapse() { isAICollapsed = !isAICollapsed; render(); }
 function toggleWorkout() { isWorkoutCollapsed = !isWorkoutCollapsed; render(); }
+function toggleBio() { isBioCollapsed = !isBioCollapsed; render(); }
 function toggleAI() { isAICollapsed = false; render(); document.querySelector('.ai-card').scrollIntoView({behavior:'smooth'}); }
 
 function applyAIP(mealStr, type) {
@@ -417,7 +420,7 @@ function getAICardHTML() {
 // --- ISOLATED WORKOUT RENDER ---
 function getWorkoutCardHTML(w, dailyData, protocol, pHigh, pMed, pLow, activeCal) {
     try {
-        if(!protocol) return ""; // Fail safely if no protocol found
+        if(!protocol) return ""; 
 
         return `
         <div class="workout-card ${isWorkoutCollapsed ? 'collapsed' : ''}" onclick="toggleWorkout()">
@@ -450,6 +453,37 @@ function getWorkoutCardHTML(w, dailyData, protocol, pHigh, pMed, pLow, activeCal
     }
 }
 
+// --- NEW ISOLATED BIO CARD ---
+function getBioCardHTML() {
+    try {
+        const u = uH[user];
+        if(!u) return "";
+        
+        return `<div class="bio-card ${isBioCollapsed ? 'collapsed' : ''}" onclick="toggleBio()">
+            <div class="bio-header">
+                 <div><div style="font-size:0.6rem;color:var(--purple);font-weight:900;letter-spacing:1px">LATEST BIOMETRICS</div><div style="font-size:1rem;color:#fff;margin-top:2px">Body Fat: ${u.now.bf}%</div></div>
+                 <span class="chevron">▼</span>
+            </div>
+            <div class="bio-body">
+                <div class="label">BODY COMPOSITION</div>
+                ${bioBar("Body Fat", u.now.bf, u.goal.bf, "%", true)}
+                ${bioBar("Muscle", u.now.m, u.goal.m, " lbs", false)}
+                ${bioBar("Visceral", u.now.vf, u.goal.vf, "", true)}
+                <div class="nav-btn" style="text-align:center; margin-top:10px; margin-bottom:20px" onclick="event.stopPropagation(); logBodyScan()">📝 UPDATE BODY DATA</div>
+                
+                <div class="label">KEY LABS</div>
+                ${Object.keys(u.labs).map(k => bioBar(u.labs[k].name, u.labs[k].val, u.labs[k].goal, " "+(u.labs[k].unit||""), u.labs[k].lowerIsBetter)).join('')}
+                
+                <div class="label" style="margin-top:20px">PHYSICAL TESTS</div>
+                ${Object.keys(u.tests).map(k => bioBar(u.tests[k].name, u.tests[k].val, u.tests[k].goal, " "+(u.tests[k].unit||""), false)).join('')}
+                <div class="nav-btn" style="text-align:center; margin-top:10px;" onclick="event.stopPropagation(); logTest()">📝 UPDATE TEST DATA</div>
+            </div>
+        </div>`;
+    } catch(e) {
+        return `<div class="bio-card"><div style="padding:15px;color:var(--red)">Bio Data Error</div></div>`;
+    }
+}
+
 function render() {
     const mon = getMon(offset); const tabs = document.getElementById('dayTabs'); tabs.innerHTML = '';
     const end = new Date(mon); end.setDate(mon.getDate() + 6);
@@ -474,8 +508,6 @@ function showDay(dObj, idx) {
 
     // Check workout data
     const dailyData = window.ouraHistory.find(d => d.date === dk) || {high:0, med:0, low:0, cal:0};
-    
-    // Calculate Percentages for Bar Chart
     const totalMins = (dailyData.high || 0) + (dailyData.med || 0) + (dailyData.low || 0);
     const pHigh = totalMins > 0 ? (dailyData.high/totalMins)*100 : 0;
     const pMed = totalMins > 0 ? (dailyData.med/totalMins)*100 : 0;
@@ -511,15 +543,17 @@ function showDay(dObj, idx) {
     }
     snackHTML += '</div>';
 
+    const pre = protocol[0].h.includes(":") ? protocol[0].h.split(':')[1] : protocol[0].h;
+    const post = protocol[2].h.includes(":") ? protocol[2].h.split(':')[1] : protocol[2].h;
+
     const protocolTarget = protocolTargets[w];
     let goalHTML = '';
     
-    // RENDER AI CARD VIA ISOLATED FUNCTION
+    // RENDER CARDS
     const aiCardHTML = getAICardHTML();
-
-    // RENDER WORKOUT CARD VIA ISOLATED FUNCTION
     const workoutHTML = getWorkoutCardHTML(w, dailyData, protocol, pHigh, pMed, pLow, activeCal);
-    
+    const bioCardHTML = getBioCardHTML(); // NEW BIOMETRICS CARD
+
     const hasOuraData = dailyData && dailyData.cal !== undefined;
     const userData = uH[user];
     
@@ -541,18 +575,18 @@ function showDay(dObj, idx) {
         let workoutCompliance = 'warning';
         let workoutText = 'Syncing...';
         
-        // Simplified Goal Logic
         const recoveryScore = !hasOuraData ? 0 : Math.round((dailyData.score + (dailyData.sleepScore !== '-' ? dailyData.sleepScore : 0)) / 2);
         const recoveryStatus = !hasOuraData ? 'warning' : recoveryScore >= 80 ? 'success' : recoveryScore >= 65 ? 'warning' : 'error';
         const recoveryText = !hasOuraData ? 'Syncing...' : recoveryScore + '/100';
         const macroScore = Math.min(100, Math.round(((p/g.P) + (c/g.C) + (f/g.F) + (k/g.K)) / 4 * 100));
-        const dailyScore = Math.round((macroScore + recoveryScore) / 2); // Simple average
+        const dailyScore = Math.round((macroScore + recoveryScore) / 2);
         const scoreClass = dailyScore >= 85 ? 'excellent' : dailyScore >= 70 ? 'good' : 'poor';
         
         goalHTML = `<div class="goal-card ${isGoalCollapsed ? 'collapsed' : ''}" onclick="toggleGoal()">
             <div class="goal-header"><div><div style="font-size:0.6rem;color:var(--gold);font-weight:900;text-transform:uppercase;letter-spacing:1px">Daily Performance</div><div style="font-size:0.5rem;color:#666;margin-top:2px">${dk}</div></div><div class="goal-score ${scoreClass}">${dailyScore}% <span class="chevron">▼</span></div></div>
             <div class="goal-body">
-                <div class="goal-metric"><div style="flex:1"><div class="goal-metric-label">🔥 Calorie Balance</div><div class="goal-subtext">${consumed} in • ${burned} out • Target: ${targetBalance}</div></div><div class="goal-metric-value ${balanceStatus}">${balanceText}</div></div>
+                <div class="goal-metric"><div style="flex:1"><div class="goal-metric-label">🔥 Calorie Balance</div><div class="goal-subtext">${consumed} in • ${burned} out • Target: ${targetBalance}</div><div style="font-size:0.5rem;color:#666;margin-top:2px;font-style:italic">${balanceRationale}</div></div><div class="goal-metric-value ${balanceStatus}">${balanceText}</div></div>
+                <div class="goal-metric" style="flex-direction:column;align-items:stretch"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0"><div><div class="goal-metric-label">💪 Protocol: ${w}</div><div class="goal-subtext">Target: ${(protocolTarget?protocolTarget.duration:0)}min</div></div><div class="goal-metric-value ${workoutCompliance}">${workoutText}</div></div></div>
                 <div class="goal-metric"><div><div class="goal-metric-label">📊 Macro Targets</div><div class="goal-subtext">${p}/${g.P}P • ${c}/${g.C}C • ${f}/${g.F}F</div></div><div class="goal-metric-value ${macroScore >= 85 ? 'success' : 'warning'}">${macroScore}%</div></div>
                 <div class="goal-metric"><div><div class="goal-metric-label">😴 Recovery</div><div class="goal-subtext">Readiness ${hasOuraData ? dailyData.score : '-'} • Sleep ${hasOuraData && dailyData.sleepScore !== '-' ? dailyData.sleepScore : '-'}</div></div><div class="goal-metric-value ${recoveryStatus}">${recoveryText}</div></div>
             </div>
@@ -568,11 +602,16 @@ function showDay(dObj, idx) {
             <div class="label">🍽️ DINNER</div><div class="value" onclick="event.stopPropagation(); openDBRecipe('d', ${Math.abs(id)%mDB.d.length})"><span>${dn[0]}</span><span class="macro-pill">${Math.round(dn[4]*sc)}P ${Math.round(dn[5]*sc)}C ${Math.round(dn[7]*sc)}F ${Math.round(dn[6]*sc)}k</span></div>
             <div class="label">🥜 SNACKS</div>${snackHTML}
             <div class="label">🍹 JUICE</div><div class="juice-name" onclick="event.stopPropagation(); openDBRecipe('j', ${Math.abs(id)%mDB.j.length})">${jn[0]}</div>
-            <div class="macro-dashboard"><div class="macro-row"><div class="macro-label"><span>PROTEIN</span><span>${p} / ${g.P}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((p/g.P)*100,100)}%; background:var(--g-pro)"></div></div></div><div class="macro-row"><div class="macro-label"><span style="color:var(--green)">FIBER</span><span>${f} / ${g.F}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((f/g.F)*100,100)}%; background:var(--g-fib)"></div></div></div><div class="macro-row"><div class="macro-label"><span>CARBS</span><span>${c} / ${g.C}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((c/g.C)*100,100)}%; background:var(--g-carb)"></div></div></div><div class="macro-row"><div class="macro-label"><span>CALORIES</span><span>${k} / ${g.K}</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((k/g.K)*100,100)}%; background:var(--g-cal)"></div></div></div></div>
+            <div class="macro-dashboard">
+                <div class="macro-row"><div class="macro-label"><span>PROTEIN</span><span>${p} / ${g.P}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((p/g.P)*100,100)}%; background:var(--g-pro)"></div></div></div>
+                <div class="macro-row"><div class="macro-label"><span style="color:var(--green)">FIBER</span><span>${f} / ${g.F}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((f/g.F)*100,100)}%; background:var(--g-fib)"></div></div></div>
+                <div class="macro-row"><div class="macro-label"><span>CARBS</span><span>${c} / ${g.C}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((c/g.C)*100,100)}%; background:var(--g-carb)"></div></div></div>
+                <div class="macro-row"><div class="macro-label"><span>CALORIES</span><span>${k} / ${g.K}</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((k/g.K)*100,100)}%; background:var(--g-cal)"></div></div></div>
+            </div>
         </div>
     </div>`;
 
-    document.getElementById('dayContent').innerHTML = goalHTML + aiCardHTML + workoutHTML + nutritionHTML;
+    document.getElementById('dayContent').innerHTML = goalHTML + aiCardHTML + bioCardHTML + workoutHTML + nutritionHTML;
 }
 
 // ... (KEEP ALL EXISTING HELPER FUNCTIONS) ...
@@ -627,62 +666,10 @@ function openDBRecipe(type, idx) {
 }
 
 function openBio() {
-    document.getElementById('mTitle').innerHTML = (user==='J'?'JERMAINE':'SOPHIA') + " - DATA";
-    const m = document.getElementById('mBody');
-    m.innerHTML = `<div class="tabs"><div class="tab active" id="btPhys" onclick="renderBioTab('phys')">BODY</div><div class="tab" id="btLabs" onclick="renderBioTab('labs')">LABS</div><div class="tab" id="btTests" onclick="renderBioTab('tests')">TESTS</div><div class="tab" id="btOura" onclick="renderBioTab('oura')">OURA</div></div><div id="bioContentArea"></div>`;
-    setTimeout(() => { renderBioTab('phys'); }, 50);
-    document.getElementById('masterModal').style.display = 'block';
-}
-
-function renderBioTab(tab) {
-    const area = document.getElementById('bioContentArea'); const u = uH[user];
-    document.querySelectorAll('#masterModal .tab').forEach(t=>t.classList.remove('active'));
-    document.getElementById('bt'+tab.charAt(0).toUpperCase()+tab.slice(1)).classList.add('active');
-    const predictions = predictBiomarkers(u, user);
-    
-    if(tab==='phys') {
-        let bodyHTML = '';
-        if(predictions && predictions.predictedChanges.vf) {
-             bodyHTML += bioBarWithPrediction("Body Fat", u.now.bf, u.now.bf - (u.now.vf - predictions.predictedChanges.vf)*1.5, u.goal.bf, "%", true, predictions.currentWeek);
-             if(predictions.predictedChanges.muscle) {
-                 bodyHTML += bioBarWithPrediction("Muscle", u.now.m, predictions.predictedChanges.muscle, u.goal.m, " lbs", false, predictions.currentWeek);
-             } else {
-                 bodyHTML += bioBar("Muscle", u.now.m, u.goal.m, " lbs", false);
-             }
-             bodyHTML += bioBarWithPrediction("Visceral", u.now.vf, predictions.predictedChanges.vf, u.goal.vf, "", true, predictions.currentWeek);
-        } else {
-             bodyHTML += bioBar("Body Fat", u.now.bf, u.goal.bf, "%", true);
-             bodyHTML += bioBar("Muscle", u.now.m, u.goal.m, " lbs", false);
-             bodyHTML += bioBar("Visceral", u.now.vf, u.goal.vf, "", true);
-        }
-        bodyHTML += '<div class="nav-btn" style="text-align:center; margin-top:15px;" onclick="logBodyScan()">📝 LOG NEW SCAN</div><div style="margin-top:30px; text-align:center;"><button class="nav-btn" style="background:#330000; color:#FF5252; font-size:0.6rem; border:1px solid #FF5252; width:100%;" onclick="hardReset()">🛑 FACTORY RESET APP</button></div>';
-        area.innerHTML = bodyHTML;
-    } else if(tab==='labs') {
-        let labsHTML = '';
-        Object.keys(u.labs).forEach(k => {
-             const lab = u.labs[k];
-             if(predictions && predictions.predictedChanges[k]) labsHTML += bioBarWithPrediction(lab.name, lab.val, predictions.predictedChanges[k], lab.goal, " "+(lab.unit||""), lab.lowerIsBetter, predictions.currentWeek);
-             else labsHTML += bioBar(lab.name, lab.val, lab.goal, " "+(lab.unit||""), lab.lowerIsBetter);
-        });
-        area.innerHTML = labsHTML;
-    } else if(tab==='tests') {
-        let testsHTML = '';
-        Object.keys(u.tests).forEach(k => {
-             const test = u.tests[k];
-             if(predictions && predictions.predictedChanges[k]) testsHTML += bioBarWithPrediction(test.name, test.val, predictions.predictedChanges[k], test.goal, " "+(test.unit||""), false, predictions.currentWeek);
-             else testsHTML += bioBar(test.name, test.val, test.goal, " "+(test.unit||""), false);
-        });
-        testsHTML += '<div class="nav-btn" style="text-align:center; margin-top:15px;" onclick="logTest()">📝 LOG NEW TEST</div>';
-        area.innerHTML = testsHTML;
-    } else if(tab==='oura') {
-        if(!window.ouraHistory || window.ouraHistory.length === 0) { area.innerHTML = "<div style='padding:20px;text-align:center;color:#666'>Syncing History...</div>"; return; }
-        let r = window.ouraHistory.find(d => d.sleepScore !== '-' && d.sleepScore > 0);
-        if(!r) r = window.ouraHistory[0];
-        let html = `<div class="oura-grid"><div class="oura-metric"><div style="font-size:1.8rem;color:var(--green)">${r.score}</div><div style="font-size:0.5rem;color:#888">READY</div></div><div class="oura-metric"><div style="font-size:1.8rem;color:var(--blue)">${r.sleepScore}</div><div style="font-size:0.5rem;color:#888">SLEEP</div></div><div class="oura-metric"><div style="font-size:1.5rem;color:#FFAB40">${r.rhr}</div><div style="font-size:0.5rem;color:#888">RHR</div></div><div class="oura-metric"><div style="font-size:1.5rem;color:white">${fmtTime(r.deep)}</div><div style="font-size:0.5rem;color:#888">DEEP</div></div><div class="oura-metric"><div style="font-size:1.5rem;color:white">${fmtTime(r.rem)}</div><div style="font-size:0.5rem;color:#888">REM</div></div><div class="oura-metric"><div style="font-size:1.5rem;color:#FFAB40">${r.cal}</div><div style="font-size:0.5rem;color:#888">BURN</div></div></div><div class="bio-section" style="margin-top:15px"><div class="label" style="color:#fff;margin-bottom:8px">ACTIVITY ZONES (MINS)</div><div style="display:flex;gap:5px;height:40px"><div style="flex:1;background:var(--card);border:1px solid #333;border-radius:8px;display:flex;flex-direction:column;justify-content:center;align-items:center"><div style="font-size:0.5rem;color:#888">LOW</div><div style="font-weight:900;color:var(--blue)">${r.low}</div></div><div style="flex:1;background:var(--card);border:1px solid #333;border-radius:8px;display:flex;flex-direction:column;justify-content:center;align-items:center"><div style="font-size:0.5rem;color:#888">MED</div><div style="font-weight:900;color:var(--gold)">${r.med}</div></div><div style="flex:1;background:var(--card);border:1px solid #333;border-radius:8px;display:flex;flex-direction:column;justify-content:center;align-items:center"><div style="font-size:0.5rem;color:#888">HIGH</div><div style="font-weight:900;color:#FF5252">${r.high}</div></div></div></div><div class="intervention-card" style="margin-top:15px">💡 7-DAY TREND</div><table class="hist-table" style="font-size:0.65rem"><thead><tr><th>DATE</th><th>RDY</th><th>SLP</th><th>DEEP</th><th>REM</th><th>HI</th></tr></thead><tbody>`;
-        window.ouraHistory.forEach(day => { html += `<tr><td>${day.date.slice(5)}</td><td style="font-weight:900;color:${day.score>=85?'var(--green)':day.score>=70?'var(--gold)':'#FF5252'}">${day.score}</td><td>${day.sleepScore || '-'}</td><td style="color:#aaa">${fmtTime(day.deep)}</td><td style="color:#aaa">${fmtTime(day.rem)}</td><td style="color:#FFAB40">${day.high}</td></tr>`; });
-        html += "</tbody></table>";
-        area.innerHTML = html;
-    }
+    // This is now redundant since the card is in the main feed, but kept for legacy button support if needed
+    document.querySelector('.bio-card').scrollIntoView({behavior:'smooth'});
+    isBioCollapsed = false;
+    render();
 }
 
 function logBodyScan() {
@@ -692,7 +679,7 @@ function logBodyScan() {
         uH[user].now.m = parseFloat(prompt("Enter Muscle Mass (lbs):"));
         uH[user].now.vf = parseFloat(prompt("Enter Visceral Fat Level:"));
         localStorage.setItem('centurion_bio_v7', JSON.stringify(uH));
-        renderBioTab('phys');
+        render(); // Re-render to update the card
     }
 }
 
@@ -705,7 +692,7 @@ function logTest() {
         if(val) {
             uH[user].tests[k].val = parseFloat(val);
             localStorage.setItem('centurion_bio_v7', JSON.stringify(uH));
-            renderBioTab('tests');
+            render(); // Re-render to update the card
         }
     }
 }
@@ -729,45 +716,30 @@ async function fetchOuraData() {
     }
 
     try {
-        bar.innerHTML = '💍 Syncing Oura...';
+        bar.innerHTML = '💍 Fetching readiness...';
+        const rRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${startDate}&end_date=${endDate}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
+        const rData = await rRes.json();
         
-        // 1. READINESS
-        let rData = {};
-        try {
-            const rRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${startDate}&end_date=${endDate}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
-            rData = await rRes.json();
-        } catch(e) { console.log('Readiness fail'); }
+        bar.innerHTML = '💍 Fetching sleep scores...';
+        const dsRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${startDate}&end_date=${endDate}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
+        const dsData = await dsRes.json();
 
-        // 2. DAILY SLEEP
-        let dsData = {};
-        try {
-            const dsRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${startDate}&end_date=${endDate}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
-            dsData = await dsRes.json();
-        } catch(e) { console.log('DS fail'); }
+        bar.innerHTML = '💍 Fetching sleep details...';
+        const sRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${startDate}&end_date=${endDate}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
+        const sData = await sRes.json();
         
-        // 3. ACTIVITY
-        let aData = {};
-        try {
-             const aRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${startDate}&end_date=${endDate}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
-             aData = await aRes.json();
-        } catch(e) { console.log('Activity fail'); }
+        bar.innerHTML = '💍 Fetching activity...';
+        const aRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${startDate}&end_date=${endDate}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
+        const aData = await aRes.json();
 
-        // 4. SLEEP DETAILS
-        let sData = {};
-        try {
-             const sRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${startDate}&end_date=${endDate}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
-             sData = await sRes.json();
-        } catch(e) { console.log('Sleep fail'); }
-
-        // 5. WORKOUTS (Isolated)
-        let wData = {};
-        try {
-             const wRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/workout?start_date=${startDate}&end_date=${endDate}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
-             wData = await wRes.json();
-        } catch(e) { console.log('Workout fail'); }
+        // FETCH 5: WORKOUTS (New!)
+        bar.innerHTML = '💍 Fetching workouts...';
+        const wRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/workout?start_date=${startDate}&end_date=${endDate}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
+        const wData = await wRes.json();
 
         if(user !== currentUser) return;
 
+        // Process Workout Data First
         window.ouraWorkouts = [];
         if(wData.data && wData.data.length > 0) {
             window.ouraWorkouts = wData.data.map(w => {
@@ -849,10 +821,8 @@ async function fetchOuraData() {
             let color = lastR.score >= 85 ? 'var(--green)' : lastR.score >= 70 ? 'var(--gold)' : '#FF5252';
             bar.innerHTML = `💍 ${currentUser==='J'?'JERMAINE':'SOPHIA'} READINESS: <span style="color:${color}; font-weight:900">${lastR.score}</span>`;
             
-            if(document.getElementById('btOura') && document.getElementById('btOura').classList.contains('active')) {
-                renderBioTab('oura');
-            }
-            render(); // Force Re-Render for Goal Card
+            // Re-render after successful fetch to update all cards
+            render(); 
         } else {
             bar.innerText = `💍 ${currentUser==='J'?'JERMAINE':'SOPHIA'}: No Data`;
         }
