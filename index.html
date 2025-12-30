@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v1100.0 Literal 510 Fetch</title>
+    <title>The Centurion | v1100.1 Strict Handshake</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -52,6 +52,9 @@
         .card-title { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 4px; color: var(--text-sub); }
         .card-val-lg { font-size: 1.8rem; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
 
+        .directive-box { margin-top: 20px; padding: 12px 16px; background: rgba(255, 214, 10, 0.08); border-left: 2px solid var(--gold); border-radius: 4px; font-size: 0.75rem; color: #eee; line-height: 1.4; }
+        .directive-label { display: block; font-weight: 800; text-transform: uppercase; font-size: 0.6rem; color: var(--gold); margin-bottom: 4px; }
+
         .bio-section { margin-bottom: 15px; }
         .bar-label { font-size: 0.65rem; color: var(--text-sub); font-weight: 700; margin-bottom: 8px; display: flex; justify-content: space-between; text-transform: uppercase; }
         .bar-track { height: 8px; background: rgba(255,255,255,0.08); border-radius: 10px; overflow: hidden; }
@@ -74,7 +77,7 @@
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
         </div>
     </header>
-    <div id="ouraBar" class="status-bar" onclick="fetchOuraData()">💍 Handshake Required...</div>
+    <div id="ouraBar" class="status-bar" onclick="fetchOuraData()">💍 Cache-Bust Ready...</div>
     <div id="dateDisplay" class="status-bar" style="margin-bottom: 20px; opacity: 0.7;">...</div>
 
     <div class="controls">
@@ -85,11 +88,12 @@
     
     <div id="dayTabs" class="tabs"></div>
     <div id="dayContent"></div>
+    <div style="text-align:center; color:#333; font-size:10px; margin-top:30px; opacity:0.4;">v1100.1 Strict Fetch</div>
 </div>
 
 <script>
 // ==========================================
-// CENTURION v1100.0 - LITERAL 510 FETCH
+// CENTURION v1100.1 - STRICT HANDSHAKE
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
@@ -102,8 +106,7 @@ const TOKENS = {
     'S': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' 
 };
 
-// State Logic
-let isPlanCollapsed = false; let isWorkoutCollapsed = true; let isNutCollapsed = true; 
+let isPlanCollapsed = false; let isWorkoutCollapsed = true; 
 
 const unifiedSchedule = {
     1: { focus: "HEAVY LIFT", tasks: "5x5 Compounds", zT: {h:15, m:30, l:10} },
@@ -142,54 +145,49 @@ function render() {
 
 function showDay(dObj, idx) {
     const dk = getDateKey(dObj); const dayData = unifiedSchedule[idx] || unifiedSchedule[1];
-    
-    // FETCH CACHE
     const cached = JSON.parse(localStorage.getItem(`centurion_oura_cache_${user}`)) || { history: [] };
     const rawOura = cached.history.find(d => d.date === dk) || { score: "-", cal: "-", high: 0, med: 0 };
-    
     const hasScore = rawOura.score !== "-";
     const isActive = hasScore && parseInt(rawOura.score) >= 75;
+
+    // Directives
+    let protDir = hasScore ? (isActive ? "Physiology ready. Push for maximum intensity today." : "Readiness compromised. Shift to Active Rest/Yoga focus.") : "Handshake required for live directive.";
+    let trainDir = hasScore ? (`Current: ${rawOura.high}m High Intensity. Need ${Math.max(0, dayData.zT.h - rawOura.high)}m more to hit target.`) : "Track training via Oura to see real-time gap.";
 
     const protocolHTML = `
     <div class="premium-card ${isPlanCollapsed?'collapsed':''}" onclick="isPlanCollapsed=!isPlanCollapsed;render()">
         <div class="card-header"><div><div class="card-title accent-gold">DAILY PROTOCOL</div><div class="card-subtitle">${dayData.focus}</div></div><div class="card-val-lg">${hasScore ? (isActive?'ACTIVE':'REST') : '-'} <span class="chevron">▼</span></div></div>
         <div class="card-body">
-            <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:center;">
-                <span class="status-pill ${hasScore ? (isActive?'pill-win':'pill-rest') : 'pill-rest'}">${hasScore ? (isActive?'ACTIVE PROTOCOL':'REST PROTOCOL') : 'SYNC REQUIRED'}</span>
-                <span style="font-size:0.7rem; color:#888;">READINESS: ${rawOura.score}</span>
-            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:center;"><span class="status-pill ${hasScore ? (isActive?'pill-win':'pill-rest') : 'pill-rest'}">${hasScore ? (isActive?'ACTIVE PROTOCOL':'REST PROTOCOL') : 'SYNCING...'}</span><span style="font-size:0.7rem; color:#888;">READINESS: ${rawOura.score}</span></div>
             <div style="font-size:0.8rem; color:#ddd; line-height:1.5;">${dayData.tasks}</div>
+            <div class="directive-box"><span class="directive-label">Target Directive</span>${protDir}</div>
         </div>
     </div>`;
 
     const workoutHTML = `
     <div class="premium-card ${isWorkoutCollapsed?'collapsed':''}" onclick="isWorkoutCollapsed=!isWorkoutCollapsed;render()">
-        <div class="card-header"><div><div class="card-title accent-red">TRAINING</div><div class="card-subtitle">ZONE TARGETS</div></div><div class="card-val-lg">${rawOura.cal} <span style="font-size:0.9rem; opacity:0.7">CAL</span> <span class="chevron">▼</span></div></div>
+        <div class="card-header"><div><div class="card-title accent-red">TRAINING</div><div class="card-subtitle">HR ZONE TARGETS</div></div><div class="card-val-lg">${rawOura.cal} <span style="font-size:0.9rem; opacity:0.7">CAL</span> <span class="chevron">▼</span></div></div>
         <div class="card-body">
             ${bioBar("High Intensity (Z4-Z5)", rawOura.high, dayData.zT.h, "m")}
             ${bioBar("Med/Zone 2 (Z3)", rawOura.med, dayData.zT.m, "m")}
+            <div class="directive-box"><span class="directive-label">Target Directive</span>${trainDir}</div>
         </div>
     </div>`;
 
     document.getElementById('dayContent').innerHTML = protocolHTML + workoutHTML;
 }
 
-// ==========================================
-// LITERAL v510 FETCH PROTOCOL
-// ==========================================
+// THE STRICT 510 SWITCH
 function switchU(uID) {
-    // Isolated State Clear
+    localStorage.removeItem(`centurion_oura_cache_${uID}`); // Force cache delete
     user = uID;
     localStorage.setItem('centurion_active_user', uID);
     ouraHistory = []; // Reset local state
     
-    // UI badge update
     document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
-    if(uID==='J') document.getElementById('bj').classList.add('active');
-    else document.getElementById('bs').classList.add('active');
+    document.getElementById(uID === 'J' ? 'bj' : 'bs').classList.add('active');
     
-    document.getElementById('ouraBar').innerHTML = "💍 Handshake: " + (uID === 'J' ? 'Jermaine' : 'Sophia');
-    
+    document.getElementById('ouraBar').innerHTML = "💍 Wiping Cache & Syncing " + (uID === 'J' ? 'Jermaine' : 'Sophia');
     render(); 
     fetchOuraData();
 }
@@ -201,21 +199,31 @@ async function fetchOuraData() {
     if (!token) return;
 
     try {
-        const start = getDateKey(new Date(Date.now() - 864e5 * 14));
-        const end = getDateKey(new Date());
-        const range = `start_date=${start}&end_date=${end}`;
+        const range = `start_date=${getDateKey(new Date(Date.now() - 864e5 * 14))}&end_date=${getDateKey(new Date())}`;
         
-        // Literal 510 Headers
-        const headers = { 'Authorization': `Bearer ${token}` };
+        // v510 Cache Buster & Header Protocol
+        const fetchOptions = { 
+            method: 'GET',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache'
+            },
+            cache: 'no-store'
+        };
 
-        // Sequential Handshake
-        const rRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}`)}`, { headers });
+        // Cache-busting timestamp appended to the proxy URL
+        const ts = `&_cb=${Date.now()}`;
+        const readinessUrl = `https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}${ts}`)}`;
+        const activityUrl = `https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}${ts}`)}`;
+
+        const rRes = await fetch(readinessUrl, fetchOptions);
         const rData = await rRes.json();
         
-        const aRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}`)}`, { headers });
+        const aRes = await fetch(activityUrl, fetchOptions);
         const aData = await aRes.json();
 
-        if (user !== fetchUser) return; // Guard switch
+        if (user !== fetchUser) return; // Guard for switch
 
         if (rData.data) {
             ouraHistory = rData.data.map(day => {
@@ -235,12 +243,16 @@ async function fetchOuraData() {
             render();
         }
     } catch (e) {
-        if (user === fetchUser) bar.innerHTML = "💍 Sync Failed - Tap Retest";
+        if (user === fetchUser) bar.innerHTML = "💍 Sync Failed - Tap to Retry";
     }
 }
 
 window.onload = () => {
-    switchU(user);
+    // Initial badge activation
+    document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
+    document.getElementById(user === 'J' ? 'bj' : 'bs').classList.add('active');
+    fetchOuraData();
+    render();
 };
 </script>
 </body>
