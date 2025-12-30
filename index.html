@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v580.0 Hybrid Stable</title>
+    <title>The Centurion | v600.0 Offline-First</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --red:#FF5252; --text:#fff;
@@ -73,7 +73,6 @@
         .nutrition-card { background: var(--card); border: 1px solid rgba(255,255,255,0.03); }
         .nutrition-card::before { content:""; position:absolute; left:0; top:20px; bottom:20px; width:3px; background:var(--green); border-radius:0 4px 4px 0; }
         .ai-card { background: linear-gradient(135deg, rgba(0,176,255,0.1), rgba(124,77,255,0.05)); border: 1px solid rgba(0,176,255,0.3); }
-        
         .goal-header, .nutrition-header, .ai-header { display: flex; justify-content: space-between; align-items: center; }
         .goal-score { font-size: 2.5rem; font-weight: 900; display: flex; align-items: center; gap: 10px; }
         .goal-score.excellent { color: var(--green); }
@@ -99,24 +98,15 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v580.0 Hybrid Stable</span>
+        <span class="version-tag">v600.0 Offline-First</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
         </div>
     </header>
-    <div id="ouraBar" class="status-bar" onclick="fetchOuraData()">💍 Syncing Oura...</div>
+    <div id="ouraBar" class="status-bar" onclick="fetchOuraData()">💍 Loading...</div>
     <div id="dateDisplay" class="status-bar">...</div>
     
-    <div id="aiDashboard" style="display:none; margin-bottom:20px;"></div>
-
-    <div class="controls">
-        <button class="nav-btn" onclick="changeW(-1)">◀ PREV</button>
-        <button class="nav-btn" onclick="resetD()">TODAY</button>
-        <button class="nav-btn" onclick="changeW(1)">NEXT ▶</button>
-        <button class="nav-btn" onclick="openBio()" style="color:var(--green)">📊 DATA</button>
-        <button class="nav-btn" onclick="toggleAI()" style="color:var(--blue)">🧠 AI</button>
-    </div>
     <div id="dayTabs" class="tabs"></div>
     <div id="dayContent"></div>
 </div>
@@ -133,22 +123,24 @@
 
 <script>
 // ==========================================
-// CENTURION v580.0 CORE
+// CENTURION v600.0 CORE
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
 let offset = 0;
 let selDate = getCaDate(); 
 let currentSlot = 0;
-let aiVisible = false;
 let isGoalCollapsed = false; 
 let isNutCollapsed = false; 
 let isAICollapsed = true; 
 let snackLog = JSON.parse(localStorage.getItem('centurion_snack_log')) || {};
 let photoCache = JSON.parse(localStorage.getItem('centurion_photo_cache')) || {};
-window.ouraHistory = [];
-window.ouraWorkouts = [];
-window.weeklyStats = { high: 0, medium: 0, low: 0 };
+
+// DATA PERSISTENCE - Load immediately
+let cachedOura = JSON.parse(localStorage.getItem(`centurion_oura_cache_${user}`)) || {};
+window.ouraHistory = cachedOura.history || [];
+window.ouraWorkouts = cachedOura.workouts || [];
+window.weeklyStats = cachedOura.stats || { high: 0, medium: 0, low: 0 };
 
 const BIRTHDAYS = { 'J': '1983-01-13', 'S': '1987-01-25' };
 const TOKENS = { 'J': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'S': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
@@ -205,6 +197,7 @@ if (!uH) {
     uH = { 'J': defaultJ, 'S': defaultS };
     localStorage.setItem('centurion_bio_v7', JSON.stringify(uH));
 } else {
+    // FORCE INJECTION
     let updated = false;
     if (!uH['J'] || !uH['J'].protocol) { uH['J'] = defaultJ; updated = true; }
     if (!uH['S'] || !uH['S'].protocol) { uH['S'] = defaultS; updated = true; }
@@ -325,9 +318,15 @@ function switchU(uID) {
     user = uID; localStorage.setItem('centurion_active_user', uID); 
     document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
     document.getElementById('b'+uID.toLowerCase()).classList.add('active');
-    document.getElementById('ouraBar').innerHTML = `<span style="color:#666">💍 Switching...</span>`;
-    window.ouraHistory = []; window.ouraWorkouts = []; window.weeklyStats = {high:0,med:0,low:0};
-    render(); fetchOuraData(); 
+    
+    // Load cache immediately
+    const cached = JSON.parse(localStorage.getItem(`centurion_oura_cache_${user}`)) || {};
+    window.ouraHistory = cached.history || [];
+    window.ouraWorkouts = cached.workouts || [];
+    window.weeklyStats = cached.stats || { high: 0, medium: 0, low: 0 };
+    
+    render(); 
+    fetchOuraData(); 
 }
 
 function changeW(d) { offset += d; render(); }
@@ -416,15 +415,6 @@ function showDay(dObj, idx) {
     const projection = calculateLongevity(userData);
     const predictions = predictBiomarkers(userData, user);
     let aiBody = '';
-    
-    // Calculate weekly totals based on CURRENT history (safe)
-    let wHigh = 0, wMed = 0;
-    if(window.ouraHistory.length > 0) {
-        const last7 = window.ouraHistory.slice(0, 7);
-        wHigh = last7.reduce((sum, d) => sum + d.high, 0);
-        wMed = last7.reduce((sum, d) => sum + d.med, 0);
-    }
-
     if(predictions && predictions.compliance > 0) {
         const milestone = predictions.nextMilestone.replace('month', 'Month ');
         const weeksToGo = predictions.nextMilestone === 'month3' ? (12 - predictions.currentWeek) : (24 - predictions.currentWeek);
@@ -516,7 +506,6 @@ function showDay(dObj, idx) {
         const recoveryScore = !hasOuraData ? 0 : Math.round((dailyData.score + (dailyData.sleepScore !== '-' ? dailyData.sleepScore : 0)) / 2);
         const recoveryStatus = !hasOuraData ? 'warning' : recoveryScore >= 80 ? 'success' : recoveryScore >= 65 ? 'warning' : 'error';
         const recoveryText = !hasOuraData ? 'Syncing...' : recoveryScore + '/100';
-        
         const macroScore = Math.min(100, Math.round(((p/g.P) + (c/g.C) + (f/g.F) + (k/g.K)) / 4 * 100));
         const dailyScore = Math.round((macroScore + (totalZoneTime>0?protocolScore:50) + (Math.abs(balanceDiff)<100?100:70) + recoveryScore) / 4);
         const scoreClass = dailyScore >= 85 ? 'excellent' : dailyScore >= 70 ? 'good' : 'poor';
@@ -547,25 +536,13 @@ function showDay(dObj, idx) {
             <span class="chevron">▼</span>
         </div>
         <div class="nutrition-body">
-            <div class="label">🧬 DAILY ESSENTIALS</div>
-            <div style="display:flex; gap:10px; margin-bottom:15px">
-                <div class="value" style="flex:1; justify-content:center" onclick="event.stopPropagation(); openEssential('Sea Moss')">Sea Moss</div>
-                <div class="value" style="flex:1; justify-content:center" onclick="event.stopPropagation(); openEssential('${user==='S'?'Hibiscus Tea':'Kombucha'}')">${user==='S'?'Hibiscus':'Kombucha'}</div>
-            </div>
-            <div class="label">🍳 BREAKFAST</div>
-            <div class="value" onclick="event.stopPropagation(); openDBRecipe('b', ${Math.abs(id)%mDB.b.length})"><span>${b[0]}</span><span class="macro-pill">${Math.round(b[4]*sc)}P ${Math.round(b[5]*sc)}C ${Math.round(b[7]*sc)}F ${Math.round(b[6]*sc)}k</span></div>
-            <div class="label">🥗 LUNCH</div>
-            <div class="value" onclick="event.stopPropagation(); openDBRecipe('l', ${Math.abs(id)%mDB.l.length})"><span>${l[0]}</span><span class="macro-pill">${Math.round(l[4]*sc)}P ${Math.round(l[5]*sc)}C ${Math.round(l[7]*sc)}F ${Math.round(l[6]*sc)}k</span></div>
-            <div class="label">🍽️ DINNER</div>
-            <div class="value" onclick="event.stopPropagation(); openDBRecipe('d', ${Math.abs(id)%mDB.d.length})"><span>${dn[0]}</span><span class="macro-pill">${Math.round(dn[4]*sc)}P ${Math.round(dn[5]*sc)}C ${Math.round(dn[7]*sc)}F ${Math.round(dn[6]*sc)}k</span></div>
+            <div class="label">🧬 DAILY ESSENTIALS</div><div style="display:flex; gap:10px; margin-bottom:15px"><div class="value" style="flex:1; justify-content:center" onclick="event.stopPropagation(); openEssential('Sea Moss')">Sea Moss</div><div class="value" style="flex:1; justify-content:center" onclick="event.stopPropagation(); openEssential('${user==='S'?'Hibiscus Tea':'Kombucha'}')">${user==='S'?'Hibiscus':'Kombucha'}</div></div>
+            <div class="label">🍳 BREAKFAST</div><div class="value" onclick="event.stopPropagation(); openDBRecipe('b', ${Math.abs(id)%mDB.b.length})"><span>${b[0]}</span><span class="macro-pill">${Math.round(b[4]*sc)}P ${Math.round(b[5]*sc)}C ${Math.round(b[7]*sc)}F ${Math.round(b[6]*sc)}k</span></div>
+            <div class="label">🥗 LUNCH</div><div class="value" onclick="event.stopPropagation(); openDBRecipe('l', ${Math.abs(id)%mDB.l.length})"><span>${l[0]}</span><span class="macro-pill">${Math.round(l[4]*sc)}P ${Math.round(l[5]*sc)}C ${Math.round(l[7]*sc)}F ${Math.round(l[6]*sc)}k</span></div>
+            <div class="label">🍽️ DINNER</div><div class="value" onclick="event.stopPropagation(); openDBRecipe('d', ${Math.abs(id)%mDB.d.length})"><span>${dn[0]}</span><span class="macro-pill">${Math.round(dn[4]*sc)}P ${Math.round(dn[5]*sc)}C ${Math.round(dn[7]*sc)}F ${Math.round(dn[6]*sc)}k</span></div>
             <div class="label">🥜 SNACKS</div>${snackHTML}
             <div class="label">🍹 JUICE</div><div class="juice-name" onclick="event.stopPropagation(); openDBRecipe('j', ${Math.abs(id)%mDB.j.length})">${jn[0]}</div>
-            <div class="macro-dashboard">
-                <div class="macro-row"><div class="macro-label"><span>PROTEIN</span><span>${p} / ${g.P}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((p/g.P)*100,100)}%; background:var(--g-pro)"></div></div></div>
-                <div class="macro-row"><div class="macro-label"><span style="color:var(--green)">FIBER</span><span>${f} / ${g.F}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((f/g.F)*100,100)}%; background:var(--g-fib)"></div></div></div>
-                <div class="macro-row"><div class="macro-label"><span>CARBS</span><span>${c} / ${g.C}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((c/g.C)*100,100)}%; background:var(--g-carb)"></div></div></div>
-                <div class="macro-row"><div class="macro-label"><span>CALORIES</span><span>${k} / ${g.K}</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((k/g.K)*100,100)}%; background:var(--g-cal)"></div></div></div>
-            </div>
+            <div class="macro-dashboard"><div class="macro-row"><div class="macro-label"><span>PROTEIN</span><span>${p} / ${g.P}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((p/g.P)*100,100)}%; background:var(--g-pro)"></div></div></div><div class="macro-row"><div class="macro-label"><span style="color:var(--green)">FIBER</span><span>${f} / ${g.F}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((f/g.F)*100,100)}%; background:var(--g-fib)"></div></div></div><div class="macro-row"><div class="macro-label"><span>CARBS</span><span>${c} / ${g.C}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((c/g.C)*100,100)}%; background:var(--g-carb)"></div></div></div><div class="macro-row"><div class="macro-label"><span>CALORIES</span><span>${k} / ${g.K}</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((k/g.K)*100,100)}%; background:var(--g-cal)"></div></div></div></div>
         </div>
     </div>`;
 
@@ -604,47 +581,45 @@ async function fetchOuraData() {
     }
 
     try {
-        // --- 1. READINESS ---
-        bar.innerHTML = '💍 Loading Readiness...';
+        bar.innerHTML = '💍 Syncing Oura...';
+        
+        // 1. READINESS
         let rData = {};
         try {
-            const rRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${startDate}&end_date=${endDate}&_t=${Date.now()}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
+            const rRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
             rData = await rRes.json();
         } catch(e) { console.log('Readiness fail'); }
 
-        // --- 2. SLEEP ---
-        bar.innerHTML = '💍 Loading Sleep...';
+        // 2. DAILY SLEEP
         let dsData = {};
         try {
-            const dsRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${startDate}&end_date=${endDate}&_t=${Date.now()}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
+            const dsRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
             dsData = await dsRes.json();
         } catch(e) { console.log('DS fail'); }
         
-        let sData = {};
-        try {
-             const sRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${startDate}&end_date=${endDate}&_t=${Date.now()}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
-             sData = await sRes.json();
-        } catch(e) { console.log('Sleep details fail'); }
-
-        // --- 3. ACTIVITY ---
-        bar.innerHTML = '💍 Loading Activity...';
+        // 3. ACTIVITY
         let aData = {};
         try {
-             const aRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${startDate}&end_date=${endDate}&_t=${Date.now()}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
+             const aRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
              aData = await aRes.json();
         } catch(e) { console.log('Activity fail'); }
 
-        // --- 4. WORKOUTS (Often fails, so isolated) ---
-        bar.innerHTML = '💍 Loading Workouts...';
+        // 4. SLEEP DETAILS
+        let sData = {};
+        try {
+             const sRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
+             sData = await sRes.json();
+        } catch(e) { console.log('Sleep fail'); }
+
+        // 5. WORKOUTS (Isolated)
         let wData = {};
         try {
-             const wRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/workout?start_date=${startDate}&end_date=${endDate}&_t=${Date.now()}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
+             const wRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/workout?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
              wData = await wRes.json();
-        } catch(e) { console.log('Workout fail - token may lack scope'); }
+        } catch(e) { console.log('Workout fail'); }
 
         if(user !== currentUser) return;
 
-        // Process Data
         window.ouraWorkouts = [];
         if(wData.data && wData.data.length > 0) {
             window.ouraWorkouts = wData.data.map(w => {
@@ -682,7 +657,6 @@ async function fetchOuraData() {
                 const sleepEpisodes = (sData && sData.data) ? sData.data.filter(s => s.day === day.day) : [];
                 const mainSleep = sleepEpisodes.length > 0 ? sleepEpisodes.reduce((prev, current) => (prev.total_sleep_duration > current.total_sleep_duration) ? prev : current) : null;
                 const act = (aData && aData.data) ? aData.data.find(ac => ac.day === day.day) : null;
-                
                 let burn = 0, hi = 0, med = 0, low = 0;
                 if(act) {
                     if(act.active_calories !== undefined) burn = act.active_calories;
@@ -691,7 +665,6 @@ async function fetchOuraData() {
                     if(act.medium_activity_time) med = Math.round(act.medium_activity_time / 60);
                     if(act.low_activity_time) low = Math.round(act.low_activity_time / 60);
                 }
-                
                 let rhrVal = '-';
                 if(mainSleep && mainSleep.lowest_heart_rate) rhrVal = mainSleep.lowest_heart_rate;
                 else if(dailySleep && dailySleep.lowest_heart_rate) rhrVal = dailySleep.lowest_heart_rate;
@@ -702,6 +675,13 @@ async function fetchOuraData() {
                     cal: burn, high: hi, med: med, low: low
                 };
             }).reverse().slice(0, 7);
+
+            // SAVE TO CACHE
+            localStorage.setItem(`centurion_oura_cache_${user}`, JSON.stringify({
+                history: window.ouraHistory,
+                workouts: window.ouraWorkouts,
+                stats: window.weeklyStats
+            }));
 
             let lastR = window.ouraHistory.find(d => d.sleepScore !== '-' && d.sleepScore > 0);
             if(!lastR) lastR = window.ouraHistory[0];
@@ -727,6 +707,13 @@ async function fetchOuraData() {
 window.onload = () => { 
     document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
     document.getElementById('b' + user.toLowerCase()).classList.add('active');
+    
+    // LOAD CACHE IMMEDIATELY
+    const cached = JSON.parse(localStorage.getItem(`centurion_oura_cache_${user}`)) || {};
+    if(cached.history) window.ouraHistory = cached.history;
+    if(cached.workouts) window.ouraWorkouts = cached.workouts;
+    if(cached.stats) window.weeklyStats = cached.stats;
+
     render(); 
     fetchOuraData(); 
 };
