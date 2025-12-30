@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v520.0 AI Stack</title>
+    <title>The Centurion | v530.0 Stable Core</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --red:#FF5252; --text:#fff;
@@ -69,22 +69,16 @@
         
         /* CARD STYLES */
         .goal-card, .nutrition-card, .ai-card { border-radius: 20px; padding: 20px; margin-bottom: 15px; position: relative; transition: all 0.3s; cursor: pointer; }
-        
         .goal-card { background: linear-gradient(135deg, rgba(102,126,234,0.1), rgba(212,175,55,0.05)); border: 1px solid rgba(102,126,234,0.3); }
         .nutrition-card { background: var(--card); border: 1px solid rgba(255,255,255,0.03); }
         .nutrition-card::before { content:""; position:absolute; left:0; top:20px; bottom:20px; width:3px; background:var(--green); border-radius:0 4px 4px 0; }
-        
-        /* AI CARD STYLING */
         .ai-card { background: linear-gradient(135deg, rgba(0,176,255,0.1), rgba(124,77,255,0.05)); border: 1px solid rgba(0,176,255,0.3); }
-        
         .goal-header, .nutrition-header, .ai-header { display: flex; justify-content: space-between; align-items: center; }
         .goal-score { font-size: 2.5rem; font-weight: 900; display: flex; align-items: center; gap: 10px; }
         .goal-score.excellent { color: var(--green); }
         .goal-score.good { color: var(--gold); }
         .goal-score.poor { color: var(--red); }
-        
         .ai-score { font-size: 2rem; font-weight: 900; color: #fff; display: flex; align-items: center; gap: 10px; }
-        
         .goal-metric { background: rgba(0,0,0,0.3); padding: 12px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
         .goal-metric-label { font-size: 0.65rem; color: #888; font-weight: 700; text-transform: uppercase; }
         .goal-metric-value { font-size: 1.1rem; font-weight: 900; }
@@ -98,14 +92,13 @@
         .goal-card.collapsed .goal-body, .nutrition-card.collapsed .nutrition-body, .ai-card.collapsed .ai-body { display: none; }
         .chevron { transition: transform 0.3s; font-size: 1rem; color: #666; }
         .goal-card.collapsed .chevron, .nutrition-card.collapsed .chevron, .ai-card.collapsed .chevron { transform: rotate(-90deg); }
-        
         @keyframes slideDown { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v520.0 AI Stack</span>
+        <span class="version-tag">v530.0 Stable Core</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -114,6 +107,8 @@
     <div id="ouraBar" class="status-bar" style="color:var(--green); margin-bottom:5px;">💍 Syncing Oura...</div>
     <div id="dateDisplay" class="status-bar">...</div>
     
+    <div id="aiDashboard" style="display:none; margin-bottom:20px;"></div>
+
     <div class="controls">
         <button class="nav-btn" onclick="changeW(-1)">◀ PREV</button>
         <button class="nav-btn" onclick="resetD()">TODAY</button>
@@ -137,16 +132,17 @@
 
 <script>
 // ==========================================
-// CENTURION v520.0 CORE
+// CENTURION v530.0 CORE
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
 let offset = 0;
 let selDate = getCaDate(); 
 let currentSlot = 0;
+let aiVisible = false;
 let isGoalCollapsed = false; 
 let isNutCollapsed = false; 
-let isAICollapsed = true; // AI Card defaults to closed to save space
+let isAICollapsed = true; 
 let snackLog = JSON.parse(localStorage.getItem('centurion_snack_log')) || {};
 let photoCache = JSON.parse(localStorage.getItem('centurion_photo_cache')) || {};
 window.ouraHistory = [];
@@ -208,6 +204,7 @@ if (!uH) {
     uH = { 'J': defaultJ, 'S': defaultS };
     localStorage.setItem('centurion_bio_v7', JSON.stringify(uH));
 } else {
+    // FORCE INJECTION
     let updated = false;
     if (!uH['J'] || !uH['J'].protocol) { uH['J'] = defaultJ; updated = true; }
     if (!uH['S'] || !uH['S'].protocol) { uH['S'] = defaultS; updated = true; }
@@ -215,7 +212,7 @@ if (!uH) {
     if (updated) localStorage.setItem('centurion_bio_v7', JSON.stringify(uH));
 }
 
-// --- DATABASES (Unified) ---
+// --- DATABASES ---
 const rDB = {"Sea Moss":["92 Minerals","2 TBSP Fasted.","Thyroid & Gut support."],"Kombucha":["Probiotic","4 OZ post-Lunch.","Enzyme support."],"Hibiscus Tea":["BP Control","Organic steep.","Antioxidant rich."]};
 const mDB = {
     b: ["Ancestral Beef Sausage|80/20 Beef-Liver Blend, Sage, Thyme|sear|Heme iron + Vitamin A powerhouse|25|2|280|0", "Avocado Egg Toast|Bread, Avocado, Egg Whites|toast|Fiber + healthy fats|35|15|450|12", "Oat Protein Pancakes|Oat Flour, Blueberries|griddle|Complex carbs + fast protein|35|25|380|6"],
@@ -429,10 +426,16 @@ function showDay(dObj, idx) {
         
         if(predictions.predictedChanges.vo2) aiBody += `<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:0.6rem"><span style="color:#888">VO2 Max</span><span style="color:var(--green)">${predictions.predictedChanges.vo2.toFixed(1)} → ${userData.protocol[predictions.nextMilestone].vo2}</span></div>`;
         if(predictions.predictedChanges.vf) aiBody += `<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:0.6rem"><span style="color:#888">Visceral Fat</span><span style="color:var(--green)">${predictions.predictedChanges.vf.toFixed(1)} → ${userData.protocol[predictions.nextMilestone].vf}</span></div>`;
-        if(predictions.predictedChanges.apob) aiBody += `<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:0.6rem"><span style="color:#888">ApoB</span><span style="color:var(--green)">${predictions.predictedChanges.apob.toFixed(1)} → ${userData.protocol[predictions.nextMilestone].apob}</span></div>`;
-        if(predictions.predictedChanges.test) aiBody += `<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:0.6rem"><span style="color:#888">Testosterone</span><span style="color:var(--green)">${predictions.predictedChanges.test.toFixed(0)} → ${userData.protocol[predictions.nextMilestone].test}</span></div>`;
-        aiBody += `</div></div>`;
         
+        if(user === 'J') {
+             if(predictions.predictedChanges.apob) aiBody += `<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:0.6rem"><span style="color:#888">ApoB</span><span style="color:var(--green)">${predictions.predictedChanges.apob.toFixed(1)} → ${userData.protocol[predictions.nextMilestone].apob}</span></div>`;
+             if(predictions.predictedChanges.test) aiBody += `<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:0.6rem"><span style="color:#888">Testosterone</span><span style="color:var(--green)">${predictions.predictedChanges.test.toFixed(0)} → ${userData.protocol[predictions.nextMilestone].test}</span></div>`;
+        } else {
+             if(predictions.predictedChanges.hba1c) aiBody += `<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:0.6rem"><span style="color:#888">HbA1c</span><span style="color:var(--green)">${predictions.predictedChanges.hba1c.toFixed(2)} → ${userData.protocol[predictions.nextMilestone].hba1c}</span></div>`;
+             if(predictions.predictedChanges.muscle) aiBody += `<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:0.6rem"><span style="color:#888">Muscle Mass</span><span style="color:var(--green)">${predictions.predictedChanges.muscle.toFixed(1)} → ${userData.protocol[predictions.nextMilestone].muscle} lbs</span></div>`;
+        }
+
+        aiBody += `</div></div>`;
         aiBody += `<div class="bio-section"><div class="label">WEEKLY TARGETS</div>${bioBar("VO2 MAX (HIGH)", window.weeklyStats.high, 75, "m")}${bioBar("FAT BURN (VOL)", window.weeklyStats.high+window.weeklyStats.medium, 150, "m")}</div>`;
     }
     
@@ -495,15 +498,16 @@ function showDay(dObj, idx) {
                     const status = actual >= target * 0.8 ? 'success' : actual >= target * 0.5 ? 'warning' : 'error';
                     const statusIcon = status === 'success' ? '✅' : status === 'warning' ? '⚠️' : '❌';
                     const statusColor = status==='success'?'var(--green)':status==='warning'?'var(--gold)':'var(--red)';
-                    zoneComplianceHTML += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:8px;background:rgba(255,255,255,0.02);border-radius:8px"><div style="flex:1"><div style="font-size:0.55rem;color:#888;margin-bottom:3px">' + zoneNames[zidx] + '</div><div style="font-size:0.8rem;font-weight:900;color:#fff">Actual: <span style="color:' + statusColor + '">' + actual + 'min</span></div></div><div style="text-align:right"><div style="font-size:0.5rem;color:#666;margin-bottom:3px">TARGET</div><div style="font-size:0.7rem;font-weight:700;color:var(--blue)">' + target + 'min</div></div><div style="margin-left:10px;font-size:1.2rem">' + statusIcon + '</div></div>';
+                    zoneComplianceHTML += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:8px;background:rgba(255,255,255,0.02);border-radius:8px"><div style="flex:1"><div style="font-size:0.55rem;color:#888;margin-bottom:3px">${zoneNames[zidx]}</div><div style="font-size:0.8rem;font-weight:900;color:#fff">Actual: <span style="color:${statusColor}">${actual}min</span></div></div><div style="text-align:right"><div style="font-size:0.5rem;color:#666;margin-bottom:3px">TARGET</div><div style="font-size:0.7rem;font-weight:700;color:var(--blue)">${target}min</div></div><div style="margin-left:10px;font-size:1.2rem">${statusIcon}</div></div>`;
                 }
             });
-            zoneComplianceHTML += '<div style="margin-top:8px;font-size:0.55rem;color:#666;font-style:italic">' + protocolTarget.focus + '</div></div>';
+            zoneComplianceHTML += `<div style="margin-top:8px;font-size:0.55rem;color:#666;font-style:italic">${protocolTarget.focus}</div></div>`;
         }
         
         const recoveryScore = !hasOuraData ? 0 : Math.round((dailyData.score + (dailyData.sleepScore !== '-' ? dailyData.sleepScore : 0)) / 2);
         const recoveryStatus = !hasOuraData ? 'warning' : recoveryScore >= 80 ? 'success' : recoveryScore >= 65 ? 'warning' : 'error';
         const recoveryText = !hasOuraData ? 'Syncing...' : recoveryScore + '/100';
+        
         const macroScore = Math.min(100, Math.round(((p/g.P) + (c/g.C) + (f/g.F) + (k/g.K)) / 4 * 100));
         const dailyScore = Math.round((macroScore + (totalZoneTime>0?protocolScore:50) + (Math.abs(balanceDiff)<200?100:70) + recoveryScore) / 3);
         const scoreClass = dailyScore >= 85 ? 'excellent' : dailyScore >= 70 ? 'good' : 'poor';
@@ -548,9 +552,7 @@ function showDay(dObj, idx) {
         ${nutritionHTML}`;
 }
 
-// ... (KEEP ALL EXISTING HELPER FUNCTIONS: openSnackSelector, applySnack, removeSnack, closeM, logBodyScan, logTest, hardReset, bioBar, bioBarWithPrediction, openDBRecipe, openWorkoutFlow, openJuice, openEssential, fetchOuraData) ...
-// (I will include them in the full block to ensure copy-paste works)
-
+// ... (KEEP ALL HELPER FUNCTIONS) ...
 function openSnackSelector(s) { currentSlot=s; document.getElementById('mTitle').innerText="SNACK"; document.getElementById('mBody').innerHTML=mDB.s.map((x,i)=>`<div class="value" onclick="applySnack(${i})">${x.split('|')[0]}</div>`).join(''); document.getElementById('bioContentArea').innerHTML=''; document.getElementById('masterModal').style.display='block'; }
 function applySnack(i) { snackLog[getDateKey(selDate)][currentSlot]=i; localStorage.setItem('centurion_snack_log', JSON.stringify(snackLog)); closeM(); render(); }
 function removeSnack(s) { snackLog[getDateKey(selDate)][s]=null; localStorage.setItem('centurion_snack_log', JSON.stringify(snackLog)); render(); }
@@ -558,18 +560,27 @@ function closeM() { document.getElementById('masterModal').style.display='none';
 
 async function fetchOuraData() {
     const currentUser = user; const token = TOKENS[currentUser]; const bar = document.getElementById('ouraBar'); 
+    
+    // Use Timestamp to bypass cache
+    const ts = Date.now();
     const startDate = getDateKey(new Date(Date.now() - 2592000000)); 
     const endDate = getDateKey(new Date());
+    
     try {
-        const rRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${startDate}&end_date=${endDate}&_t=${Date.now()}`), {headers:{'Authorization':`Bearer ${token}`}});
+        bar.innerHTML = '💍 Fetching readiness...';
+        const rRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${startDate}&end_date=${endDate}&_t=${ts}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
         const rData = await rRes.json();
-        const dsRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${startDate}&end_date=${endDate}&_t=${Date.now()}`), {headers:{'Authorization':`Bearer ${token}`}});
+        
+        const dsRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${startDate}&end_date=${endDate}&_t=${ts}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
         const dsData = await dsRes.json();
-        const sRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${startDate}&end_date=${endDate}&_t=${Date.now()}`), {headers:{'Authorization':`Bearer ${token}`}});
+        
+        const sRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${startDate}&end_date=${endDate}&_t=${ts}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
         const sData = await sRes.json();
-        const aRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${startDate}&end_date=${endDate}&_t=${Date.now()}`), {headers:{'Authorization':`Bearer ${token}`}});
+        
+        const aRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${startDate}&end_date=${endDate}&_t=${ts}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
         const aData = await aRes.json();
-        const wRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/workout?start_date=${startDate}&end_date=${endDate}&_t=${Date.now()}`), {headers:{'Authorization':`Bearer ${token}`}});
+        
+        const wRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/workout?start_date=${startDate}&end_date=${endDate}&_t=${ts}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
         const wData = await wRes.json();
 
         if(user !== currentUser) return;
@@ -638,8 +649,13 @@ async function fetchOuraData() {
             render(); 
         } else {
             bar.innerText = `💍 ${currentUser==='J'?'JERMAINE':'SOPHIA'}: No Data`;
+            // Even if failed, re-render so UI doesn't freeze
+            render();
         }
-    } catch(e) { if(user === currentUser) bar.innerText = "💍 Sync Failed"; }
+    } catch(e) { 
+        if(user === currentUser) bar.innerText = "💍 Sync Failed"; 
+        render(); // Force render anyway so cards still work
+    }
 }
 
 // Init
