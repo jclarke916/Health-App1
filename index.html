@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v490.0 Forced Injection</title>
+    <title>The Centurion | v500.0 Collapsible</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --red:#FF5252; --text:#fff;
@@ -66,9 +66,9 @@
         .stat-value { font-size: 1.4rem; font-weight: 900; color: #fff; }
         .stat-label { font-size: 0.55rem; color: #888; font-weight: 700; text-transform: uppercase; margin-top: 4px; }
         .stat-sub { font-size: 0.5rem; color: #666; margin-top: 2px; }
-        .goal-card { background: linear-gradient(135deg, rgba(102,126,234,0.1), rgba(212,175,55,0.05)); border: 1px solid rgba(102,126,234,0.3); border-radius: 20px; padding: 20px; margin-bottom: 15px; position: relative; }
-        .goal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .goal-score { font-size: 2.5rem; font-weight: 900; }
+        .goal-card { background: linear-gradient(135deg, rgba(102,126,234,0.1), rgba(212,175,55,0.05)); border: 1px solid rgba(102,126,234,0.3); border-radius: 20px; padding: 20px; margin-bottom: 15px; position: relative; transition: all 0.3s; cursor: pointer; }
+        .goal-header { display: flex; justify-content: space-between; align-items: center; }
+        .goal-score { font-size: 2.5rem; font-weight: 900; display: flex; align-items: center; gap: 10px; }
         .goal-score.excellent { color: var(--green); }
         .goal-score.good { color: var(--gold); }
         .goal-score.poor { color: var(--red); }
@@ -79,12 +79,18 @@
         .goal-metric-value.warning { color: var(--gold); }
         .goal-metric-value.error { color: var(--red); }
         .goal-subtext { font-size: 0.55rem; color: #666; margin-top: 2px; }
+        /* Collapsible Logic */
+        .goal-body { margin-top: 20px; animation: slideDown 0.3s ease-out; }
+        .goal-card.collapsed .goal-body { display: none; }
+        .chevron { transition: transform 0.3s; font-size: 1rem; color: #666; }
+        .goal-card.collapsed .chevron { transform: rotate(-90deg); }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v490.0 Forced Injection</span>
+        <span class="version-tag">v500.0 Collapsible Dashboard</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -118,7 +124,7 @@
 
 <script>
 // ==========================================
-// CENTURION v490.0 CORE
+// CENTURION v500.0 CORE
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
@@ -126,6 +132,7 @@ let offset = 0;
 let selDate = getCaDate(); 
 let currentSlot = 0;
 let aiVisible = false;
+let isGoalCollapsed = false; // State for collapsible card
 let snackLog = JSON.parse(localStorage.getItem('centurion_snack_log')) || {};
 let photoCache = JSON.parse(localStorage.getItem('centurion_photo_cache')) || {};
 window.ouraHistory = [];
@@ -135,9 +142,9 @@ window.weeklyStats = { high: 0, medium: 0, low: 0 };
 const BIRTHDAYS = { 'J': '1983-01-13', 'S': '1987-01-25' };
 const TOKENS = { 'J': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'S': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
 
-// --- DATA INJECTION & REPAIR ---
 let uH = JSON.parse(localStorage.getItem('centurion_bio_v7'));
 
+// --- DATA INJECTION & REPAIR ---
 const defaultJ = {
     now: {bf:19.0, m:99.0, vf:10, w:217},
     goal: {bf:15.0, m:105.0, vf:7, w:210},
@@ -346,6 +353,11 @@ function switchU(uID) {
 function changeW(d) { offset += d; render(); }
 function resetD() { offset = 0; selDate = getCaDate(); render(); }
 
+function toggleGoal() {
+    isGoalCollapsed = !isGoalCollapsed;
+    render();
+}
+
 function applyAIP(mealStr, type) {
     if(!mealStr) return ["Loading...","","","","",0,0,0,0];
     if(user !== 'S') return mealStr.split('|');
@@ -439,6 +451,7 @@ function showDay(dObj, idx) {
         const balanceDiff = actualBalance - targetBalance;
         const balanceStatus = !hasOuraData ? 'warning' : Math.abs(balanceDiff) <= 200 ? 'success' : 'error';
         const balanceText = !hasOuraData ? 'Syncing...' : (actualBalance > 0 ? '+' + actualBalance : actualBalance);
+        const targetText = targetBalance > 0 ? '+' + targetBalance : targetBalance < 0 ? targetBalance : '0';
         
         let workoutCompliance = 'warning';
         let workoutText = 'Syncing...';
@@ -490,13 +503,30 @@ function showDay(dObj, idx) {
         
         const recoveryScore = !hasOuraData ? 0 : Math.round((dailyData.score + (dailyData.sleepScore !== '-' ? dailyData.sleepScore : 0)) / 2);
         const recoveryStatus = !hasOuraData ? 'warning' : recoveryScore >= 80 ? 'success' : recoveryScore >= 65 ? 'warning' : 'error';
-        const dailyScore = Math.round((protocolScore + (Math.abs(balanceDiff)<200?100:70) + recoveryScore) / 3);
+        const recoveryText = !hasOuraData ? 'Syncing...' : recoveryScore + '/100';
         
-        goalHTML = '<div class="goal-card"><div class="goal-header"><div><div style="font-size:0.6rem;color:var(--gold);font-weight:900;text-transform:uppercase;letter-spacing:1px">Daily Performance</div><div style="font-size:0.5rem;color:#666;margin-top:2px">' + dk + '</div></div><div class="goal-score ' + (dailyScore>=85?'excellent':'good') + '">' + dailyScore + '%</div></div>';
-        goalHTML += '<div class="goal-metric"><div style="flex:1"><div class="goal-metric-label">🔥 Calorie Balance</div><div class="goal-subtext">' + consumed + ' in • ' + burned + ' out • Target: ' + (targetBalance>0?'+':"") + targetBalance + '</div><div style="font-size:0.5rem;color:#666;margin-top:2px;font-style:italic">' + balanceRationale + '</div></div><div class="goal-metric-value ' + balanceStatus + '">' + balanceText + '</div></div>';
-        goalHTML += '<div class="goal-metric" style="flex-direction:column;align-items:stretch"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:' + (zoneComplianceHTML?'5px':'0') + '"><div><div class="goal-metric-label">💪 Protocol: ' + w + '</div><div class="goal-subtext">Target: ' + (protocolTarget?protocolTarget.duration:0) + 'min</div></div><div class="goal-metric-value ' + workoutCompliance + '">' + workoutText + '</div></div>' + zoneComplianceHTML + '</div>';
-        goalHTML += '<div class="goal-metric"><div><div class="goal-metric-label">📊 Macro Targets</div><div class="goal-subtext">' + p + '/' + g.P + 'P • ' + c + '/' + g.C + 'C • ' + f + '/' + g.F + 'F</div></div><div class="goal-metric-value ' + (Math.min(100,Math.round(p/g.P*100)) >= 85 ? 'success' : 'warning') + '">' + Math.min(100,Math.round(p/g.P*100)) + '%</div></div>';
-        goalHTML += '<div class="goal-metric"><div><div class="goal-metric-label">😴 Recovery</div><div class="goal-subtext">Readiness ' + (hasOuraData ? dailyData.score : '-') + ' • Sleep ' + (hasOuraData && dailyData.sleepScore !== '-' ? dailyData.sleepScore : '-') + '</div></div><div class="goal-metric-value ' + recoveryStatus + '">' + (hasOuraData ? recoveryScore + '/100' : '-') + '</div></div></div>';
+        const macroScore = Math.min(100, Math.round(((p/g.P) + (c/g.C) + (f/g.F) + (k/g.K)) / 4 * 100));
+        const dailyScore = Math.round((macroScore + (totalZoneTime>0?protocolScore:50) + (Math.abs(balanceDiff)<100?100:70) + recoveryScore) / 4);
+        const scoreClass = dailyScore >= 85 ? 'excellent' : dailyScore >= 70 ? 'good' : 'poor';
+        
+        goalHTML = `<div class="goal-card ${isGoalCollapsed ? 'collapsed' : ''}" onclick="toggleGoal()">
+            <div class="goal-header">
+                <div>
+                    <div style="font-size:0.6rem;color:var(--gold);font-weight:900;text-transform:uppercase;letter-spacing:1px">Daily Performance</div>
+                    <div style="font-size:0.5rem;color:#666;margin-top:2px">${dk}</div>
+                </div>
+                <div class="goal-score ${scoreClass}">
+                    ${dailyScore}% <span class="chevron">▼</span>
+                </div>
+            </div>
+            
+            <div class="goal-body">
+                <div class="goal-metric"><div style="flex:1"><div class="goal-metric-label">🔥 Calorie Balance</div><div class="goal-subtext">${consumed} in • ${burned} out • Target: ${targetText}</div><div style="font-size:0.5rem;color:#666;margin-top:2px;font-style:italic">${balanceRationale}</div></div><div class="goal-metric-value ${balanceStatus}">${balanceText}</div></div>
+                <div class="goal-metric" style="flex-direction:column;align-items:stretch"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${zoneComplianceHTML?'5px':'0'}"><div><div class="goal-metric-label">💪 Protocol: ${w}</div><div class="goal-subtext">Target: ${(protocolTarget?protocolTarget.duration:0)}min</div></div><div class="goal-metric-value ${workoutCompliance}">${workoutText}</div></div>${zoneComplianceHTML}</div>
+                <div class="goal-metric"><div><div class="goal-metric-label">📊 Macro Targets</div><div class="goal-subtext">${p}/${g.P}P • ${c}/${g.C}C • ${f}/${g.F}F</div></div><div class="goal-metric-value ${macroScore >= 85 ? 'success' : macroScore >= 70 ? 'warning' : 'error'}">${macroScore}%</div></div>
+                <div class="goal-metric"><div><div class="goal-metric-label">😴 Recovery</div><div class="goal-subtext">Readiness ${hasOuraData ? dailyData.score : '-'} • Sleep ${hasOuraData && dailyData.sleepScore !== '-' ? dailyData.sleepScore : '-'}</div></div><div class="goal-metric-value ${recoveryStatus}">${recoveryText}</div></div>
+            </div>
+        </div>`;
     }
 
     document.getElementById('dayContent').innerHTML = goalHTML + `
