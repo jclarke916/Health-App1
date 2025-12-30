@@ -3,13 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v1080.4 Safe Mode</title>
+    <title>The Centurion | v1090.0 Full Panel</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #000000;
-            --glass: rgba(28, 28, 30, 0.65);
-            --border: rgba(255, 255, 255, 0.08);
+            --bg: #050505;
+            --glass: rgba(30, 30, 32, 0.75);
+            --glass-fail: rgba(255, 69, 58, 0.15);
+            --glass-win: rgba(48, 209, 88, 0.15);
+            --border: rgba(255, 255, 255, 0.1);
             --text-main: #FFFFFF;
             --text-sub: #8E8E93;
             --gold: #FFD60A;
@@ -38,14 +40,12 @@
         /* HEADER */
         h1 {
             text-align: center;
-            font-weight: 800;
-            letter-spacing: 4px;
+            font-weight: 900;
+            letter-spacing: 3px;
             text-transform: uppercase;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             margin: 10px 0 20px 0;
-            background: linear-gradient(90deg, #fff, #888);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: #666;
         }
 
         /* USER SWITCHER */
@@ -108,7 +108,7 @@
         .nav-btn:active { background: rgba(255,255,255,0.1); }
 
         /* DAY TABS */
-        .tabs { display: flex; gap: 6px; margin-bottom: 25px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none;}
+        .tabs { display: flex; gap: 6px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none;}
         .tabs::-webkit-scrollbar { display: none; }
         .tab {
             flex: 1;
@@ -137,19 +137,17 @@
             -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--border);
             border-radius: var(--radius);
-            padding: 24px;
-            margin-bottom: 16px;
+            padding: 20px;
+            margin-bottom: 12px;
             position: relative;
-            transition: transform 0.2s ease, background 0.3s;
-            cursor: pointer;
+            transition: transform 0.2s ease;
             overflow: hidden;
         }
         .premium-card:active { transform: scale(0.99); }
 
-        .card-header { display: flex; justify-content: space-between; align-items: center; }
-        .card-title { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 4px; color: var(--text-sub); }
-        .card-subtitle { font-size: 0.65rem; color: #555; font-weight: 500; }
-        .card-value-hero { font-size: 1.8rem; font-weight: 800; color: #fff; letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .card-title { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-sub); }
+        .card-val-lg { font-size: 1.6rem; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
         
         .accent-gold { color: var(--gold); }
         .accent-blue { color: var(--blue); }
@@ -178,14 +176,28 @@
         /* STATUS PILL */
         .status-pill { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
         .pill-win { background: rgba(48, 209, 88, 0.15); color: var(--green); border: 1px solid rgba(48, 209, 88, 0.3); }
-        .pill-fail { background: rgba(255, 69, 58, 0.15); color: var(--text-sub); border: 1px solid rgba(255, 255, 255, 0.1); } /* Grey for no data */
-        .pill-rest { background: rgba(255, 69, 58, 0.15); color: var(--red); border: 1px solid rgba(255, 69, 58, 0.3); } /* Red for rest needed */
+        .pill-fail { background: rgba(255, 69, 58, 0.15); color: var(--text-sub); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .pill-rest { background: rgba(255, 69, 58, 0.15); color: var(--red); border: 1px solid rgba(255, 69, 58, 0.3); }
 
         /* SNACK GRID */
         .snack-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
         .snack-slot { background: rgba(255,255,255,0.03); border: 1px dashed rgba(255,255,255,0.1); border-radius: 16px; padding: 15px; text-align: center; font-size: 0.65rem; color: #666; font-weight: 700; cursor: pointer; transition: all 0.2s; min-height: 80px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; }
         .snack-slot.filled { border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.05); color: #fff; }
         .remove-snack { position: absolute; top: 5px; right: 5px; color: #666; font-size: 10px; padding: 5px; }
+
+        /* PROTOCOL FEED */
+        .protocol-feed { display: flex; flex-direction: column; gap: 0; }
+        .feed-item { display: flex; align-items: flex-start; gap: 15px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .feed-item:last-child { border-bottom: none; }
+        .feed-bullet { width: 6px; height: 6px; background: var(--gold); border-radius: 50%; margin-top: 6px; flex-shrink: 0; box-shadow: 0 0 10px var(--gold); }
+        .feed-content { flex: 1; }
+        .feed-title { font-size: 0.9rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
+        .feed-desc { font-size: 0.7rem; color: #888; line-height: 1.4; }
+        .feed-tag { display: inline-block; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; margin-bottom: 4px; }
+        .tag-train { color: var(--red); background: rgba(255,69,58,0.1); }
+        .tag-nut { color: var(--green); background: rgba(48,209,88,0.1); }
+        .tag-rec { color: var(--blue); background: rgba(10,132,255,0.1); }
+        .tag-med { color: var(--purple); background: rgba(191,90,242,0.1); }
 
         /* MODAL */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); z-index: 2000; padding: 20px; overflow-y: auto; }
@@ -199,7 +211,7 @@
 </head>
 <body>
 <div class="container">
-    <header><h1>THE CENTURION</h1>
+    <header><h1>THE CENTURION PROTOCOL</h1>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -217,7 +229,7 @@
     <div id="dayTabs" class="tabs"></div>
     <div id="dayContent"></div>
     
-    <div style="text-align:center; color:#333; font-size:10px; margin-top:30px; opacity:0.6;">v1080.4 Safe Mode</div>
+    <div style="text-align:center; color:#333; font-size:10px; margin-top:30px; opacity:0.6;">v1090.0 Full Panel</div>
 </div>
 
 <div id="masterModal" class="modal" onclick="closeM(event)">
@@ -232,7 +244,7 @@
 
 <script>
 // ==========================================
-// CENTURION v1080.4 SAFE MODE
+// CENTURION v1090.0 FULL PANEL
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
@@ -260,23 +272,46 @@ window.weeklyStats = cachedOura.stats || { high: 0, medium: 0, low: 0 };
 const BIRTHDAYS = { 'J': '1983-01-13', 'S': '1987-01-25' };
 const TOKENS = { 'J': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'S': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
 
-let uH = JSON.parse(localStorage.getItem('centurion_bio_v7'));
+let uH = JSON.parse(localStorage.getItem('centurion_bio_v8'));
 
-// --- NUCLEAR DATA INJECTION ---
+// --- FULL DATA INJECTION (RESTORED) ---
 const defaultJ = {
     now: {bf:19.0, m:99.0, vf:10, w:217},
     goal: {bf:15.0, m:105.0, vf:7, w:210},
-    tests: { vo2: {val:45, goal:55, name:"VO2 Max", unit:"ml/kg"} },
-    protocol: { startDate: '2025-12-29' }
-};
-const defaultS = {
-    now: {bf:36.1, m:49.2, vf:9, w:141},
-    goal: {bf:22.0, m:60.0, vf:4, w:135},
-    tests: { vo2: {val:32, goal:45, name:"VO2 Max", unit:"ml/kg"} },
+    labs: {
+        apob: {val:95, goal:60, name:"ApoB", unit:"mg/dL", lowerIsBetter:true},
+        hba1c: {val:5.4, goal:5.0, name:"HbA1c", unit:"%", lowerIsBetter:true},
+        test: {val:650, goal:850, name:"Testosterone", unit:"ng/dL", lowerIsBetter:false}
+    },
+    tests: {
+        vo2: {val:45, goal:55, name:"VO2 Max", unit:"ml/kg"},
+        hang: {val:90, goal:120, name:"Dead Hang", unit:"sec"},
+        wallsit: {val:60, goal:180, name:"Wall Sit", unit:"sec"}
+    },
     protocol: { startDate: '2025-12-29' }
 };
 
-if (!uH) { uH = { 'J': defaultJ, 'S': defaultS }; localStorage.setItem('centurion_bio_v7', JSON.stringify(uH)); }
+const defaultS = {
+    now: {bf:36.1, m:49.2, vf:9, w:141},
+    goal: {bf:22.0, m:60.0, vf:4, w:135},
+    labs: {
+        ana: {val:320, goal:40, name:"ANA Titer", unit:"", lowerIsBetter:true},
+        hba1c: {val:5.6, goal:5.0, name:"HbA1c", unit:"%", lowerIsBetter:true},
+        crp: {val:1.8, goal:0.8, name:"hs-CRP", unit:"mg/L", lowerIsBetter:true},
+        tsh: {val:2.4, goal:1.5, name:"TSH", unit:"mIU/L", lowerIsBetter:true},
+        vitd: {val:38, goal:60, name:"Vitamin D", unit:"ng/mL", lowerIsBetter:false},
+        ferr: {val:40, goal:70, name:"Ferritin", unit:"ng/mL", lowerIsBetter:false}
+    },
+    tests: {
+        vo2: {val:32, goal:45, name:"VO2 Max", unit:"ml/kg"},
+        hang: {val:40, goal:90, name:"Dead Hang", unit:"sec"},
+        wallsit: {val:90, goal:150, name:"Wall Sit", unit:"sec"},
+        breath: {val:60, goal:120, name:"Breath Hold", unit:"sec"}
+    },
+    protocol: { startDate: '2025-12-29' }
+};
+
+if (!uH) { uH = { 'J': defaultJ, 'S': defaultS }; localStorage.setItem('centurion_bio_v8', JSON.stringify(uH)); }
 
 // --- UNIFIED SCHEDULE (h=high min, m=med min, l=low min) ---
 const unifiedSchedule = {
@@ -302,10 +337,16 @@ function getCaDate() { let d = new Date(new Date().toLocaleString("en-US", {time
 function getDateKey(d) { return d.toISOString().split('T')[0]; }
 function getMon(o) { let d = getCaDate(); d.setHours(0,0,0,0); let day = d.getDay(); let diff = d.getDate() - day + (day === 0 ? -6 : 1); d.setDate(diff + (o * 7)); return d; }
 function safeVal(val) { if (val === undefined || val === null || isNaN(val)) return '-'; return val; }
-function bioBar(label, val, goal, unit, lowerBetter=false) { if(isNaN(val)||isNaN(goal)) return ""; const pct = Math.min(lowerBetter?(goal/val)*100:(val/goal)*100,100); const color = pct>=100?'var(--green)':'var(--gold)'; return `<div class="bio-section"><div class="bar-label"><span>${label}</span><span>${val}${unit}</span></div><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div></div>`; }
+function bioBar(label, val, goal, unit, lowerBetter=false) { 
+    if(isNaN(val)||isNaN(goal)) return ""; 
+    const pct = Math.min(lowerBetter?(goal/val)*100:(val/goal)*100,100); 
+    const color = pct>=100?'var(--green)':'var(--gold)'; 
+    return `<div class="bio-section"><div class="bar-label"><span>${label}</span><span>${val}${unit}</span></div><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div></div>`; 
+}
 
 function calculateLongevity(userData) {
-    let base = 85.0; const vo2 = userData.tests?.vo2?.val || 40; 
+    let base = 85.0; 
+    const vo2 = userData.tests?.vo2?.val || 40; 
     if(vo2 >= 55) base += 6.0; else if(vo2 >= 45) base += 3.5; else if(vo2 < 35) base -= 2.0;
     return base.toFixed(1);
 }
@@ -343,67 +384,39 @@ function showDay(dObj, idx) {
     // SAFE DATA ACCESS
     const rawOura = window.ouraHistory.find(d => d.date === dk);
     const hasData = rawOura && rawOura.score !== undefined;
-    
-    // Default values if no data
     const displayScore = hasData ? rawOura.score : '-';
     const displayCal = (hasData && rawOura.cal) ? rawOura.cal : '-';
-    
-    // Status Logic
     const isActive = hasData ? rawOura.score >= 75 : false;
-    let pillClass = 'pill-fail';
-    let pillText = 'NO DATA';
     
-    if (hasData) {
-        pillClass = isActive ? 'pill-win' : 'pill-rest';
-        pillText = isActive ? 'ACTIVE PROTOCOL' : 'REST PROTOCOL';
-    }
-
+    let pillClass = 'pill-fail'; let pillText = 'NO DATA';
+    if (hasData) { pillClass = isActive ? 'pill-win' : 'pill-rest'; pillText = isActive ? 'ACTIVE PROTOCOL' : 'REST PROTOCOL'; }
     const statusPill = `<span class="status-pill ${pillClass}">${pillText}</span>`;
 
     // 1. PROTOCOL CARD
     const protocolHTML = `
     <div class="premium-card" onclick="togglePlan()">
-        <div class="card-header">
-            <div><div class="card-title accent-gold">DAILY PROTOCOL</div><div class="card-subtitle">${dayData.focus}</div></div>
-            <div class="card-value-hero">${hasData ? (isActive?'ACTIVE':'REST') : '-'} <span class="chevron" style="transform:${isPlanCollapsed?'rotate(-90deg)':'rotate(0deg)'}">▼</span></div>
-        </div>
-        <div class="card-body" style="display:${isPlanCollapsed?'none':'block'}">
-            <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:center;">
-                ${statusPill}
-                <span style="font-size:0.7rem; color:#888;">READINESS: ${displayScore}</span>
-            </div>
-            <div style="font-size:0.8rem; color:#ddd; line-height:1.5;">${dayData.tasks}</div>
-        </div>
+        <div class="card-header"><div><div class="card-title accent-gold">DAILY PROTOCOL</div><div class="card-subtitle">${dayData.focus}</div></div><div class="card-value-hero">${hasData ? (isActive?'ACTIVE':'REST') : '-'} <span class="chevron" style="transform:${isPlanCollapsed?'rotate(-90deg)':'rotate(0deg)'}">▼</span></div></div>
+        <div class="card-body" style="display:${isPlanCollapsed?'none':'block'}"><div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:center;">${statusPill}<span style="font-size:0.7rem; color:#888;">READINESS: ${displayScore}</span></div><div style="font-size:0.8rem; color:#ddd; line-height:1.5;">${dayData.tasks}</div></div>
     </div>`;
 
-    // 2. TRAINING CARD (Safe Math)
+    // 2. TRAINING CARD
     const tHigh = dayData.zT.h; const tMed = dayData.zT.m;
     const actualHigh = (hasData && rawOura.high) ? rawOura.high : 0;
     const actualMed = (hasData && rawOura.med) ? rawOura.med : 0;
-    
     const pHigh = tHigh > 0 ? Math.min((actualHigh/tHigh)*100, 100) : 0;
     const pMed = tMed > 0 ? Math.min((actualMed/tMed)*100, 100) : 0;
     
     const workoutHTML = `
     <div class="premium-card" onclick="toggleWorkout()">
-        <div class="card-header">
-            <div><div class="card-title accent-red">TRAINING</div><div class="card-subtitle">HR ZONE TARGETS</div></div>
-            <div class="card-value-hero">${displayCal} <span style="font-size:0.9rem; opacity:0.7">CAL</span> <span class="chevron" style="transform:${isWorkoutCollapsed?'rotate(-90deg)':'rotate(0deg)'}">▼</span></div>
-        </div>
+        <div class="card-header"><div><div class="card-title accent-red">TRAINING</div><div class="card-subtitle">HR ZONE TARGETS</div></div><div class="card-value-hero">${displayCal} <span style="font-size:0.9rem; opacity:0.7">CAL</span> <span class="chevron" style="transform:${isWorkoutCollapsed?'rotate(-90deg)':'rotate(0deg)'}">▼</span></div></div>
         <div class="card-body" style="display:${isWorkoutCollapsed?'none':'block'}">
             <div class="section-header">TODAY'S TARGETS</div>
-            <div class="bio-section">
-                <div class="bar-label"><span>High Intensity (Z4-Z5)</span><span>${actualHigh} / ${tHigh}m</span></div>
-                <div class="bar-track"><div class="bar-fill" style="width:${pHigh}%; background:linear-gradient(90deg, #FF5252, #D50000)"></div></div>
-            </div>
-            <div class="bio-section">
-                <div class="bar-label"><span>Med/Zone 2 (Z3)</span><span>${actualMed} / ${tMed}m</span></div>
-                <div class="bar-track"><div class="bar-fill" style="width:${pMed}%; background:linear-gradient(90deg, #FFC107, #FF9800)"></div></div>
-            </div>
+            <div class="bio-section"><div class="bar-label"><span>High Intensity (Z4-Z5)</span><span>${actualHigh} / ${tHigh}m</span></div><div class="bar-track"><div class="bar-fill" style="width:${pHigh}%; background:linear-gradient(90deg, #FF5252, #D50000)"></div></div></div>
+            <div class="bio-section"><div class="bar-label"><span>Med/Zone 2 (Z3)</span><span>${actualMed} / ${tMed}m</span></div><div class="bar-track"><div class="bar-fill" style="width:${pMed}%; background:linear-gradient(90deg, #FFC107, #FF9800)"></div></div></div>
         </div>
     </div>`;
 
-    // 3. NUTRITION CARD (Restored + Meal Plan)
+    // 3. NUTRITION CARD
     const b = applyAIP(mDB.b[Math.abs(id)%mDB.b.length], 'b');
     const l = applyAIP(mDB.l[Math.abs(id)%mDB.l.length], 'l');
     const d = applyAIP(mDB.d[Math.abs(id)%mDB.d.length], 'd');
@@ -415,20 +428,14 @@ function showDay(dObj, idx) {
     
     const nutHTML = `
     <div class="premium-card" onclick="toggleNutrition()">
-        <div class="card-header">
-            <div><div class="card-title accent-green">NUTRITION</div><div class="card-subtitle">${kTotal} KCAL</div></div>
-            <div class="card-value-hero">${Math.round((pTotal/gP)*100)}% <span style="font-size:0.9rem; opacity:0.7">PRO</span> <span class="chevron" style="transform:${isNutCollapsed?'rotate(-90deg)':'rotate(0deg)'}">▼</span></div>
-        </div>
+        <div class="card-header"><div><div class="card-title accent-green">NUTRITION</div><div class="card-subtitle">${kTotal} KCAL</div></div><div class="card-value-hero">${Math.round((pTotal/gP)*100)}% <span style="font-size:0.9rem; opacity:0.7">PRO</span> <span class="chevron" style="transform:${isNutCollapsed?'rotate(-90deg)':'rotate(0deg)'}">▼</span></div></div>
         <div class="card-body" style="display:${isNutCollapsed?'none':'block'}">
             <div class="section-header">MEAL PLAN</div>
             <div class="data-row" onclick="event.stopPropagation(); openDBRecipe('${b[0]}')"><div class="data-label" style="color:#fff;text-transform:none;font-size:0.8rem">${b[0]}</div><div class="data-val" style="font-size:0.7rem;color:#888">${Math.round(b[6]*sc)} Kc | ${Math.round(b[4]*sc)}P</div></div>
             <div class="data-row" onclick="event.stopPropagation(); openDBRecipe('${l[0]}')"><div class="data-label" style="color:#fff;text-transform:none;font-size:0.8rem">${l[0]}</div><div class="data-val" style="font-size:0.7rem;color:#888">${Math.round(l[6]*sc)} Kc | ${Math.round(l[4]*sc)}P</div></div>
             <div class="data-row" onclick="event.stopPropagation(); openDBRecipe('${d[0]}')"><div class="data-label" style="color:#fff;text-transform:none;font-size:0.8rem">${d[0]}</div><div class="data-val" style="font-size:0.7rem;color:#888">${Math.round(d[6]*sc)} Kc | ${Math.round(d[4]*sc)}P</div></div>
             <div class="section-header" style="margin-top:20px;">JUICE & SNACKS</div>
-            <div class="snack-grid">
-               <div class="snack-slot" onclick="event.stopPropagation(); openSnackSelector(0)">+ SNACK</div>
-               <div class="snack-slot" onclick="event.stopPropagation(); openSnackSelector(1)">+ SNACK</div>
-            </div>
+            <div class="snack-grid"><div class="snack-slot" onclick="event.stopPropagation(); openSnackSelector(0)">+ SNACK</div><div class="snack-slot" onclick="event.stopPropagation(); openSnackSelector(1)">+ SNACK</div></div>
             <div class="data-row" style="margin-top:10px"><div class="data-label" style="color:#fff;text-transform:none;font-size:0.8rem">${j[0]}</div><div class="data-val" style="font-size:0.7rem;color:var(--green)">${j[6]} Kc | ${j[4]}P</div></div>
             <div class="section-header" style="margin-top:20px;">DAILY TARGETS</div>
             <div class="bio-section"><div class="bar-label"><span>PROTEIN</span><span>${pTotal} / ${gP}g</span></div><div class="bar-track"><div class="bar-fill" style="width:${Math.min((pTotal/gP)*100,100)}%; background:var(--red)"></div></div></div>
@@ -440,7 +447,27 @@ function showDay(dObj, idx) {
     const proj = calculateLongevity(u);
     const aiHTML = `<div class="premium-card" onclick="toggleAI()"><div class="card-header"><div><div class="card-title accent-blue">AI LIFESPAN</div><div class="card-subtitle">Projected Age</div></div><div class="card-value-hero">${proj} YRS <span class="chevron" style="transform:${isAICollapsed?'rotate(-90deg)':'rotate(0deg)'}">▼</span></div></div><div class="card-body" style="display:${isAICollapsed?'none':'block'}"><div class="data-row"><div class="data-label">VO2 MAX</div><div class="data-val">${u.tests.vo2.val}</div></div></div></div>`;
     
-    const bioHTML = `<div class="premium-card" onclick="toggleBio()"><div class="card-header"><div><div class="card-title accent-purple">BIOMETRICS</div><div class="card-subtitle">Latest Scan</div></div><div class="card-value-hero">${u.now.bf}% <span style="font-size:0.9rem; opacity:0.7">BF</span> <span class="chevron" style="transform:${isBioCollapsed?'rotate(-90deg)':'rotate(0deg)'}">▼</span></div></div><div class="card-body" style="display:${isBioCollapsed?'none':'block'}">${bioBar("Body Fat", u.now.bf, u.goal.bf, "%", true)}${bioBar("Muscle", u.now.m, u.goal.m, " lbs", false)}<div class="nav-btn" style="text-align:center; margin-top:15px" onclick="event.stopPropagation(); logBodyScan()">UPDATE BODY DATA</div></div></div>`;
+    // 5. FULL BIOMETRICS DASHBOARD (EXPANDED)
+    let bioDetails = `<div class="section-header">BODY ARCHITECTURE</div>`;
+    bioDetails += bioBar("Visceral Fat", u.now.vf, u.goal.vf, "", true);
+    bioDetails += bioBar("Muscle Mass", u.now.m, u.goal.m, " lbs", false);
+    bioDetails += bioBar("Body Fat", u.now.bf, u.goal.bf, "%", true);
+    
+    bioDetails += `<div class="section-header" style="margin-top:20px;">BLOOD & METABOLIC</div>`;
+    if(u.labs) {
+        Object.keys(u.labs).forEach(k => {
+            bioDetails += bioBar(u.labs[k].name, u.labs[k].val, u.labs[k].goal, " "+u.labs[k].unit, u.labs[k].lowerIsBetter);
+        });
+    }
+
+    bioDetails += `<div class="section-header" style="margin-top:20px;">PHYSICAL FUNCTION</div>`;
+    if(u.tests) {
+        Object.keys(u.tests).forEach(k => {
+            bioDetails += bioBar(u.tests[k].name, u.tests[k].val, u.tests[k].goal, " "+u.tests[k].unit, false);
+        });
+    }
+
+    const bioHTML = `<div class="premium-card" onclick="toggleBio()"><div class="card-header"><div><div class="card-title accent-purple">LONGEVITY DASHBOARD</div><div class="card-subtitle">Full Panel</div></div><div class="card-value-hero">${u.now.bf}% <span style="font-size:0.9rem; opacity:0.7">BF</span> <span class="chevron" style="transform:${isBioCollapsed?'rotate(-90deg)':'rotate(0deg)'}">▼</span></div></div><div class="card-body" style="display:${isBioCollapsed?'none':'block'}">${bioDetails}<div class="nav-btn" style="text-align:center; margin-top:15px" onclick="event.stopPropagation(); logBodyScan()">UPDATE BODY DATA</div></div></div>`;
 
     document.getElementById('dayContent').innerHTML = protocolHTML + workoutHTML + nutHTML + aiHTML + bioHTML;
 }
@@ -448,7 +475,7 @@ function showDay(dObj, idx) {
 // ... HELPERS ...
 function openDBRecipe(name) { document.getElementById('mTitle').innerText=name; document.getElementById('mBody').innerHTML="<div class='intervention-card'>Recipe details loading...</div>"; document.getElementById('masterModal').style.display='block'; }
 function openSnackSelector(s) { alert("Snack selector placeholder"); }
-function logBodyScan() { const bf = prompt("Enter Body Fat %:"); if(bf) { uH[user].now.bf = parseFloat(bf); localStorage.setItem('centurion_bio_v7', JSON.stringify(uH)); render(); } }
+function logBodyScan() { const bf = prompt("Enter Body Fat %:"); if(bf) { uH[user].now.bf = parseFloat(bf); localStorage.setItem('centurion_bio_v8', JSON.stringify(uH)); render(); } }
 function closeM() { document.getElementById('masterModal').style.display='none'; }
 
 // --- API ENGINE ---
@@ -469,7 +496,6 @@ async function fetchOuraData() {
         // CHECK IF DATA EXISTS
         if(rData.data && Array.isArray(rData.data) && rData.data.length > 0) {
             window.ouraHistory = rData.data.map(day => {
-                // Safe find
                 const act = (aData.data && Array.isArray(aData.data)) ? aData.data.find(ac => ac.day === day.day) : null;
                 return {
                     date: day.day,
@@ -481,21 +507,18 @@ async function fetchOuraData() {
             }).reverse();
 
             localStorage.setItem(`centurion_oura_cache_${user}`, JSON.stringify({ history: window.ouraHistory }));
-            
-            // Safe last read
             let lastR = window.ouraHistory[0] || {score:0};
             let color = lastR.score >= 75 ? 'var(--green)' : lastR.score >= 60 ? 'var(--gold)' : '#FF5252';
             bar.innerHTML = `💍 ${currentUser==='J'?'JERMAINE':'SOPHIA'} READINESS: <span style="color:${color}; font-weight:900">${lastR.score}</span>`;
             render(); 
         } else { 
-            // NO DATA CASE
             bar.innerText = `💍 ${currentUser==='J'?'JERMAINE':'SOPHIA'}: No Data`;
-            window.ouraHistory = []; // Ensure empty array
+            window.ouraHistory = []; 
             render(); 
         }
     } catch(e) { 
         if(user === currentUser) bar.innerText = "💍 Sync Failed"; 
-        window.ouraHistory = []; // Ensure empty array
+        window.ouraHistory = []; 
         render(); 
     }
 }
