@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v389</title>
+    <title>The Centurion | v391</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --red:#FF5252; --text:#fff;
@@ -82,7 +82,7 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v389 Script Fix</span>
+        <span class="version-tag">v391 Error Handling</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -644,7 +644,7 @@ function showDay(dObj, idx) {
     '<div class="collapsible-section" style="margin-top:15px"><div class="collapsible-header" onclick="toggleCollapse(\'ai\')"><div><div class="collapsible-title">🧠 AI PROJECTION</div></div><div style="display:flex;align-items:center;gap:15px"><div class="collapsible-score" style="color:var(--blue);font-size:1.2rem" id="ai-life-score">--</div><div class="collapsible-chevron" id="chevron-ai">▼</div></div></div><div class="collapsible-content" id="content-ai"><div class="collapsible-inner" id="aiDashboard"></div></div></div>' +
     
     // COLLAPSIBLE: Data & Biometrics
-    '<div class="collapsible-section"><div class="collapsible-header" onclick="toggleCollapse(\'data\');if(!document.getElementById(\'content-data\').classList.contains(\'expanded\')){setTimeout(()=>openMasterModal(),300)}"><div><div class="collapsible-title">📊 DATA & BIOMETRICS</div></div><div style="display:flex;align-items:center;gap:15px"><div class="collapsible-score" style="color:var(--gold);font-size:0.8rem">View Stats</div><div class="collapsible-chevron" id="chevron-data">▼</div></div></div><div class="collapsible-content" id="content-data"><div class="collapsible-inner"><div style="text-align:center;padding:20px;color:#888;font-size:0.7rem">Click header again to open full data modal</div></div></div></div>' +
+    '<div class="collapsible-section"><div class="collapsible-header" onclick="toggleCollapse(\'data\');if(!document.getElementById(\'content-data\').classList.contains(\'expanded\')){setTimeout(()=>openBio(),300)}"><div><div class="collapsible-title">📊 DATA & BIOMETRICS</div></div><div style="display:flex;align-items:center;gap:15px"><div class="collapsible-score" style="color:var(--gold);font-size:0.8rem">View Stats</div><div class="collapsible-chevron" id="chevron-data">▼</div></div></div><div class="collapsible-content" id="content-data"><div class="collapsible-inner"><div style="text-align:center;padding:20px;color:#888;font-size:0.7rem">Click header again to open full data modal</div></div></div></div>' +
     
     '<div class="card" onclick="openWorkoutFlow(\'' + w + '\')" style="cursor:pointer; border-bottom:3px solid var(--blue)"><div style="display:flex; justify-content:space-between; align-items:center; text-align:center"><div><div class="label">WARM</div>' + pre + '</div><div style="color:var(--blue); font-size:1.2rem">➜</div><div style="font-weight:900; color:#fff">' + w + '</div><div style="color:var(--blue); font-size:1.2rem">➜</div><div><div class="label">RECOVER</div>' + post + '</div></div></div>' +
     
@@ -669,9 +669,15 @@ function showDay(dObj, idx) {
     
     // Calculate and display AI life score after render
     setTimeout(() => {
-        const lifeScore = calculateLongevity(uH[user]);
-        const scoreEl = document.getElementById('ai-life-score');
-        if(scoreEl) scoreEl.textContent = lifeScore + ' yrs';
+        try {
+            if(uH && uH[user]) {
+                const lifeScore = calculateLongevity(uH[user]);
+                const scoreEl = document.getElementById('ai-life-score');
+                if(scoreEl) scoreEl.textContent = lifeScore + ' yrs';
+            }
+        } catch(e) {
+            console.log('AI score calculation delayed:', e);
+        }
     }, 100);
 }
 
@@ -693,12 +699,13 @@ function toggleCollapse(section) {
         
         // Load AI dashboard when opening
         if(section === 'ai') {
-            const u = uH[user];
-            const projection = calculateLongevity(u);
-            const gap = (100.0 - parseFloat(projection)).toFixed(1);
-            const onTrack = parseFloat(projection) >= 100;
-            
-            const predictions = predictBiomarkers(u, user);
+            try {
+                const u = uH[user];
+                const projection = calculateLongevity(u);
+                const gap = (100.0 - parseFloat(projection)).toFixed(1);
+                const onTrack = parseFloat(projection) >= 100;
+                
+                const predictions = predictBiomarkers(u, user);
             
             let predictionHTML = '';
             if(predictions && predictions.compliance > 0) {
@@ -745,20 +752,11 @@ function toggleCollapse(section) {
             }
             
             document.getElementById('aiDashboard').innerHTML = '<div class="bio-section" style="background:rgba(0,176,255,0.05); text-align:center; border:1px solid var(--blue);"><div style="font-size:0.6rem; color:var(--blue); font-weight:900; letter-spacing:2px">CURRENT PROJECTION</div><div style="font-size:3.5rem; font-weight:800; color:#fff;">' + projection + '</div><div style="font-size:0.7rem; color:' + (onTrack ? 'var(--green)' : 'var(--gold)') + '; font-weight:900; margin-bottom:5px;">' + (onTrack ? '🏆 CENTURION STATUS ACHIEVED' : 'CHASING 100: ' + gap + ' YEARS TO GO') + '</div><div class="bar-track" style="margin:10px auto; width:80%; height:6px; background:#222;"><div class="bar-fill" style="width:' + Math.min((projection/100)*100, 100) + '%; background:' + (onTrack ? 'var(--green)' : 'var(--blue)') + ';"></div></div></div>' + predictionHTML + '<div class="intervention-card"><strong>🔥 AI STRATEGY:</strong><br>' + (u.labs && u.labs.apob && u.labs.apob.val > 70 ? "ApoB is the biggest drag on your 100-year goal. Increase fiber to 40g." : u.tests && u.tests.vo2.val < 50 ? "VO2 Max is your biggest leverage point. Push Zone 5 intensity." : "Metabolic metrics stable. Maintain muscle mass to protect the final decade.") + '</div>';
+            } catch(e) {
+                console.error('Error loading AI dashboard:', e);
+                document.getElementById('aiDashboard').innerHTML = '<div style="padding:20px;text-align:center;color:#ff5252">Error loading AI projection</div>';
+            }
         }
-    }
-}
-
-function toggleCollapse(section) {
-    const content = document.getElementById('content-' + section);
-    const chevron = document.getElementById('chevron-' + section);
-    
-    if(content.classList.contains('expanded')) {
-        content.classList.remove('expanded');
-        chevron.classList.remove('expanded');
-    } else {
-        content.classList.add('expanded');
-        chevron.classList.add('expanded');
     }
 }
 
