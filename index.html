@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v650.0 Core + AI Card</title>
+    <title>The Centurion | v660.0 Async Fix</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --red:#FF5252; --text:#fff;
@@ -17,7 +17,7 @@
         .badge-row{display:flex;justify-content:center;gap:8px;margin-bottom:15px}
         .u-badge{background:#000;padding:8px 16px;border-radius:20px;border:1px solid #333;font-size:0.6rem;font-weight:800;cursor:pointer;color:#666;transition:all 0.3s;}
         .u-badge.active{border-color:var(--gold);color:var(--gold);box-shadow: 0 0 10px rgba(212,175,55,0.2);}
-        .status-bar{text-align:center;color:#888;font-size:0.65rem;font-weight:800;margin-bottom:5px;text-transform:uppercase}
+        .status-bar{text-align:center;color:#888;font-size:0.65rem;font-weight:800;margin-bottom:5px;text-transform:uppercase;cursor:pointer;}
         .controls{display:flex;gap:5px;margin-bottom:15px}
         .nav-btn{background:#111;border:1px solid #222;color:#888;padding:10px;flex:1;border-radius:8px;font-size:0.55rem;font-weight:800;cursor:pointer}
         .card, .macro-dashboard{background:var(--card);border-radius:20px;padding:20px;margin-bottom:15px;border:1px solid rgba(255,255,255,0.03);position:relative}
@@ -54,20 +54,31 @@
         .hist-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.65rem; color: #ccc; }
         .hist-table th { text-align: left; color: #666; padding-bottom: 10px; font-weight: 800; border-bottom: 1px solid #333; }
         .hist-table td { padding: 8px 0; border-bottom: 1px solid #222; }
+        .workout-badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 0.5rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-left: 8px; }
+        .workout-badge.hiit { background: linear-gradient(135deg, var(--red), #D50000); color: #fff; }
+        .workout-badge.zone2 { background: linear-gradient(135deg, var(--green), #00C853); color: #fff; }
+        .hr-zone-row { margin-bottom: 12px; }
+        .hr-zone-label { display: flex; justify-content: space-between; font-size: 0.7rem; font-weight: 700; margin-bottom: 5px; }
+        .hr-zone-bar-bg { height: 24px; background: #222; border-radius: 12px; overflow: hidden; position: relative; }
+        .hr-zone-bar { height: 100%; border-radius: 12px; display: flex; align-items: center; padding: 0 10px; color: #fff; font-size: 0.6rem; font-weight: 700; transition: width 0.8s; }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .stat-box { background: rgba(102,126,234,0.1); padding: 12px; border-radius: 10px; text-align: center; border: 1px solid rgba(102,126,234,0.3); }
+        .stat-value { font-size: 1.4rem; font-weight: 900; color: #fff; }
+        .stat-label { font-size: 0.55rem; color: #888; font-weight: 700; text-transform: uppercase; margin-top: 4px; }
+        .stat-sub { font-size: 0.5rem; color: #666; margin-top: 2px; }
         
-        /* Collapsible Cards */
-        .goal-card, .nutrition-card, .ai-card { background: linear-gradient(135deg, rgba(102,126,234,0.1), rgba(212,175,55,0.05)); border: 1px solid rgba(102,126,234,0.3); border-radius: 20px; padding: 20px; margin-bottom: 15px; position: relative; transition: all 0.3s; cursor: pointer; }
+        /* CARD STYLES */
+        .goal-card, .nutrition-card, .ai-card { border-radius: 20px; padding: 20px; margin-bottom: 15px; position: relative; transition: all 0.3s; cursor: pointer; }
+        .goal-card { background: linear-gradient(135deg, rgba(102,126,234,0.1), rgba(212,175,55,0.05)); border: 1px solid rgba(102,126,234,0.3); }
         .nutrition-card { background: var(--card); border: 1px solid rgba(255,255,255,0.03); }
         .nutrition-card::before { content:""; position:absolute; left:0; top:20px; bottom:20px; width:3px; background:var(--green); border-radius:0 4px 4px 0; }
         .ai-card { background: linear-gradient(135deg, rgba(0,176,255,0.1), rgba(124,77,255,0.05)); border: 1px solid rgba(0,176,255,0.3); }
-        
         .goal-header, .nutrition-header, .ai-header { display: flex; justify-content: space-between; align-items: center; }
         .goal-score { font-size: 2.5rem; font-weight: 900; display: flex; align-items: center; gap: 10px; }
         .goal-score.excellent { color: var(--green); }
         .goal-score.good { color: var(--gold); }
         .goal-score.poor { color: var(--red); }
         .ai-score { font-size: 1.5rem; font-weight: 900; color: #fff; display: flex; align-items: center; gap: 10px; }
-        
         .goal-metric { background: rgba(0,0,0,0.3); padding: 12px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
         .goal-metric-label { font-size: 0.65rem; color: #888; font-weight: 700; text-transform: uppercase; }
         .goal-metric-value { font-size: 1.1rem; font-weight: 900; }
@@ -76,6 +87,7 @@
         .goal-metric-value.error { color: var(--red); }
         .goal-subtext { font-size: 0.55rem; color: #666; margin-top: 2px; }
         
+        /* Collapsible Logic */
         .goal-body, .nutrition-body, .ai-body { margin-top: 20px; animation: slideDown 0.3s ease-out; }
         .goal-card.collapsed .goal-body, .nutrition-card.collapsed .nutrition-body, .ai-card.collapsed .ai-body { display: none; }
         .chevron { transition: transform 0.3s; font-size: 1rem; color: #666; }
@@ -86,13 +98,13 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v650.0 Core + AI Card</span>
+        <span class="version-tag">v660.0 Async Fix</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
         </div>
     </header>
-    <div id="ouraBar" class="status-bar" style="color:var(--green); margin-bottom:5px;">💍 Syncing Oura...</div>
+    <div id="ouraBar" class="status-bar" onclick="fetchOuraData()">💍 Syncing Oura...</div>
     <div id="dateDisplay" class="status-bar">...</div>
 
     <div class="controls">
@@ -117,7 +129,7 @@
 
 <script>
 // ==========================================
-// CENTURION v650.0 (v510 CORE + AI CARD)
+// CENTURION v660.0 (v510 CORE + ASYNC AI)
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
@@ -188,7 +200,7 @@ if (!uH) {
     uH = { 'J': defaultJ, 'S': defaultS };
     localStorage.setItem('centurion_bio_v7', JSON.stringify(uH));
 } else {
-    // FORCE INJECTION
+    // FORCE INJECTION OF PROTOCOLS
     let updated = false;
     if (!uH['J'] || !uH['J'].protocol) { uH['J'] = defaultJ; updated = true; }
     if (!uH['S'] || !uH['S'].protocol) { uH['S'] = defaultS; updated = true; }
@@ -196,7 +208,7 @@ if (!uH) {
     if (updated) localStorage.setItem('centurion_bio_v7', JSON.stringify(uH));
 }
 
-// --- DATABASES ---
+// --- DATABASES (Unified) ---
 const rDB = {"Sea Moss":["92 Minerals","2 TBSP Fasted.","Thyroid & Gut support."],"Kombucha":["Probiotic","4 OZ post-Lunch.","Enzyme support."],"Hibiscus Tea":["BP Control","Organic steep.","Antioxidant rich."]};
 const mDB = {
     b: ["Ancestral Beef Sausage|80/20 Beef-Liver Blend, Sage, Thyme|sear|Heme iron + Vitamin A powerhouse|25|2|280|0", "Avocado Egg Toast|Bread, Avocado, Egg Whites|toast|Fiber + healthy fats|35|15|450|12", "Oat Protein Pancakes|Oat Flour, Blueberries|griddle|Complex carbs + fast protein|35|25|380|6"],
@@ -256,6 +268,7 @@ function calculateLongevity(userData) {
 }
 
 function predictBiomarkers(userData, uID) {
+    // SAFETY CHECK: If no data, return null to avoid crash
     if(!window.ouraHistory || window.ouraHistory.length < 7) return null;
     if(!userData.protocol || !userData.protocol.startDate) return null;
     
@@ -319,7 +332,6 @@ function resetD() { offset = 0; selDate = getCaDate(); render(); }
 function toggleGoal() { isGoalCollapsed = !isGoalCollapsed; render(); }
 function toggleNutrition() { isNutCollapsed = !isNutCollapsed; render(); }
 function toggleAICollapse() { isAICollapsed = !isAICollapsed; render(); }
-function toggleAI() { isAICollapsed = false; render(); document.querySelector('.ai-card').scrollIntoView({behavior:'smooth'}); }
 
 function applyAIP(mealStr, type) {
     if(!mealStr) return ["Loading...","","","","",0,0,0,0];
@@ -401,15 +413,14 @@ function showDay(dObj, idx) {
     const predictions = predictBiomarkers(userData, user);
     let aiBody = '';
     
-    // Calculate weekly totals based on CURRENT history (safe)
-    let wHigh = 0, wMed = 0;
-    if(window.ouraHistory.length > 0) {
-        const last7 = window.ouraHistory.slice(0, 7);
-        wHigh = last7.reduce((sum, d) => sum + d.high, 0);
-        wMed = last7.reduce((sum, d) => sum + d.med, 0);
-    }
-
-    if(predictions && predictions.compliance > 0) {
+    // SAFE CHECK: Ensure weeklyStats exists and has data
+    let wHigh = window.weeklyStats ? window.weeklyStats.high || 0 : 0;
+    let wMed = window.weeklyStats ? window.weeklyStats.medium || 0 : 0;
+    
+    // If empty history, show waiting message instead of crashing
+    if(!predictions) {
+        aiBody = '<div style="padding:15px;text-align:center;color:#666">Syncing Oura history to generate predictions...</div>';
+    } else if(predictions && predictions.compliance > 0) {
         const milestone = predictions.nextMilestone.replace('month', 'Month ');
         const weeksToGo = predictions.nextMilestone === 'month3' ? (12 - predictions.currentWeek) : (24 - predictions.currentWeek);
         
@@ -429,7 +440,7 @@ function showDay(dObj, idx) {
         }
 
         aiBody += `</div></div>`;
-        aiBody += `<div class="bio-section"><div class="label">WEEKLY TARGETS</div>${bioBar("VO2 MAX (HIGH)", window.weeklyStats.high, 75, "m")}${bioBar("FAT BURN (VOL)", wHigh+wMed, 150, "m")}</div>`;
+        aiBody += `<div class="bio-section"><div class="label">WEEKLY TARGETS</div>${bioBar("VO2 MAX (HIGH)", wHigh, 75, "m")}${bioBar("FAT BURN (VOL)", wHigh+wMed, 150, "m")}</div>`;
     }
     
     aiCardHTML = `<div class="ai-card ${isAICollapsed ? 'collapsed' : ''}" onclick="toggleAICollapse()">
@@ -571,30 +582,35 @@ function closeM() { document.getElementById('masterModal').style.display='none';
 async function fetchOuraData() {
     const currentUser = user; const token = TOKENS[currentUser]; const bar = document.getElementById('ouraBar'); 
     
-    // Use Timestamp to bypass cache
-    const ts = Date.now();
+    // FETCH 1: Readiness
     const startDate = getDateKey(new Date(Date.now() - 2592000000)); 
     const endDate = getDateKey(new Date());
     
     try {
         bar.innerHTML = '💍 Fetching readiness...';
-        const rRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${startDate}&end_date=${endDate}&_t=${ts}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
+        const rRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
         const rData = await rRes.json();
         
-        const dsRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${startDate}&end_date=${endDate}&_t=${ts}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
+        bar.innerHTML = '💍 Fetching sleep scores...';
+        const dsRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
         const dsData = await dsRes.json();
-        
-        const sRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${startDate}&end_date=${endDate}&_t=${ts}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
+
+        bar.innerHTML = '💍 Fetching sleep details...';
+        const sRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
         const sData = await sRes.json();
         
-        const aRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${startDate}&end_date=${endDate}&_t=${ts}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
+        bar.innerHTML = '💍 Fetching activity...';
+        const aRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
         const aData = await aRes.json();
-        
-        const wRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/workout?start_date=${startDate}&end_date=${endDate}&_t=${ts}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
+
+        // FETCH 5: WORKOUTS (New!)
+        bar.innerHTML = '💍 Fetching workouts...';
+        const wRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/workout?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
         const wData = await wRes.json();
 
         if(user !== currentUser) return;
 
+        // Process Workout Data First
         window.ouraWorkouts = [];
         if(wData.data && wData.data.length > 0) {
             window.ouraWorkouts = wData.data.map(w => {
@@ -619,7 +635,10 @@ async function fetchOuraData() {
         }
 
         if(rData.data && rData.data.length > 0) {
+            
+            // Calculate Weekly Totals for AI Protocol (USER SPECIFIC) - RESET FIRST
             window.weeklyStats = { high: 0, medium: 0, low: 0 };
+            
             const last7Activity = aData.data ? aData.data.slice(-7) : [];
             last7Activity.forEach(d => {
                 window.weeklyStats.high += Math.round((d.high_activity_time || 0) / 60);
@@ -632,39 +651,56 @@ async function fetchOuraData() {
                 const sleepEpisodes = sData.data ? sData.data.filter(s => s.day === day.day) : [];
                 const mainSleep = sleepEpisodes.length > 0 ? sleepEpisodes.reduce((prev, current) => (prev.total_sleep_duration > current.total_sleep_duration) ? prev : current) : null;
                 const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
-                let burn = 0, hi = 0, med = 0, low = 0;
+                
+                let burn = 0;
+                let hi = 0, med = 0, low = 0;
+
                 if(act) {
                     if(act.active_calories !== undefined) burn = act.active_calories;
                     else if(act.total_calories !== undefined) burn = act.total_calories; 
+                    
                     if(act.high_activity_time) hi = Math.round(act.high_activity_time / 60);
                     if(act.medium_activity_time) med = Math.round(act.medium_activity_time / 60);
                     if(act.low_activity_time) low = Math.round(act.low_activity_time / 60);
                 }
+
                 let rhrVal = '-';
                 if(mainSleep && mainSleep.lowest_heart_rate) rhrVal = mainSleep.lowest_heart_rate;
                 else if(dailySleep && dailySleep.lowest_heart_rate) rhrVal = dailySleep.lowest_heart_rate;
 
                 return {
-                    date: day.day, score: day.score, sleepScore: dailySleep ? dailySleep.score : '-', rhr: rhrVal,
-                    deep: mainSleep ? mainSleep.deep_sleep_duration : 0, rem: mainSleep ? mainSleep.rem_sleep_duration : 0,
-                    cal: burn, high: hi, med: med, low: low
+                    date: day.day,
+                    score: day.score,
+                    sleepScore: dailySleep ? dailySleep.score : '-',
+                    rhr: rhrVal,
+                    deep: mainSleep ? mainSleep.deep_sleep_duration : 0,
+                    rem: mainSleep ? mainSleep.rem_sleep_duration : 0,
+                    cal: burn,
+                    high: hi,
+                    med: med,
+                    low: low,
+                    steps: act && act.steps !== undefined ? act.steps : 0,
+                    active: act && act.active_calories !== undefined ? act.active_calories : 0,
+                    move: act && act.equivalent_walking_distance !== undefined ? Math.round(act.equivalent_walking_distance / 1609) : 0
                 };
             }).reverse().slice(0, 7);
 
+            // SMART SELECTION
             let lastR = window.ouraHistory.find(d => d.sleepScore !== '-' && d.sleepScore > 0);
             if(!lastR) lastR = window.ouraHistory[0];
+
             let color = lastR.score >= 85 ? 'var(--green)' : lastR.score >= 70 ? 'var(--gold)' : '#FF5252';
             bar.innerHTML = `💍 ${currentUser==='J'?'JERMAINE':'SOPHIA'} READINESS: <span style="color:${color}; font-weight:900">${lastR.score}</span>`;
-            if(document.getElementById('btOura') && document.getElementById('btOura').classList.contains('active')) renderBioTab('oura');
-            render(); 
+            
+            if(document.getElementById('btOura') && document.getElementById('btOura').classList.contains('active')) {
+                renderBioTab('oura');
+            }
+            render(); // Force Re-Render for Goal Card
         } else {
             bar.innerText = `💍 ${currentUser==='J'?'JERMAINE':'SOPHIA'}: No Data`;
-            // Even if failed, re-render so UI doesn't freeze
-            render();
         }
     } catch(e) { 
         if(user === currentUser) bar.innerText = "💍 Sync Failed"; 
-        render(); // Force render anyway so cards still work
     }
 }
 
