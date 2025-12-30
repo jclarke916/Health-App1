@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v378</title>
+    <title>The Centurion | v379</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --red:#FF5252; --text:#fff;
@@ -72,7 +72,7 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v378 Protocol Predictions</span>
+        <span class="version-tag">v379 Dashboard Predictions</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -465,7 +465,49 @@ function showDay(dObj, idx) {
         
         goalHTML += '<div class="goal-metric"><div><div class="goal-metric-label">📊 Macro Targets</div><div class="goal-subtext">' + p + '/' + g.P + 'P • ' + c + '/' + g.C + 'C • ' + f + '/' + g.F + 'F</div></div><div class="goal-metric-value ' + (macroScore >= 85 ? 'success' : macroScore >= 70 ? 'warning' : 'error') + '">' + macroScore + '%</div></div>';
         
-        goalHTML += '<div class="goal-metric"><div><div class="goal-metric-label">😴 Recovery</div><div class="goal-subtext">Readiness ' + (hasOuraData ? ouraData.score : '-') + ' • Sleep ' + (hasOuraData && ouraData.sleepScore !== '-' ? ouraData.sleepScore : '-') + '</div></div><div class="goal-metric-value ' + recoveryStatus + '">' + recoveryText + '</div></div></div>';
+        goalHTML += '<div class="goal-metric"><div><div class="goal-metric-label">😴 Recovery</div><div class="goal-subtext">Readiness ' + (hasOuraData ? ouraData.score : '-') + ' • Sleep ' + (hasOuraData && ouraData.sleepScore !== '-' ? ouraData.sleepScore : '-') + '</div></div><div class="goal-metric-value ' + recoveryStatus + '">' + recoveryText + '</div></div>';
+        
+        // Add protocol predictions if available
+        const predictions = predictBiomarkers(userData, user);
+        if(predictions && predictions.compliance > 0) {
+            const milestone = predictions.nextMilestone.replace('month', 'Month ');
+            const weeksToGo = predictions.nextMilestone === 'month3' ? (12 - predictions.currentWeek) : 
+                              predictions.nextMilestone === 'month6' ? (24 - predictions.currentWeek) : (52 - predictions.currentWeek);
+            
+            const complianceColor = predictions.compliance >= 85 ? 'success' : predictions.compliance >= 70 ? 'warning' : 'error';
+            
+            goalHTML += '<div style="margin-top:15px;padding-top:15px;border-top:1px solid rgba(255,255,255,0.1)"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div class="goal-metric-label">🎯 PROTOCOL: ' + milestone.toUpperCase() + '</div><div style="display:flex;gap:10px"><div style="text-align:center"><div style="font-size:0.45rem;color:#666">WEEK</div><div style="font-size:0.8rem;font-weight:900;color:#fff">' + predictions.currentWeek + '</div></div><div style="text-align:center"><div style="font-size:0.45rem;color:#666">LEFT</div><div style="font-size:0.8rem;font-weight:900;color:var(--blue)">' + weeksToGo + 'w</div></div><div style="text-align:center"><div style="font-size:0.45rem;color:#666">PACE</div><div class="goal-metric-value ' + complianceColor + '" style="font-size:0.8rem">' + predictions.compliance + '%</div></div></div></div>';
+            
+            goalHTML += '<div style="font-size:0.5rem;color:#666;margin-bottom:5px;font-weight:700">PREDICTED AT ' + milestone.toUpperCase() + '</div>';
+            
+            if(predictions.predictedChanges.vo2) {
+                const current = userData.tests.vo2.val;
+                const predicted = predictions.predictedChanges.vo2.toFixed(1);
+                const target = userData.protocol[predictions.nextMilestone].vo2;
+                const status = parseFloat(predicted) >= target * 0.9 ? 'success' : parseFloat(predicted) >= target * 0.75 ? 'warning' : 'error';
+                goalHTML += '<div style="display:flex;justify-content:space-between;margin-bottom:3px;font-size:0.55rem"><span style="color:#888">VO2 Max</span><span class="goal-metric-value ' + status + '" style="font-size:0.55rem">' + current + ' → ' + predicted + ' / ' + target + '</span></div>';
+            }
+            
+            if(predictions.predictedChanges.vf) {
+                const current = userData.now.vf;
+                const predicted = predictions.predictedChanges.vf.toFixed(1);
+                const target = userData.protocol[predictions.nextMilestone].vf;
+                const status = parseFloat(predicted) <= target * 1.1 ? 'success' : parseFloat(predicted) <= target * 1.25 ? 'warning' : 'error';
+                goalHTML += '<div style="display:flex;justify-content:space-between;margin-bottom:3px;font-size:0.55rem"><span style="color:#888">Visceral Fat</span><span class="goal-metric-value ' + status + '" style="font-size:0.55rem">' + current + ' → ' + predicted + ' / ' + target + '</span></div>';
+            }
+            
+            if(predictions.predictedChanges.lifeExp) {
+                const current = user === 'J' ? 85 : 64;
+                const predicted = predictions.predictedChanges.lifeExp.toFixed(0);
+                const target = userData.protocol[predictions.nextMilestone].lifeExp;
+                const status = parseFloat(predicted) >= target * 0.95 ? 'success' : parseFloat(predicted) >= target * 0.85 ? 'warning' : 'error';
+                goalHTML += '<div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.1);font-size:0.6rem;font-weight:900"><span style="color:var(--gold)">LIFE EXP</span><span class="goal-metric-value ' + status + '" style="font-size:0.6rem">' + current + ' → ' + predicted + ' / ' + target + ' yrs</span></div>';
+            }
+            
+            goalHTML += '</div>';
+        }
+        
+        goalHTML += '</div>';
     }
 
     document.getElementById('dayContent').innerHTML = goalHTML + '<div class="card" onclick="openWorkoutFlow(\'' + w + '\')" style="cursor:pointer; border-bottom:3px solid var(--blue)"><div style="display:flex; justify-content:space-between; align-items:center; text-align:center"><div><div class="label">WARM</div>' + pre + '</div><div style="color:var(--blue); font-size:1.2rem">➜</div><div style="font-weight:900; color:#fff">' + w + '</div><div style="color:var(--blue); font-size:1.2rem">➜</div><div><div class="label">RECOVER</div>' + post + '</div></div></div><div class="label">🧬 DAILY ESSENTIALS</div><div style="display:flex; gap:10px; margin-bottom:15px"><div class="value" style="flex:1; justify-content:center" onclick="openEssential(\'Sea Moss\')">Sea Moss</div><div class="value" style="flex:1; justify-content:center" onclick="openEssential(\'' + (user==='S'?'Hibiscus Tea':'Kombucha') + '\')">' + (user==='S'?'Hibiscus':'Kombucha') + '</div></div><div class="label">🍳 BREAKFAST</div><div class="value" onclick="openDBRecipe(\'b\', ' + (Math.abs(id)%mDB.b.length) + ')"><span>' + b[0] + '</span><span class="macro-pill">' + Math.round(b[4]*sc) + 'P ' + Math.round(b[5]*sc) + 'C ' + Math.round(b[7]*sc) + 'F ' + Math.round(b[6]*sc) + 'k</span></div><div class="label">🥗 LUNCH</div><div class="value" onclick="openDBRecipe(\'l\', ' + (Math.abs(id)%mDB.l.length) + ')"><span>' + l[0] + '</span><span class="macro-pill">' + Math.round(l[4]*sc) + 'P ' + Math.round(l[5]*sc) + 'C ' + Math.round(l[7]*sc) + 'F ' + Math.round(l[6]*sc) + 'k</span></div><div class="label">🍽️ DINNER</div><div class="value" onclick="openDBRecipe(\'d\', ' + (Math.abs(id)%mDB.d.length) + ')"><span>' + dn[0] + '</span><span class="macro-pill">' + Math.round(dn[4]*sc) + 'P ' + Math.round(dn[5]*sc) + 'C ' + Math.round(dn[7]*sc) + 'F ' + Math.round(dn[6]*sc) + 'k</span></div><div class="label">🥜 SNACKS</div>' + snackHTML + '<div class="label">🍹 JUICE</div><div class="juice-name" onclick="openJuice(\'' + jn + '\')">' + jn + '</div><div class="macro-dashboard"><div class="macro-row"><div class="macro-label"><span>PROTEIN</span><span>' + p + ' / ' + g.P + 'g</span></div><div class="macro-bg"><div class="macro-fill" style="width:' + Math.min((p/g.P)*100,100) + '%; background:var(--g-pro)"></div></div></div><div class="macro-row"><div class="macro-label"><span style="color:var(--green)">FIBER</span><span>' + f + ' / ' + g.F + 'g</span></div><div class="macro-bg"><div class="macro-fill" style="width:' + Math.min((f/g.F)*100,100) + '%; background:var(--g-fib)"></div></div></div><div class="macro-row"><div class="macro-label"><span>CARBS</span><span>' + c + ' / ' + g.C + 'g</span></div><div class="macro-bg"><div class="macro-fill" style="width:' + Math.min((c/g.C)*100,100) + '%; background:var(--g-carb)"></div></div></div><div class="macro-row"><div class="macro-label"><span>CALORIES</span><span>' + k + ' / ' + g.K + '</span></div><div class="macro-bg"><div class="macro-fill" style="width:' + Math.min((k/g.K)*100,100) + '%; background:var(--g-cal)"></div></div></div></div>';
