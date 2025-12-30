@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v485.0 J-Protocol Active</title>
+    <title>The Centurion | v486.0 Protocol Injection Fix</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --red:#FF5252; --text:#fff;
@@ -84,7 +84,7 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v485.0 J-Protocol Active</span>
+        <span class="version-tag">v486.0 Protocol Injection Fix</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -118,7 +118,7 @@
 
 <script>
 // ==========================================
-// CENTURION v485.0 CORE
+// CENTURION v486.0 CORE
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
@@ -136,6 +136,8 @@ const BIRTHDAYS = { 'J': '1983-01-13', 'S': '1987-01-25' };
 const TOKENS = { 'J': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'S': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
 
 let uH = JSON.parse(localStorage.getItem('centurion_bio_v7'));
+
+// --- DATA INJECTION FOR EXISTING USERS ---
 if (!uH) {
     uH = {
         'J': { 
@@ -172,6 +174,28 @@ if (!uH) {
         }
     };
     localStorage.setItem('centurion_bio_v7', JSON.stringify(uH));
+} else {
+    // FIX: Inject protocol data if missing in existing local storage
+    let updated = false;
+    if (uH['J'] && !uH['J'].protocol) {
+        uH['J'].protocol = {
+            startDate: '2024-12-29',
+            month3: {vo2:48, vf:9, hba1c:5.3, apob:85, test:700, lifeExp:87},
+            month6: {vo2:50, vf:8, hba1c:5.2, apob:75, test:750, lifeExp:90},
+            month12: {vo2:55, vf:7, hba1c:5.0, apob:60, test:850, lifeExp:95}
+        };
+        updated = true;
+    }
+    if (uH['S'] && !uH['S'].protocol) {
+         uH['S'].protocol = {
+            startDate: '2024-12-29',
+            month3: {vo2:38, vf:8, hba1c:5.4, crp:1.2, muscle:51, wallsit:110, lifeExp:74},
+            month6: {vo2:42, vf:7, hba1c:5.2, crp:0.9, muscle:52, wallsit:135, lifeExp:84},
+            month12: {vo2:45, vf:6, hba1c:5.2, crp:0.8, muscle:56, wallsit:150, vitd:60, tsh:1.5, lifeExp:94}
+        };
+        updated = true;
+    }
+    if(updated) localStorage.setItem('centurion_bio_v7', JSON.stringify(uH));
 }
 
 // --- DATABASES ---
@@ -291,9 +315,9 @@ function predictBiomarkers(userData, uID) {
     
     predictions.predictedChanges.vo2 = baseline.vo2 + ((target.vo2 - baseline.vo2) * weekProgress * progressMultiplier);
     predictions.predictedChanges.vf = baseline.vf - ((baseline.vf - target.vf) * weekProgress * progressMultiplier);
-    predictions.predictedChanges.hba1c = baseline.hba1c - ((baseline.hba1c - target.hba1c) * weekProgress * progressMultiplier);
     
     if(uID === 'S') {
+        predictions.predictedChanges.hba1c = baseline.hba1c - ((baseline.hba1c - target.hba1c) * weekProgress * progressMultiplier);
         predictions.predictedChanges.muscle = baseline.muscle + ((target.muscle - baseline.muscle) * weekProgress * progressMultiplier);
         predictions.predictedChanges.crp = baseline.crp - ((baseline.crp - target.crp) * weekProgress * progressMultiplier);
         predictions.predictedChanges.wallsit = baseline.wallsit + ((target.wallsit - baseline.wallsit) * weekProgress * progressMultiplier);
