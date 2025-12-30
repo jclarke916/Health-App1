@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v1110.6 HR Zone Fix</title>
+    <title>The Centurion | v1110.7 Full Data Restore</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -20,7 +20,7 @@
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text-main); margin: 0; padding: 20px 16px; min-height: 100vh; background-image: radial-gradient(circle at top center, #1a1a1a 0%, #000000 60%); }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-main); margin: 0; padding: 20px 16px; min-height: 100vh; background-image: radial-gradient(circle at top center, #1a1a1a 0%, #000000 60%); }
         .container { max-width: 480px; margin: 0 auto; padding-bottom: 60px; }
         h1 { text-align: center; font-weight: 900; letter-spacing: 3px; text-transform: uppercase; font-size: 0.8rem; margin: 10px 0 20px 0; color: #666; }
 
@@ -36,7 +36,7 @@
         .tab { flex: 1; min-width: 45px; padding: 12px 0; background: transparent; color: #555; border-radius: 16px; font-size: 0.6rem; font-weight: 700; text-align: center; cursor: pointer; }
         .tab.active { background: var(--glass); color: #fff; border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
 
-        .premium-card { background: var(--glass); backdrop-filter: blur(20px); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 12px; overflow: hidden; cursor: pointer; transition: transform 0.2s; }
+        .premium-card { background: var(--glass); backdrop-filter: blur(20px); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 12px; overflow: hidden; cursor: pointer; }
         .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .card-title { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-sub); }
         .card-val-lg { font-size: 1.6rem; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
@@ -54,9 +54,6 @@
         .status-pill { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
         .pill-win { background: rgba(48, 209, 88, 0.15); color: var(--green); border: 1px solid rgba(48, 209, 88, 0.3); }
         .pill-rest { background: rgba(255, 69, 58, 0.15); color: var(--red); border: 1px solid rgba(255, 69, 58, 0.3); }
-
-        .directive-box { margin-top: 15px; padding: 12px; background: rgba(255, 214, 10, 0.06); border-left: 2px solid var(--gold); border-radius: 4px; font-size: 0.75rem; color: #ddd; line-height: 1.4; }
-        .directive-label { display: block; font-weight: 800; text-transform: uppercase; font-size: 0.6rem; color: var(--gold); margin-bottom: 4px; letter-spacing: 1px; }
 
         .chevron { font-size: 0.8rem; color: #444; transition: transform 0.3s ease; margin-left: 10px; }
         .premium-card.collapsed .card-body { display: none; }
@@ -82,7 +79,7 @@
     
     <div id="dayTabs" class="tabs"></div>
     <div id="dayContent"></div>
-    <div style="text-align:center; color:#333; font-size:10px; margin-top:30px; opacity:0.4;">v1110.6 Master Sync</div>
+    <div style="text-align:center; color:#333; font-size:10px; margin-top:30px; opacity:0.4;">v1110.7 Master Sync</div>
 </div>
 
 <script>
@@ -92,7 +89,7 @@ let selDate = getCaDate();
 
 // Global Expansion States
 let isPlanCollapsed = false;
-let isWorkoutCollapsed = false; // Opened by default to confirm fix
+let isWorkoutCollapsed = false; 
 let isNutCollapsed = true;
 let isAICollapsed = true;
 let isBioCollapsed = true;
@@ -101,19 +98,20 @@ const TOKENS = { 'J': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'S': '4QSDWYJJUZFHRWRH
 
 const uH = {
     'J': {
-        now: {bf:19.0, m:99.0, vf:10}, goal: {bf:15.0, m:105.0, vf:7},
+        now: {bf:19.0, vf:10, m:99.0}, goal: {bf:15.0, vf:7, m:105.0},
         labs: { apob: {val:95, goal:60, name:"ApoB", unit:"mg/dL", low:true}, hba1c: {val:5.4, goal:5.0, name:"HbA1c", unit:"%", low:true} },
         tests: { vo2: {val:45, goal:55, name:"VO2 Max", unit:"ml/kg"} }
     },
     'S': {
-        now: {bf:36.1, m:49.2, vf:9}, goal: {bf:22.0, m:60.0, vf:4},
+        now: {bf:36.1, vf:9, m:49.2}, goal: {bf:22.0, vf:4, m:60.0},
         labs: {
-            ana: {val:320, goal:40, name:"ANA Titer", unit:"", low:true},
-            hba1c: {val:5.6, goal:5.0, name:"HbA1c", unit:"%", low:true},
-            ferr: {val:75, goal:70, name:"Ferritin", unit:"ng/mL", low:false},
             glucose: {val:84, goal:85, name:"Glucose", unit:"mg/dL", low:true},
             bun: {val:13, goal:15, name:"BUN", unit:"mg/dL", low:true},
-            egfr: {val:94, goal:90, name:"eGFR", unit:"", low:false}
+            creatinine: {val:0.82, goal:0.7, name:"Creatinine", unit:"mg/dL", low:true},
+            egfr: {val:94, goal:90, name:"eGFR", unit:"", low:false},
+            ferr: {val:75, goal:70, name:"Ferritin", unit:"ng/mL", low:false},
+            ana: {val:320, goal:40, name:"ANA Titer", unit:"", low:true},
+            hba1c: {val:5.6, goal:5.0, name:"HbA1c", unit:"%", low:true}
         },
         tests: { vo2: {val:32, goal:45, name:"VO2 Max", unit:"ml/kg"} }
     }
@@ -166,6 +164,7 @@ function showDay(dObj, idx) {
     const rawOura = cached.history.find(d => d.date === dk) || { score: "-", cal: "-", high: 0, med: 0 };
     const hasData = rawOura.score !== "-"; const isActive = hasData && parseInt(rawOura.score) >= 75;
 
+    // 1. PERFORMANCE / PROTOCOL
     const protocolHTML = `
     <div class="premium-card ${isPlanCollapsed?'collapsed':''}" onclick="isPlanCollapsed=!isPlanCollapsed;render()">
         <div class="card-header"><div><div class="card-title accent-gold">DAILY PROTOCOL</div><div class="card-subtitle">${dayData.focus}</div></div><div class="card-val-lg">${hasData ? (isActive?'ACTIVE':'REST') : '-'} <span class="chevron">▼</span></div></div>
@@ -175,16 +174,17 @@ function showDay(dObj, idx) {
         </div>
     </div>`;
 
+    // 2. TRAINING / CALORIES / HR PROGRESS
     const workoutHTML = `
     <div class="premium-card ${isWorkoutCollapsed?'collapsed':''}" onclick="isWorkoutCollapsed=!isWorkoutCollapsed;render()">
         <div class="card-header"><div><div class="card-title accent-red">TRAINING</div><div class="card-subtitle">HR ZONE TARGETS</div></div><div class="card-val-lg">${rawOura.cal} <span style="font-size:0.9rem; opacity:0.7">CAL</span> <span class="chevron">▼</span></div></div>
         <div class="card-body">
             ${bioBar("High Intensity (Z4-Z5)", rawOura.high, dayData.zT.h, "m")}
             ${bioBar("Med/Zone 2 (Z3)", rawOura.med, dayData.zT.m, "m")}
-            <div class="directive-box"><span class="directive-label">Target Directive</span>${rawOura.high < dayData.zT.h ? `Protocol stimuli gap: need ${dayData.zT.h - rawOura.high}m more High Intensity.` : "Adherence confirmed. Target reached."}</div>
         </div>
     </div>`;
 
+    // 3. NUTRITION / ADHERENCE
     const id = Math.floor(dObj.getTime()/864e5);
     const b = mDB.b[0].split('|'); const l = mDB.l[0].split('|'); const d = mDB.d[0].split('|');
     const j = mDB.j[Math.abs(id)%mDB.j.length].split('|');
@@ -192,7 +192,7 @@ function showDay(dObj, idx) {
 
     const nutHTML = `
     <div class="premium-card ${isNutCollapsed?'collapsed':''}" onclick="isNutCollapsed=!isNutCollapsed;render()">
-        <div class="card-header"><div><div class="card-title accent-green">NUTRITION</div><div class="card-subtitle">DAILY PROTOCOL</div></div><div class="card-val-lg">${gP} <span style="font-size:0.9rem; opacity:0.7">G PRO</span> <span class="chevron">▼</span></div></div>
+        <div class="card-header"><div><div class="card-title accent-green">NUTRITION</div><div class="card-subtitle">PROTEIN TARGET</div></div><div class="card-val-lg">${gP} <span style="font-size:0.9rem; opacity:0.7">G PRO</span> <span class="chevron">▼</span></div></div>
         <div class="card-body">
             <div class="section-header">DAILY NUTRIENTS</div>
             <div class="data-row"><div class="data-label">SEA MOSS</div><div class="data-val">2 TBSP</div></div>
@@ -206,6 +206,7 @@ function showDay(dObj, idx) {
         </div>
     </div>`;
 
+    // 4. AI & BIOMETRICS
     const age = user === 'S' ? 83.0 : 88.5;
     const aiHTML = `<div class="premium-card ${isAICollapsed?'collapsed':''}" onclick="isAICollapsed=!isAICollapsed;render()"><div class="card-header"><div><div class="card-title accent-blue">AI LIFESPAN</div><div class="card-subtitle">PROJECTED AGE</div></div><div class="card-val-lg">${age} <span style="font-size:0.9rem; opacity:0.7">YRS</span> <span class="chevron">▼</span></div></div><div class="card-body"><div class="data-row"><div class="data-label">VO2 MAX IMPACT</div><div class="data-val">+4.2 YRS</div></div></div></div>`;
     
