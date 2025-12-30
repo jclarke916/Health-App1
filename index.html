@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v530.0 Stable Core</title>
+    <title>The Centurion | v540.0 Resilient Sync</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --red:#FF5252; --text:#fff;
@@ -17,7 +17,7 @@
         .badge-row{display:flex;justify-content:center;gap:8px;margin-bottom:15px}
         .u-badge{background:#000;padding:8px 16px;border-radius:20px;border:1px solid #333;font-size:0.6rem;font-weight:800;cursor:pointer;color:#666;transition:all 0.3s;}
         .u-badge.active{border-color:var(--gold);color:var(--gold);box-shadow: 0 0 10px rgba(212,175,55,0.2);}
-        .status-bar{text-align:center;color:#888;font-size:0.65rem;font-weight:800;margin-bottom:5px;text-transform:uppercase}
+        .status-bar{text-align:center;color:#888;font-size:0.65rem;font-weight:800;margin-bottom:5px;text-transform:uppercase;cursor:pointer;}
         .controls{display:flex;gap:5px;margin-bottom:15px}
         .nav-btn{background:#111;border:1px solid #222;color:#888;padding:10px;flex:1;border-radius:8px;font-size:0.55rem;font-weight:800;cursor:pointer}
         .card, .macro-dashboard{background:var(--card);border-radius:20px;padding:20px;margin-bottom:15px;border:1px solid rgba(255,255,255,0.03);position:relative}
@@ -98,13 +98,13 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v530.0 Stable Core</span>
+        <span class="version-tag">v540.0 Resilient Sync</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
         </div>
     </header>
-    <div id="ouraBar" class="status-bar" style="color:var(--green); margin-bottom:5px;">💍 Syncing Oura...</div>
+    <div id="ouraBar" class="status-bar" onclick="fetchOuraData()">💍 Syncing Oura...</div>
     <div id="dateDisplay" class="status-bar">...</div>
     
     <div id="aiDashboard" style="display:none; margin-bottom:20px;"></div>
@@ -132,7 +132,7 @@
 
 <script>
 // ==========================================
-// CENTURION v530.0 CORE
+// CENTURION v540.0 CORE
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
@@ -509,11 +509,20 @@ function showDay(dObj, idx) {
         const recoveryText = !hasOuraData ? 'Syncing...' : recoveryScore + '/100';
         
         const macroScore = Math.min(100, Math.round(((p/g.P) + (c/g.C) + (f/g.F) + (k/g.K)) / 4 * 100));
-        const dailyScore = Math.round((macroScore + (totalZoneTime>0?protocolScore:50) + (Math.abs(balanceDiff)<200?100:70) + recoveryScore) / 3);
+        const dailyScore = Math.round((macroScore + (totalZoneTime>0?protocolScore:50) + (Math.abs(balanceDiff)<100?100:70) + recoveryScore) / 4);
         const scoreClass = dailyScore >= 85 ? 'excellent' : dailyScore >= 70 ? 'good' : 'poor';
         
         goalHTML = `<div class="goal-card ${isGoalCollapsed ? 'collapsed' : ''}" onclick="toggleGoal()">
-            <div class="goal-header"><div><div style="font-size:0.6rem;color:var(--gold);font-weight:900;text-transform:uppercase;letter-spacing:1px">Daily Performance</div><div style="font-size:0.5rem;color:#666;margin-top:2px">${dk}</div></div><div class="goal-score ${scoreClass}">${dailyScore}% <span class="chevron">▼</span></div></div>
+            <div class="goal-header">
+                <div>
+                    <div style="font-size:0.6rem;color:var(--gold);font-weight:900;text-transform:uppercase;letter-spacing:1px">Daily Performance</div>
+                    <div style="font-size:0.5rem;color:#666;margin-top:2px">${dk}</div>
+                </div>
+                <div class="goal-score ${scoreClass}">
+                    ${dailyScore}% <span class="chevron">▼</span>
+                </div>
+            </div>
+            
             <div class="goal-body">
                 <div class="goal-metric"><div style="flex:1"><div class="goal-metric-label">🔥 Calorie Balance</div><div class="goal-subtext">${consumed} in • ${burned} out • Target: ${targetBalance}</div><div style="font-size:0.5rem;color:#666;margin-top:2px;font-style:italic">${balanceRationale}</div></div><div class="goal-metric-value ${balanceStatus}">${balanceText}</div></div>
                 <div class="goal-metric" style="flex-direction:column;align-items:stretch"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${zoneComplianceHTML?'5px':'0'}"><div><div class="goal-metric-label">💪 Protocol: ${w}</div><div class="goal-subtext">Target: ${(protocolTarget?protocolTarget.duration:0)}min</div></div><div class="goal-metric-value ${workoutCompliance}">${workoutText}</div></div>${zoneComplianceHTML}</div>
@@ -524,15 +533,30 @@ function showDay(dObj, idx) {
     }
 
     const nutritionHTML = `<div class="nutrition-card ${isNutCollapsed ? 'collapsed' : ''}" onclick="toggleNutrition()">
-        <div class="nutrition-header"><div class="label" style="margin-bottom:0">DAILY NUTRITION</div><span class="chevron">▼</span></div>
+        <div class="nutrition-header">
+            <div class="label" style="margin-bottom:0">DAILY NUTRITION</div>
+            <span class="chevron">▼</span>
+        </div>
         <div class="nutrition-body">
-            <div class="label">🧬 DAILY ESSENTIALS</div><div style="display:flex; gap:10px; margin-bottom:15px"><div class="value" style="flex:1; justify-content:center" onclick="event.stopPropagation(); openEssential('Sea Moss')">Sea Moss</div><div class="value" style="flex:1; justify-content:center" onclick="event.stopPropagation(); openEssential('${user==='S'?'Hibiscus Tea':'Kombucha'}')">${user==='S'?'Hibiscus':'Kombucha'}</div></div>
-            <div class="label">🍳 BREAKFAST</div><div class="value" onclick="event.stopPropagation(); openDBRecipe('b', ${Math.abs(id)%mDB.b.length})"><span>${b[0]}</span><span class="macro-pill">${Math.round(b[4]*sc)}P ${Math.round(b[5]*sc)}C ${Math.round(b[7]*sc)}F ${Math.round(b[6]*sc)}k</span></div>
-            <div class="label">🥗 LUNCH</div><div class="value" onclick="event.stopPropagation(); openDBRecipe('l', ${Math.abs(id)%mDB.l.length})"><span>${l[0]}</span><span class="macro-pill">${Math.round(l[4]*sc)}P ${Math.round(l[5]*sc)}C ${Math.round(l[7]*sc)}F ${Math.round(l[6]*sc)}k</span></div>
-            <div class="label">🍽️ DINNER</div><div class="value" onclick="event.stopPropagation(); openDBRecipe('d', ${Math.abs(id)%mDB.d.length})"><span>${dn[0]}</span><span class="macro-pill">${Math.round(dn[4]*sc)}P ${Math.round(dn[5]*sc)}C ${Math.round(dn[7]*sc)}F ${Math.round(dn[6]*sc)}k</span></div>
+            <div class="label">🧬 DAILY ESSENTIALS</div>
+            <div style="display:flex; gap:10px; margin-bottom:15px">
+                <div class="value" style="flex:1; justify-content:center" onclick="event.stopPropagation(); openEssential('Sea Moss')">Sea Moss</div>
+                <div class="value" style="flex:1; justify-content:center" onclick="event.stopPropagation(); openEssential('${user==='S'?'Hibiscus Tea':'Kombucha'}')">${user==='S'?'Hibiscus':'Kombucha'}</div>
+            </div>
+            <div class="label">🍳 BREAKFAST</div>
+            <div class="value" onclick="event.stopPropagation(); openDBRecipe('b', ${Math.abs(id)%mDB.b.length})"><span>${b[0]}</span><span class="macro-pill">${Math.round(b[4]*sc)}P ${Math.round(b[5]*sc)}C ${Math.round(b[7]*sc)}F ${Math.round(b[6]*sc)}k</span></div>
+            <div class="label">🥗 LUNCH</div>
+            <div class="value" onclick="event.stopPropagation(); openDBRecipe('l', ${Math.abs(id)%mDB.l.length})"><span>${l[0]}</span><span class="macro-pill">${Math.round(l[4]*sc)}P ${Math.round(l[5]*sc)}C ${Math.round(l[7]*sc)}F ${Math.round(l[6]*sc)}k</span></div>
+            <div class="label">🍽️ DINNER</div>
+            <div class="value" onclick="event.stopPropagation(); openDBRecipe('d', ${Math.abs(id)%mDB.d.length})"><span>${dn[0]}</span><span class="macro-pill">${Math.round(dn[4]*sc)}P ${Math.round(dn[5]*sc)}C ${Math.round(dn[7]*sc)}F ${Math.round(dn[6]*sc)}k</span></div>
             <div class="label">🥜 SNACKS</div>${snackHTML}
             <div class="label">🍹 JUICE</div><div class="juice-name" onclick="event.stopPropagation(); openDBRecipe('j', ${Math.abs(id)%mDB.j.length})">${jn[0]}</div>
-            <div class="macro-dashboard"><div class="macro-row"><div class="macro-label"><span>PROTEIN</span><span>${p} / ${g.P}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((p/g.P)*100,100)}%; background:var(--g-pro)"></div></div></div><div class="macro-row"><div class="macro-label"><span style="color:var(--green)">FIBER</span><span>${f} / ${g.F}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((f/g.F)*100,100)}%; background:var(--g-fib)"></div></div></div><div class="macro-row"><div class="macro-label"><span>CARBS</span><span>${c} / ${g.C}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((c/g.C)*100,100)}%; background:var(--g-carb)"></div></div></div><div class="macro-row"><div class="macro-label"><span>CALORIES</span><span>${k} / ${g.K}</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((k/g.K)*100,100)}%; background:var(--g-cal)"></div></div></div></div>
+            <div class="macro-dashboard">
+                <div class="macro-row"><div class="macro-label"><span>PROTEIN</span><span>${p} / ${g.P}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((p/g.P)*100,100)}%; background:var(--g-pro)"></div></div></div>
+                <div class="macro-row"><div class="macro-label"><span style="color:var(--green)">FIBER</span><span>${f} / ${g.F}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((f/g.F)*100,100)}%; background:var(--g-fib)"></div></div></div>
+                <div class="macro-row"><div class="macro-label"><span>CARBS</span><span>${c} / ${g.C}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((c/g.C)*100,100)}%; background:var(--g-carb)"></div></div></div>
+                <div class="macro-row"><div class="macro-label"><span>CALORIES</span><span>${k} / ${g.K}</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((k/g.K)*100,100)}%; background:var(--g-cal)"></div></div></div>
+            </div>
         </div>
     </div>`;
 
@@ -552,7 +576,8 @@ function showDay(dObj, idx) {
         ${nutritionHTML}`;
 }
 
-// ... (KEEP ALL HELPER FUNCTIONS) ...
+// ... (KEEP ALL EXISTING HELPER FUNCTIONS) ...
+
 function openSnackSelector(s) { currentSlot=s; document.getElementById('mTitle').innerText="SNACK"; document.getElementById('mBody').innerHTML=mDB.s.map((x,i)=>`<div class="value" onclick="applySnack(${i})">${x.split('|')[0]}</div>`).join(''); document.getElementById('bioContentArea').innerHTML=''; document.getElementById('masterModal').style.display='block'; }
 function applySnack(i) { snackLog[getDateKey(selDate)][currentSlot]=i; localStorage.setItem('centurion_snack_log', JSON.stringify(snackLog)); closeM(); render(); }
 function removeSnack(s) { snackLog[getDateKey(selDate)][s]=null; localStorage.setItem('centurion_snack_log', JSON.stringify(snackLog)); render(); }
@@ -561,26 +586,26 @@ function closeM() { document.getElementById('masterModal').style.display='none';
 async function fetchOuraData() {
     const currentUser = user; const token = TOKENS[currentUser]; const bar = document.getElementById('ouraBar'); 
     
-    // Use Timestamp to bypass cache
-    const ts = Date.now();
+    // FETCH 1: Readiness
     const startDate = getDateKey(new Date(Date.now() - 2592000000)); 
     const endDate = getDateKey(new Date());
     
     try {
         bar.innerHTML = '💍 Fetching readiness...';
-        const rRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${startDate}&end_date=${endDate}&_t=${ts}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
+        
+        // PARALLEL FETCHING for speed & resilience
+        const [rRes, dsRes, sRes, aRes, wRes] = await Promise.all([
+            fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${startDate}&end_date=${endDate}&_t=${Date.now()}`)}`, {headers:{'Authorization':`Bearer ${token}`}}),
+            fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${startDate}&end_date=${endDate}&_t=${Date.now()}`)}`, {headers:{'Authorization':`Bearer ${token}`}}),
+            fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${startDate}&end_date=${endDate}&_t=${Date.now()}`)}`, {headers:{'Authorization':`Bearer ${token}`}}),
+            fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${startDate}&end_date=${endDate}&_t=${Date.now()}`)}`, {headers:{'Authorization':`Bearer ${token}`}}),
+            fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/workout?start_date=${startDate}&end_date=${endDate}&_t=${Date.now()}`)}`, {headers:{'Authorization':`Bearer ${token}`}})
+        ]);
+
         const rData = await rRes.json();
-        
-        const dsRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${startDate}&end_date=${endDate}&_t=${ts}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
         const dsData = await dsRes.json();
-        
-        const sRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${startDate}&end_date=${endDate}&_t=${ts}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
         const sData = await sRes.json();
-        
-        const aRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${startDate}&end_date=${endDate}&_t=${ts}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
         const aData = await aRes.json();
-        
-        const wRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/workout?start_date=${startDate}&end_date=${endDate}&_t=${ts}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
         const wData = await wRes.json();
 
         if(user !== currentUser) return;
@@ -609,7 +634,10 @@ async function fetchOuraData() {
         }
 
         if(rData.data && rData.data.length > 0) {
+            
+            // Calculate Weekly Totals for AI Protocol (USER SPECIFIC) - RESET FIRST
             window.weeklyStats = { high: 0, medium: 0, low: 0 };
+            
             const last7Activity = aData.data ? aData.data.slice(-7) : [];
             last7Activity.forEach(d => {
                 window.weeklyStats.high += Math.round((d.high_activity_time || 0) / 60);
@@ -622,39 +650,60 @@ async function fetchOuraData() {
                 const sleepEpisodes = sData.data ? sData.data.filter(s => s.day === day.day) : [];
                 const mainSleep = sleepEpisodes.length > 0 ? sleepEpisodes.reduce((prev, current) => (prev.total_sleep_duration > current.total_sleep_duration) ? prev : current) : null;
                 const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
-                let burn = 0, hi = 0, med = 0, low = 0;
+                
+                let burn = 0;
+                let hi = 0, med = 0, low = 0;
+
                 if(act) {
                     if(act.active_calories !== undefined) burn = act.active_calories;
                     else if(act.total_calories !== undefined) burn = act.total_calories; 
+                    
                     if(act.high_activity_time) hi = Math.round(act.high_activity_time / 60);
                     if(act.medium_activity_time) med = Math.round(act.medium_activity_time / 60);
                     if(act.low_activity_time) low = Math.round(act.low_activity_time / 60);
                 }
+
                 let rhrVal = '-';
                 if(mainSleep && mainSleep.lowest_heart_rate) rhrVal = mainSleep.lowest_heart_rate;
                 else if(dailySleep && dailySleep.lowest_heart_rate) rhrVal = dailySleep.lowest_heart_rate;
 
                 return {
-                    date: day.day, score: day.score, sleepScore: dailySleep ? dailySleep.score : '-', rhr: rhrVal,
-                    deep: mainSleep ? mainSleep.deep_sleep_duration : 0, rem: mainSleep ? mainSleep.rem_sleep_duration : 0,
-                    cal: burn, high: hi, med: med, low: low
+                    date: day.day,
+                    score: day.score,
+                    sleepScore: dailySleep ? dailySleep.score : '-',
+                    rhr: rhrVal,
+                    deep: mainSleep ? mainSleep.deep_sleep_duration : 0,
+                    rem: mainSleep ? mainSleep.rem_sleep_duration : 0,
+                    cal: burn,
+                    high: hi,
+                    med: med,
+                    low: low,
+                    steps: act && act.steps !== undefined ? act.steps : 0,
+                    active: act && act.active_calories !== undefined ? act.active_calories : 0,
+                    move: act && act.equivalent_walking_distance !== undefined ? Math.round(act.equivalent_walking_distance / 1609) : 0
                 };
             }).reverse().slice(0, 7);
 
+            // SMART SELECTION
             let lastR = window.ouraHistory.find(d => d.sleepScore !== '-' && d.sleepScore > 0);
             if(!lastR) lastR = window.ouraHistory[0];
+
             let color = lastR.score >= 85 ? 'var(--green)' : lastR.score >= 70 ? 'var(--gold)' : '#FF5252';
             bar.innerHTML = `💍 ${currentUser==='J'?'JERMAINE':'SOPHIA'} READINESS: <span style="color:${color}; font-weight:900">${lastR.score}</span>`;
-            if(document.getElementById('btOura') && document.getElementById('btOura').classList.contains('active')) renderBioTab('oura');
-            render(); 
+            
+            if(document.getElementById('btOura') && document.getElementById('btOura').classList.contains('active')) {
+                renderBioTab('oura');
+            }
+            render(); // Force Re-Render for Goal Card
         } else {
             bar.innerText = `💍 ${currentUser==='J'?'JERMAINE':'SOPHIA'}: No Data`;
-            // Even if failed, re-render so UI doesn't freeze
-            render();
         }
     } catch(e) { 
-        if(user === currentUser) bar.innerText = "💍 Sync Failed"; 
-        render(); // Force render anyway so cards still work
+        if(user === currentUser) {
+            console.error(e);
+            bar.innerHTML = `<span style="color:#FF5252" onclick="fetchOuraData()">💍 Sync Failed (Tap to Retry)</span>`;
+            render(); // Ensure UI still loads even if sync fails
+        }
     }
 }
 
