@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v1050.0 Clean Start</title>
+    <title>The Centurion | v1050.2 Fiber & Calorie Update</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -181,11 +181,20 @@
         .bar-fill { height: 100%; border-radius: 10px; }
         
         .section-header { margin: 25px 0 10px 0; font-size: 0.6rem; color: #666; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+        
+        /* SNACK GRID */
+        .snack-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+        .snack-slot { background: rgba(255,255,255,0.03); border: 1px dashed rgba(255,255,255,0.1); border-radius: 16px; padding: 15px; text-align: center; font-size: 0.65rem; color: #666; font-weight: 700; cursor: pointer; transition: all 0.2s; min-height: 80px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; }
+        .snack-slot.filled { border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.05); color: #fff; }
+        .remove-snack { position: absolute; top: 5px; right: 5px; color: #666; font-size: 10px; padding: 5px; }
 
         /* MODAL */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); z-index: 2000; padding: 20px; overflow-y: auto; }
         .modal-content { margin-top: 60px; }
         .close-btn-float { position: fixed; top: 20px; right: 20px; width: 40px; height: 40px; background: rgba(255,255,255,0.1); border-radius: 50%; color: #fff; text-align: center; line-height: 40px; font-size: 24px; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); }
+        .meal-img { width: 100%; border-radius: 16px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.1); }
+        .intervention-card { background: rgba(255,214,10,0.1); border-left: 3px solid var(--gold); padding: 15px; border-radius: 8px; font-size: 0.8rem; line-height: 1.5; color: #ddd; margin-bottom: 15px; }
+        .value { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.9rem; font-weight: 600; }
 
     </style>
 </head>
@@ -223,7 +232,7 @@
 
 <script>
 // ==========================================
-// CENTURION v1050.0 CLEAN START
+// CENTURION v1050.2 FIBER & CALORIE UPDATE
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
@@ -358,19 +367,6 @@ function mapWorkoutType(t) {
 function safeVal(val) {
     if (val === undefined || val === null || isNaN(val)) return '-';
     return val;
-}
-
-// RESTORED HELPERS
-function bioBarWithPrediction(label, val, predicted, goal, unit, lowerBetter, weekNum) {
-    if(isNaN(val) || isNaN(predicted) || isNaN(goal)) return "";
-    
-    const currentPct = Math.min(lowerBetter ? (goal / val) * 100 : (val / goal) * 100, 100);
-    const predictedPct = Math.min(lowerBetter ? (goal / predicted) * 100 : (predicted / goal) * 100, 100);
-    const currentColor = currentPct >= 100 ? 'var(--green)' : 'var(--gold)';
-    const predictedColor = 'var(--green)'; 
-    const change = predicted - val;
-    const changeIcon = (lowerBetter && change < 0) || (!lowerBetter && change > 0) ? '📈' : change === 0 ? '─' : '📉';
-    return `<div class="bio-section"><div class="bar-label"><span>${label}</span><span>${val}${unit}</span></div><div class="bar-track"><div class="bar-fill" style="width:${currentPct}%;background:${currentColor}"></div></div><div class="bar-label" style="margin-top:4px;color:${predictedColor};font-size:0.55rem"><span>WK ${weekNum} TARGET</span><span>${predicted.toFixed(1)}${unit} ${changeIcon}</span></div><div class="bar-track"><div class="bar-fill" style="width:${predictedPct}%;background:${predictedColor};opacity:0.7"></div></div></div>`;
 }
 
 function bioBar(label, val, goal, unit, lowerBetter=false) {
@@ -652,7 +648,7 @@ function showDay(dObj, idx) {
         if(snacks[i] === null) snackHTML += `<div class="snack-slot" onclick="openSnackSelector(${i})">+ SNACK</div>`;
         else {
             let s = mDB.s[snacks[i]] ? mDB.s[snacks[i]].split('|') : ["Unknown","","","","0","0","0","0"];
-            snackHTML += `<div class="snack-slot filled" onclick="removeSnack(${i})"><div class="remove-snack">✕</div>${s[0]}<div style="font-size:0.5rem;color:#888;margin-top:2px">${s[4]}P ${s[5]}C ${s[7]}F ${s[6]}k</div></div>`;
+            snackHTML += `<div class="snack-slot filled" onclick="removeSnack(${i})"><div class="remove-snack">✕</div>${s[0]}<div style="font-size:0.5rem;color:#888;margin-top:2px">${s[6]} Kc | ${s[4]}P ${s[5]}C ${s[7]}F</div></div>`;
         }
     }
     snackHTML += '</div>';
@@ -739,22 +735,22 @@ function showDay(dObj, idx) {
             
             <div class="data-row" onclick="event.stopPropagation(); openDBRecipe('b', ${Math.abs(id)%mDB.b.length})">
                 <div class="data-label" style="color:#fff; text-transform:none; font-size:0.8rem">${b[0]}</div>
-                <div class="data-val" style="font-size:0.7rem; color:var(--text-sub)">${Math.round(b[4]*sc)}P</div>
+                <div class="data-val" style="font-size:0.7rem; color:var(--text-sub)">${Math.round(b[6]*sc)} Kc | ${Math.round(b[4]*sc)}P ${Math.round(b[5]*sc)}C ${Math.round(b[7]*sc)}F</div>
             </div>
             <div class="data-row" onclick="event.stopPropagation(); openDBRecipe('l', ${Math.abs(id)%mDB.l.length})">
                 <div class="data-label" style="color:#fff; text-transform:none; font-size:0.8rem">${l[0]}</div>
-                <div class="data-val" style="font-size:0.7rem; color:var(--text-sub)">${Math.round(l[4]*sc)}P</div>
+                <div class="data-val" style="font-size:0.7rem; color:var(--text-sub)">${Math.round(l[6]*sc)} Kc | ${Math.round(l[4]*sc)}P ${Math.round(l[5]*sc)}C ${Math.round(l[7]*sc)}F</div>
             </div>
             <div class="data-row" onclick="event.stopPropagation(); openDBRecipe('d', ${Math.abs(id)%mDB.d.length})">
                 <div class="data-label" style="color:#fff; text-transform:none; font-size:0.8rem">${dn[0]}</div>
-                <div class="data-val" style="font-size:0.7rem; color:var(--text-sub)">${Math.round(dn[4]*sc)}P</div>
+                <div class="data-val" style="font-size:0.7rem; color:var(--text-sub)">${Math.round(dn[6]*sc)} Kc | ${Math.round(dn[4]*sc)}P ${Math.round(dn[5]*sc)}C ${Math.round(dn[7]*sc)}F</div>
             </div>
             
             <div class="section-header" style="margin-top:25px;">SNACKS & JUICE</div>
             ${snackHTML}
             <div class="data-row" style="margin-top:8px" onclick="event.stopPropagation(); openDBRecipe('j', ${Math.abs(id)%mDB.j.length})">
                  <div class="data-label" style="color:#fff; text-transform:none; font-size:0.8rem">${jn[0]}</div>
-                 <div class="data-val" style="font-size:0.7rem; color:var(--green)">JUICE</div>
+                 <div class="data-val" style="font-size:0.7rem; color:var(--green)">${jn[6]} Kc | ${jn[4]}P ${jn[5]}C ${jn[7]}F</div>
             </div>
         </div>
     </div>`;
@@ -807,7 +803,7 @@ function openDBRecipe(type, idx) {
                 <img src="${imgUrl}" class="meal-img">
                 <div class="intervention-card" style="border-left-color:var(--gold)"><strong>PROTOCOL:</strong><br>${data[3]}</div>
                 <div style="display:flex; justify-content:space-between; margin-top:15px; font-size:0.8rem; color:#888;">
-                    <span>PRO: ${data[4]}g</span><span>CARB: ${data[5]}g</span><span>FAT: ${data[7]||0}g</span>
+                    <span>PRO: ${data[4]}g</span><span>CARB: ${data[5]}g</span><span>FIBER: ${data[7]||0}g</span>
                 </div>`;
         }
     };
