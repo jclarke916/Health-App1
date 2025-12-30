@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v1090.6 Multi-Fetch Fix</title>
+    <title>The Centurion | v1090.7 Cache Flush</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -33,7 +33,7 @@
         }
 
         .container { max-width: 480px; margin: 0 auto; padding-bottom: 60px; }
-        h1 { text-align: center; font-weight: 800; letter-spacing: 4px; text-transform: uppercase; font-size: 0.8rem; margin: 10px 0 20px 0; background: linear-gradient(90deg, #fff, #888); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        h1 { text-align: center; font-weight: 800; letter-spacing: 4px; text-transform: uppercase; font-size: 0.9rem; margin: 10px 0 20px 0; background: linear-gradient(90deg, #fff, #888); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 
         .badge-row { display: flex; justify-content: center; background: rgba(255, 255, 255, 0.05); padding: 4px; border-radius: 30px; margin: 0 auto 20px auto; width: fit-content; border: 1px solid var(--border); }
         .u-badge { padding: 8px 20px; border-radius: 24px; font-size: 0.65rem; font-weight: 700; cursor: pointer; color: var(--text-sub); transition: all 0.3s ease; }
@@ -49,15 +49,11 @@
 
         .premium-card { background: var(--glass); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 16px; position: relative; overflow: hidden; }
         .card-header { display: flex; justify-content: space-between; align-items: center; }
-        .card-title { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-sub); }
-        .card-val-lg { font-size: 1.6rem; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
+        .card-title { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 4px; color: var(--text-sub); }
+        .card-val-lg { font-size: 1.8rem; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
 
         .directive-box { margin-top: 20px; padding: 14px; background: rgba(255, 214, 10, 0.06); border-left: 2px solid var(--gold); border-radius: 4px; font-size: 0.75rem; color: #ddd; line-height: 1.4; }
-        .directive-label { display: block; font-weight: 800; text-transform: uppercase; font-size: 0.6rem; color: var(--gold); margin-bottom: 4px; letter-spacing: 1px; }
-
-        .data-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; background: rgba(255,255,255,0.03); border-radius: 16px; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.02); }
-        .data-label { font-size: 0.7rem; font-weight: 700; color: var(--text-sub); text-transform: uppercase; }
-        .data-val { font-size: 0.85rem; font-weight: 700; color: #fff; }
+        .directive-label { display: block; font-weight: 800; text-transform: uppercase; font-size: 0.6rem; color: var(--gold); margin-bottom: 4px; }
 
         .bio-section { margin-bottom: 15px; }
         .bar-label { font-size: 0.65rem; color: var(--text-sub); font-weight: 700; margin-bottom: 8px; display: flex; justify-content: space-between; text-transform: uppercase; }
@@ -95,18 +91,17 @@
     <div id="dayTabs" class="tabs"></div>
     <div id="dayContent"></div>
     
-    <div style="text-align:center; color:#333; font-size:10px; margin-top:30px; opacity:0.4;">v1090.6 Isolated Fetch</div>
+    <div style="text-align:center; color:#333; font-size:10px; margin-top:30px; opacity:0.4; cursor:pointer;" onclick="hardReset()">v1090.7</div>
 </div>
 
 <script>
 // ==========================================
-// CENTURION v1090.6 ISOLATED FETCH ENGINE
+// CENTURION v1090.7 - CACHE BUST ENGINE
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
 let offset = 0;
 let selDate = getCaDate(); 
-let ouraHistory = []; // Global state to be cleared on switch
 
 const TOKENS = { 'J': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'S': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
 
@@ -120,12 +115,6 @@ const unifiedSchedule = {
     5: { focus: "REFORM", tasks: "Core & Recovery Focus", zT: {h:0, m:30, l:20} },
     6: { focus: "CS4 / VO2", tasks: "Max Effort Intervals", zT: {h:25, m:20, l:0} },
     0: { focus: "REST", tasks: "Active Recovery Walk", zT: {h:0, m:0, l:30} }
-};
-
-const mDB = {
-    b: ["Ancestral Beef Sausage|80/20 Beef-Liver|280 Kc|25P"],
-    l: ["Super Mince Bowl|Lean Beef, Lentils|550 Kc|50P"],
-    d: ["Bison Portobello Burger|Bison, Avocado|480 Kc|45P"]
 };
 
 let uH = {
@@ -169,7 +158,6 @@ function showDay(dObj, idx) {
         <div class="card-body">
             <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:center;"><span class="status-pill ${hasScore ? (isActive?'pill-win':'pill-rest') : 'pill-rest'}">${hasScore ? (isActive?'ACTIVE PROTOCOL':'REST PROTOCOL') : 'SYNC REQUIRED'}</span><span style="font-size:0.7rem; color:#888;">READINESS: ${rawOura.score}</span></div>
             <div style="font-size:0.8rem; color:#ddd; line-height:1.5;">${dayData.tasks}</div>
-            <div class="directive-box"><span class="directive-label">Strategic Directive</span>${hasScore ? (isActive ? "Optimal physiological state. Execute workout." : "Recovery low. Prioritize sleep tonight.") : "Pending Oura sync."}</div>
         </div>
     </div>`;
 
@@ -185,7 +173,7 @@ function showDay(dObj, idx) {
     const nutHTML = `
     <div class="premium-card ${isNutCollapsed?'collapsed':''}" onclick="isNutCollapsed=!isNutCollapsed;render()">
         <div class="card-header"><div><div class="card-title accent-green">NUTRITION</div><div class="card-subtitle">PROTOCOL TARGET</div></div><div class="card-val-lg">${user==='J'?'165':'100'} <span style="font-size:0.9rem; opacity:0.7">G PRO</span> <span class="chevron">▼</span></div></div>
-        <div class="card-body"><div style="font-size:0.8rem; color:#ddd;">Target: ${user==='J'?'165g':'100g'} Protein today. Maintain 16:8 window.</div></div>
+        <div class="card-body"><div style="font-size:0.8rem; color:#ddd;">Target: ${user==='J'?'165g':'100g'} Protein. Maintain 16:8 window.</div></div>
     </div>`;
 
     const bioHTML = `
@@ -193,7 +181,6 @@ function showDay(dObj, idx) {
         <div class="card-header"><div><div class="card-title accent-purple">LONGEVITY DASHBOARD</div><div class="card-subtitle">Critical Indicators</div></div><div class="card-val-lg">${u.now.bf}% <span style="font-size:0.9rem; opacity:0.7">BF</span> <span class="chevron">▼</span></div></div>
         <div class="card-body">
             ${bioBar("Visceral Fat", u.now.vf, u.goal.vf, "", true)}
-            ${u.labs.ana ? bioBar("ANA Titer", u.labs.ana.val, u.labs.ana.goal, "", true) : ""}
             ${bioBar("VO2 Max", u.tests.vo2.val, u.tests.vo2.goal, " ml/kg")}
         </div>
     </div>`;
@@ -201,18 +188,14 @@ function showDay(dObj, idx) {
     document.getElementById('dayContent').innerHTML = protocolHTML + workoutHTML + nutHTML + bioHTML;
 }
 
-// THE V510 MULTI-FETCH LOGIC
 function switchU(uID) { 
     user = uID; 
     localStorage.setItem('centurion_active_user', uID); 
-    document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
     document.getElementById('bj').classList.toggle('active', uID === 'J');
     document.getElementById('bs').classList.toggle('active', uID === 'S');
     
-    // RESET GLOBAL HISTORY BEFORE FETCH
-    ouraHistory = []; 
+    // IMMEDIATELY WIPE CACHE STATE TO PREVENT GHOSTING
     document.getElementById('ouraBar').innerHTML = "💍 Fetching " + (uID === 'J' ? 'Jermaine' : 'Sophia') + "...";
-    
     render(); 
     fetchOuraData(); 
 }
@@ -233,11 +216,11 @@ async function fetchOuraData() {
         const rData = await rRes.json();
         const aData = await aRes.json();
 
-        // VALIDATION: Ensure results belong to current active user
+        // VALIDATE ACTIVE USER
         if(user !== fetchUser) return;
 
         if(rData.data) {
-            ouraHistory = rData.data.map(day => {
+            const hist = rData.data.map(day => {
                 const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
                 return { 
                     date: day.day, 
@@ -248,9 +231,10 @@ async function fetchOuraData() {
                 };
             }).reverse();
 
-            localStorage.setItem(`centurion_oura_cache_${fetchUser}`, JSON.stringify({history: ouraHistory}));
+            // ISOLATED CACHE PER USER ID
+            localStorage.setItem(`centurion_oura_cache_${fetchUser}`, JSON.stringify({history: hist}));
             
-            const latest = ouraHistory[0]?.score || "-";
+            const latest = hist[0]?.score || "-";
             bar.innerHTML = `💍 ${fetchUser === 'J' ? 'JERMAINE' : 'SOPHIA'} READINESS: <span style="color:${latest >= 75 ? 'var(--green)' : 'var(--red)'}; font-weight:900">${latest}</span>`;
             render();
         }
@@ -259,7 +243,20 @@ async function fetchOuraData() {
     }
 }
 
-window.onload = () => { render(); fetchOuraData(); };
+function hardReset() {
+    if(confirm("Factory Reset: Clear all locally stored Oura data?")) {
+        localStorage.removeItem('centurion_oura_cache_J');
+        localStorage.removeItem('centurion_oura_cache_S');
+        location.reload();
+    }
+}
+
+window.onload = () => { 
+    const activeBadge = document.getElementById('b' + user.toLowerCase());
+    if(activeBadge) activeBadge.classList.add('active');
+    render(); 
+    fetchOuraData(); 
+};
 </script>
 </body>
 </html>
