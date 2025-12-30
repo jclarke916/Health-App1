@@ -1,9 +1,10 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v405.0 RHR Fix</title>
+    <title>The Centurion | v374</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --red:#FF5252; --text:#fff;
@@ -66,12 +67,25 @@
         .stat-value { font-size: 1.4rem; font-weight: 900; color: #fff; }
         .stat-label { font-size: 0.55rem; color: #888; font-weight: 700; text-transform: uppercase; margin-top: 4px; }
         .stat-sub { font-size: 0.5rem; color: #666; margin-top: 2px; }
+        .goal-card { background: linear-gradient(135deg, rgba(102,126,234,0.1), rgba(212,175,55,0.05)); border: 1px solid rgba(102,126,234,0.3); border-radius: 20px; padding: 20px; margin-bottom: 15px; position: relative; }
+        .goal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .goal-score { font-size: 2.5rem; font-weight: 900; }
+        .goal-score.excellent { color: var(--green); }
+        .goal-score.good { color: var(--gold); }
+        .goal-score.poor { color: var(--red); }
+        .goal-metric { background: rgba(0,0,0,0.3); padding: 12px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .goal-metric-label { font-size: 0.65rem; color: #888; font-weight: 700; text-transform: uppercase; }
+        .goal-metric-value { font-size: 1.1rem; font-weight: 900; }
+        .goal-metric-value.success { color: var(--green); }
+        .goal-metric-value.warning { color: var(--gold); }
+        .goal-metric-value.error { color: var(--red); }
+        .goal-subtext { font-size: 0.55rem; color: #666; margin-top: 2px; }
     </style>
 </head>
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v405.0 RHR Fix</span>
+        <span class="version-tag">v374.0 Automated Goal Tracking</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -79,18 +93,21 @@
     </header>
     <div id="ouraBar" class="status-bar" style="color:var(--green); margin-bottom:5px;">💍 Syncing Oura...</div>
     <div id="dateDisplay" class="status-bar">...</div>
-    
-    <div id="aiDashboard" style="display:none; margin-bottom:20px;"></div>
 
-    <div class="controls">
-        <button class="nav-btn" onclick="changeW(-1)">◀ PREV</button>
-        <button class="nav-btn" onclick="resetD()">TODAY</button>
-        <button class="nav-btn" onclick="changeW(1)">NEXT ▶</button>
-        <button class="nav-btn" onclick="openBio()" style="color:var(--green)">📊 DATA</button>
-        <button class="nav-btn" onclick="toggleAI()" style="color:var(--blue)">🧠 AI</button>
-    </div>
-    <div id="dayTabs" class="tabs"></div>
-    <div id="dayContent"></div>
+```
+<div id="aiDashboard" style="display:none; margin-bottom:20px;"></div>
+
+<div class="controls">
+    <button class="nav-btn" onclick="changeW(-1)">◀ PREV</button>
+    <button class="nav-btn" onclick="resetD()">TODAY</button>
+    <button class="nav-btn" onclick="changeW(1)">NEXT ▶</button>
+    <button class="nav-btn" onclick="openBio()" style="color:var(--green)">📊 DATA</button>
+    <button class="nav-btn" onclick="toggleAI()" style="color:var(--blue)">🧠 AI</button>
+</div>
+<div id="dayTabs" class="tabs"></div>
+<div id="dayContent"></div>
+```
+
 </div>
 
 <div id="masterModal" class="modal" onclick="closeM(event)">
@@ -105,7 +122,8 @@
 
 <script>
 // ==========================================
-// CENTURION v405.0 CORE
+// CENTURION v373.0 - GITHUB READY
+// Full v370 + Workout Sync
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
@@ -158,11 +176,61 @@ const mDB = {
     s: ["Beef Isolate Shake|Beef Isolate, Water|shake|Collagen rich recovery|25|0|110|0", "Sardines|Wild Sardines, Lemon|raw|EPA/DHA brain fuel|22|0|190|0", "Avocado Cup|1/2 Avocado, Sea Salt|raw|Potassium and healthy fats|2|8|160|7"]
 };
 const pDB = {
-    "HEAVY LIFT":[{h:"Theragun",d:"2m Percussion on Glutes/Hams."},{h:"TRAIN: Heavy Lift",d:"Main compound movements (1-5 Reps)."},{h:"POST: Sauna",d:"20m Heat stress @ 180°F."}],
-    "BOXING":[{h:"PRE: Mobility",d:"Rotator cuffs & Calves dynamic stretch."},{h:"TRAIN: Boxing",d:"High output intervals. Max HR focus."},{h:"POST: Normatec",d:"Flush legs. No heat."}],
-    "REFORM":[{h:"PRE: Sweep",d:"Light full body percussion."},{h:"TRAIN: Reform",d:"Time under tension. Pilates/Lagree."},{h:"POST: Sauna",d:"20m HGH Boost."}],
-    "CS4":[{h:"PRE: Hydrate",d:"Electrolytes + 16oz Water."},{h:"TRAIN: CS4",d:"VO2 Max Intervals."},{h:"POST: Contrast",d:"Sauna + Cold Plunge cycle."}],
-    "RELAX":[{h:"PRE: Walk",d:"10m Nature exposure."},{h:"TRAIN: Active",d:"Low HR flow or stretching."},{h:"POST: Zero-G",d:"20m Massage chair."}]
+    "HEAVY LIFT":[
+        {h:"Theragun",d:"2m Percussion on Glutes/Hams."},
+        {h:"TRAIN: Heavy Lift",d:"Main compound movements (1-5 Reps)."},
+        {h:"POST: Sauna",d:"20m Heat stress @ 180°F."}
+    ],
+    "BOXING":[
+        {h:"PRE: Mobility",d:"Rotator cuffs & Calves dynamic stretch."},
+        {h:"TRAIN: Boxing",d:"High output intervals. Max HR focus."},
+        {h:"POST: Normatec",d:"Flush legs. No heat."}
+    ],
+    "REFORM":[
+        {h:"PRE: Sweep",d:"Light full body percussion."},
+        {h:"TRAIN: Reform",d:"Time under tension. Pilates/Lagree."},
+        {h:"POST: Sauna",d:"20m HGH Boost."}
+    ],
+    "CS4":[
+        {h:"PRE: Hydrate",d:"Electrolytes + 16oz Water."},
+        {h:"TRAIN: CS4",d:"VO2 Max Intervals."},
+        {h:"POST: Contrast",d:"Sauna + Cold Plunge cycle."}
+    ],
+    "RELAX":[
+        {h:"PRE: Walk",d:"10m Nature exposure."},
+        {h:"TRAIN: Active",d:"Low HR flow or stretching."},
+        {h:"POST: Zero-G",d:"20m Massage chair."}
+    ]
+};
+
+// PROTOCOL ZONE TARGETS (minutes per zone)
+// Oura provides: Low (Z1-Z2), Medium (Z3), High (Z4-Z5)
+const protocolTargets = {
+    "HEAVY LIFT": {
+        duration: 45,
+        zones: {low:30, medium:10, high:5},
+        focus: "Low-Medium: Strength endurance, controlled tempo"
+    },
+    "BOXING": {
+        duration: 45,
+        zones: {low:15, medium:10, high:20},
+        focus: "High intensity: Max effort rounds, explosive power"
+    },
+    "REFORM": {
+        duration: 50,
+        zones: {low:35, medium:15, high:0},
+        focus: "Low-Medium: Time under tension, muscle endurance"
+    },
+    "CS4": {
+        duration: 45,
+        zones: {low:35, medium:10, high:0},
+        focus: "Low zone: Aerobic base building, VO2 max development"
+    },
+    "RELAX": {
+        duration: 30,
+        zones: {low:30, medium:0, high:0},
+        focus: "Low zone only: Active recovery, movement quality"
+    }
 };
 
 // --- UTILITIES ---
@@ -203,7 +271,6 @@ function mapWorkoutType(activity) {
     return map[activity] || 'Workout';
 }
 
-// THE ALGORITHM (Fixed for Safety)
 function calculateLongevity(userData) {
     let base = 85.0; 
     const vo2 = userData.tests && userData.tests.vo2 ? userData.tests.vo2.val : 40;
@@ -269,7 +336,7 @@ function showDay(dObj, idx) {
     const workout = window.ouraWorkouts.find(wo => wo.date === dk);
     const hasWorkoutData = !!workout;
     const workoutBadge = hasWorkoutData ? 
-        (workout.zones.z4 + workout.zones.z5 > 15 ? 
+        (workout.zones.high > 15 ? 
             '<span class="workout-badge hiit">💍 HIIT DATA</span>' : 
             '<span class="workout-badge zone2">💍 Z2 DATA</span>') : '';
 
@@ -304,7 +371,167 @@ function showDay(dObj, idx) {
     const pre = protocol[0].h.includes(":") ? protocol[0].h.split(':')[1] : protocol[0].h;
     const post = protocol[2].h.includes(":") ? protocol[2].h.split(':')[1] : protocol[2].h;
 
-    document.getElementById('dayContent').innerHTML = `
+    // AUTOMATED GOAL TRACKING
+    const ouraData = window.ouraHistory.find(d => d.date === dk);
+    const protocolTarget = protocolTargets[w];
+    let goalHTML = '';
+    
+    if(ouraData) {
+        // CALORIE BALANCE - Based on body composition goals
+        const userData = uH[user];
+        const consumed = k; // Total from meal plan
+        const burned = ouraData.burn || 0; // From Oura activity
+        
+        // Determine if user should be in surplus or deficit based on goals
+        const currentBF = userData.now.bf;
+        const goalBF = userData.goal.bf;
+        const currentMuscle = userData.now.m;
+        const goalMuscle = userData.goal.m;
+        
+        // If trying to lose fat OR gain muscle, calculate ideal balance
+        let targetBalance = 0;
+        let balanceRationale = '';
+        
+        if(currentBF > goalBF && currentMuscle < goalMuscle) {
+            // Recomp: slight deficit while maintaining protein
+            targetBalance = -200;
+            balanceRationale = 'Recomp: Small deficit for fat loss while building muscle';
+        } else if(currentBF > goalBF) {
+            // Cut: moderate deficit
+            targetBalance = -300;
+            balanceRationale = 'Cut: Deficit for fat loss';
+        } else if(currentMuscle < goalMuscle) {
+            // Bulk: slight surplus
+            targetBalance = 200;
+            balanceRationale = 'Bulk: Surplus for muscle gain';
+        } else {
+            // Maintenance
+            targetBalance = 0;
+            balanceRationale = 'Maintenance: At body comp goals';
+        }
+        
+        const actualBalance = consumed - burned;
+        const balanceDiff = actualBalance - targetBalance;
+        
+        // Status based on how close to target
+        const balanceStatus = Math.abs(balanceDiff) <= 100 ? 'success' : Math.abs(balanceDiff) <= 200 ? 'warning' : 'error';
+        const balanceText = actualBalance > 0 ? `+${actualBalance}` : `${actualBalance}`;
+        const targetText = targetBalance > 0 ? `+${targetBalance}` : targetBalance < 0 ? `${targetBalance}` : '0';
+        
+        // DETAILED WORKOUT PROTOCOL COMPLIANCE
+        let workoutCompliance = 'warning';
+        let workoutText = '⚠️ No workout detected';
+        let protocolScore = 0;
+        let zoneComplianceHTML = '';
+        
+        if(hasWorkoutData && protocolTarget) {
+            // Duration compliance
+            const durationDiff = workout.duration - protocolTarget.duration;
+            const durationCompliance = Math.abs(durationDiff) <= 5 ? 100 : Math.abs(durationDiff) <= 10 ? 85 : 70;
+            
+            // Zone compliance - check low/medium/high
+            let zoneScores = [];
+            ['low','medium','high'].forEach(zone => {
+                const target = protocolTarget.zones[zone];
+                const actual = workout.zones[zone] || 0;
+                if(target > 0 || actual > 0) {
+                    const diff = Math.abs(actual - target);
+                    const zoneScore = diff <= 3 ? 100 : diff <= 7 ? 85 : diff <= 12 ? 70 : 50;
+                    zoneScores.push(zoneScore);
+                }
+            });
+            
+            const avgZoneScore = zoneScores.length > 0 ? Math.round(zoneScores.reduce((a,b)=>a+b,0) / zoneScores.length) : 0;
+            protocolScore = Math.round((durationCompliance + avgZoneScore) / 2);
+            
+            workoutCompliance = protocolScore >= 85 ? 'success' : protocolScore >= 70 ? 'warning' : 'error';
+            workoutText = `${workout.type} ${workout.duration}min`;
+            
+            // Build zone comparison
+            const zoneNames = ['Low HR','Medium HR','High HR'];
+            const zoneKeys = ['low','medium','high'];
+            zoneComplianceHTML = '<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.1)">';
+            zoneComplianceHTML += `<div style="font-size:0.55rem;color:#666;margin-bottom:8px;font-weight:700">ZONE BREAKDOWN</div>`;
+            zoneKeys.forEach((zone, idx) => {
+                const target = protocolTarget.zones[zone];
+                const actual = workout.zones[zone] || 0;
+                if(target > 0 || actual > 0) {
+                    const diff = actual - target;
+                    const status = Math.abs(diff) <= 3 ? 'success' : Math.abs(diff) <= 7 ? 'warning' : 'error';
+                    const statusIcon = Math.abs(diff) <= 3 ? '✅' : Math.abs(diff) <= 7 ? '⚠️' : '❌';
+                    zoneComplianceHTML += `
+                        <div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:0.6rem">
+                            <span style="color:#888">${zoneNames[idx]}</span>
+                            <span style="color:${status==='success'?'var(--green)':status==='warning'?'var(--gold)':'var(--red)'}">
+                                ${actual}min / ${target}min ${statusIcon}
+                            </span>
+                        </div>`;
+                }
+            });
+            zoneComplianceHTML += `<div style="margin-top:8px;font-size:0.55rem;color:#666;font-style:italic">${protocolTarget.focus}</div>`;
+            zoneComplianceHTML += '</div>';
+        }
+        
+        // Recovery score (readiness + sleep)
+        const recoveryScore = Math.round((ouraData.score + (ouraData.sleepScore !== '-' ? ouraData.sleepScore : 0)) / 2);
+        const recoveryStatus = recoveryScore >= 80 ? 'success' : recoveryScore >= 65 ? 'warning' : 'error';
+        
+        // Overall daily score
+        const macroScore = Math.min(100, Math.round(((p/g.P) + (c/g.C) + (f/g.F) + (k/g.K)) / 4 * 100));
+        const workoutScore = hasWorkoutData ? protocolScore : 50;
+        const calorieScore = Math.abs(balanceDiff) < 100 ? 100 : Math.abs(balanceDiff) < 200 ? 85 : Math.abs(balanceDiff) < 300 ? 70 : 50;
+        const dailyScore = Math.round((macroScore + workoutScore + calorieScore + recoveryScore) / 4);
+        const scoreClass = dailyScore >= 85 ? 'excellent' : dailyScore >= 70 ? 'good' : 'poor';
+        
+        goalHTML = `
+            <div class="goal-card">
+                <div class="goal-header">
+                    <div>
+                        <div style="font-size:0.6rem;color:var(--gold);font-weight:900;text-transform:uppercase;letter-spacing:1px">Daily Performance</div>
+                        <div style="font-size:0.5rem;color:#666;margin-top:2px">${dk}</div>
+                    </div>
+                    <div class="goal-score ${scoreClass}">${dailyScore}%</div>
+                </div>
+                
+                <div class="goal-metric">
+                    <div style="flex:1">
+                        <div class="goal-metric-label">🔥 Calorie Balance</div>
+                        <div class="goal-subtext">${consumed} in • ${burned} out • Target: ${targetText}</div>
+                        <div style="font-size:0.5rem;color:#666;margin-top:2px;font-style:italic">${balanceRationale}</div>
+                    </div>
+                    <div class="goal-metric-value ${balanceStatus}">${balanceText}</div>
+                </div>
+                
+                <div class="goal-metric" style="flex-direction:column;align-items:stretch">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${zoneComplianceHTML?'5px':'0'}">
+                        <div>
+                            <div class="goal-metric-label">💪 Protocol: ${w}</div>
+                            <div class="goal-subtext">Target: ${protocolTarget.duration}min</div>
+                        </div>
+                        <div class="goal-metric-value ${workoutCompliance}">${workoutText}</div>
+                    </div>
+                    ${zoneComplianceHTML}
+                </div>
+                
+                <div class="goal-metric">
+                    <div>
+                        <div class="goal-metric-label">📊 Macro Targets</div>
+                        <div class="goal-subtext">${p}/${g.P}P • ${c}/${g.C}C • ${f}/${g.F}F</div>
+                    </div>
+                    <div class="goal-metric-value ${macroScore >= 85 ? 'success' : macroScore >= 70 ? 'warning' : 'error'}">${macroScore}%</div>
+                </div>
+                
+                <div class="goal-metric">
+                    <div>
+                        <div class="goal-metric-label">😴 Recovery</div>
+                        <div class="goal-subtext">Readiness ${ouraData.score} • Sleep ${ouraData.sleepScore !== '-' ? ouraData.sleepScore : 'N/A'}</div>
+                    </div>
+                    <div class="goal-metric-value ${recoveryStatus}">${recoveryScore}/100</div>
+                </div>
+            </div>`;
+    }
+
+    document.getElementById('dayContent').innerHTML = goalHTML + `
         <div class="card" onclick="openWorkoutFlow('${w}', '${dk}')" style="cursor:pointer; border-bottom:3px solid var(--blue)">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px">
                 <div style="font-weight:900; color:#fff; font-size:1rem">${w}${workoutBadge}</div>
@@ -338,155 +565,105 @@ function showDay(dObj, idx) {
         </div>`;
 }
 
-// --- MODALS ---
-function toggleAI() {
-    aiVisible = !aiVisible;
-    const dash = document.getElementById('aiDashboard');
-    dash.style.display = aiVisible ? 'block' : 'none';
-    if(aiVisible) {
-        const u = uH[user]; 
-        const projection = calculateLongevity(u);
-        const gap = (100.0 - parseFloat(projection)).toFixed(1);
-        const onTrack = parseFloat(projection) >= 100;
-        
-        dash.innerHTML = `
-            <div class="bio-section" style="background:rgba(0,176,255,0.05); text-align:center; border:1px solid var(--blue);">
-                <div style="font-size:0.6rem; color:var(--blue); font-weight:900; letter-spacing:2px">PROJECTED LIFESPAN</div>
-                <div style="font-size:3.5rem; font-weight:800; color:#fff;">${projection}</div>
-                <div style="font-size:0.7rem; color:${onTrack ? 'var(--green)' : 'var(--gold)'}; font-weight:900; margin-bottom:5px;">
-                    ${onTrack ? '🏆 CENTURION STATUS ACHIEVED' : `CHASING 100: ${gap} YEARS TO GO`}
-                </div>
-                <div class="bar-track" style="margin:10px auto; width:80%; height:6px; background:#222;">
-                    <div class="bar-fill" style="width:${Math.min((projection/100)*100, 100)}%; background:${onTrack ? 'var(--green)' : 'var(--blue)'};"></div>
-                </div>
-            </div>
-            <div class="intervention-card">
-                <strong>🔥 AI STRATEGY:</strong><br>
-                ${u.labs && u.labs.apob && u.labs.apob.val > 70 ? "ApoB is the biggest drag on your 100-year goal. Increase fiber to 40g." : 
-                  u.tests && u.tests.vo2.val < 50 ? "VO2 Max is your biggest leverage point. Push Zone 5 intensity." : 
-                  "Metabolic metrics stable. Maintain muscle mass to protect the final decade."}
-            </div>
-        `;
-    }
-}
-
-function openBio() {
-    document.getElementById('mTitle').innerHTML = (user==='J'?'JERMAINE':'SOPHIA') + " - DATA";
-    const m = document.getElementById('mBody');
-    m.innerHTML = `<div class="tabs"><div class="tab active" id="btPhys" onclick="renderBioTab('phys')">BODY</div><div class="tab" id="btLabs" onclick="renderBioTab('labs')">LABS</div><div class="tab" id="btTests" onclick="renderBioTab('tests')">TESTS</div><div class="tab" id="btOura" onclick="renderBioTab('oura')">OURA</div></div><div id="bioContentArea"></div>`;
-    setTimeout(() => { renderBioTab('phys'); }, 50);
+function openSnackSelector(slot) {
+    currentSlot = slot;
+    let opts = '';
+    mDB.s.forEach((s, i) => {
+        let p = s.split('|');
+        opts += `<div style="background:#111;padding:15px;border-radius:12px;margin-bottom:10px;cursor:pointer;border:1px solid #222" onclick="selectSnack(${i})">
+            <div style="font-weight:700;font-size:0.9rem;margin-bottom:5px">${p[0]}</div>
+            <div style="font-size:0.6rem;color:#888">${p[1]}</div>
+            <div style="font-size:0.55rem;color:var(--gold);margin-top:5px">${p[4]}P ${p[5]}C ${p[7]}F ${p[6]}k</div>
+        </div>`;
+    });
+    document.getElementById('mTitle').innerText = 'SELECT SNACK';
+    document.getElementById('mSub').innerText = 'Choose your snack';
+    document.getElementById('mBody').innerHTML = opts;
     document.getElementById('masterModal').style.display = 'block';
 }
 
-function renderBioTab(tab) {
-    const area = document.getElementById('bioContentArea'); const u = uH[user];
-    document.querySelectorAll('#masterModal .tab').forEach(t=>t.classList.remove('active'));
-    document.getElementById('bt'+tab.charAt(0).toUpperCase()+tab.slice(1)).classList.add('active');
+function selectSnack(idx) {
+    const dk = getDateKey(selDate);
+    if(!snackLog[dk]) snackLog[dk] = [null, null];
+    snackLog[dk][currentSlot] = idx;
+    localStorage.setItem('centurion_snack_log', JSON.stringify(snackLog));
+    closeM();
+    render();
+}
+
+function removeSnack(slot) {
+    const dk = getDateKey(selDate);
+    if(snackLog[dk]) {
+        snackLog[dk][slot] = null;
+        localStorage.setItem('centurion_snack_log', JSON.stringify(snackLog));
+        render();
+    }
+}
+
+function openJuice(jn) {
+    const j = jDB[jn];
+    if(!j) return;
+    const dk = getDateKey(selDate);
+    const imgSrc = photoCache[dk + '_juice'] || 'https://via.placeholder.com/400x300/1a1a1a/666?text=Add+Photo';
     
-    if(tab==='phys') {
-        area.innerHTML = `${bioBar("Body Fat", u.now.bf, u.goal.bf, "%", true)}${bioBar("Muscle", u.now.m, u.goal.m, "lbs")}${bioBar("Visceral", u.now.vf, u.goal.vf, "", true)}<div class="nav-btn" style="text-align:center; margin-top:15px;" onclick="logBodyScan()">📝 LOG NEW SCAN</div>
-        <div style="margin-top:30px; text-align:center;"><button class="nav-btn" style="background:#330000; color:#FF5252; font-size:0.6rem; border:1px solid #FF5252; width:100%;" onclick="hardReset()">🛑 FACTORY RESET APP</button></div>`;
-    } else if(tab==='labs') {
-        area.innerHTML = Object.keys(u.labs).map(k => bioBar(u.labs[k].name, u.labs[k].val, u.labs[k].goal, " " + (u.labs[k].unit||""), u.labs[k].lowerIsBetter)).join('');
-    } else if(tab==='tests') {
-        area.innerHTML = Object.keys(u.tests).map(k => bioBar(u.tests[k].name, u.tests[k].val, u.tests[k].goal, " " + (u.tests[k].unit||""), false)).join('') + `<div class="nav-btn" style="text-align:center; margin-top:15px;" onclick="logTest()">📝 LOG NEW TEST</div>`;
-    } else if(tab==='oura') {
-        if(!window.ouraHistory || window.ouraHistory.length === 0) { area.innerHTML = "<div style='padding:20px;text-align:center;color:#666'>Syncing History...</div>"; return; }
-        
-        let r = window.ouraHistory.find(d => d.sleepScore !== '-' && d.sleepScore > 0);
-        if(!r) r = window.ouraHistory[0];
-
-        let html = `
-            <div class="oura-grid">
-                <div class="oura-metric"><div style="font-size:1.8rem;color:var(--green)">${r.score}</div><div style="font-size:0.5rem;color:#888">READY</div></div>
-                <div class="oura-metric"><div style="font-size:1.8rem;color:var(--blue)">${r.sleepScore}</div><div style="font-size:0.5rem;color:#888">SLEEP</div></div>
-                <div class="oura-metric"><div style="font-size:1.5rem;color:#FFAB40">${r.rhr}</div><div style="font-size:0.5rem;color:#888">RHR</div></div>
-                <div class="oura-metric"><div style="font-size:1.5rem;color:white">${fmtTime(r.deep)}</div><div style="font-size:0.5rem;color:#888">DEEP</div></div>
-                <div class="oura-metric"><div style="font-size:1.5rem;color:white">${fmtTime(r.rem)}</div><div style="font-size:0.5rem;color:#888">REM</div></div>
-                <div class="oura-metric"><div style="font-size:1.5rem;color:#FFAB40">${r.cal}</div><div style="font-size:0.5rem;color:#888">BURN</div></div>
-            </div>
-            
-            <div class="intervention-card" style="margin-top:15px">💡 7-DAY TREND</div>
-            <table class="hist-table" style="font-size:0.65rem">
-                <thead><tr><th>DATE</th><th>RDY</th><th>SLP</th><th>RHR</th><th>DEEP</th><th>REM</th><th>KCAL</th></tr></thead>
-                <tbody>
-        `;
-        window.ouraHistory.forEach(day => {
-            html += `<tr><td>${day.date.slice(5)}</td><td style="font-weight:900;color:${day.score>=85?'var(--green)':day.score>=70?'var(--gold)':'#FF5252'}">${day.score}</td><td>${day.sleepScore || '-'}</td><td style="color:#FFAB40">${day.rhr}</td><td style="color:#aaa">${fmtTime(day.deep)}</td><td style="color:#aaa">${fmtTime(day.rem)}</td><td style="color:#FFAB40">${day.cal}</td></tr>`;
-        });
-        html += "</tbody></table>";
-        area.innerHTML = html;
-    }
+    document.getElementById('mTitle').innerText = jn;
+    document.getElementById('mSub').innerText = j[0];
+    document.getElementById('mBody').innerHTML = `
+        <img src="${imgSrc}" class="meal-img" onclick="capturePhoto('${dk}_juice')">
+        <div style="margin-bottom:20px">
+            <div style="font-size:0.7rem;color:#888;margin-bottom:10px;font-weight:700">INGREDIENTS</div>
+            <div style="font-size:0.85rem;line-height:1.6">${j[1]}</div>
+        </div>
+        <div class="macro-dashboard">
+            <div class="macro-row"><div class="macro-label"><span>PROTEIN</span><span>${j[2]}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:100%; background:var(--g-pro)"></div></div></div>
+            <div class="macro-row"><div class="macro-label"><span>CARBS</span><span>${j[3]}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:100%; background:var(--g-carb)"></div></div></div>
+            <div class="macro-row"><div class="macro-label"><span>CALORIES</span><span>${j[4]}</span></div><div class="macro-bg"><div class="macro-fill" style="width:100%; background:var(--g-cal)"></div></div></div>
+            <div class="macro-row"><div class="macro-label"><span>FIBER</span><span>${j[5]}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:100%; background:var(--g-fib)"></div></div></div>
+        </div>`;
+    document.getElementById('masterModal').style.display = 'block';
 }
 
-function logBodyScan() {
-    const bf = prompt("Enter Body Fat %:");
-    if(bf) {
-        uH[user].now.bf = parseFloat(bf);
-        uH[user].now.m = parseFloat(prompt("Enter Muscle Mass (lbs):"));
-        uH[user].now.vf = parseFloat(prompt("Enter Visceral Fat Level:"));
-        localStorage.setItem('centurion_bio_v7', JSON.stringify(uH));
-        renderBioTab('phys');
-    }
-}
-
-function logTest() {
-    const keys = ['vo2', 'hang', 'wallsit'];
-    const choice = prompt("Select Test to Update:\n1. VO2 Max\n2. Dead Hang\n3. Wall Sit");
-    if(choice && keys[choice-1]) {
-        const k = keys[choice-1];
-        const val = prompt(`Enter new ${uH[user].tests[k].name} value (${uH[user].tests[k].unit}):`);
-        if(val) {
-            uH[user].tests[k].val = parseFloat(val);
-            localStorage.setItem('centurion_bio_v7', JSON.stringify(uH));
-            renderBioTab('tests');
-        }
-    }
-}
-
-function hardReset() {
-    if(confirm("⚠ FACTORY RESET: This will wipe all local data, logs, and cached photos. Continue?")) {
-        localStorage.clear();
-        location.reload();
-    }
-}
-
-function bioBar(label, val, goal, unit, lowerBetter=false) {
-    const pct = Math.min(lowerBetter ? (goal / val) * 100 : (val / goal) * 100, 100);
-    const color = pct >= 100 ? 'var(--green)' : 'var(--gold)';
-    return `<div class="bio-section"><div class="label" style="color:white; margin-bottom:10px">${label}</div><div class="bar-row"><div class="bar-lbl">NOW</div><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div><div class="bar-lbl" style="text-align:right">${val}${unit}</div></div><div class="bar-row"><div class="bar-lbl" style="color:var(--blue)">GOAL</div><div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--blue);opacity:0.25"></div></div><div class="bar-lbl" style="text-align:right;color:var(--blue)">${goal}${unit}</div></div></div>`;
+function openEssential(name) {
+    const r = rDB[name];
+    if(!r) return;
+    document.getElementById('mTitle').innerText = name;
+    document.getElementById('mSub').innerText = r[0];
+    document.getElementById('mBody').innerHTML = `
+        <div style="background:rgba(0,230,118,0.05);border-left:3px solid var(--green);padding:20px;border-radius:12px;margin-bottom:20px">
+            <div style="font-size:0.7rem;color:#888;margin-bottom:10px;font-weight:700">PROTOCOL</div>
+            <div style="font-size:0.9rem;line-height:1.6;margin-bottom:15px">${r[1]}</div>
+            <div style="font-size:0.7rem;color:#888;margin-bottom:5px;font-weight:700">BENEFIT</div>
+            <div style="font-size:0.85rem;line-height:1.6">${r[2]}</div>
+        </div>`;
+    document.getElementById('masterModal').style.display = 'block';
 }
 
 function openDBRecipe(type, idx) {
-    const raw = mDB[type][idx]; const data = applyAIP(raw, type);
-    const name = data[0];
-    document.getElementById('mTitle').innerText = name.toUpperCase();
-    document.getElementById('mSub').innerText = "CENTURION NUTRITION";
-    
-    document.getElementById('mBody').innerHTML = `<div style="padding:50px;text-align:center;color:#444;font-size:0.7rem;letter-spacing:2px;border:1px dashed #222;border-radius:14px;margin-bottom:15px">PATIENCE PROTOCOL<br>GENERATING NEURAL IMAGERY...</div>`;
-    document.getElementById('bioContentArea').innerHTML = '';
+    const meals = {b:'Breakfast', l:'Lunch', d:'Dinner'};
+    const mealArr = mDB[type][idx].split('|');
+    const sc = (user === 'J') ? 1 : 0.6;
+    const dk = getDateKey(selDate);
+    const imgKey = dk + '_' + type;
+    const imgSrc = photoCache[imgKey] || 'https://via.placeholder.com/400x300/1a1a1a/666?text=Add+Photo';
+
+    document.getElementById('mTitle').innerText = mealArr[0];
+    document.getElementById('mSub').innerText = meals[type];
+    document.getElementById('mBody').innerHTML = `
+        <img src="${imgSrc}" class="meal-img" onclick="capturePhoto('${imgKey}')">
+        <div style="margin-bottom:20px">
+            <div style="font-size:0.7rem;color:#888;margin-bottom:10px;font-weight:700">INGREDIENTS</div>
+            <div style="font-size:0.85rem;line-height:1.6;margin-bottom:15px">${mealArr[1]}</div>
+            <div style="font-size:0.7rem;color:#888;margin-bottom:5px;font-weight:700">METHOD</div>
+            <div style="font-size:0.8rem;line-height:1.5;margin-bottom:15px;color:#aaa">${mealArr[2]}</div>
+            <div class="intervention-card">${mealArr[3]}</div>
+        </div>
+        <div class="macro-dashboard">
+            <div class="macro-row"><div class="macro-label"><span>PROTEIN</span><span>${Math.round(mealArr[4]*sc)}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:100%; background:var(--g-pro)"></div></div></div>
+            <div class="macro-row"><div class="macro-label"><span>CARBS</span><span>${Math.round(mealArr[5]*sc)}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:100%; background:var(--g-carb)"></div></div></div>
+            <div class="macro-row"><div class="macro-label"><span>CALORIES</span><span>${Math.round(mealArr[6]*sc)}</span></div><div class="macro-bg"><div class="macro-fill" style="width:100%; background:var(--g-cal)"></div></div></div>
+            <div class="macro-row"><div class="macro-label"><span>FIBER</span><span>${Math.round(mealArr[7]*sc)}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:100%; background:var(--g-fib)"></div></div></div>
+        </div>`;
     document.getElementById('masterModal').style.display = 'block';
-
-    let imgUrl = photoCache[name];
-    if(!imgUrl) {
-        const prompt = encodeURIComponent(`high end food photography ${name.replace(/[^a-zA-Z ]/g, "")} plated dark background`);
-        imgUrl = `https://image.pollinations.ai/prompt/${prompt}?nologo=true&model=turbo&seed=${Math.floor(Math.random()*1000)}`;
-        photoCache[name] = imgUrl;
-        localStorage.setItem('centurion_photo_cache', JSON.stringify(photoCache));
-    }
-
-    const img = new Image();
-    img.src = imgUrl;
-    img.onload = () => {
-        if(document.getElementById('mTitle').innerText === name.toUpperCase()) {
-            document.getElementById('mBody').innerHTML = `
-                <img src="${imgUrl}" class="meal-img">
-                <div class="intervention-card" style="border-left-color:var(--gold)"><strong>PROTOCOL:</strong><br>${data[3]}</div>
-                <div style="display:flex; justify-content:space-between; margin-top:15px; font-size:0.8rem; color:#888;">
-                    <span>PRO: ${data[4]}g</span><span>CARB: ${data[5]}g</span><span>FAT: ${data[7]||0}g</span>
-                </div>`;
-        }
-    };
 }
 
 function openWorkoutFlow(workout, dateKey) {
@@ -498,7 +675,7 @@ function openWorkoutFlow(workout, dateKey) {
     
     let workoutStatsHTML = '';
     if(workoutData) {
-        const totalZoneTime = workoutData.zones.z1 + workoutData.zones.z2 + workoutData.zones.z3 + workoutData.zones.z4 + workoutData.zones.z5;
+        const totalZoneTime = workoutData.zones.low + workoutData.zones.medium + workoutData.zones.high;
         
         workoutStatsHTML = `
             <div class="stats-grid">
@@ -524,51 +701,31 @@ function openWorkoutFlow(workout, dateKey) {
                 
                 <div class="hr-zone-row">
                     <div class="hr-zone-label">
-                        <span>Zone 1 (${Math.round(maxHR*0.5)}-${Math.round(maxHR*0.6)} bpm)</span>
-                        <span>${workoutData.zones.z1} min</span>
+                        <span>Low HR (Z1-Z2: ~50-70% max)</span>
+                        <span>${workoutData.zones.low} min</span>
                     </div>
                     <div class="hr-zone-bar-bg">
-                        <div class="hr-zone-bar" style="width:${(workoutData.zones.z1/totalZoneTime)*100}%; background:linear-gradient(90deg, #4CAF50, #2E7D32)">${workoutData.zones.z1}m</div>
+                        <div class="hr-zone-bar" style="width:${totalZoneTime > 0 ? (workoutData.zones.low/totalZoneTime)*100 : 0}%; background:linear-gradient(90deg, #4CAF50, #8BC34A)">${workoutData.zones.low}m</div>
                     </div>
                 </div>
                 
                 <div class="hr-zone-row">
                     <div class="hr-zone-label">
-                        <span>Zone 2 (${Math.round(maxHR*0.6)}-${Math.round(maxHR*0.7)} bpm)</span>
-                        <span>${workoutData.zones.z2} min</span>
+                        <span>Medium HR (Z3: ~70-80% max)</span>
+                        <span>${workoutData.zones.medium} min</span>
                     </div>
                     <div class="hr-zone-bar-bg">
-                        <div class="hr-zone-bar" style="width:${(workoutData.zones.z2/totalZoneTime)*100}%; background:linear-gradient(90deg, #8BC34A, #558B2F)">${workoutData.zones.z2}m</div>
+                        <div class="hr-zone-bar" style="width:${totalZoneTime > 0 ? (workoutData.zones.medium/totalZoneTime)*100 : 0}%; background:linear-gradient(90deg, #FFC107, #FF9800)">${workoutData.zones.medium}m</div>
                     </div>
                 </div>
                 
                 <div class="hr-zone-row">
                     <div class="hr-zone-label">
-                        <span>Zone 3 (${Math.round(maxHR*0.7)}-${Math.round(maxHR*0.8)} bpm)</span>
-                        <span>${workoutData.zones.z3} min</span>
+                        <span>High HR (Z4-Z5: ~80%+ max)</span>
+                        <span>${workoutData.zones.high} min</span>
                     </div>
                     <div class="hr-zone-bar-bg">
-                        <div class="hr-zone-bar" style="width:${(workoutData.zones.z3/totalZoneTime)*100}%; background:linear-gradient(90deg, #FFC107, #F57C00)">${workoutData.zones.z3}m</div>
-                    </div>
-                </div>
-                
-                <div class="hr-zone-row">
-                    <div class="hr-zone-label">
-                        <span>Zone 4 (${Math.round(maxHR*0.8)}-${Math.round(maxHR*0.9)} bpm)</span>
-                        <span>${workoutData.zones.z4} min</span>
-                    </div>
-                    <div class="hr-zone-bar-bg">
-                        <div class="hr-zone-bar" style="width:${(workoutData.zones.z4/totalZoneTime)*100}%; background:linear-gradient(90deg, #FF9800, #E65100)">${workoutData.zones.z4}m</div>
-                    </div>
-                </div>
-                
-                <div class="hr-zone-row">
-                    <div class="hr-zone-label">
-                        <span>Zone 5 (${Math.round(maxHR*0.9)}+ bpm)</span>
-                        <span>${workoutData.zones.z5} min</span>
-                    </div>
-                    <div class="hr-zone-bar-bg">
-                        <div class="hr-zone-bar" style="width:${(workoutData.zones.z5/totalZoneTime)*100}%; background:linear-gradient(90deg, #FF5252, #D50000)">${workoutData.zones.z5}m</div>
+                        <div class="hr-zone-bar" style="width:${totalZoneTime > 0 ? (workoutData.zones.high/totalZoneTime)*100 : 0}%; background:linear-gradient(90deg, #FF5252, #D50000)">${workoutData.zones.high}m</div>
                     </div>
                 </div>
             </div>`;
@@ -590,25 +747,183 @@ function openWorkoutFlow(workout, dateKey) {
     document.getElementById('mTitle').innerText = workout;
     document.getElementById('mSub').innerText = 'Optimized Flow Protocol';
     document.getElementById('mBody').innerHTML = workoutStatsHTML + protocolHTML;
-    document.getElementById('bioContentArea').innerHTML = '';
     document.getElementById('masterModal').style.display = 'block';
 }
 
-function openJuice(n){
-    const d=jDB[n]; document.getElementById('mTitle').innerText=n; document.getElementById('mBody').innerHTML=`<p style="font-size:1.1rem; color:#fff">${d[1]}</p><p style="color:var(--gold)">Kcal: ${d[4]} | Carb: ${d[3]}g | Fiber: ${d[5]}g</p>`;
-    document.getElementById('bioContentArea').innerHTML = ''; document.getElementById('masterModal').style.display='block';
+function openBio() {
+    const userData = uH[user];
+    const age = getChronAge(user);
+    const longevity = calculateLongevity(userData);
+    
+    let labsHTML = '<div class="bio-section"><h3 style="color:var(--gold);font-size:0.8rem;font-weight:900;margin-bottom:15px">🩸 BLOODWORK</h3>';
+    Object.values(userData.labs).forEach(lab => {
+        const progress = lab.lowerIsBetter ? 
+            Math.max(0, 100 - ((lab.val / lab.goal) * 100)) : 
+            Math.min(100, (lab.val / lab.goal) * 100);
+        const barColor = progress >= 80 ? 'var(--green)' : progress >= 60 ? 'var(--gold)' : 'var(--red)';
+        labsHTML += `<div class="bar-row">
+            <div class="bar-lbl">${lab.name}</div>
+            <div class="bar-track"><div class="bar-fill" style="width:${progress}%; background:${barColor}"></div></div>
+            <div style="font-size:0.6rem;width:80px;text-align:right;color:#888;font-weight:700">${lab.val} ${lab.unit}</div>
+        </div>`;
+    });
+    labsHTML += '</div>';
+
+    let testsHTML = '<div class="bio-section"><h3 style="color:var(--blue);font-size:0.8rem;font-weight:900;margin-bottom:15px">🏃 PERFORMANCE</h3>';
+    Object.values(userData.tests).forEach(test => {
+        const progress = Math.min(100, (test.val / test.goal) * 100);
+        const barColor = progress >= 80 ? 'var(--green)' : progress >= 60 ? 'var(--gold)' : 'var(--red)';
+        testsHTML += `<div class="bar-row">
+            <div class="bar-lbl">${test.name}</div>
+            <div class="bar-track"><div class="bar-fill" style="width:${progress}%; background:${barColor}"></div></div>
+            <div style="font-size:0.6rem;width:80px;text-align:right;color:#888;font-weight:700">${test.val} ${test.unit}</div>
+        </div>`;
+    });
+    testsHTML += '</div>';
+
+    let compHTML = '<div class="bio-section"><h3 style="color:var(--purple);font-size:0.8rem;font-weight:900;margin-bottom:15px">📊 BODY COMPOSITION</h3>';
+    ['Body Fat', 'Muscle', 'Visceral Fat', 'Weight'].forEach((metric, i) => {
+        const keys = ['bf', 'm', 'vf', 'w'];
+        const units = ['%', 'kg', '', 'lbs'];
+        const now = userData.now[keys[i]];
+        const goal = userData.goal[keys[i]];
+        const isLower = i === 0 || i === 2 || i === 3;
+        const progress = isLower ? 
+            Math.max(0, 100 - ((now / goal) * 100)) : 
+            Math.min(100, (now / goal) * 100);
+        const barColor = progress >= 80 ? 'var(--green)' : progress >= 60 ? 'var(--gold)' : 'var(--red)';
+        compHTML += `<div class="bar-row">
+            <div class="bar-lbl">${metric}</div>
+            <div class="bar-track"><div class="bar-fill" style="width:${progress}%; background:${barColor}"></div></div>
+            <div style="font-size:0.6rem;width:80px;text-align:right;color:#888;font-weight:700">${now} ${units[i]}</div>
+        </div>`;
+    });
+    compHTML += '</div>';
+
+    let ouraHTML = '';
+    if(window.ouraHistory && window.ouraHistory.length > 0) {
+        const last7 = window.ouraHistory.slice(0, 7);
+        const avgReady = Math.round(last7.reduce((sum, d) => sum + d.score, 0) / last7.length);
+        const avgSleep = Math.round(last7.reduce((sum, d) => sum + (d.sleepScore !== '-' ? d.sleepScore : 0), 0) / last7.length);
+        const avgRHR = Math.round(last7.reduce((sum, d) => sum + (typeof d.rhr === 'number' ? d.rhr : 0), 0) / last7.length);
+        
+        ouraHTML = `<div class="bio-section"><h3 style="color:var(--green);font-size:0.8rem;font-weight:900;margin-bottom:15px">💍 OURA (7-DAY AVG)</h3>
+            <div class="oura-grid">
+                <div class="oura-metric">
+                    <div style="font-size:1.5rem;font-weight:900;color:${avgReady>=85?'var(--green)':avgReady>=70?'var(--gold)':'var(--red)'}">${avgReady}</div>
+                    <div style="font-size:0.5rem;color:#666;margin-top:5px;font-weight:700">READINESS</div>
+                </div>
+                <div class="oura-metric">
+                    <div style="font-size:1.5rem;font-weight:900;color:${avgSleep>=85?'var(--green)':avgSleep>=70?'var(--gold)':'var(--red)'}">${avgSleep}</div>
+                    <div style="font-size:0.5rem;color:#666;margin-top:5px;font-weight:700">SLEEP</div>
+                </div>
+                <div class="oura-metric">
+                    <div style="font-size:1.5rem;font-weight:900;color:var(--blue)">${avgRHR}</div>
+                    <div style="font-size:0.5rem;color:#666;margin-top:5px;font-weight:700">RHR</div>
+                </div>
+            </div>
+            
+            <table class="hist-table">
+                <thead><tr><th>DATE</th><th>READY</th><th>SLEEP</th><th>RHR</th><th>STEPS</th></tr></thead>
+                <tbody>
+                    ${last7.map(d => `<tr>
+                        <td>${d.date.slice(5)}</td>
+                        <td style="color:${d.score>=85?'var(--green)':d.score>=70?'var(--gold)':'var(--red)'}">${d.score}</td>
+                        <td>${d.sleepScore !== '-' ? d.sleepScore : '-'}</td>
+                        <td>${typeof d.rhr === 'number' ? d.rhr : '-'}</td>
+                        <td>${d.steps || '-'}</td>
+                    </tr>`).join('')}
+                </tbody>
+            </table>
+        </div>`;
+    }
+
+    document.getElementById('mTitle').innerText = `${user === 'J' ? 'JERMAINE' : 'SOPHIA'} BIOMETRICS`;
+    document.getElementById('mSub').innerHTML = `AGE: ${age} | PROJECTED LONGEVITY: <span style="color:var(--gold)">${longevity}</span>`;
+    document.getElementById('mBody').innerHTML = ouraHTML + compHTML + labsHTML + testsHTML;
+    document.getElementById('masterModal').style.display = 'block';
 }
 
-function openEssential(n){
-    const d=rDB[n]; document.getElementById('mTitle').innerText=n; document.getElementById('mBody').innerHTML=`<div class="intervention-card"><strong>DOSE:</strong> ${d[1]}</div><div class="intervention-card"><strong>WHY:</strong> ${d[2]}</div>`;
-    document.getElementById('bioContentArea').innerHTML = ''; document.getElementById('masterModal').style.display='block';
+function toggleAI() {
+    aiVisible = !aiVisible;
+    const dash = document.getElementById('aiDashboard');
+    if(aiVisible) {
+        const userData = uH[user];
+        const age = getChronAge(user);
+        const longevity = calculateLongevity(userData);
+        
+        let insights = [];
+        if(userData.labs.apob && userData.labs.apob.val > 80) 
+            insights.push({type:'warning', text:`ApoB elevated at ${userData.labs.apob.val}. Consider increasing fiber to 40g+ daily and omega-3 supplementation.`});
+        if(userData.tests.vo2 && userData.tests.vo2.val < 45) 
+            insights.push({type:'warning', text:`VO2 Max at ${userData.tests.vo2.val}. Add 2x weekly Zone 2 cardio (60-70% max HR) for 45+ minutes.`});
+        if(userData.now.vf > 8) 
+            insights.push({type:'warning', text:`Visceral fat at ${userData.now.vf}. Prioritize HIIT workouts and reduce refined carbs.`});
+        
+        if(window.ouraHistory && window.ouraHistory.length > 0) {
+            const recent = window.ouraHistory.slice(0, 7);
+            const avgReady = Math.round(recent.reduce((s, d) => s + d.score, 0) / recent.length);
+            if(avgReady < 70) 
+                insights.push({type:'warning', text:`7-day readiness averaging ${avgReady}. Consider adding rest day or reducing training volume.`});
+        }
+        
+        if(insights.length === 0) 
+            insights.push({type:'success', text:`All biomarkers trending well! Projected longevity: ${longevity} years. Continue current protocol.`});
+        
+        let html = '<div style="background:rgba(102,126,234,0.05);border:1px solid rgba(102,126,234,0.2);border-radius:15px;padding:20px">';
+        html += `<div style="font-size:0.7rem;color:#667EEA;font-weight:900;margin-bottom:15px">🧠 AI INSIGHTS</div>`;
+        insights.forEach(i => {
+            const color = i.type === 'success' ? 'var(--green)' : 'var(--gold)';
+            html += `<div class="intervention-card" style="border-left-color:${color};margin-bottom:10px">${i.text}</div>`;
+        });
+        html += '</div>';
+        dash.innerHTML = html;
+        dash.style.display = 'block';
+    } else {
+        dash.style.display = 'none';
+    }
 }
 
-function openSnackSelector(s) { currentSlot=s; document.getElementById('mTitle').innerText="SNACK"; document.getElementById('mBody').innerHTML=mDB.s.map((x,i)=>`<div class="value" onclick="applySnack(${i})">${x.split('|')[0]}</div>`).join(''); document.getElementById('bioContentArea').innerHTML=''; document.getElementById('masterModal').style.display='block'; }
-function applySnack(i) { snackLog[getDateKey(selDate)][currentSlot]=i; localStorage.setItem('centurion_snack_log', JSON.stringify(snackLog)); closeM(); render(); }
-function removeSnack(s) { snackLog[getDateKey(selDate)][s]=null; localStorage.setItem('centurion_snack_log', JSON.stringify(snackLog)); render(); }
-function closeM() { document.getElementById('masterModal').style.display='none'; }
+function capturePhoto(key) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.capture = 'camera';
+    input.onchange = e => {
+        const file = e.target.files[0];
+        if(file) {
+            const reader = new FileReader();
+            reader.onload = ev => {
+                photoCache[key] = ev.target.result;
+                localStorage.setItem('centurion_photo_cache', JSON.stringify(photoCache));
+                render();
+                closeM();
+                setTimeout(() => {
+                    if(key.includes('_juice')) {
+                        const jn = document.querySelector('.juice-name').innerText;
+                        openJuice(jn);
+                    } else {
+                        const type = key.split('_')[1];
+                        const idx = Math.abs(Math.floor(selDate.getTime()/864e5)) % mDB[type].length;
+                        openDBRecipe(type, idx);
+                    }
+                }, 100);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+    input.click();
+}
 
+function closeM(e) {
+    if(!e || e.target.id === 'masterModal') {
+        document.getElementById('masterModal').style.display = 'none';
+    }
+}
+
+// ==========================================
+// OURA SYNC - v370 PATTERN + WORKOUT
+// ==========================================
 async function fetchOuraData() {
     const currentUser = user; 
     const token = TOKENS[currentUser]; 
@@ -648,7 +963,29 @@ async function fetchOuraData() {
             window.ouraWorkouts = wData.data.map(w => {
                 const duration = w.end_datetime && w.start_datetime ? 
                     Math.round((new Date(w.end_datetime) - new Date(w.start_datetime)) / 60000) : 0;
-              
+                
+                // Oura provides Low/Medium/High zones (in seconds, convert to minutes)
+                // If individual zones exist, bundle them into low/medium/high
+                let low = 0, medium = 0, high = 0;
+                
+                if(w.heart_rate_zone_low_duration !== undefined) {
+                    // Direct low/medium/high from Oura
+                    low = Math.round((w.heart_rate_zone_low_duration || 0) / 60);
+                    medium = Math.round((w.heart_rate_zone_medium_duration || 0) / 60);
+                    high = Math.round((w.heart_rate_zone_high_duration || 0) / 60);
+                } else if(w.heart_rate_zone_1_duration !== undefined) {
+                    // Convert individual zones to low/medium/high
+                    const z1 = Math.round((w.heart_rate_zone_1_duration || 0) / 60);
+                    const z2 = Math.round((w.heart_rate_zone_2_duration || 0) / 60);
+                    const z3 = Math.round((w.heart_rate_zone_3_duration || 0) / 60);
+                    const z4 = Math.round((w.heart_rate_zone_4_duration || 0) / 60);
+                    const z5 = Math.round((w.heart_rate_zone_5_duration || 0) / 60);
+                    
+                    low = z1 + z2;
+                    medium = z3;
+                    high = z4 + z5;
+                }
+                
                 return {
                     date: w.day || (w.start_datetime ? w.start_datetime.split('T')[0] : ''),
                     type: mapWorkoutType(w.activity),
@@ -656,11 +993,9 @@ async function fetchOuraData() {
                     avgHR: w.average_heart_rate || 0,
                     peakHR: w.max_heart_rate || 0,
                     zones: {
-                        z1: Math.round((w.heart_rate_zone_1_duration || 0) / 60) || 0,
-                        z2: Math.round((w.heart_rate_zone_2_duration || 0) / 60) || 0,
-                        z3: Math.round((w.heart_rate_zone_3_duration || 0) / 60) || 0,
-                        z4: Math.round((w.heart_rate_zone_4_duration || 0) / 60) || 0,
-                        z5: Math.round((w.heart_rate_zone_5_duration || 0) / 60) || 0
+                        low: low,
+                        medium: medium,
+                        high: high
                     },
                     calories: w.calories || 0,
                     intensity: w.intensity || 'moderate'
@@ -677,7 +1012,7 @@ async function fetchOuraData() {
                 const sleepEpisodes = sData.data ? sData.data.filter(s => s.day === day.day) : [];
                 const mainSleep = sleepEpisodes.length > 0 ? sleepEpisodes.reduce((prev, current) => (prev.total_sleep_duration > current.total_sleep_duration) ? prev : current) : null;
                 const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
-              
+                
                 let burn = 0;
                 if(act) {
                     if(act.active_calories !== undefined) burn = act.active_calories;
@@ -723,13 +1058,9 @@ async function fetchOuraData() {
     }
 }
 
-// Init
-window.onload = () => { 
-    document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
-    document.getElementById('b' + user.toLowerCase()).classList.add('active');
-    render(); 
-    fetchOuraData(); 
-};
+// Auto-load on start
+fetchOuraData();
 </script>
+
 </body>
 </html>
