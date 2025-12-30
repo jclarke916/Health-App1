@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v1110.7 Full Data Restore</title>
+    <title>The Centurion | v1110.8 HR Interaction Fix</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -79,7 +79,7 @@
     
     <div id="dayTabs" class="tabs"></div>
     <div id="dayContent"></div>
-    <div style="text-align:center; color:#333; font-size:10px; margin-top:30px; opacity:0.4;">v1110.7 Master Sync</div>
+    <div style="text-align:center; color:#333; font-size:10px; margin-top:30px; opacity:0.4;">v1110.8 HR Fix</div>
 </div>
 
 <script>
@@ -87,7 +87,7 @@ let user = localStorage.getItem('centurion_active_user') || 'J';
 let offset = 0;
 let selDate = getCaDate(); 
 
-// Global Expansion States
+// Persistent States
 let isPlanCollapsed = false;
 let isWorkoutCollapsed = false; 
 let isNutCollapsed = true;
@@ -97,11 +97,7 @@ let isBioCollapsed = true;
 const TOKENS = { 'J': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'S': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
 
 const uH = {
-    'J': {
-        now: {bf:19.0, vf:10, m:99.0}, goal: {bf:15.0, vf:7, m:105.0},
-        labs: { apob: {val:95, goal:60, name:"ApoB", unit:"mg/dL", low:true}, hba1c: {val:5.4, goal:5.0, name:"HbA1c", unit:"%", low:true} },
-        tests: { vo2: {val:45, goal:55, name:"VO2 Max", unit:"ml/kg"} }
-    },
+    'J': { now: {bf:19.0, vf:10, m:99.0}, goal: {bf:15.0, vf:7, m:105.0}, labs: { apob: {val:95, goal:60, name:"ApoB", unit:"mg/dL"}, hba1c: {val:5.4, goal:5.0, name:"HbA1c", unit:"%"} }, tests: { vo2: {val:45, goal:55, name:"VO2 Max", unit:"ml/kg"} } },
     'S': {
         now: {bf:36.1, vf:9, m:49.2}, goal: {bf:22.0, vf:4, m:60.0},
         labs: {
@@ -122,7 +118,7 @@ const unifiedSchedule = {
     2: { focus: "BOXING", tasks: "45m Intervals | Breath Training", zT: {h:30, m:15} },
     3: { focus: "REFORM", tasks: "Pilates | Stability Work", zT: {h:5, m:40} },
     4: { focus: "BOXING", tasks: "Technique & Heavy Bag", zT: {h:25, m:20} },
-    5: { focus: "REFORM", tasks: "Core & Recovery Focus", zT: {h:0, m:30} },
+    5: { focus: "REFORM", tasks: "Core Focus | Mobility", zT: {h:0, m:30} },
     6: { focus: "CS4 / VO2", tasks: "Max Effort Intervals", zT: {h:25, m:20} },
     0: { focus: "REST", tasks: "Active Recovery Walk", zT: {h:0, m:0} }
 };
@@ -164,17 +160,12 @@ function showDay(dObj, idx) {
     const rawOura = cached.history.find(d => d.date === dk) || { score: "-", cal: "-", high: 0, med: 0 };
     const hasData = rawOura.score !== "-"; const isActive = hasData && parseInt(rawOura.score) >= 75;
 
-    // 1. PERFORMANCE / PROTOCOL
     const protocolHTML = `
     <div class="premium-card ${isPlanCollapsed?'collapsed':''}" onclick="isPlanCollapsed=!isPlanCollapsed;render()">
         <div class="card-header"><div><div class="card-title accent-gold">DAILY PROTOCOL</div><div class="card-subtitle">${dayData.focus}</div></div><div class="card-val-lg">${hasData ? (isActive?'ACTIVE':'REST') : '-'} <span class="chevron">▼</span></div></div>
-        <div class="card-body">
-            <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:center;"><span class="status-pill ${hasData ? (isActive?'pill-win':'pill-rest') : 'pill-fail'}">${hasData ? (isActive?'ACTIVE':'REST') : 'SYNCING'}</span><span style="font-size:0.7rem; color:#888;">READINESS: ${rawOura.score}</span></div>
-            <div style="font-size:0.8rem; color:#ddd; line-height:1.5;">${dayData.tasks}</div>
-        </div>
+        <div class="card-body"><div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:center;"><span class="status-pill ${hasData ? (isActive?'pill-win':'pill-rest') : 'pill-fail'}">${hasData ? (isActive?'ACTIVE':'REST') : 'SYNCING'}</span><span style="font-size:0.7rem; color:#888;">READINESS: ${rawOura.score}</span></div><div style="font-size:0.8rem; color:#ddd; line-height:1.5;">${dayData.tasks}</div></div>
     </div>`;
 
-    // 2. TRAINING / CALORIES / HR PROGRESS
     const workoutHTML = `
     <div class="premium-card ${isWorkoutCollapsed?'collapsed':''}" onclick="isWorkoutCollapsed=!isWorkoutCollapsed;render()">
         <div class="card-header"><div><div class="card-title accent-red">TRAINING</div><div class="card-subtitle">HR ZONE TARGETS</div></div><div class="card-val-lg">${rawOura.cal} <span style="font-size:0.9rem; opacity:0.7">CAL</span> <span class="chevron">▼</span></div></div>
@@ -184,7 +175,6 @@ function showDay(dObj, idx) {
         </div>
     </div>`;
 
-    // 3. NUTRITION / ADHERENCE
     const id = Math.floor(dObj.getTime()/864e5);
     const b = mDB.b[0].split('|'); const l = mDB.l[0].split('|'); const d = mDB.d[0].split('|');
     const j = mDB.j[Math.abs(id)%mDB.j.length].split('|');
@@ -192,21 +182,10 @@ function showDay(dObj, idx) {
 
     const nutHTML = `
     <div class="premium-card ${isNutCollapsed?'collapsed':''}" onclick="isNutCollapsed=!isNutCollapsed;render()">
-        <div class="card-header"><div><div class="card-title accent-green">NUTRITION</div><div class="card-subtitle">PROTEIN TARGET</div></div><div class="card-val-lg">${gP} <span style="font-size:0.9rem; opacity:0.7">G PRO</span> <span class="chevron">▼</span></div></div>
-        <div class="card-body">
-            <div class="section-header">DAILY NUTRIENTS</div>
-            <div class="data-row"><div class="data-label">SEA MOSS</div><div class="data-val">2 TBSP</div></div>
-            <div class="data-row"><div class="data-label">KOMBUCHA</div><div class="data-val">4 OZ</div></div>
-            <div class="section-header">MEAL PLAN</div>
-            <div class="data-row"><div class="data-label">${b[0]}</div><div class="data-val">${b[3]}P</div></div>
-            <div class="data-row"><div class="data-label">${l[0]}</div><div class="data-val">${l[3]}P</div></div>
-            <div class="data-row"><div class="data-label">${d[0]}</div><div class="data-val">${d[3]}P</div></div>
-            <div class="section-header">COLD PRESSED JUICE</div>
-            <div class="data-row"><div class="data-label">${j[0]}</div><div class="data-val" style="font-size:0.6rem; color:#888; text-align:right;">${j[1]}</div></div>
-        </div>
+        <div class="card-header"><div><div class="card-title accent-green">NUTRITION</div><div class="card-subtitle">DAILY PROTOCOL</div></div><div class="card-val-lg">${gP} <span style="font-size:0.9rem; opacity:0.7">G PRO</span> <span class="chevron">▼</span></div></div>
+        <div class="card-body"><div class="section-header">DAILY NUTRIENTS</div><div class="data-row"><div class="data-label">SEA MOSS</div><div class="data-val">2 TBSP</div></div><div class="data-row"><div class="data-label">KOMBUCHA</div><div class="data-val">4 OZ</div></div><div class="section-header">MEAL PLAN</div><div class="data-row"><div class="data-label">${b[0]}</div><div class="data-val">${b[3]}P</div></div><div class="data-row"><div class="data-label">${l[0]}</div><div class="data-val">${l[3]}P</div></div><div class="data-row"><div class="data-label">${d[0]}</div><div class="data-val">${d[3]}P</div></div><div class="section-header">JUICE</div><div class="data-row"><div class="data-label">${j[0]}</div><div class="data-val" style="font-size:0.6rem; color:#888;">${j[1]}</div></div></div>
     </div>`;
 
-    // 4. AI & BIOMETRICS
     const age = user === 'S' ? 83.0 : 88.5;
     const aiHTML = `<div class="premium-card ${isAICollapsed?'collapsed':''}" onclick="isAICollapsed=!isAICollapsed;render()"><div class="card-header"><div><div class="card-title accent-blue">AI LIFESPAN</div><div class="card-subtitle">PROJECTED AGE</div></div><div class="card-val-lg">${age} <span style="font-size:0.9rem; opacity:0.7">YRS</span> <span class="chevron">▼</span></div></div><div class="card-body"><div class="data-row"><div class="data-label">VO2 MAX IMPACT</div><div class="data-val">+4.2 YRS</div></div></div></div>`;
     
@@ -216,18 +195,12 @@ function showDay(dObj, idx) {
     const bioHTML = `
     <div class="premium-card ${isBioCollapsed?'collapsed':''}" onclick="isBioCollapsed=!isBioCollapsed;render()">
         <div class="card-header"><div><div class="card-title accent-purple">LONGEVITY DASHBOARD</div><div class="card-subtitle">Full Panel</div></div><div class="card-val-lg">${u.now.bf}% <span style="font-size:0.9rem; opacity:0.7">BF</span> <span class="chevron">▼</span></div></div>
-        <div class="card-body">
-            ${bioBar("Visceral Fat", u.now.vf, u.goal.vf, "", true)}
-            ${bioBar("VO2 Max", u.tests.vo2.val, u.tests.vo2.goal, " ml/kg")}
-            <div class="section-header">Verified Labs</div>
-            ${labsHTML}
-        </div>
+        <div class="card-body">${bioBar("Visceral Fat", u.now.vf, u.goal.vf, "", true)}${bioBar("VO2 Max", u.tests.vo2.val, u.tests.vo2.goal, " ml/kg")}<div class="section-header">Verified Labs</div>${labsHTML}</div>
     </div>`;
 
     document.getElementById('dayContent').innerHTML = protocolHTML + workoutHTML + nutHTML + aiHTML + bioHTML;
 }
 
-// THE LITERAL V510 FETCH BLOCK
 function switchU(uID) {
     localStorage.removeItem(`centurion_oura_cache_${uID}`);
     user = uID;
