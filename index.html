@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v880.0 Unified Stack</title>
+    <title>The Centurion | v900.0 Isolated Workout</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --red:#FF5252; --text:#fff;
@@ -69,7 +69,6 @@
         
         /* CARD STYLES */
         .goal-card, .nutrition-card, .ai-card, .workout-card { border-radius: 20px; padding: 20px; margin-bottom: 15px; position: relative; transition: all 0.3s; cursor: pointer; }
-        
         .goal-card { background: linear-gradient(135deg, rgba(102,126,234,0.1), rgba(212,175,55,0.05)); border: 1px solid rgba(102,126,234,0.3); }
         .nutrition-card { background: var(--card); border: 1px solid rgba(255,255,255,0.03); }
         .nutrition-card::before { content:""; position:absolute; left:0; top:20px; bottom:20px; width:3px; background:var(--green); border-radius:0 4px 4px 0; }
@@ -103,7 +102,7 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v880.0 Unified Stack</span>
+        <span class="version-tag">v900.0 Isolated Workout</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -134,7 +133,7 @@
 
 <script>
 // ==========================================
-// CENTURION v880.0 CORE
+// CENTURION v900.0 CORE
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
@@ -144,7 +143,7 @@ let currentSlot = 0;
 let isGoalCollapsed = false; 
 let isNutCollapsed = false; 
 let isAICollapsed = true; 
-let isWorkoutCollapsed = true; // Workout defaults to closed
+let isWorkoutCollapsed = true; 
 let snackLog = JSON.parse(localStorage.getItem('centurion_snack_log')) || {};
 let photoCache = JSON.parse(localStorage.getItem('centurion_photo_cache')) || {};
 window.ouraHistory = [];
@@ -415,6 +414,42 @@ function getAICardHTML() {
     }
 }
 
+// --- ISOLATED WORKOUT RENDER ---
+function getWorkoutCardHTML(w, dailyData, protocol, pHigh, pMed, pLow, activeCal) {
+    try {
+        if(!protocol) return ""; // Fail safely if no protocol found
+
+        return `
+        <div class="workout-card ${isWorkoutCollapsed ? 'collapsed' : ''}" onclick="toggleWorkout()">
+            <div class="workout-header">
+                <div>
+                    <div style="font-size:0.6rem;color:var(--red);font-weight:900;text-transform:uppercase;letter-spacing:1px">TRAINING</div>
+                    <div style="font-size:1.4rem;font-weight:900;color:#fff">${w}</div>
+                </div>
+                <div class="workout-score">
+                    ${activeCal}<span style="font-size:0.8rem;color:var(--red)">CAL</span> <span class="chevron">▼</span>
+                </div>
+            </div>
+            
+            <div class="workout-body">
+                <div class="intervention-card" style="border-left:3px solid var(--blue)"><div style="color:var(--blue); font-weight:900; margin-bottom:5px">PRE-WORKOUT</div><strong>${protocol[0].h}</strong><br>${protocol[0].d}</div>
+                <div class="intervention-card" style="border-left:3px solid #fff"><div style="color:#fff; font-weight:900; margin-bottom:5px">TRAINING</div><strong>${protocol[1].h}</strong><br>${protocol[1].d}</div>
+                <div class="intervention-card" style="border-left:3px solid var(--purple)"><div style="color:var(--purple); font-weight:900; margin-bottom:5px">RECOVERY</div><strong>${protocol[2].h}</strong><br>${protocol[2].d}</div>
+                
+                <div class="bio-section" style="margin-top:15px; margin-bottom:0;">
+                    <div class="label" style="color:#fff;margin-bottom:10px">HEART RATE ZONES</div>
+                     <div class="hr-zone-row"><div class="hr-zone-label"><span style="color:#FF5252">High (Z4-Z5)</span><span>${dailyData.high}m</span></div><div class="hr-zone-bar-bg"><div class="hr-zone-bar" style="width:${pHigh}%; background:linear-gradient(90deg, #FF5252, #D50000)"></div></div></div>
+                    <div class="hr-zone-row"><div class="hr-zone-label"><span style="color:var(--gold)">Med (Z3)</span><span>${dailyData.med}m</span></div><div class="hr-zone-bar-bg"><div class="hr-zone-bar" style="width:${pMed}%; background:linear-gradient(90deg, #FFC107, #FF9800)"></div></div></div>
+                    <div class="hr-zone-row"><div class="hr-zone-label"><span style="color:var(--green)">Low (Z1-Z2)</span><span>${dailyData.low}m</span></div><div class="hr-zone-bar-bg"><div class="hr-zone-bar" style="width:${pLow}%; background:linear-gradient(90deg, #4CAF50, #2E7D32)"></div></div></div>
+                </div>
+            </div>
+        </div>`;
+    } catch(e) {
+        console.error("Workout Render Error", e);
+        return `<div class="workout-card"><div style="padding:15px;color:var(--red)">Workout Data Error</div></div>`;
+    }
+}
+
 function render() {
     const mon = getMon(offset); const tabs = document.getElementById('dayTabs'); tabs.innerHTML = '';
     const end = new Date(mon); end.setDate(mon.getDate() + 6);
@@ -438,9 +473,14 @@ function showDay(dObj, idx) {
     const protocol = pDB[w] || pDB["RELAX"];
 
     // Check workout data
-    const dailyData = window.ouraHistory.find(d => d.date === dk);
-    const hasWorkoutData = dailyData && (dailyData.high > 10 || dailyData.med > 30);
-    const workoutBadge = hasWorkoutData ? (dailyData.high > 10 ? '<span class="workout-badge hiit">💍 HIIT DATA</span>' : '<span class="workout-badge zone2">💍 Z2 DATA</span>') : '';
+    const dailyData = window.ouraHistory.find(d => d.date === dk) || {high:0, med:0, low:0, cal:0};
+    
+    // Calculate Percentages for Bar Chart
+    const totalMins = (dailyData.high || 0) + (dailyData.med || 0) + (dailyData.low || 0);
+    const pHigh = totalMins > 0 ? (dailyData.high/totalMins)*100 : 0;
+    const pMed = totalMins > 0 ? (dailyData.med/totalMins)*100 : 0;
+    const pLow = totalMins > 0 ? (dailyData.low/totalMins)*100 : 0;
+    const activeCal = dailyData.cal || 0;
 
     let sP=0, sC=0, sK=0, sF=0;
     snacks.forEach(sIdx => {
@@ -471,14 +511,14 @@ function showDay(dObj, idx) {
     }
     snackHTML += '</div>';
 
-    const pre = protocol[0].h.includes(":") ? protocol[0].h.split(':')[1] : protocol[0].h;
-    const post = protocol[2].h.includes(":") ? protocol[2].h.split(':')[1] : protocol[2].h;
-
     const protocolTarget = protocolTargets[w];
     let goalHTML = '';
     
     // RENDER AI CARD VIA ISOLATED FUNCTION
     const aiCardHTML = getAICardHTML();
+
+    // RENDER WORKOUT CARD VIA ISOLATED FUNCTION
+    const workoutHTML = getWorkoutCardHTML(w, dailyData, protocol, pHigh, pMed, pLow, activeCal);
     
     const hasOuraData = dailyData && dailyData.cal !== undefined;
     const userData = uH[user];
@@ -495,86 +535,32 @@ function showDay(dObj, idx) {
         else { targetBalance = 0; balanceRationale = 'Maintenance'; }
         
         const actualBalance = consumed - burned;
-        const balanceDiff = actualBalance - targetBalance;
-        const balanceStatus = !hasOuraData ? 'warning' : Math.abs(balanceDiff) <= 200 ? 'success' : 'error';
+        const balanceStatus = !hasOuraData ? 'warning' : Math.abs(actualBalance - targetBalance) <= 200 ? 'success' : 'error';
         const balanceText = !hasOuraData ? 'Syncing...' : (actualBalance > 0 ? '+' + actualBalance : actualBalance);
         
         let workoutCompliance = 'warning';
         let workoutText = 'Syncing...';
-        let protocolScore = 0;
-        let zoneComplianceHTML = '';
         
-        const activityZones = hasOuraData ? { high: dailyData.high||0, medium: dailyData.med||0, low: dailyData.low||0 } : {high:0, medium:0, low:0};
-        const totalZoneTime = activityZones.high + activityZones.medium + activityZones.low;
-        
-        if(hasOuraData && totalZoneTime > 0 && protocolTarget) {
-            const actualDuration = totalZoneTime;
-            const durationDiff = actualDuration - protocolTarget.duration;
-            const durationCompliance = Math.abs(durationDiff) <= 15 ? 100 : Math.abs(durationDiff) <= 30 ? 85 : 70;
-            
-            let zoneScores = [];
-            ['low','medium','high'].forEach(zone => {
-                const target = protocolTarget.zones[zone];
-                const actual = activityZones[zone] || 0;
-                if(target > 0) {
-                    const pct = Math.min(100, (actual / target) * 100);
-                    zoneScores.push(pct);
-                }
-            });
-            
-            protocolScore = Math.round(zoneScores.reduce((a,b)=>a+b,0)/zoneScores.length);
-            workoutCompliance = protocolScore >= 80 ? 'success' : protocolScore >= 50 ? 'warning' : 'error';
-            workoutText = 'Activity ' + totalZoneTime + 'min';
-            
-            const zoneNames = ['Low HR','Medium HR','High HR'];
-            const zoneKeys = ['low','medium','high'];
-            zoneComplianceHTML = '<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.1)"><div style="font-size:0.55rem;color:#666;margin-bottom:8px;font-weight:700">ZONE BREAKDOWN (DAILY TOTAL)</div>';
-            zoneKeys.forEach((zone, zidx) => {
-                const target = protocolTarget.zones[zone];
-                const actual = activityZones[zone] || 0;
-                if(target > 0) {
-                    const status = actual >= target * 0.8 ? 'success' : actual >= target * 0.5 ? 'warning' : 'error';
-                    const statusIcon = status === 'success' ? '✅' : status === 'warning' ? '⚠️' : '❌';
-                    const statusColor = status==='success'?'var(--green)':status==='warning'?'var(--gold)':'var(--red)';
-                    zoneComplianceHTML += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:8px;background:rgba(255,255,255,0.02);border-radius:8px"><div style="flex:1"><div style="font-size:0.55rem;color:#888;margin-bottom:3px">${zoneNames[zidx]}</div><div style="font-size:0.8rem;font-weight:900;color:#fff">Actual: <span style="color:${statusColor}">${actual}min</span></div></div><div style="text-align:right"><div style="font-size:0.5rem;color:#666;margin-bottom:3px">TARGET</div><div style="font-size:0.7rem;font-weight:700;color:var(--blue)">${target}min</div></div><div style="margin-left:10px;font-size:1.2rem">${statusIcon}</div></div>`;
-                }
-            });
-            zoneComplianceHTML += `<div style="margin-top:8px;font-size:0.55rem;color:#666;font-style:italic">${protocolTarget.focus}</div></div>`;
-        }
-        
+        // Simplified Goal Logic
         const recoveryScore = !hasOuraData ? 0 : Math.round((dailyData.score + (dailyData.sleepScore !== '-' ? dailyData.sleepScore : 0)) / 2);
         const recoveryStatus = !hasOuraData ? 'warning' : recoveryScore >= 80 ? 'success' : recoveryScore >= 65 ? 'warning' : 'error';
         const recoveryText = !hasOuraData ? 'Syncing...' : recoveryScore + '/100';
-        
         const macroScore = Math.min(100, Math.round(((p/g.P) + (c/g.C) + (f/g.F) + (k/g.K)) / 4 * 100));
-        const dailyScore = Math.round((macroScore + (totalZoneTime>0?protocolScore:50) + (Math.abs(balanceDiff)<100?100:70) + recoveryScore) / 4);
+        const dailyScore = Math.round((macroScore + recoveryScore) / 2); // Simple average
         const scoreClass = dailyScore >= 85 ? 'excellent' : dailyScore >= 70 ? 'good' : 'poor';
         
         goalHTML = `<div class="goal-card ${isGoalCollapsed ? 'collapsed' : ''}" onclick="toggleGoal()">
-            <div class="goal-header">
-                <div>
-                    <div style="font-size:0.6rem;color:var(--gold);font-weight:900;text-transform:uppercase;letter-spacing:1px">Daily Performance</div>
-                    <div style="font-size:0.5rem;color:#666;margin-top:2px">${dk}</div>
-                </div>
-                <div class="goal-score ${scoreClass}">
-                    ${dailyScore}% <span class="chevron">▼</span>
-                </div>
-            </div>
-            
+            <div class="goal-header"><div><div style="font-size:0.6rem;color:var(--gold);font-weight:900;text-transform:uppercase;letter-spacing:1px">Daily Performance</div><div style="font-size:0.5rem;color:#666;margin-top:2px">${dk}</div></div><div class="goal-score ${scoreClass}">${dailyScore}% <span class="chevron">▼</span></div></div>
             <div class="goal-body">
-                <div class="goal-metric"><div style="flex:1"><div class="goal-metric-label">🔥 Calorie Balance</div><div class="goal-subtext">${consumed} in • ${burned} out • Target: ${targetBalance}</div><div style="font-size:0.5rem;color:#666;margin-top:2px;font-style:italic">${balanceRationale}</div></div><div class="goal-metric-value ${balanceStatus}">${balanceText}</div></div>
-                <div class="goal-metric" style="flex-direction:column;align-items:stretch"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${zoneComplianceHTML?'5px':'0'}"><div><div class="goal-metric-label">💪 Protocol: ${w}</div><div class="goal-subtext">Target: ${(protocolTarget?protocolTarget.duration:0)}min</div></div><div class="goal-metric-value ${workoutCompliance}">${workoutText}</div></div>${zoneComplianceHTML}</div>
-                <div class="goal-metric"><div><div class="goal-metric-label">📊 Macro Targets</div><div class="goal-subtext">${p}/${g.P}P • ${c}/${g.C}C • ${f}/${g.F}F</div></div><div class="goal-metric-value ${macroScore >= 85 ? 'success' : macroScore >= 70 ? 'warning' : 'error'}">${macroScore}%</div></div>
+                <div class="goal-metric"><div style="flex:1"><div class="goal-metric-label">🔥 Calorie Balance</div><div class="goal-subtext">${consumed} in • ${burned} out • Target: ${targetBalance}</div></div><div class="goal-metric-value ${balanceStatus}">${balanceText}</div></div>
+                <div class="goal-metric"><div><div class="goal-metric-label">📊 Macro Targets</div><div class="goal-subtext">${p}/${g.P}P • ${c}/${g.C}C • ${f}/${g.F}F</div></div><div class="goal-metric-value ${macroScore >= 85 ? 'success' : 'warning'}">${macroScore}%</div></div>
                 <div class="goal-metric"><div><div class="goal-metric-label">😴 Recovery</div><div class="goal-subtext">Readiness ${hasOuraData ? dailyData.score : '-'} • Sleep ${hasOuraData && dailyData.sleepScore !== '-' ? dailyData.sleepScore : '-'}</div></div><div class="goal-metric-value ${recoveryStatus}">${recoveryText}</div></div>
             </div>
         </div>`;
     }
 
     const nutritionHTML = `<div class="nutrition-card ${isNutCollapsed ? 'collapsed' : ''}" onclick="toggleNutrition()">
-        <div class="nutrition-header">
-            <div class="label" style="margin-bottom:0">DAILY NUTRITION</div>
-            <span class="chevron">▼</span>
-        </div>
+        <div class="nutrition-header"><div class="label" style="margin-bottom:0">DAILY NUTRITION</div><span class="chevron">▼</span></div>
         <div class="nutrition-body">
             <div class="label">🧬 DAILY ESSENTIALS</div><div style="display:flex; gap:10px; margin-bottom:15px"><div class="value" style="flex:1; justify-content:center" onclick="event.stopPropagation(); openEssential('Sea Moss')">Sea Moss</div><div class="value" style="flex:1; justify-content:center" onclick="event.stopPropagation(); openEssential('${user==='S'?'Hibiscus Tea':'Kombucha'}')">${user==='S'?'Hibiscus':'Kombucha'}</div></div>
             <div class="label">🍳 BREAKFAST</div><div class="value" onclick="event.stopPropagation(); openDBRecipe('b', ${Math.abs(id)%mDB.b.length})"><span>${b[0]}</span><span class="macro-pill">${Math.round(b[4]*sc)}P ${Math.round(b[5]*sc)}C ${Math.round(b[7]*sc)}F ${Math.round(b[6]*sc)}k</span></div>
@@ -582,45 +568,7 @@ function showDay(dObj, idx) {
             <div class="label">🍽️ DINNER</div><div class="value" onclick="event.stopPropagation(); openDBRecipe('d', ${Math.abs(id)%mDB.d.length})"><span>${dn[0]}</span><span class="macro-pill">${Math.round(dn[4]*sc)}P ${Math.round(dn[5]*sc)}C ${Math.round(dn[7]*sc)}F ${Math.round(dn[6]*sc)}k</span></div>
             <div class="label">🥜 SNACKS</div>${snackHTML}
             <div class="label">🍹 JUICE</div><div class="juice-name" onclick="event.stopPropagation(); openDBRecipe('j', ${Math.abs(id)%mDB.j.length})">${jn[0]}</div>
-            <div class="macro-dashboard">
-                <div class="macro-row"><div class="macro-label"><span>PROTEIN</span><span>${p} / ${g.P}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((p/g.P)*100,100)}%; background:var(--g-pro)"></div></div></div>
-                <div class="macro-row"><div class="macro-label"><span style="color:var(--green)">FIBER</span><span>${f} / ${g.F}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((f/g.F)*100,100)}%; background:var(--g-fib)"></div></div></div>
-                <div class="macro-row"><div class="macro-label"><span>CARBS</span><span>${c} / ${g.C}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((c/g.C)*100,100)}%; background:var(--g-carb)"></div></div></div>
-                <div class="macro-row"><div class="macro-label"><span>CALORIES</span><span>${k} / ${g.K}</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((k/g.K)*100,100)}%; background:var(--g-cal)"></div></div></div>
-            </div>
-        </div>
-    </div>`;
-
-    // WORKOUT CARD LOGIC
-    const activeCal = dailyData.cal || 0;
-    const totalMins = dailyData.high + dailyData.med + dailyData.low;
-    const pHigh = totalMins > 0 ? (dailyData.high/totalMins)*100 : 0;
-    const pMed = totalMins > 0 ? (dailyData.med/totalMins)*100 : 0;
-    const pLow = totalMins > 0 ? (dailyData.low/totalMins)*100 : 0;
-
-    const workoutHTML = `
-    <div class="workout-card ${isWorkoutCollapsed ? 'collapsed' : ''}" onclick="toggleWorkout()">
-        <div class="workout-header">
-            <div>
-                <div style="font-size:0.6rem;color:var(--red);font-weight:900;text-transform:uppercase;letter-spacing:1px">TRAINING</div>
-                <div style="font-size:1.4rem;font-weight:900;color:#fff">${w}</div>
-            </div>
-            <div class="workout-score">
-                ${activeCal}<span style="font-size:0.8rem;color:var(--red)">CAL</span> <span class="chevron">▼</span>
-            </div>
-        </div>
-        
-        <div class="workout-body">
-            <div class="intervention-card" style="border-left:3px solid var(--blue)"><div style="color:var(--blue); font-weight:900; margin-bottom:5px">PRE-WORKOUT</div><strong>${protocol[0].h}</strong><br>${protocol[0].d}</div>
-            <div class="intervention-card" style="border-left:3px solid #fff"><div style="color:#fff; font-weight:900; margin-bottom:5px">TRAINING</div><strong>${protocol[1].h}</strong><br>${protocol[1].d}</div>
-            <div class="intervention-card" style="border-left:3px solid var(--purple)"><div style="color:var(--purple); font-weight:900; margin-bottom:5px">RECOVERY</div><strong>${protocol[2].h}</strong><br>${protocol[2].d}</div>
-            
-            <div class="bio-section" style="margin-top:15px; margin-bottom:0;">
-                <div class="label" style="color:#fff;margin-bottom:10px">HEART RATE ZONES</div>
-                 <div class="hr-zone-row"><div class="hr-zone-label"><span style="color:#FF5252">High (Z4-Z5)</span><span>${dailyData.high}m</span></div><div class="hr-zone-bar-bg"><div class="hr-zone-bar" style="width:${pHigh}%; background:linear-gradient(90deg, #FF5252, #D50000)"></div></div></div>
-                <div class="hr-zone-row"><div class="hr-zone-label"><span style="color:var(--gold)">Med (Z3)</span><span>${dailyData.med}m</span></div><div class="hr-zone-bar-bg"><div class="hr-zone-bar" style="width:${pMed}%; background:linear-gradient(90deg, #FFC107, #FF9800)"></div></div></div>
-                <div class="hr-zone-row"><div class="hr-zone-label"><span style="color:var(--green)">Low (Z1-Z2)</span><span>${dailyData.low}m</span></div><div class="hr-zone-bar-bg"><div class="hr-zone-bar" style="width:${pLow}%; background:linear-gradient(90deg, #4CAF50, #2E7D32)"></div></div></div>
-            </div>
+            <div class="macro-dashboard"><div class="macro-row"><div class="macro-label"><span>PROTEIN</span><span>${p} / ${g.P}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((p/g.P)*100,100)}%; background:var(--g-pro)"></div></div></div><div class="macro-row"><div class="macro-label"><span style="color:var(--green)">FIBER</span><span>${f} / ${g.F}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((f/g.F)*100,100)}%; background:var(--g-fib)"></div></div></div><div class="macro-row"><div class="macro-label"><span>CARBS</span><span>${c} / ${g.C}g</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((c/g.C)*100,100)}%; background:var(--g-carb)"></div></div></div><div class="macro-row"><div class="macro-label"><span>CALORIES</span><span>${k} / ${g.K}</span></div><div class="macro-bg"><div class="macro-fill" style="width:${Math.min((k/g.K)*100,100)}%; background:var(--g-cal)"></div></div></div></div>
         </div>
     </div>`;
 
@@ -910,6 +858,7 @@ async function fetchOuraData() {
         }
     } catch(e) { 
         if(user === currentUser) bar.innerText = "💍 Sync Failed"; 
+        render(); // Always render UI
     }
 }
 
