@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v415.0 User Separation</title>
+    <title>The Centurion | v420.0 Cache Buster</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --red:#FF5252; --text:#fff;
@@ -65,7 +65,7 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v415.0 User Separation</span>
+        <span class="version-tag">v420.0 Cache Buster</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -99,7 +99,7 @@
 
 <script>
 // ==========================================
-// CENTURION v415.0 CORE
+// CENTURION v420.0 CORE
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
@@ -175,29 +175,6 @@ function fmtTime(sec) {
     return `${h}h ${m}m`; 
 }
 
-function getMaxHR(userID) {
-    const age = parseFloat(getChronAge(userID));
-    return Math.round(220 - age);
-}
-
-function mapWorkoutType(activity) {
-    const map = {
-        'high_intensity_interval_training': 'HIIT',
-        'cycling': 'Cycling',
-        'running': 'Running',
-        'walking': 'Walking',
-        'strength_training': 'Strength',
-        'yoga': 'Yoga',
-        'swimming': 'Swimming',
-        'boxing': 'Boxing',
-        'crossfit': 'CrossFit',
-        'rowing': 'Rowing',
-        'soccer': 'Soccer',
-        'basketball': 'Basketball'
-    };
-    return map[activity] || 'Workout';
-}
-
 // THE ALGORITHM (Fixed for Safety)
 function calculateLongevity(userData) {
     let base = 85.0; 
@@ -229,7 +206,7 @@ function switchU(uID) {
     // DATA PURGE
     window.ouraHistory = [];
     window.ouraWorkouts = [];
-    window.weeklyStats = { high: 0, medium: 0, low: 0 }; // RESET STATS
+    window.weeklyStats = { high: 0, medium: 0, low: 0 }; 
 
     render(); 
     fetchOuraData(); 
@@ -570,28 +547,28 @@ function openEssential(n){
 async function fetchOuraData() {
     const currentUser = user; const token = TOKENS[currentUser]; const bar = document.getElementById('ouraBar'); 
     
-    // FETCH 1: Readiness (Summary)
+    // FETCH 1: Readiness
     const startDate = getDateKey(new Date(Date.now() - 2592000000)); 
     const endDate = getDateKey(new Date());
     
     try {
-        const rRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
+        const rRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${startDate}&end_date=${endDate}&_t=${Date.now()}`), {headers:{'Authorization':`Bearer ${token}`}});
         const rData = await rRes.json();
         
         // FETCH 2: Daily Sleep (Summary)
-        const dsRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
+        const dsRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${startDate}&end_date=${endDate}&_t=${Date.now()}`), {headers:{'Authorization':`Bearer ${token}`}});
         const dsData = await dsRes.json();
 
         // FETCH 3: SLEEP EPISODES (Raw Data)
-        const sRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
+        const sRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${startDate}&end_date=${endDate}&_t=${Date.now()}`), {headers:{'Authorization':`Bearer ${token}`}});
         const sData = await sRes.json();
         
-        // FETCH 4: Activity (Calories)
-        const aRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
+        // FETCH 4: Activity (Calories & Zones)
+        const aRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${startDate}&end_date=${endDate}&_t=${Date.now()}`), {headers:{'Authorization':`Bearer ${token}`}});
         const aData = await aRes.json();
 
         // FETCH 5: WORKOUTS (New!)
-        const wRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/workout?start_date=${startDate}&end_date=${endDate}`), {headers:{'Authorization':`Bearer ${token}`}});
+        const wRes = await fetch("https://corsproxy.io/?" + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/workout?start_date=${startDate}&end_date=${endDate}&_t=${Date.now()}`), {headers:{'Authorization':`Bearer ${token}`}});
         const wData = await wRes.json();
 
         if(user !== currentUser) return;
@@ -614,8 +591,9 @@ async function fetchOuraData() {
 
         if(rData.data && rData.data.length > 0) {
             
-            // Calculate Weekly Totals for AI Protocol (USER SPECIFIC)
+            // Calculate Weekly Totals for AI Protocol (USER SPECIFIC) - RESET FIRST
             window.weeklyStats = { high: 0, medium: 0, low: 0 };
+            
             const last7Activity = aData.data ? aData.data.slice(-7) : [];
             last7Activity.forEach(d => {
                 window.weeklyStats.high += Math.round((d.high_activity_time || 0) / 60);
@@ -659,7 +637,7 @@ async function fetchOuraData() {
                 };
             }).reverse().slice(0, 7);
 
-            // SMART SELECTION: Use most recent valid data for Top Dashboard
+            // SMART SELECTION
             let lastR = window.ouraHistory.find(d => d.sleepScore !== '-' && d.sleepScore > 0);
             if(!lastR) lastR = window.ouraHistory[0];
 
