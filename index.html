@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v850.0 Fixed AI</title>
+    <title>The Centurion | v880.0 Unified Stack</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --red:#FF5252; --text:#fff;
@@ -68,17 +68,22 @@
         .stat-sub { font-size: 0.5rem; color: #666; margin-top: 2px; }
         
         /* CARD STYLES */
-        .goal-card, .nutrition-card, .ai-card { border-radius: 20px; padding: 20px; margin-bottom: 15px; position: relative; transition: all 0.3s; cursor: pointer; }
+        .goal-card, .nutrition-card, .ai-card, .workout-card { border-radius: 20px; padding: 20px; margin-bottom: 15px; position: relative; transition: all 0.3s; cursor: pointer; }
+        
         .goal-card { background: linear-gradient(135deg, rgba(102,126,234,0.1), rgba(212,175,55,0.05)); border: 1px solid rgba(102,126,234,0.3); }
         .nutrition-card { background: var(--card); border: 1px solid rgba(255,255,255,0.03); }
         .nutrition-card::before { content:""; position:absolute; left:0; top:20px; bottom:20px; width:3px; background:var(--green); border-radius:0 4px 4px 0; }
         .ai-card { background: linear-gradient(135deg, rgba(0,176,255,0.1), rgba(124,77,255,0.05)); border: 1px solid rgba(0,176,255,0.3); }
-        .goal-header, .nutrition-header, .ai-header { display: flex; justify-content: space-between; align-items: center; }
+        .workout-card { background: linear-gradient(135deg, rgba(255,82,82,0.1), rgba(212,175,55,0.05)); border: 1px solid rgba(255,82,82,0.3); }
+        
+        .goal-header, .nutrition-header, .ai-header, .workout-header { display: flex; justify-content: space-between; align-items: center; }
         .goal-score { font-size: 2.5rem; font-weight: 900; display: flex; align-items: center; gap: 10px; }
         .goal-score.excellent { color: var(--green); }
         .goal-score.good { color: var(--gold); }
         .goal-score.poor { color: var(--red); }
         .ai-score { font-size: 1.5rem; font-weight: 900; color: #fff; display: flex; align-items: center; gap: 10px; }
+        .workout-score { font-size: 1.8rem; font-weight: 900; color: #fff; display: flex; align-items: center; gap: 5px; }
+
         .goal-metric { background: rgba(0,0,0,0.3); padding: 12px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
         .goal-metric-label { font-size: 0.65rem; color: #888; font-weight: 700; text-transform: uppercase; }
         .goal-metric-value { font-size: 1.1rem; font-weight: 900; }
@@ -88,17 +93,17 @@
         .goal-subtext { font-size: 0.55rem; color: #666; margin-top: 2px; }
         
         /* Collapsible Logic */
-        .goal-body, .nutrition-body, .ai-body { margin-top: 20px; animation: slideDown 0.3s ease-out; }
-        .goal-card.collapsed .goal-body, .nutrition-card.collapsed .nutrition-body, .ai-card.collapsed .ai-body { display: none; }
+        .goal-body, .nutrition-body, .ai-body, .workout-body { margin-top: 20px; animation: slideDown 0.3s ease-out; }
+        .goal-card.collapsed .goal-body, .nutrition-card.collapsed .nutrition-body, .ai-card.collapsed .ai-body, .workout-card.collapsed .workout-body { display: none; }
         .chevron { transition: transform 0.3s; font-size: 1rem; color: #666; }
-        .goal-card.collapsed .chevron, .nutrition-card.collapsed .chevron, .ai-card.collapsed .chevron { transform: rotate(-90deg); }
+        .goal-card.collapsed .chevron, .nutrition-card.collapsed .chevron, .ai-card.collapsed .chevron, .workout-card.collapsed .chevron { transform: rotate(-90deg); }
         @keyframes slideDown { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v850.0 Fixed AI</span>
+        <span class="version-tag">v880.0 Unified Stack</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -129,7 +134,7 @@
 
 <script>
 // ==========================================
-// CENTURION v850.0 CORE
+// CENTURION v880.0 CORE
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
@@ -139,6 +144,7 @@ let currentSlot = 0;
 let isGoalCollapsed = false; 
 let isNutCollapsed = false; 
 let isAICollapsed = true; 
+let isWorkoutCollapsed = true; // Workout defaults to closed
 let snackLog = JSON.parse(localStorage.getItem('centurion_snack_log')) || {};
 let photoCache = JSON.parse(localStorage.getItem('centurion_photo_cache')) || {};
 window.ouraHistory = [];
@@ -252,7 +258,7 @@ function mapWorkoutType(t) {
     return map[t] || t.charAt(0).toUpperCase() + t.slice(1);
 }
 
-// RESTORED MISSING HELPER FUNCTIONS
+// RESTORED HELPERS
 function bioBarWithPrediction(label, val, predicted, goal, unit, lowerBetter, weekNum) {
     const currentPct = Math.min(lowerBetter ? (goal / val) * 100 : (val / goal) * 100, 100);
     const predictedPct = Math.min(lowerBetter ? (goal / predicted) * 100 : (predicted / goal) * 100, 100);
@@ -351,6 +357,7 @@ function resetD() { offset = 0; selDate = getCaDate(); render(); }
 function toggleGoal() { isGoalCollapsed = !isGoalCollapsed; render(); }
 function toggleNutrition() { isNutCollapsed = !isNutCollapsed; render(); }
 function toggleAICollapse() { isAICollapsed = !isAICollapsed; render(); }
+function toggleWorkout() { isWorkoutCollapsed = !isWorkoutCollapsed; render(); }
 function toggleAI() { isAICollapsed = false; render(); document.querySelector('.ai-card').scrollIntoView({behavior:'smooth'}); }
 
 function applyAIP(mealStr, type) {
@@ -584,20 +591,40 @@ function showDay(dObj, idx) {
         </div>
     </div>`;
 
-    document.getElementById('dayContent').innerHTML = goalHTML + aiCardHTML + `
-        <div class="card" onclick="openWorkoutFlow('${w}', '${dk}')" style="cursor:pointer; border-bottom:3px solid var(--blue)">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px">
-                <div style="font-weight:900; color:#fff; font-size:1rem">${w}${workoutBadge}</div>
+    // WORKOUT CARD LOGIC
+    const activeCal = dailyData.cal || 0;
+    const totalMins = dailyData.high + dailyData.med + dailyData.low;
+    const pHigh = totalMins > 0 ? (dailyData.high/totalMins)*100 : 0;
+    const pMed = totalMins > 0 ? (dailyData.med/totalMins)*100 : 0;
+    const pLow = totalMins > 0 ? (dailyData.low/totalMins)*100 : 0;
+
+    const workoutHTML = `
+    <div class="workout-card ${isWorkoutCollapsed ? 'collapsed' : ''}" onclick="toggleWorkout()">
+        <div class="workout-header">
+            <div>
+                <div style="font-size:0.6rem;color:var(--red);font-weight:900;text-transform:uppercase;letter-spacing:1px">TRAINING</div>
+                <div style="font-size:1.4rem;font-weight:900;color:#fff">${w}</div>
             </div>
-            <div style="display:flex; justify-content:space-between; align-items:center; text-align:center">
-                <div><div class="label">WARM</div>${pre}</div>
-                <div style="color:var(--blue); font-size:1.2rem">➜</div>
-                <div style="font-weight:700; color:var(--gold)">TRAIN</div>
-                <div style="color:var(--blue); font-size:1.2rem">➜</div>
-                <div><div class="label">RECOVER</div>${post}</div>
+            <div class="workout-score">
+                ${activeCal}<span style="font-size:0.8rem;color:var(--red)">CAL</span> <span class="chevron">▼</span>
             </div>
         </div>
-        ${nutritionHTML}`;
+        
+        <div class="workout-body">
+            <div class="intervention-card" style="border-left:3px solid var(--blue)"><div style="color:var(--blue); font-weight:900; margin-bottom:5px">PRE-WORKOUT</div><strong>${protocol[0].h}</strong><br>${protocol[0].d}</div>
+            <div class="intervention-card" style="border-left:3px solid #fff"><div style="color:#fff; font-weight:900; margin-bottom:5px">TRAINING</div><strong>${protocol[1].h}</strong><br>${protocol[1].d}</div>
+            <div class="intervention-card" style="border-left:3px solid var(--purple)"><div style="color:var(--purple); font-weight:900; margin-bottom:5px">RECOVERY</div><strong>${protocol[2].h}</strong><br>${protocol[2].d}</div>
+            
+            <div class="bio-section" style="margin-top:15px; margin-bottom:0;">
+                <div class="label" style="color:#fff;margin-bottom:10px">HEART RATE ZONES</div>
+                 <div class="hr-zone-row"><div class="hr-zone-label"><span style="color:#FF5252">High (Z4-Z5)</span><span>${dailyData.high}m</span></div><div class="hr-zone-bar-bg"><div class="hr-zone-bar" style="width:${pHigh}%; background:linear-gradient(90deg, #FF5252, #D50000)"></div></div></div>
+                <div class="hr-zone-row"><div class="hr-zone-label"><span style="color:var(--gold)">Med (Z3)</span><span>${dailyData.med}m</span></div><div class="hr-zone-bar-bg"><div class="hr-zone-bar" style="width:${pMed}%; background:linear-gradient(90deg, #FFC107, #FF9800)"></div></div></div>
+                <div class="hr-zone-row"><div class="hr-zone-label"><span style="color:var(--green)">Low (Z1-Z2)</span><span>${dailyData.low}m</span></div><div class="hr-zone-bar-bg"><div class="hr-zone-bar" style="width:${pLow}%; background:linear-gradient(90deg, #4CAF50, #2E7D32)"></div></div></div>
+            </div>
+        </div>
+    </div>`;
+
+    document.getElementById('dayContent').innerHTML = goalHTML + aiCardHTML + workoutHTML + nutritionHTML;
 }
 
 // ... (KEEP ALL EXISTING HELPER FUNCTIONS) ...
@@ -649,36 +676,6 @@ function openDBRecipe(type, idx) {
                 </div>`;
         }
     };
-}
-
-function openWorkoutFlow(w, dateKey) {
-    const a = pDB[w];
-    const dk = getDateKey(selDate);
-    let dailyData = window.ouraHistory.find(d => d.date === dk);
-    if(!dailyData) dailyData = {high:0, med:0, low:0, cal:0};
-
-    document.getElementById('mTitle').innerText = w;
-    document.getElementById('mSub').innerText = "OPTIMIZED FLOW & ZONES";
-    
-    const total = dailyData.high + dailyData.med + dailyData.low;
-    const pHigh = total > 0 ? (dailyData.high/total)*100 : 0;
-    const pMed = total > 0 ? (dailyData.med/total)*100 : 0;
-    const pLow = total > 0 ? (dailyData.low/total)*100 : 0;
-
-    document.getElementById('mBody').innerHTML = `
-        <div class="intervention-card" style="border-left:3px solid var(--blue)"><div style="color:var(--blue); font-weight:900; margin-bottom:5px">PRE-WORKOUT</div><strong>${a[0].h}</strong><br>${a[0].d}</div>
-        <div class="intervention-card" style="border-left:3px solid #fff"><div style="color:#fff; font-weight:900; margin-bottom:5px">TRAINING</div><strong>${a[1].h}</strong><br>${a[1].d}</div>
-        <div class="intervention-card" style="border-left:3px solid var(--purple)"><div style="color:var(--purple); font-weight:900; margin-bottom:5px">RECOVERY</div><strong>${a[2].h}</strong><br>${a[2].d}</div>
-        
-        <div class="bio-section" style="margin-bottom:15px;">
-            <div class="label" style="color:#fff;margin-bottom:10px">TOTAL DAILY ZONES (MINS)</div>
-            <div class="hr-zone-row"><div class="hr-zone-label"><span style="color:#FF5252">High Intensity (Z4-Z5)</span><span>${dailyData.high} min</span></div><div class="hr-zone-bar-bg"><div class="hr-zone-bar" style="width:${pHigh}%; background:linear-gradient(90deg, #FF5252, #D50000)"></div></div></div>
-            <div class="hr-zone-row"><div class="hr-zone-label"><span style="color:var(--gold)">Medium Intensity (Z3)</span><span>${dailyData.med} min</span></div><div class="hr-zone-bar-bg"><div class="hr-zone-bar" style="width:${pMed}%; background:linear-gradient(90deg, #FFC107, #FF9800)"></div></div></div>
-            <div class="hr-zone-row"><div class="hr-zone-label"><span style="color:var(--green)">Low Intensity (Z1-Z2)</span><span>${dailyData.low} min</span></div><div class="hr-zone-bar-bg"><div class="hr-zone-bar" style="width:${pLow}%; background:linear-gradient(90deg, #4CAF50, #2E7D32)"></div></div></div>
-            <div class="stats-grid" style="margin-top:15px"><div class="stat-box"><div class="stat-value" style="color:#FFAB40">${dailyData.cal}</div><div class="stat-label">Active Cal</div></div><div class="stat-box"><div class="stat-value">${total}</div><div class="stat-label">Total Mins</div></div></div>
-        </div>`;
-    document.getElementById('bioContentArea').innerHTML = '';
-    document.getElementById('masterModal').style.display = 'block';
 }
 
 function openBio() {
@@ -774,37 +771,55 @@ function hardReset() {
 
 async function fetchOuraData() {
     const currentUser = user; const token = TOKENS[currentUser]; const bar = document.getElementById('ouraBar'); 
-    
-    // Use Timestamp to bypass cache
-    const ts = Date.now();
     const startDate = getDateKey(new Date(Date.now() - 2592000000)); 
     const endDate = getDateKey(new Date());
     
+    // Safety check for token
+    if (!token) {
+        bar.innerHTML = '💍 API Token Missing';
+        render(); return;
+    }
+
     try {
-        bar.innerHTML = '💍 Fetching readiness...';
-        const rRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${startDate}&end_date=${endDate}&_t=${ts}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
-        const rData = await rRes.json();
+        bar.innerHTML = '💍 Syncing Oura...';
         
-        bar.innerHTML = '💍 Fetching sleep scores...';
-        const dsRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${startDate}&end_date=${endDate}&_t=${ts}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
-        const dsData = await dsRes.json();
+        // 1. READINESS
+        let rData = {};
+        try {
+            const rRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${startDate}&end_date=${endDate}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
+            rData = await rRes.json();
+        } catch(e) { console.log('Readiness fail'); }
 
-        bar.innerHTML = '💍 Fetching sleep details...';
-        const sRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${startDate}&end_date=${endDate}&_t=${ts}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
-        const sData = await sRes.json();
+        // 2. DAILY SLEEP
+        let dsData = {};
+        try {
+            const dsRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${startDate}&end_date=${endDate}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
+            dsData = await dsRes.json();
+        } catch(e) { console.log('DS fail'); }
         
-        bar.innerHTML = '💍 Fetching activity...';
-        const aRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${startDate}&end_date=${endDate}&_t=${ts}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
-        const aData = await aRes.json();
+        // 3. ACTIVITY
+        let aData = {};
+        try {
+             const aRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${startDate}&end_date=${endDate}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
+             aData = await aRes.json();
+        } catch(e) { console.log('Activity fail'); }
 
-        // FETCH 5: WORKOUTS (New!)
-        bar.innerHTML = '💍 Fetching workouts...';
-        const wRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/workout?start_date=${startDate}&end_date=${endDate}&_t=${ts}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
-        const wData = await wRes.json();
+        // 4. SLEEP DETAILS
+        let sData = {};
+        try {
+             const sRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${startDate}&end_date=${endDate}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
+             sData = await sRes.json();
+        } catch(e) { console.log('Sleep fail'); }
+
+        // 5. WORKOUTS (Isolated)
+        let wData = {};
+        try {
+             const wRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/workout?start_date=${startDate}&end_date=${endDate}`)}`, {headers:{'Authorization':`Bearer ${token}`}});
+             wData = await wRes.json();
+        } catch(e) { console.log('Workout fail'); }
 
         if(user !== currentUser) return;
 
-        // Process Workout Data First
         window.ouraWorkouts = [];
         if(wData.data && wData.data.length > 0) {
             window.ouraWorkouts = wData.data.map(w => {
@@ -892,11 +907,9 @@ async function fetchOuraData() {
             render(); // Force Re-Render for Goal Card
         } else {
             bar.innerText = `💍 ${currentUser==='J'?'JERMAINE':'SOPHIA'}: No Data`;
-            render();
         }
     } catch(e) { 
         if(user === currentUser) bar.innerText = "💍 Sync Failed"; 
-        render(); // Force render anyway so cards still work
     }
 }
 
