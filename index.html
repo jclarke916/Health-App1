@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v810.0 2025 Protocol</title>
+    <title>The Centurion | v820.0 Visible AI</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#050505; --card:#141414; --gold:#D4AF37; --green:#00E676; --blue:#00B0FF; --purple:#D500F9; --red:#FF5252; --text:#fff;
@@ -98,7 +98,7 @@
 <body>
 <div class="container">
     <header><h1>THE CENTURION</h1>
-        <span class="version-tag">v810.0 2025 Protocol</span>
+        <span class="version-tag">v820.0 Visible AI</span>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -129,7 +129,7 @@
 
 <script>
 // ==========================================
-// CENTURION v810.0 CORE
+// CENTURION v820.0 CORE
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
@@ -166,7 +166,7 @@ const defaultJ = {
         wallsit: {val:60, goal:180, name:"Wall Sit", unit:"sec"}
     },
     protocol: {
-        startDate: '2025-12-29', // UPDATED DATE
+        startDate: '2025-12-29', 
         month3: {vo2:48, vf:9, hba1c:5.3, apob:85, test:700, lifeExp:87},
         month6: {vo2:50, vf:8, hba1c:5.2, apob:75, test:750, lifeExp:90},
         month12: {vo2:55, vf:7, hba1c:5.0, apob:60, test:850, lifeExp:95}
@@ -190,7 +190,7 @@ const defaultS = {
         wallsit: {val:90, goal:150, name:"Wall Sit", unit:"sec"}
     },
     protocol: {
-        startDate: '2025-12-29', // UPDATED DATE
+        startDate: '2025-12-29',
         month3: {vo2:38, vf:8, hba1c:5.4, crp:1.2, muscle:51, wallsit:110, lifeExp:74},
         month6: {vo2:42, vf:7, hba1c:5.2, crp:0.9, muscle:52, wallsit:135, lifeExp:84},
         month12: {vo2:45, vf:6, hba1c:5.2, crp:0.8, muscle:56, wallsit:150, vitd:60, tsh:1.5, lifeExp:94}
@@ -201,7 +201,6 @@ if (!uH) {
     uH = { 'J': defaultJ, 'S': defaultS };
     localStorage.setItem('centurion_bio_v7', JSON.stringify(uH));
 } else {
-    // FORCE UPDATE PROTOCOLS
     uH['J'].protocol = defaultJ.protocol; 
     uH['J'].labs = defaultJ.labs; 
     uH['S'].protocol = defaultS.protocol;
@@ -268,7 +267,6 @@ function calculateLongevity(userData) {
 }
 
 function predictBiomarkers(userData, uID) {
-    // SAFEGUARDS
     if(!window.ouraHistory || window.ouraHistory.length < 7) return null;
     if(!userData.protocol || !userData.protocol.startDate) return null;
     
@@ -305,7 +303,6 @@ function predictBiomarkers(userData, uID) {
         baseline = userData.protocol.month6;
     }
     
-    // Safely calculate
     if (baseline && target) {
         predictions.predictedChanges.vo2 = baseline.vo2 + ((target.vo2 - baseline.vo2) * weekProgress * progressMultiplier);
         predictions.predictedChanges.vf = baseline.vf - ((baseline.vf - target.vf) * weekProgress * progressMultiplier);
@@ -360,11 +357,11 @@ function getAICardHTML() {
         const predictions = predictBiomarkers(u, user);
         
         let aiBody = "";
-        let wHigh = window.weeklyStats?.high || 0;
-        let wMed = window.weeklyStats?.medium || 0;
+        let wHigh = window.weeklyStats ? window.weeklyStats.high || 0 : 0;
+        let wMed = window.weeklyStats ? window.weeklyStats.medium || 0 : 0;
 
         if(!predictions) {
-            aiBody = '<div style="padding:15px;text-align:center;color:#666;font-size:0.7rem">Syncing history for prediction...</div>';
+            aiBody = '<div style="padding:15px;text-align:center;color:#666;font-size:0.7rem">Waiting for Oura Data...<br>(Card will update automatically)</div>';
         } else if(predictions && predictions.compliance > 0) {
             const milestone = predictions.nextMilestone.replace('month', 'Month ');
             const weeksToGo = predictions.nextMilestone === 'month3' ? (12 - predictions.currentWeek) : (24 - predictions.currentWeek);
@@ -392,7 +389,7 @@ function getAICardHTML() {
         </div>`;
     } catch(e) {
         console.error("AI Render Error", e);
-        return ""; // Fail silently
+        return `<div class="ai-card" style="border:1px solid var(--red)"><div style="padding:15px;color:var(--red);font-size:0.7rem">AI ERROR: ${e.message}</div></div>`; 
     }
 }
 
@@ -528,7 +525,7 @@ function showDay(dObj, idx) {
         const recoveryText = !hasOuraData ? 'Syncing...' : recoveryScore + '/100';
         
         const macroScore = Math.min(100, Math.round(((p/g.P) + (c/g.C) + (f/g.F) + (k/g.K)) / 4 * 100));
-        const dailyScore = Math.round((macroScore + (totalZoneTime>0?protocolScore:50) + (Math.abs(balanceDiff)<200?100:70) + recoveryScore) / 4);
+        const dailyScore = Math.round((macroScore + (totalZoneTime>0?protocolScore:50) + (Math.abs(balanceDiff)<100?100:70) + recoveryScore) / 4);
         const scoreClass = dailyScore >= 85 ? 'excellent' : dailyScore >= 70 ? 'good' : 'poor';
         
         goalHTML = `<div class="goal-card ${isGoalCollapsed ? 'collapsed' : ''}" onclick="toggleGoal()">
