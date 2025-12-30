@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v1090.8 Robust Fetch</title>
+    <title>The Centurion | v1090.9 Force-Repull</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -79,7 +79,7 @@
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
         </div>
     </header>
-    <div id="ouraBar" class="status-bar" onclick="fetchOuraData()">💍 Syncing...</div>
+    <div id="ouraBar" class="status-bar" onclick="fetchOuraData()">💍 Tap to Repull Data</div>
     <div id="dateDisplay" class="status-bar" style="margin-bottom: 20px; opacity: 0.7;">...</div>
 
     <div class="controls">
@@ -91,18 +91,17 @@
     <div id="dayTabs" class="tabs"></div>
     <div id="dayContent"></div>
     
-    <div style="text-align:center; color:#333; font-size:10px; margin-top:30px; opacity:0.4; cursor:pointer;" onclick="hardReset()">v1090.8 Robust Protocol</div>
+    <div style="text-align:center; color:#333; font-size:10px; margin-top:30px; opacity:0.4;">v1090.9 Force Sync</div>
 </div>
 
 <script>
 // ==========================================
-// CENTURION v1090.8 - ROBUST MULTI-FETCH
+// CENTURION v1090.9 - FORCE REPULL LOGIC
 // ==========================================
 
 let activeUser = localStorage.getItem('centurion_active_user') || 'J';
 let offset = 0;
 let selDate = getCaDate(); 
-let ouraHistory = []; // Reset this on user switch
 
 const TOKENS = { 
     'J': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 
@@ -168,7 +167,7 @@ function showDay(dObj, idx) {
 
     const workoutHTML = `
     <div class="premium-card ${isWorkoutCollapsed?'collapsed':''}" onclick="isWorkoutCollapsed=!isWorkoutCollapsed;render()">
-        <div class="card-header"><div><div class="card-title accent-red">TRAINING</div><div class="card-subtitle">ZONE TARGETS</div></div><div class="card-val-lg">${rawOura.cal} <span style="font-size:0.9rem; opacity:0.7">CAL</span> <span class="chevron">▼</span></div></div>
+        <div class="card-header"><div><div class="card-title accent-red">TRAINING</div><div class="card-subtitle">HR ZONE TARGETS</div></div><div class="card-val-lg">${rawOura.cal} <span style="font-size:0.9rem; opacity:0.7">CAL</span> <span class="chevron">▼</span></div></div>
         <div class="card-body">
             ${bioBar("High Intensity (Z4-Z5)", rawOura.high, dayData.zT.h, "m")}
             ${bioBar("Med/Zone 2 (Z3)", rawOura.med, dayData.zT.m, "m")}
@@ -186,6 +185,7 @@ function showDay(dObj, idx) {
         <div class="card-header"><div><div class="card-title accent-purple">LONGEVITY DASHBOARD</div><div class="card-subtitle">Critical Indicators</div></div><div class="card-val-lg">${u.now.bf}% <span style="font-size:0.9rem; opacity:0.7">BF</span> <span class="chevron">▼</span></div></div>
         <div class="card-body">
             ${bioBar("Visceral Fat", u.now.vf, u.goal.vf, "", true)}
+            ${u.labs.ana ? bioBar("ANA Titer", u.labs.ana.val, u.labs.ana.goal, "", true) : ""}
             ${bioBar("VO2 Max", u.tests.vo2.val, u.tests.vo2.goal, " ml/kg")}
         </div>
     </div>`;
@@ -193,27 +193,36 @@ function showDay(dObj, idx) {
     document.getElementById('dayContent').innerHTML = protocolHTML + workoutHTML + nutHTML + bioHTML;
 }
 
+// THE v510 FORCE-SYNC SWITCH
 function switchU(uID) { 
-    activeUser = uID; // Isolated state
+    // 1. Destroy Current Cache Browser-Level
+    localStorage.removeItem(`centurion_oura_cache_${uID}`);
+    
+    // 2. Set Global state
+    activeUser = uID; 
     localStorage.setItem('centurion_active_user', uID); 
+    
+    // 3. UI Reset
     document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
     document.getElementById('bj').classList.toggle('active', uID === 'J');
     document.getElementById('bs').classList.toggle('active', uID === 'S');
     
-    ouraHistory = []; // Wipe previous data immediately
-    document.getElementById('ouraBar').innerHTML = "💍 Fetching " + (uID === 'J' ? 'Jermaine' : 'Sophia') + "...";
-    
+    // 4. Wipe history object completely to force blank UI state
     render(); 
+    
+    // 5. Force the Handshake
     fetchOuraData(); 
 }
 
 async function fetchOuraData() {
-    const fetchUser = activeUser; // Capture current user for callback validation
+    const fetchUser = activeUser; 
     const bar = document.getElementById('ouraBar'); 
     const token = TOKENS[fetchUser]; 
     if (!token) return;
 
     try {
+        bar.innerHTML = '💍 Force Handshake: ' + (fetchUser==='J'?'Jermaine':'Sophia') + '...';
+        
         const range = `start_date=${getDateKey(new Date(Date.now()-864e5*14))}&end_date=${getDateKey(new Date())}`;
         const [rRes, aRes] = await Promise.all([
             fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}`)}`, {headers:{'Authorization':`Bearer ${token}`}}),
@@ -223,7 +232,7 @@ async function fetchOuraData() {
         const rData = await rRes.json();
         const aData = await aRes.json();
 
-        // VALIDATION: Discard if user switched during fetch
+        // v510 Validation Guard
         if(activeUser !== fetchUser) return;
 
         if(rData.data) {
@@ -238,6 +247,7 @@ async function fetchOuraData() {
                 };
             }).reverse();
 
+            // v510 Isolated storage write
             localStorage.setItem(`centurion_oura_cache_${fetchUser}`, JSON.stringify({history: hist}));
             
             const latest = hist[0]?.score || "-";
@@ -245,15 +255,7 @@ async function fetchOuraData() {
             render();
         }
     } catch(e) { 
-        if(activeUser === fetchUser) bar.innerHTML = "💍 Sync Failed"; 
-    }
-}
-
-function hardReset() {
-    if(confirm("Factory Reset: Clear all locally stored user data?")) {
-        localStorage.removeItem('centurion_oura_cache_J');
-        localStorage.removeItem('centurion_oura_cache_S');
-        location.reload();
+        if(activeUser === fetchUser) bar.innerHTML = "💍 Sync Failed - Tap to retry"; 
     }
 }
 
