@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v1080.2 Unified Workouts</title>
+    <title>The Centurion | v1080.4 Safe Mode</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -178,7 +178,8 @@
         /* STATUS PILL */
         .status-pill { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
         .pill-win { background: rgba(48, 209, 88, 0.15); color: var(--green); border: 1px solid rgba(48, 209, 88, 0.3); }
-        .pill-fail { background: rgba(255, 69, 58, 0.15); color: var(--red); border: 1px solid rgba(255, 69, 58, 0.3); }
+        .pill-fail { background: rgba(255, 69, 58, 0.15); color: var(--text-sub); border: 1px solid rgba(255, 255, 255, 0.1); } /* Grey for no data */
+        .pill-rest { background: rgba(255, 69, 58, 0.15); color: var(--red); border: 1px solid rgba(255, 69, 58, 0.3); } /* Red for rest needed */
 
         /* SNACK GRID */
         .snack-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
@@ -216,7 +217,7 @@
     <div id="dayTabs" class="tabs"></div>
     <div id="dayContent"></div>
     
-    <div style="text-align:center; color:#333; font-size:10px; margin-top:30px; opacity:0.6;">v1080.2 Unified Workouts</div>
+    <div style="text-align:center; color:#333; font-size:10px; margin-top:30px; opacity:0.6;">v1080.4 Safe Mode</div>
 </div>
 
 <div id="masterModal" class="modal" onclick="closeM(event)">
@@ -231,7 +232,7 @@
 
 <script>
 // ==========================================
-// CENTURION v1080.2 UNIFIED WORKOUTS
+// CENTURION v1080.4 SAFE MODE
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
@@ -337,61 +338,77 @@ function render() {
 
 function showDay(dObj, idx) {
     const id = Math.floor(dObj.getTime()/864e5); const dk = getDateKey(dObj);
-    // USE UNIFIED SCHEDULE FOR EVERYONE
     const dayData = unifiedSchedule[idx] || unifiedSchedule[1];
     
-    // Oura Data
-    const todayOura = window.ouraHistory.find(d => d.date === dk) || {score:0, sleepScore:'-', cal:0, high:0, med:0};
-    const dispOura = todayOura.score > 0 ? todayOura : (window.ouraHistory[0] || {score:75});
-    const isWinning = dispOura.score >= 75;
-    const statusPill = `<span class="status-pill ${isWinning ? 'pill-win' : 'pill-fail'}">${isWinning ? 'PROTOCOL WINNING' : 'PROTOCOL FAILING'}</span>`;
+    // SAFE DATA ACCESS
+    const rawOura = window.ouraHistory.find(d => d.date === dk);
+    const hasData = rawOura && rawOura.score !== undefined;
+    
+    // Default values if no data
+    const displayScore = hasData ? rawOura.score : '-';
+    const displayCal = (hasData && rawOura.cal) ? rawOura.cal : '-';
+    
+    // Status Logic
+    const isActive = hasData ? rawOura.score >= 75 : false;
+    let pillClass = 'pill-fail';
+    let pillText = 'NO DATA';
+    
+    if (hasData) {
+        pillClass = isActive ? 'pill-win' : 'pill-rest';
+        pillText = isActive ? 'ACTIVE PROTOCOL' : 'REST PROTOCOL';
+    }
+
+    const statusPill = `<span class="status-pill ${pillClass}">${pillText}</span>`;
 
     // 1. PROTOCOL CARD
     const protocolHTML = `
     <div class="premium-card" onclick="togglePlan()">
         <div class="card-header">
             <div><div class="card-title accent-gold">DAILY PROTOCOL</div><div class="card-subtitle">${dayData.focus}</div></div>
-            <div class="card-value-hero">${isWinning?'WINNING':'FAILING'} <span class="chevron" style="transform:${isPlanCollapsed?'rotate(-90deg)':'rotate(0deg)'}">▼</span></div>
+            <div class="card-value-hero">${hasData ? (isActive?'ACTIVE':'REST') : '-'} <span class="chevron" style="transform:${isPlanCollapsed?'rotate(-90deg)':'rotate(0deg)'}">▼</span></div>
         </div>
         <div class="card-body" style="display:${isPlanCollapsed?'none':'block'}">
             <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:center;">
                 ${statusPill}
-                <span style="font-size:0.7rem; color:#888;">READINESS: ${dispOura.score}</span>
+                <span style="font-size:0.7rem; color:#888;">READINESS: ${displayScore}</span>
             </div>
             <div style="font-size:0.8rem; color:#ddd; line-height:1.5;">${dayData.tasks}</div>
         </div>
     </div>`;
 
-    // 2. TRAINING CARD (Target vs Actual)
+    // 2. TRAINING CARD (Safe Math)
     const tHigh = dayData.zT.h; const tMed = dayData.zT.m;
-    const pHigh = tHigh > 0 ? Math.min((todayOura.high/tHigh)*100, 100) : 0;
-    const pMed = tMed > 0 ? Math.min((todayOura.med/tMed)*100, 100) : 0;
+    const actualHigh = (hasData && rawOura.high) ? rawOura.high : 0;
+    const actualMed = (hasData && rawOura.med) ? rawOura.med : 0;
+    
+    const pHigh = tHigh > 0 ? Math.min((actualHigh/tHigh)*100, 100) : 0;
+    const pMed = tMed > 0 ? Math.min((actualMed/tMed)*100, 100) : 0;
     
     const workoutHTML = `
     <div class="premium-card" onclick="toggleWorkout()">
         <div class="card-header">
             <div><div class="card-title accent-red">TRAINING</div><div class="card-subtitle">HR ZONE TARGETS</div></div>
-            <div class="card-value-hero">${safeVal(todayOura.cal)} <span style="font-size:0.9rem; opacity:0.7">CAL</span> <span class="chevron" style="transform:${isWorkoutCollapsed?'rotate(-90deg)':'rotate(0deg)'}">▼</span></div>
+            <div class="card-value-hero">${displayCal} <span style="font-size:0.9rem; opacity:0.7">CAL</span> <span class="chevron" style="transform:${isWorkoutCollapsed?'rotate(-90deg)':'rotate(0deg)'}">▼</span></div>
         </div>
         <div class="card-body" style="display:${isWorkoutCollapsed?'none':'block'}">
             <div class="section-header">TODAY'S TARGETS</div>
             <div class="bio-section">
-                <div class="bar-label"><span>High Intensity (Z4-Z5)</span><span>${safeVal(todayOura.high)} / ${tHigh}m</span></div>
+                <div class="bar-label"><span>High Intensity (Z4-Z5)</span><span>${actualHigh} / ${tHigh}m</span></div>
                 <div class="bar-track"><div class="bar-fill" style="width:${pHigh}%; background:linear-gradient(90deg, #FF5252, #D50000)"></div></div>
             </div>
             <div class="bio-section">
-                <div class="bar-label"><span>Med/Zone 2 (Z3)</span><span>${safeVal(todayOura.med)} / ${tMed}m</span></div>
+                <div class="bar-label"><span>Med/Zone 2 (Z3)</span><span>${actualMed} / ${tMed}m</span></div>
                 <div class="bar-track"><div class="bar-fill" style="width:${pMed}%; background:linear-gradient(90deg, #FFC107, #FF9800)"></div></div>
             </div>
         </div>
     </div>`;
 
-    // 3. NUTRITION CARD (Individualized)
+    // 3. NUTRITION CARD (Restored + Meal Plan)
     const b = applyAIP(mDB.b[Math.abs(id)%mDB.b.length], 'b');
     const l = applyAIP(mDB.l[Math.abs(id)%mDB.l.length], 'l');
     const d = applyAIP(mDB.d[Math.abs(id)%mDB.d.length], 'd');
     const j = applyAIP(mDB.j[Math.abs(id)%mDB.j.length], 'j');
-    const sc = user === 'J' ? 1 : 0.6; // Scale for Sophia
+    const sc = user === 'J' ? 1 : 0.6;
     const pTotal = Math.round((b[4]+l[4]+d[4])*sc);
     const kTotal = Math.round((b[6]+l[6]+d[6])*sc);
     const gP = user === 'J' ? 165 : 100;
@@ -449,9 +466,11 @@ async function fetchOuraData() {
 
         if(user !== currentUser) return;
 
-        if(rData.data && rData.data.length > 0) {
+        // CHECK IF DATA EXISTS
+        if(rData.data && Array.isArray(rData.data) && rData.data.length > 0) {
             window.ouraHistory = rData.data.map(day => {
-                const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
+                // Safe find
+                const act = (aData.data && Array.isArray(aData.data)) ? aData.data.find(ac => ac.day === day.day) : null;
                 return {
                     date: day.day,
                     score: day.score,
@@ -462,12 +481,23 @@ async function fetchOuraData() {
             }).reverse();
 
             localStorage.setItem(`centurion_oura_cache_${user}`, JSON.stringify({ history: window.ouraHistory }));
-            let lastR = window.ouraHistory[0];
+            
+            // Safe last read
+            let lastR = window.ouraHistory[0] || {score:0};
             let color = lastR.score >= 75 ? 'var(--green)' : lastR.score >= 60 ? 'var(--gold)' : '#FF5252';
             bar.innerHTML = `💍 ${currentUser==='J'?'JERMAINE':'SOPHIA'} READINESS: <span style="color:${color}; font-weight:900">${lastR.score}</span>`;
             render(); 
-        } else { bar.innerText = `💍 ${currentUser==='J'?'JERMAINE':'SOPHIA'}: No Data`; }
-    } catch(e) { if(user === currentUser) bar.innerText = "💍 Sync Failed"; render(); }
+        } else { 
+            // NO DATA CASE
+            bar.innerText = `💍 ${currentUser==='J'?'JERMAINE':'SOPHIA'}: No Data`;
+            window.ouraHistory = []; // Ensure empty array
+            render(); 
+        }
+    } catch(e) { 
+        if(user === currentUser) bar.innerText = "💍 Sync Failed"; 
+        window.ouraHistory = []; // Ensure empty array
+        render(); 
+    }
 }
 
 window.onload = () => { document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active')); document.getElementById('b' + user.toLowerCase()).classList.add('active'); render(); fetchOuraData(); };
