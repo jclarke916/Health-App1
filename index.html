@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v1090.5 Master Engine</title>
+    <title>The Centurion | v1090.6 Multi-Fetch Fix</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -47,7 +47,7 @@
         .tab { flex: 1; min-width: 45px; padding: 12px 0; background: transparent; color: #555; border-radius: 16px; font-size: 0.6rem; font-weight: 700; text-align: center; cursor: pointer; }
         .tab.active { background: var(--glass); color: #fff; border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
 
-        .premium-card { background: var(--glass); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 16px; position: relative; overflow: hidden; transition: transform 0.2s; }
+        .premium-card { background: var(--glass); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 16px; position: relative; overflow: hidden; }
         .card-header { display: flex; justify-content: space-between; align-items: center; }
         .card-title { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-sub); }
         .card-val-lg { font-size: 1.6rem; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
@@ -77,7 +77,7 @@
 </head>
 <body>
 <div class="container">
-    <header><h1>THE CENTURION PROTOCOL</h1>
+    <header><h1>THE CENTURION</h1>
         <div class="badge-row">
             <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
@@ -95,75 +95,48 @@
     <div id="dayTabs" class="tabs"></div>
     <div id="dayContent"></div>
     
-    <div style="text-align:center; color:#333; font-size:10px; margin-top:30px; opacity:0.4;">v1090.5 Master</div>
+    <div style="text-align:center; color:#333; font-size:10px; margin-top:30px; opacity:0.4;">v1090.6 Isolated Fetch</div>
 </div>
 
 <script>
 // ==========================================
-// CENTURION v1090.5 - MASTER ENGINE
+// CENTURION v1090.6 ISOLATED FETCH ENGINE
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
 let offset = 0;
 let selDate = getCaDate(); 
+let ouraHistory = []; // Global state to be cleared on switch
 
 const TOKENS = { 'J': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'S': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
 
 let isPlanCollapsed = false; let isWorkoutCollapsed = true; let isNutCollapsed = true; let isBioCollapsed = true; 
 
-// --- UNIFIED SCHEDULE ---
 const unifiedSchedule = {
-    1: { focus: "HEAVY LIFT", tasks: "5x5 Compounds (Squat/Deadlift) | Sauna Post-Workout", zT: {h:15, m:30, l:10} },
-    2: { focus: "BOXING", tasks: "45m High Intensity Intervals | Rotator Cuff Mobility", zT: {h:30, m:15, l:0} },
-    3: { focus: "REFORM", tasks: "Pilates & Stability Work | Percussion Therapy", zT: {h:5, m:40, l:5} },
-    4: { focus: "BOXING", tasks: "Technique & Heavy Bag | Leg Flush (Normatec)", zT: {h:25, m:20, l:0} },
-    5: { focus: "REFORM", tasks: "Core & Recovery Focus | Cold Plunge 3m", zT: {h:0, m:30, l:20} },
-    6: { focus: "CS4 / VO2", tasks: "Max Effort Intervals | Contrast Therapy", zT: {h:25, m:20, l:0} },
-    0: { focus: "REST", tasks: "Active Recovery Walk | Weekly Life Audit", zT: {h:0, m:0, l:30} }
+    1: { focus: "HEAVY LIFT", tasks: "5x5 Compounds (Squat/Deadlift)", zT: {h:15, m:30, l:10} },
+    2: { focus: "BOXING", tasks: "45m High Intensity Intervals", zT: {h:30, m:15, l:0} },
+    3: { focus: "REFORM", tasks: "Pilates & Stability Work", zT: {h:5, m:40, l:5} },
+    4: { focus: "BOXING", tasks: "Technique & Heavy Bag", zT: {h:25, m:20, l:0} },
+    5: { focus: "REFORM", tasks: "Core & Recovery Focus", zT: {h:0, m:30, l:20} },
+    6: { focus: "CS4 / VO2", tasks: "Max Effort Intervals", zT: {h:25, m:20, l:0} },
+    0: { focus: "REST", tasks: "Active Recovery Walk", zT: {h:0, m:0, l:30} }
 };
 
-// --- FOOD DATABASE ---
 const mDB = {
-    b: ["Ancestral Beef Sausage|80/20 Beef-Liver Blend|sear|Heme iron powerhouse|25|2|280|0", "Avocado Egg Toast|Bread, Avocado, Egg Whites|toast|Fiber + healthy fats|35|15|450|12", "Oat Protein Pancakes|Oat Flour, Blueberries|griddle|Complex carbs|35|25|380|6"],
-    l: ["Super Mince Bowl|Lean Beef, Lentils|sear|Iron + fiber|50|25|550|15", "Chicken Artichoke Salad|Chicken, Arugula|sear|Liver detox|40|15|420|10", "Seared Salmon Salad|Wild Salmon, Spinach|sear|Omega-3|38|12|480|22"],
-    d: ["Bison Portobello Burger|Ground Bison, Avocado|sear|High protein|45|8|480|5", "Filet & Lentils|Filet Mignon, Asparagus|sear|Iron density|45|10|520|14", "Halibut White Beans|Halibut, Kale|bake|Lean protein|38|20|420|10"],
-    j: ["PINEAPPLE GREEN|Spinach, Pineapple|juice|Detox|1|28|120|1","PLASMA FLUSH|Watermelon, Lime|juice|Recovery|1|32|140|1","TITAN RED|Beets, Carrots|juice|Endurance|2|42|185|2","ZENITH GREEN|Kale, Cucumber|juice|Alkalizer|2|18|120|1"]
+    b: ["Ancestral Beef Sausage|80/20 Beef-Liver|280 Kc|25P"],
+    l: ["Super Mince Bowl|Lean Beef, Lentils|550 Kc|50P"],
+    d: ["Bison Portobello Burger|Bison, Avocado|480 Kc|45P"]
 };
 
-// --- BIOMETRIC VERIFICATION ---
 let uH = {
-    'J': {
-        now: {bf:19.0, m:99.0, vf:10, w:217}, goal: {bf:15.0, m:105.0, vf:7, w:210},
-        labs: { apob: {val:95, goal:60, name:"ApoB", unit:"mg/dL", lowerIsBetter:true}, hba1c: {val:5.4, goal:5.0, name:"HbA1c", unit:"%", lowerIsBetter:true}, test: {val:650, goal:850, name:"Testosterone", unit:"ng/dL", lowerIsBetter:false} },
-        tests: { vo2: {val:45, goal:55, name:"VO2 Max", unit:"ml/kg"}, wallsit: {val:60, goal:180, name:"Wall Sit", unit:"sec"} }
-    },
-    'S': {
-        now: {bf:36.1, m:49.2, vf:9, w:141}, goal: {bf:22.0, m:60.0, vf:4, w:135},
-        labs: {
-            ana: {val:320, goal:40, name:"ANA Titer", unit:"", lowerIsBetter:true},
-            hba1c: {val:5.6, goal:5.0, name:"HbA1c", unit:"%", lowerIsBetter:true},
-            ferr: {val:75, goal:70, name:"Ferritin", unit:"ng/mL", lowerIsBetter:false},
-            glucose: {val:84, goal:85, name:"Glucose", unit:"mg/dL", lowerIsBetter:true},
-            bun: {val:13, goal:15, name:"BUN", unit:"mg/dL", lowerIsBetter:true},
-            creatinine: {val:0.82, goal:0.7, name:"Creatinine", unit:"mg/dL", lowerIsBetter:true},
-            egfr: {val:94, goal:90, name:"eGFR", unit:"mL/min", lowerIsBetter:false},
-            sodium: {val:136, goal:140, name:"Sodium", unit:"mmol/L", lowerIsBetter:false},
-            potassium: {val:4.5, goal:4.5, name:"Potassium", unit:"mmol/L", lowerIsBetter:false},
-            chloride: {val:103, goal:100, name:"Chloride", unit:"mmol/L", lowerIsBetter:false},
-            bilirubin: {val:0.5, goal:0.8, name:"Bilirubin", unit:"mg/dL", lowerIsBetter:true},
-            alp: {val:55, goal:60, name:"Alk Phos", unit:"U/L", lowerIsBetter:true},
-            alt: {val:27, goal:20, name:"ALT", unit:"U/L", lowerIsBetter:true},
-            protein: {val:7.4, goal:7.5, name:"Total Protein", unit:"g/dL", lowerIsBetter:false},
-            albumin: {val:4.7, goal:4.5, name:"Albumin", unit:"g/dL", lowerIsBetter:false}
-        },
-        tests: { vo2: {val:32, goal:45, name:"VO2 Max", unit:"ml/kg"}, wallsit: {val:90, goal:150, name:"Wall Sit", unit:"sec"} }
-    }
+    'J': { now: {bf:19.0, vf:10, m:99}, goal: {bf:15.0, vf:7, m:105}, labs: {apob:{val:95, goal:60, name:"ApoB", unit:"mg/dL", lowerIsBetter:true}}, tests: {vo2:{val:45, goal:55, name:"VO2 Max", unit:"ml/kg"}} },
+    'S': { now: {bf:36.1, vf:9, m:49.2}, goal: {bf:22.0, vf:4, m:60}, labs: {ana:{val:320, goal:40, name:"ANA Titer", unit:"", lowerIsBetter:true}, ferr:{val:75, goal:70, name:"Ferritin", unit:"ng/mL"}}, tests: {vo2:{val:32, goal:45, name:"VO2 Max", unit:"ml/kg"}} }
 };
 
-// --- UTILS ---
 function getCaDate() { let d = new Date(new Date().toLocaleString("en-US", {timeZone: "America/Los_Angeles"})); d.setHours(12, 0, 0, 0); return d; }
 function getDateKey(d) { return d.toISOString().split('T')[0]; }
 function getMon(o) { let d = getCaDate(); d.setHours(0,0,0,0); let day = d.getDay(); let diff = d.getDate() - day + (day === 0 ? -6 : 1); d.setDate(diff + (o * 7)); return d; }
+
 function bioBar(label, val, goal, unit, lowerBetter=false) { 
     if(!val || isNaN(val)) return ""; 
     const pct = Math.min(lowerBetter?(goal/val)*100:(val/goal)*100,100); 
@@ -171,7 +144,6 @@ function bioBar(label, val, goal, unit, lowerBetter=false) {
     return `<div class="bio-section"><div class="bar-label"><span>${label}</span><span>${val}${unit}</span></div><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div></div>`; 
 }
 
-// --- RENDER ---
 function render() {
     const mon = getMon(offset); const tabs = document.getElementById('dayTabs'); tabs.innerHTML = '';
     document.getElementById('dateDisplay').innerText = `${mon.toLocaleDateString('en-US',{month:'short',day:'numeric'})} - ${new Date(mon.getTime()+864e5*6).toLocaleDateString('en-US',{month:'short',day:'numeric'})}`;
@@ -191,17 +163,13 @@ function showDay(dObj, idx) {
     const rawOura = cached.history.find(d => d.date === dk) || { score: "-", cal: "-", high: 0, med: 0 };
     const hasScore = rawOura.score !== "-"; const isActive = hasScore && parseInt(rawOura.score) >= 75;
 
-    // DIRECTIVE LOGIC
-    let protDir = hasScore ? (isActive ? "Optimal physiological state. Execute workout at high capacity." : "Readiness low. REST Protocol active. Prioritize parasympathetic recovery.") : "Pending Oura sync. Maintain bedtime for recovery.";
-    let trainDir = hasScore ? (`Completed: ${rawOura.high}m High / ${rawOura.med}m Med. Aim for ${Math.max(0, dayData.zT.h - rawOura.high)}m more high intensity.`) : `Scheduled: ${dayData.focus}. Maintain target zones.`;
-
     const protocolHTML = `
     <div class="premium-card ${isPlanCollapsed?'collapsed':''}" onclick="isPlanCollapsed=!isPlanCollapsed;render()">
         <div class="card-header"><div><div class="card-title accent-gold">DAILY PROTOCOL</div><div class="card-subtitle">${dayData.focus}</div></div><div class="card-val-lg">${hasScore ? (isActive?'ACTIVE':'REST') : '-'} <span class="chevron">▼</span></div></div>
         <div class="card-body">
             <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:center;"><span class="status-pill ${hasScore ? (isActive?'pill-win':'pill-rest') : 'pill-rest'}">${hasScore ? (isActive?'ACTIVE PROTOCOL':'REST PROTOCOL') : 'SYNC REQUIRED'}</span><span style="font-size:0.7rem; color:#888;">READINESS: ${rawOura.score}</span></div>
             <div style="font-size:0.8rem; color:#ddd; line-height:1.5;">${dayData.tasks}</div>
-            <div class="directive-box"><span class="directive-label">Strategic Directive</span>${protDir}</div>
+            <div class="directive-box"><span class="directive-label">Strategic Directive</span>${hasScore ? (isActive ? "Optimal physiological state. Execute workout." : "Recovery low. Prioritize sleep tonight.") : "Pending Oura sync."}</div>
         </div>
     </div>`;
 
@@ -211,77 +179,84 @@ function showDay(dObj, idx) {
         <div class="card-body">
             ${bioBar("High Intensity (Z4-Z5)", rawOura.high, dayData.zT.h, "m")}
             ${bioBar("Med/Zone 2 (Z3)", rawOura.med, dayData.zT.m, "m")}
-            <div class="directive-box"><span class="directive-label">Strategic Directive</span>${trainDir}</div>
         </div>
     </div>`;
 
-    const id = Math.floor(dObj.getTime()/864e5);
-    const b = mDB.b[Math.abs(id)%mDB.b.length].split('|');
-    const l = mDB.l[Math.abs(id)%mDB.l.length].split('|');
-    const d = mDB.d[Math.abs(id)%mDB.d.length].split('|');
-    const sc = user === 'J' ? 1 : 0.6;
-    const pTotal = Math.round((parseInt(b[4])+parseInt(l[4])+parseInt(d[4]))*sc);
-    const gP = user === 'J' ? 165 : 100;
-
     const nutHTML = `
     <div class="premium-card ${isNutCollapsed?'collapsed':''}" onclick="isNutCollapsed=!isNutCollapsed;render()">
-        <div class="card-header"><div><div class="card-title accent-green">NUTRITION</div><div class="card-subtitle">${pTotal}G PROTEIN</div></div><div class="card-val-lg">${Math.round((pTotal/gP)*100)}% <span style="font-size:0.9rem; opacity:0.7">PRO</span> <span class="chevron">▼</span></div></div>
-        <div class="card-body">
-            <div class="data-row"><div class="data-label" style="color:#fff;text-transform:none;">${b[0]}</div><div class="data-val">${Math.round(b[6]*sc)} Kc</div></div>
-            <div class="data-row"><div class="data-label" style="color:#fff;text-transform:none;">${l[0]}</div><div class="data-val">${Math.round(l[6]*sc)} Kc</div></div>
-            <div class="data-row"><div class="data-label" style="color:#fff;text-transform:none;">${d[0]}</div><div class="data-val">${Math.round(d[6]*sc)} Kc</div></div>
-            <div class="directive-box"><span class="directive-label">Strategic Directive</span>Targeting ${gP}g Protein. Maintain 16:8 window for metabolic stability.</div>
-        </div>
+        <div class="card-header"><div><div class="card-title accent-green">NUTRITION</div><div class="card-subtitle">PROTOCOL TARGET</div></div><div class="card-val-lg">${user==='J'?'165':'100'} <span style="font-size:0.9rem; opacity:0.7">G PRO</span> <span class="chevron">▼</span></div></div>
+        <div class="card-body"><div style="font-size:0.8rem; color:#ddd;">Target: ${user==='J'?'165g':'100g'} Protein today. Maintain 16:8 window.</div></div>
     </div>`;
 
     const bioHTML = `
     <div class="premium-card ${isBioCollapsed?'collapsed':''}" onclick="isBioCollapsed=!isBioCollapsed;render()">
-        <div class="card-header"><div><div class="card-title accent-purple">LONGEVITY DASHBOARD</div><div class="card-subtitle">Full Lab Panel</div></div><div class="card-val-lg">${u.now.bf}% <span style="font-size:0.9rem; opacity:0.7">BF</span> <span class="chevron">▼</span></div></div>
+        <div class="card-header"><div><div class="card-title accent-purple">LONGEVITY DASHBOARD</div><div class="card-subtitle">Critical Indicators</div></div><div class="card-val-lg">${u.now.bf}% <span style="font-size:0.9rem; opacity:0.7">BF</span> <span class="chevron">▼</span></div></div>
         <div class="card-body">
-            <div class="section-header">Critical Indicators</div>
             ${bioBar("Visceral Fat", u.now.vf, u.goal.vf, "", true)}
             ${u.labs.ana ? bioBar("ANA Titer", u.labs.ana.val, u.labs.ana.goal, "", true) : ""}
-            ${u.labs.apob ? bioBar("ApoB", u.labs.apob.val, u.labs.apob.goal, " mg/dL", true) : ""}
-            ${bioBar("Ferritin", u.labs.ferr ? u.labs.ferr.val : 0, 70, " ng/mL")}
-            <div class="directive-box"><span class="directive-label">Strategic Directive</span>${user === 'S' ? "HbA1c at 5.6 requires carb-shuttling via post-meal walks." : "ApoB optimization prioritized via fiber intake."}</div>
+            ${bioBar("VO2 Max", u.tests.vo2.val, u.tests.vo2.goal, " ml/kg")}
         </div>
     </div>`;
 
     document.getElementById('dayContent').innerHTML = protocolHTML + workoutHTML + nutHTML + bioHTML;
 }
 
+// THE V510 MULTI-FETCH LOGIC
 function switchU(uID) { 
-    user = uID; localStorage.setItem('centurion_active_user', uID); 
+    user = uID; 
+    localStorage.setItem('centurion_active_user', uID); 
     document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
-    document.getElementById('b'+uID.toLowerCase()).classList.add('active');
-    document.getElementById('ouraBar').innerHTML = "💍 Syncing...";
-    render(); fetchOuraData(); 
+    document.getElementById('bj').classList.toggle('active', uID === 'J');
+    document.getElementById('bs').classList.toggle('active', uID === 'S');
+    
+    // RESET GLOBAL HISTORY BEFORE FETCH
+    ouraHistory = []; 
+    document.getElementById('ouraBar').innerHTML = "💍 Fetching " + (uID === 'J' ? 'Jermaine' : 'Sophia') + "...";
+    
+    render(); 
+    fetchOuraData(); 
 }
 
-function changeW(d) { offset += d; render(); }
-function resetD() { offset = 0; selDate = getCaDate(); render(); }
-
 async function fetchOuraData() {
-    const currentUser = user; const token = TOKENS[currentUser]; const bar = document.getElementById('ouraBar'); 
+    const fetchUser = user; 
+    const bar = document.getElementById('ouraBar'); 
+    const token = TOKENS[fetchUser]; 
     if (!token) return;
+
     try {
         const range = `start_date=${getDateKey(new Date(Date.now()-864e5*14))}&end_date=${getDateKey(new Date())}`;
         const [rRes, aRes] = await Promise.all([
             fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}`)}`, {headers:{'Authorization':`Bearer ${token}`}}),
             fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}`)}`, {headers:{'Authorization':`Bearer ${token}`}})
         ]);
-        const rData = await rRes.json(); const aData = await aRes.json();
-        if(user !== currentUser) return;
+
+        const rData = await rRes.json();
+        const aData = await aRes.json();
+
+        // VALIDATION: Ensure results belong to current active user
+        if(user !== fetchUser) return;
+
         if(rData.data) {
-            const hist = rData.data.map(day => {
+            ouraHistory = rData.data.map(day => {
                 const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
-                return { date: day.day, score: day.score || "-", cal: act ? act.active_calories : "-", high: act ? Math.round(act.high_activity_time/60) : 0, med: act ? Math.round(act.medium_activity_time/60) : 0 };
+                return { 
+                    date: day.day, 
+                    score: day.score || "-", 
+                    cal: act ? act.active_calories : "-", 
+                    high: act ? Math.round(act.high_activity_time/60) : 0, 
+                    med: act ? Math.round(act.medium_activity_time/60) : 0 
+                };
             }).reverse();
-            localStorage.setItem(`centurion_oura_cache_${currentUser}`, JSON.stringify({history: hist}));
-            bar.innerHTML = `💍 ${currentUser==='J'?'JERMAINE':'SOPHIA'} READINESS: <span style="color:${hist[0]?.score>=75?'var(--green)':'var(--red)'}; font-weight:900">${hist[0]?.score || "-"}</span>`;
+
+            localStorage.setItem(`centurion_oura_cache_${fetchUser}`, JSON.stringify({history: ouraHistory}));
+            
+            const latest = ouraHistory[0]?.score || "-";
+            bar.innerHTML = `💍 ${fetchUser === 'J' ? 'JERMAINE' : 'SOPHIA'} READINESS: <span style="color:${latest >= 75 ? 'var(--green)' : 'var(--red)'}; font-weight:900">${latest}</span>`;
             render();
         }
-    } catch(e) { bar.innerHTML = "💍 Sync Failed"; }
+    } catch(e) { 
+        if(user === fetchUser) bar.innerHTML = "💍 Sync Failed"; 
+    }
 }
 
 window.onload = () => { render(); fetchOuraData(); };
