@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v1090.9 Force-Repull</title>
+    <title>The Centurion | v1100.0 Literal 510 Fetch</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -36,10 +36,10 @@
         h1 { text-align: center; font-weight: 800; letter-spacing: 4px; text-transform: uppercase; font-size: 0.9rem; margin: 10px 0 20px 0; background: linear-gradient(90deg, #fff, #888); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 
         .badge-row { display: flex; justify-content: center; background: rgba(255, 255, 255, 0.05); padding: 4px; border-radius: 30px; margin: 0 auto 20px auto; width: fit-content; border: 1px solid var(--border); }
-        .u-badge { padding: 8px 20px; border-radius: 24px; font-size: 0.65rem; font-weight: 700; cursor: pointer; color: var(--text-sub); transition: all 0.3s ease; }
+        .u-badge { padding: 8px 20px; border-radius: 24px; font-size: 0.7rem; font-weight: 700; cursor: pointer; color: var(--text-sub); transition: all 0.3s ease; }
         .u-badge.active { background: rgba(255, 255, 255, 0.15); color: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
 
-        .status-bar { text-align: center; color: var(--text-sub); font-size: 0.6rem; font-weight: 600; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; }
+        .status-bar { text-align: center; color: var(--text-sub); font-size: 0.65rem; font-weight: 600; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; }
         .controls { display: flex; gap: 8px; margin-bottom: 20px; }
         .nav-btn { background: var(--glass); border: 1px solid var(--border); color: var(--text-sub); padding: 12px; flex: 1; border-radius: 16px; font-size: 0.6rem; font-weight: 700; cursor: pointer; text-transform: uppercase; }
 
@@ -52,9 +52,6 @@
         .card-title { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 4px; color: var(--text-sub); }
         .card-val-lg { font-size: 1.8rem; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
 
-        .directive-box { margin-top: 20px; padding: 14px; background: rgba(255, 214, 10, 0.06); border-left: 2px solid var(--gold); border-radius: 4px; font-size: 0.75rem; color: #ddd; line-height: 1.4; }
-        .directive-label { display: block; font-weight: 800; text-transform: uppercase; font-size: 0.6rem; color: var(--gold); margin-bottom: 4px; }
-
         .bio-section { margin-bottom: 15px; }
         .bar-label { font-size: 0.65rem; color: var(--text-sub); font-weight: 700; margin-bottom: 8px; display: flex; justify-content: space-between; text-transform: uppercase; }
         .bar-track { height: 8px; background: rgba(255,255,255,0.08); border-radius: 10px; overflow: hidden; }
@@ -64,8 +61,6 @@
         .pill-win { background: rgba(48, 209, 88, 0.15); color: var(--green); border: 1px solid rgba(48, 209, 88, 0.3); }
         .pill-rest { background: rgba(255, 69, 58, 0.15); color: var(--red); border: 1px solid rgba(255, 69, 58, 0.3); }
 
-        .section-header { margin: 25px 0 10px 0; font-size: 0.6rem; color: #666; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
-        .accent-gold { color: var(--gold); } .accent-blue { color: var(--blue); } .accent-purple { color: var(--purple); } .accent-red { color: var(--red); } .accent-green { color: var(--green); }
         .chevron { font-size: 0.8rem; color: #444; transition: transform 0.3s ease; margin-left: 10px; }
         .premium-card.collapsed .card-body { display: none; }
         .premium-card.collapsed .chevron { transform: rotate(-90deg); }
@@ -75,11 +70,11 @@
 <div class="container">
     <header><h1>THE CENTURION</h1>
         <div class="badge-row">
-            <div id="bj" class="u-badge active" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
+            <div id="bj" class="u-badge" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
         </div>
     </header>
-    <div id="ouraBar" class="status-bar" onclick="fetchOuraData()">💍 Tap to Repull Data</div>
+    <div id="ouraBar" class="status-bar" onclick="fetchOuraData()">💍 Handshake Required...</div>
     <div id="dateDisplay" class="status-bar" style="margin-bottom: 20px; opacity: 0.7;">...</div>
 
     <div class="controls">
@@ -90,49 +85,44 @@
     
     <div id="dayTabs" class="tabs"></div>
     <div id="dayContent"></div>
-    
-    <div style="text-align:center; color:#333; font-size:10px; margin-top:30px; opacity:0.4;">v1090.9 Force Sync</div>
 </div>
 
 <script>
 // ==========================================
-// CENTURION v1090.9 - FORCE REPULL LOGIC
+// CENTURION v1100.0 - LITERAL 510 FETCH
 // ==========================================
 
-let activeUser = localStorage.getItem('centurion_active_user') || 'J';
+let user = localStorage.getItem('centurion_active_user') || 'J';
 let offset = 0;
 let selDate = getCaDate(); 
+let ouraHistory = [];
 
 const TOKENS = { 
     'J': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 
     'S': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' 
 };
 
-let isPlanCollapsed = false; let isWorkoutCollapsed = true; let isNutCollapsed = true; let isBioCollapsed = true; 
+// State Logic
+let isPlanCollapsed = false; let isWorkoutCollapsed = true; let isNutCollapsed = true; 
 
 const unifiedSchedule = {
-    1: { focus: "HEAVY LIFT", tasks: "5x5 Compounds (Squat/Deadlift)", zT: {h:15, m:30, l:10} },
-    2: { focus: "BOXING", tasks: "45m High Intensity Intervals", zT: {h:30, m:15, l:0} },
-    3: { focus: "REFORM", tasks: "Pilates & Stability Work", zT: {h:5, m:40, l:5} },
-    4: { focus: "BOXING", tasks: "Technique & Heavy Bag", zT: {h:25, m:20, l:0} },
-    5: { focus: "REFORM", tasks: "Core & Recovery Focus", zT: {h:0, m:30, l:20} },
-    6: { focus: "CS4 / VO2", tasks: "Max Effort Intervals", zT: {h:25, m:20, l:0} },
-    0: { focus: "REST", tasks: "Active Recovery Walk", zT: {h:0, m:0, l:30} }
-};
-
-let uH = {
-    'J': { now: {bf:19.0, vf:10, m:99}, goal: {bf:15.0, vf:7, m:105}, labs: {apob:{val:95, goal:60, name:"ApoB", unit:"mg/dL", lowerIsBetter:true}}, tests: {vo2:{val:45, goal:55, name:"VO2 Max", unit:"ml/kg"}} },
-    'S': { now: {bf:36.1, vf:9, m:49.2}, goal: {bf:22.0, vf:4, m:60}, labs: {ana:{val:320, goal:40, name:"ANA Titer", unit:"", lowerIsBetter:true}, ferr:{val:75, goal:70, name:"Ferritin", unit:"ng/mL"}}, tests: {vo2:{val:32, goal:45, name:"VO2 Max", unit:"ml/kg"}} }
+    1: { focus: "HEAVY LIFT", tasks: "5x5 Compounds", zT: {h:15, m:30, l:10} },
+    2: { focus: "BOXING", tasks: "45m Intervals", zT: {h:30, m:15, l:0} },
+    3: { focus: "REFORM", tasks: "Pilates & Stability", zT: {h:5, m:40, l:5} },
+    4: { focus: "BOXING", tasks: "Technique & Bag", zT: {h:25, m:20, l:0} },
+    5: { focus: "REFORM", tasks: "Stability Focus", zT: {h:0, m:30, l:20} },
+    6: { focus: "CS4 / VO2", tasks: "Max Effort", zT: {h:25, m:20, l:0} },
+    0: { focus: "REST", tasks: "Recovery Walk", zT: {h:0, m:0, l:30} }
 };
 
 function getCaDate() { let d = new Date(new Date().toLocaleString("en-US", {timeZone: "America/Los_Angeles"})); d.setHours(12, 0, 0, 0); return d; }
 function getDateKey(d) { return d.toISOString().split('T')[0]; }
 function getMon(o) { let d = getCaDate(); d.setHours(0,0,0,0); let day = d.getDay(); let diff = d.getDate() - day + (day === 0 ? -6 : 1); d.setDate(diff + (o * 7)); return d; }
 
-function bioBar(label, val, goal, unit, lowerBetter=false) { 
+function bioBar(label, val, goal, unit) { 
     const v = parseFloat(val) || 0;
     const g = parseFloat(goal) || 1;
-    const pct = Math.min(lowerBetter ? (g / v) * 100 : (v / g) * 100, 100); 
+    const pct = Math.min((v / g) * 100, 100); 
     const color = pct >= 100 ? 'var(--green)' : 'var(--gold)'; 
     return `<div class="bio-section"><div class="bar-label"><span>${label}</span><span>${val || 0}${unit}</span></div><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div></div>`; 
 }
@@ -151,119 +141,106 @@ function render() {
 }
 
 function showDay(dObj, idx) {
-    const dk = getDateKey(dObj); const dayData = unifiedSchedule[idx] || unifiedSchedule[1]; const u = uH[activeUser];
-    const cached = JSON.parse(localStorage.getItem(`centurion_oura_cache_${activeUser}`)) || { history: [] };
+    const dk = getDateKey(dObj); const dayData = unifiedSchedule[idx] || unifiedSchedule[1];
+    
+    // FETCH CACHE
+    const cached = JSON.parse(localStorage.getItem(`centurion_oura_cache_${user}`)) || { history: [] };
     const rawOura = cached.history.find(d => d.date === dk) || { score: "-", cal: "-", high: 0, med: 0 };
-    const hasScore = rawOura.score !== "-"; const isActive = hasScore && parseInt(rawOura.score) >= 75;
+    
+    const hasScore = rawOura.score !== "-";
+    const isActive = hasScore && parseInt(rawOura.score) >= 75;
 
     const protocolHTML = `
     <div class="premium-card ${isPlanCollapsed?'collapsed':''}" onclick="isPlanCollapsed=!isPlanCollapsed;render()">
         <div class="card-header"><div><div class="card-title accent-gold">DAILY PROTOCOL</div><div class="card-subtitle">${dayData.focus}</div></div><div class="card-val-lg">${hasScore ? (isActive?'ACTIVE':'REST') : '-'} <span class="chevron">▼</span></div></div>
         <div class="card-body">
-            <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:center;"><span class="status-pill ${hasScore ? (isActive?'pill-win':'pill-rest') : 'pill-rest'}">${hasScore ? (isActive?'ACTIVE PROTOCOL':'REST PROTOCOL') : 'SYNC REQUIRED'}</span><span style="font-size:0.7rem; color:#888;">READINESS: ${rawOura.score}</span></div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:center;">
+                <span class="status-pill ${hasScore ? (isActive?'pill-win':'pill-rest') : 'pill-rest'}">${hasScore ? (isActive?'ACTIVE PROTOCOL':'REST PROTOCOL') : 'SYNC REQUIRED'}</span>
+                <span style="font-size:0.7rem; color:#888;">READINESS: ${rawOura.score}</span>
+            </div>
             <div style="font-size:0.8rem; color:#ddd; line-height:1.5;">${dayData.tasks}</div>
         </div>
     </div>`;
 
     const workoutHTML = `
     <div class="premium-card ${isWorkoutCollapsed?'collapsed':''}" onclick="isWorkoutCollapsed=!isWorkoutCollapsed;render()">
-        <div class="card-header"><div><div class="card-title accent-red">TRAINING</div><div class="card-subtitle">HR ZONE TARGETS</div></div><div class="card-val-lg">${rawOura.cal} <span style="font-size:0.9rem; opacity:0.7">CAL</span> <span class="chevron">▼</span></div></div>
+        <div class="card-header"><div><div class="card-title accent-red">TRAINING</div><div class="card-subtitle">ZONE TARGETS</div></div><div class="card-val-lg">${rawOura.cal} <span style="font-size:0.9rem; opacity:0.7">CAL</span> <span class="chevron">▼</span></div></div>
         <div class="card-body">
             ${bioBar("High Intensity (Z4-Z5)", rawOura.high, dayData.zT.h, "m")}
             ${bioBar("Med/Zone 2 (Z3)", rawOura.med, dayData.zT.m, "m")}
         </div>
     </div>`;
 
-    const nutHTML = `
-    <div class="premium-card ${isNutCollapsed?'collapsed':''}" onclick="isNutCollapsed=!isNutCollapsed;render()">
-        <div class="card-header"><div><div class="card-title accent-green">NUTRITION</div><div class="card-subtitle">PROTOCOL TARGET</div></div><div class="card-val-lg">${activeUser==='J'?'165':'100'} <span style="font-size:0.9rem; opacity:0.7">G PRO</span> <span class="chevron">▼</span></div></div>
-        <div class="card-body"><div style="font-size:0.8rem; color:#ddd;">Target: ${activeUser==='J'?'165g':'100g'} Protein today. Maintain 16:8 window.</div></div>
-    </div>`;
-
-    const bioHTML = `
-    <div class="premium-card ${isBioCollapsed?'collapsed':''}" onclick="isBioCollapsed=!isBioCollapsed;render()">
-        <div class="card-header"><div><div class="card-title accent-purple">LONGEVITY DASHBOARD</div><div class="card-subtitle">Critical Indicators</div></div><div class="card-val-lg">${u.now.bf}% <span style="font-size:0.9rem; opacity:0.7">BF</span> <span class="chevron">▼</span></div></div>
-        <div class="card-body">
-            ${bioBar("Visceral Fat", u.now.vf, u.goal.vf, "", true)}
-            ${u.labs.ana ? bioBar("ANA Titer", u.labs.ana.val, u.labs.ana.goal, "", true) : ""}
-            ${bioBar("VO2 Max", u.tests.vo2.val, u.tests.vo2.goal, " ml/kg")}
-        </div>
-    </div>`;
-
-    document.getElementById('dayContent').innerHTML = protocolHTML + workoutHTML + nutHTML + bioHTML;
+    document.getElementById('dayContent').innerHTML = protocolHTML + workoutHTML;
 }
 
-// THE v510 FORCE-SYNC SWITCH
-function switchU(uID) { 
-    // 1. Destroy Current Cache Browser-Level
-    localStorage.removeItem(`centurion_oura_cache_${uID}`);
+// ==========================================
+// LITERAL v510 FETCH PROTOCOL
+// ==========================================
+function switchU(uID) {
+    // Isolated State Clear
+    user = uID;
+    localStorage.setItem('centurion_active_user', uID);
+    ouraHistory = []; // Reset local state
     
-    // 2. Set Global state
-    activeUser = uID; 
-    localStorage.setItem('centurion_active_user', uID); 
-    
-    // 3. UI Reset
+    // UI badge update
     document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
-    document.getElementById('bj').classList.toggle('active', uID === 'J');
-    document.getElementById('bs').classList.toggle('active', uID === 'S');
+    if(uID==='J') document.getElementById('bj').classList.add('active');
+    else document.getElementById('bs').classList.add('active');
     
-    // 4. Wipe history object completely to force blank UI state
+    document.getElementById('ouraBar').innerHTML = "💍 Handshake: " + (uID === 'J' ? 'Jermaine' : 'Sophia');
+    
     render(); 
-    
-    // 5. Force the Handshake
-    fetchOuraData(); 
+    fetchOuraData();
 }
 
 async function fetchOuraData() {
-    const fetchUser = activeUser; 
-    const bar = document.getElementById('ouraBar'); 
-    const token = TOKENS[fetchUser]; 
+    const fetchUser = user;
+    const token = TOKENS[fetchUser];
+    const bar = document.getElementById('ouraBar');
     if (!token) return;
 
     try {
-        bar.innerHTML = '💍 Force Handshake: ' + (fetchUser==='J'?'Jermaine':'Sophia') + '...';
+        const start = getDateKey(new Date(Date.now() - 864e5 * 14));
+        const end = getDateKey(new Date());
+        const range = `start_date=${start}&end_date=${end}`;
         
-        const range = `start_date=${getDateKey(new Date(Date.now()-864e5*14))}&end_date=${getDateKey(new Date())}`;
-        const [rRes, aRes] = await Promise.all([
-            fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}`)}`, {headers:{'Authorization':`Bearer ${token}`}}),
-            fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}`)}`, {headers:{'Authorization':`Bearer ${token}`}})
-        ]);
+        // Literal 510 Headers
+        const headers = { 'Authorization': `Bearer ${token}` };
 
+        // Sequential Handshake
+        const rRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}`)}`, { headers });
         const rData = await rRes.json();
+        
+        const aRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}`)}`, { headers });
         const aData = await aRes.json();
 
-        // v510 Validation Guard
-        if(activeUser !== fetchUser) return;
+        if (user !== fetchUser) return; // Guard switch
 
-        if(rData.data) {
-            const hist = rData.data.map(day => {
+        if (rData.data) {
+            ouraHistory = rData.data.map(day => {
                 const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
-                return { 
-                    date: day.day, 
-                    score: day.score || "-", 
-                    cal: act ? act.active_calories : "-", 
-                    high: act ? Math.round(act.high_activity_time/60) : 0, 
-                    med: act ? Math.round(act.medium_activity_time/60) : 0 
+                return {
+                    date: day.day,
+                    score: day.score || "-",
+                    cal: act ? act.active_calories : "-",
+                    high: act ? Math.round(act.high_activity_time/60) : 0,
+                    med: act ? Math.round(act.medium_activity_time/60) : 0
                 };
             }).reverse();
 
-            // v510 Isolated storage write
-            localStorage.setItem(`centurion_oura_cache_${fetchUser}`, JSON.stringify({history: hist}));
-            
-            const latest = hist[0]?.score || "-";
-            bar.innerHTML = `💍 ${fetchUser === 'J' ? 'JERMAINE' : 'SOPHIA'} READINESS: <span style="color:${latest >= 75 ? 'var(--green)' : 'var(--red)'}; font-weight:900">${latest}</span>`;
+            localStorage.setItem(`centurion_oura_cache_${fetchUser}`, JSON.stringify({ history: ouraHistory }));
+            const latest = ouraHistory[0]?.score || "-";
+            bar.innerHTML = `💍 ${fetchUser==='J'?'JERMAINE':'SOPHIA'} READINESS: <span style="color:${latest >= 75 ? 'var(--green)' : 'var(--red)'}; font-weight:900">${latest}</span>`;
             render();
         }
-    } catch(e) { 
-        if(activeUser === fetchUser) bar.innerHTML = "💍 Sync Failed - Tap to retry"; 
+    } catch (e) {
+        if (user === fetchUser) bar.innerHTML = "💍 Sync Failed - Tap Retest";
     }
 }
 
-window.onload = () => { 
-    const activeBadge = document.getElementById('b' + activeUser.toLowerCase());
-    if(activeBadge) activeBadge.classList.add('active');
-    render(); 
-    fetchOuraData(); 
+window.onload = () => {
+    switchU(user);
 };
 </script>
 </body>
