@@ -838,19 +838,22 @@ async function fetchOuraData() {
 function changeW(d) { offset += d; render(); }
 function resetD() { offset = 0; selDate = getCaDate(); render(); }
 
+// REPLACE window.onload with this:
 window.onload = async () => { 
     loadBaselineData(); 
     document.querySelectorAll('.u-badge').forEach(b => b.classList.toggle('active', b.id === 'b' + user.toLowerCase()));
     
-    // Fetch Oura data first, then render
-    const success = await fetchOuraData();
-    if (success !== false) {
-        render();
-    } else {
-        // If fetch failed, still render with cached data
-        render();
-    }
+    // Always render first with cached data
+    render();
+    
+    // Then fetch fresh Oura data in background
+    fetchOuraData().then((success) => {
+        if (success !== false) {
+            render(); // Re-render with fresh data
+        }
+    });
 };
+
 
 
 
