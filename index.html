@@ -609,27 +609,62 @@ function switchU(uID) {
     user = uID; 
     localStorage.setItem('centurion_active_user', uID); 
     document.querySelectorAll('.u-badge').forEach(b => b.classList.toggle('active', b.id === 'b' + uID.toLowerCase())); 
-    render();
-    fetchOuraData(); 
+    
+    // Clear current display immediately
+    document.getElementById('ouraBar').innerHTML = `💍 SWITCHING TO ${uID === 'J' ? 'JERMAINE' : 'SOPHIA'}...`;
+    document.getElementById('ouraBar').style.animation = 'pulse 1.5s infinite';
+    document.getElementById('dayContent').innerHTML = '';
+    
+    // Reset view
+    offset = 0;
+    selDate = getCaDate();
+    
+    // Fetch new user's Oura data, then render
+    fetchOuraData().then(() => {
+        render();
+    });
 }
+
 
 async function fetchOuraData() {
     const fetchID = user, token = TOKENS[fetchID], range = `start_date=${getDateKey(new Date(Date.now()-864e5*14))}&end_date=${getDateKey(new Date())}`;
     document.getElementById('ouraBar').style.animation = 'pulse 1.5s infinite';
     document.getElementById('ouraBar').innerHTML = `💍 SYNCING ${fetchID === 'J' ? 'JERMAINE' : 'SOPHIA'}...`;
+    
     try {
-        const [rRes, aRes] = await Promise.all([fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }), fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } })]);
+        const [rRes, aRes] = await Promise.all([
+            fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }), 
+            fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } })
+        ]);
+        
         const rData = await rRes.json(), aData = await aRes.json();
-        if(user !== fetchID) return;
+        
+        if(user !== fetchID) return; // User switched during fetch
+        
         if(rData.data) {
-            const hist = rData.data.map(day => { const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null; return { date: day.day, score: day.score || "-", cal: act ? act.active_calories : 0, high: act ? Math.round(act.high_activity_time/60) : 0, med: act ? Math.round(act.medium_activity_time/60) : 0 }; }).reverse();
+            const hist = rData.data.map(day => { 
+                const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null; 
+                return { 
+                    date: day.day, 
+                    score: day.score || "-", 
+                    cal: act ? act.active_calories : 0, 
+                    high: act ? Math.round(act.high_activity_time/60) : 0, 
+                    med: act ? Math.round(act.medium_activity_time/60) : 0 
+                }; 
+            }).reverse();
+            
             localStorage.setItem(`centurion_oura_cache_${fetchID}`, JSON.stringify({history: hist}));
             document.getElementById('ouraBar').style.animation = '';
             document.getElementById('ouraBar').innerHTML = `💍 ${fetchID === 'J' ? 'JERMAINE' : 'SOPHIA'} READY: <span style="color:${hist[0]?.score >= 75 ? 'var(--green)' : 'var(--red)'}; font-weight:900">${hist[0]?.score || "-"}</span>`;
-            render();
         }
-    } catch(e) { document.getElementById('ouraBar').style.animation = ''; if(user === fetchID) { document.getElementById('ouraBar').innerHTML = "💍 SYNC TIMEOUT - TAP TO RETRY"; render(); } }
+    } catch(e) { 
+        document.getElementById('ouraBar').style.animation = ''; 
+        if(user === fetchID) { 
+            document.getElementById('ouraBar').innerHTML = "💍 SYNC TIMEOUT - TAP TO RETRY"; 
+        } 
+    }
 }
+
 
 function changeW(d) { offset += d; render(); }
 function resetD() { offset = 0; selDate = getCaDate(); render(); }
