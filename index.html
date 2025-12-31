@@ -719,23 +719,45 @@ const nutHTML = `<div class="premium-card ${isNutCollapsed?'collapsed':''}">
                 </div>
             </div>
         </div>` : '<div style="padding:20px; text-align:center; background:rgba(255,255,255,0.02); border-radius:12px; margin-bottom:15px;"><div style="font-size:0.7rem; color:#666;">No meals logged</div></div>'}
+        
+        <div style="margin-bottom:12px; padding:12px; background:rgba(255,214,10,0.05); border-left:2px solid var(--gold); border-radius:8px;">
+            <div style="font-size:0.6rem; color:var(--gold); margin-bottom:8px; font-weight:800;">💡 RECOMMENDED MEALS</div>
+            <div style="font-size:0.7rem; color:#ddd; line-height:1.4;">
+                Based on your biomarker targets:
+                <div style="margin-top:8px; font-size:0.65rem; color:#aaa;">
+                    • ${user === 'J' ? 'Salmon (↓ApoB) • Spinach + Lemon (↑Iron absorption)' : 'Wild Salmon (↓ANA) • Lentils + Peppers (↑Ferritin)'}
+                </div>
+            </div>
+        </div>
+        
         <button class="action-btn green" onclick="event.stopPropagation(); openMealLogger()">📸 LOG MEAL WITH AI</button>
     </div>
 </div>`;
-    const lastTest = baselineData[user].lastLabTest, testDate = new Date(lastTest.date).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
-    let labComparisonHTML = '';
-    Object.keys(labMetadata[user]).forEach(key => {
-        const meta = labMetadata[user][key], currentVal = lastTest[key], pred = predictLabValueForDate(user, key, dk);
-        if (currentVal && pred) {
-            const delta = pred.value - currentVal, deltaPercent = ((delta / currentVal) * 100).toFixed(1), improving = meta.lowerBetter ? delta < 0 : delta > 0, goal = baselineData[user].goals[key];
-            const currentPct = Math.min(meta.lowerBetter ? (goal/currentVal)*100 : (currentVal/goal)*100, 100), predPct = Math.min(meta.lowerBetter ? (goal/pred.value)*100 : (pred.value/goal)*100, 100);
-            labComparisonHTML += `<div style="padding:15px; background:rgba(255,255,255,0.03); border-radius:12px; margin-bottom:12px; border:1px solid ${improving ? 'rgba(48,209,88,0.3)' : 'rgba(255,255,255,0.1)'}"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;"><div><div class="data-label">${meta.name}</div><div style="font-size:0.55rem; color:#666; margin-top:2px;">Goal: ${goal}${meta.unit}</div></div><div style="text-align:right;"><div style="font-size:0.65rem; color:${improving ? 'var(--green)' : delta === 0 ? '#888' : 'var(--orange)'}; font-weight:800; margin-bottom:2px;">${delta > 0 ? '+' : ''}${delta.toFixed(1)}${meta.unit}</div><div style="font-size:0.55rem; color:#666;">${deltaPercent > 0 ? '+' : ''}${deltaPercent}%</div></div></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;"><div><div style="font-size:0.55rem; color:#888; margin-bottom:5px; text-transform:uppercase;">Baseline (${testDate})</div><div style="font-size:1.1rem; font-weight:800; color:#fff; margin-bottom:5px;">${currentVal}${meta.unit}</div><div class="bar-track" style="height:6px;"><div class="bar-fill" style="width:${currentPct}%; background:${currentPct >= 100 ? 'var(--green)' : currentPct >= 70 ? 'var(--gold)' : 'var(--red)'}"></div></div></div><div><div style="font-size:0.55rem; color:var(--purple); margin-bottom:5px; text-transform:uppercase; display:flex; align-items:center; gap:5px;">Predicted (Today) <span class="prediction-badge" style="margin:0;">AI</span></div><div style="font-size:1.1rem; font-weight:800; color:${improving ? 'var(--green)' : delta === 0 ? '#fff' : 'var(--orange)'}; margin-bottom:5px;">${pred.value}${meta.unit}</div><div class="bar-track" style="height:6px;"><div class="bar-fill" style="width:${predPct}%; background:${predPct >= 100 ? 'var(--green)' : predPct >= 70 ? 'var(--gold)' : 'var(--red)'}"></div></div></div></div><div style="font-size:0.6rem; color:#666; margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.05);">${pred.confidence} confidence • ${pred.dataSource.replace(/_/g, ' ').toLowerCase()}</div></div>`;
-        }
-    });
-    
-    const bioHTML = `<div class="premium-card ${isBioCollapsed?'collapsed':''}" onclick="isBioCollapsed=!isBioCollapsed;render()"><div class="card-header"><div><div class="card-title" style="color:var(--purple)">BIOMETRICS</div><div class="card-subtitle">Baseline vs AI-Predicted</div></div><div class="card-val-lg">${bodyPred.vf} <span style="font-size:0.7rem; opacity:0.6">VF</span> <span class="chevron">▼</span></div></div><div class="card-body">${labComparisonHTML}<button class="action-btn blue" onclick="event.stopPropagation(); openLabLogger()">🩸 LOG TEST RESULTS</button></div></div>`;
-    
-    document.getElementById('dayContent').innerHTML = burnoutAlert + summaryHTML + bioavailHTML + energyHTML + predictionsHTML + protocolHTML + workoutHTML + nutHTML + bioHTML;
+
+// ADD THIS FUNCTION after logQuickMeal() function:
+async function processPhotoWithAI(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        const imgData = e.target.result, base64Data = imgData.split(',')[1];
+        document.getElementById('photoPreview').style.display = 'block';
+        document.getElementById('photoPreview').innerHTML = `<img src="${imgData}" style="width:100%; border-radius:12px; margin-bottom:15px;"><div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:12px; border:1px solid var(--border);"><div style="font-size:0.65rem; color:#888; margin-bottom:10px; text-transform:uppercase;">🤖 AI ANALYZING</div><div style="text-align:center; padding:20px; color:#666;"><div style="font-size:1.2rem; margin-bottom:10px; animation: pulse 1.5s infinite;">🔄 Analyzing nutrients + bio-availability...</div></div></div>`;
+        try {
+            const response = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "Content-Type": "application/json", "anthropic-version": "2023-06-01" }, body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1024, messages: [{ role: "user", content: [{ type: "image", source: { type: "base64", media_type: "image/jpeg", data: base64Data } }, { type: "text", text: `Analyze this food and provide ONLY a JSON response (no markdown):\n{\n  "foods": ["specific food 1", "food 2"],\n  "description": "brief meal description",\n  "protein": grams,\n  "carbs": grams,\n  "fat": grams,\n  "fiber": grams,\n  "omega3": grams,\n  "saturatedFat": grams,\n  "refinedCarbs": grams,\n  "calories": total,\n  "portionSize": "small/medium/large",\n  "confidence": "high/medium/low"\n}` }] }] }) });
+            if (!response.ok) throw new Error('AI Vision unavailable');
+            const data = await response.json(), cleanJson = data.content[0].text.replace(/```json\n?|\n?```/g, '').trim(), foodData = JSON.parse(cleanJson);
+            const { foods, description, protein, carbs, fat, fiber, omega3, saturatedFat, refinedCarbs, calories, portionSize, confidence } = foodData;
+            const dk = getDateKey(selDate), currentLog = getFoodLog(dk), testMeals = [...currentLog.meals, { name: foods.join(' + '), time: Date.now() }], interactions = analyzeMealInteractions(testMeals, user);
+            const tempLog = { totalFiber: fiber, totalOmega3: omega3, totalSatFat: saturatedFat, totalRefinedCarbs: refinedCarbs }, impacts = calculateMacroImpacts(user, tempLog);
+            let impactHTML = '';
+            Object.keys(impacts).forEach(biomarker => { const impact = impacts[biomarker]; if (Math.abs(impact.totalChange) > 0.1) { const color = impact.totalChange < 0 ? 'var(--green)' : 'var(--red)', symbol = impact.totalChange < 0 ? '↓' : '↑'; impactHTML += `<div style="padding:8px; background:rgba(255,255,255,0.02); border-radius:8px; margin-bottom:6px;"><div style="display:flex; justify-content:space-between;"><span style="font-size:0.7rem; color:#888;">${labMetadata[user][biomarker]?.name || biomarker}</span><span style="font-size:0.75rem; font-weight:800; color:${color}">${symbol} ${Math.abs(impact.totalChange).toFixed(1)}</span></div></div>`; } });
+            let warningsHTML = ''; interactions.warnings.forEach(w => { warningsHTML += `<div class="warning-box"><div class="warn-label">⚠️ ${w.severity.toUpperCase()} INTERACTION</div><div class="warn-text">${w.mechanism}</div><div class="warn-action">💡 ${w.solution}</div></div>`; });
+            let synergiesHTML = ''; interactions.synergies.forEach(s => { synergiesHTML += `<div class="synergy-box"><div class="syn-label">✓ SYNERGY DETECTED</div><div class="syn-text">${s.enhancer} + ${s.nutrient}: ${s.enhancement.toFixed(1)}x absorption boost</div></div>`; });
+            document.getElementById('photoPreview').innerHTML = `<img src="${imgData}" style="width:100%; border-radius:12px; margin-bottom:15px;"><div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:12px; border:1px solid var(--border);"><div style="display: flex; justify-content: space-between; margin-bottom:12px;"><div style="font-size:0.65rem; color:var(--green); text-transform:uppercase; font-weight:800;">✓ IDENTIFIED</div><div style="font-size:0.6rem; padding:4px 8px; background:rgba(255,255,255,0.1); border-radius:6px;">${confidence.toUpperCase()}</div></div><div style="margin-bottom:15px;"><div style="font-size:0.9rem; font-weight:800; color:#fff; margin-bottom:5px;">${foods.join(' • ')}</div><div style="font-size:0.7rem; color:#888;">${description} (${portionSize})</div></div><div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:8px; margin-bottom:15px;"><div style="text-align:center; padding:8px; background:rgba(255,255,255,0.03); border-radius:8px;"><div style="font-size:1rem; font-weight:800; color:var(--red)">${protein}</div><div style="font-size:0.5rem; color:#666;">PRO</div></div><div style="text-align:center; padding:8px; background:rgba(255,255,255,0.03); border-radius:8px;"><div style="font-size:1rem; font-weight:800; color:var(--gold)">${carbs}</div><div style="font-size:0.5rem; color:#666;">CARB</div></div><div style="text-align:center; padding:8px; background:rgba(255,255,255,0.03); border-radius:8px;"><div style="font-size:1rem; font-weight:800; color:var(--blue)">${fat}</div><div style="font-size:0.5rem; color:#666;">FAT</div></div><div style="text-align:center; padding:8px; background:rgba(255,255,255,0.03); border-radius:8px;"><div style="font-size:1rem; font-weight:800; color:var(--purple)">${calories}</div><div style="font-size:0.5rem; color:#666;">CAL</div></div></div>${impactHTML ? `<div style="padding:12px; background:rgba(255,214,10,0.05); border-left:2px solid var(--gold); border-radius:8px; margin-bottom:15px;"><div style="font-size:0.6rem; color:var(--gold); margin-bottom:8px; font-weight:800;">📊 BIOMARKER IMPACT</div>${impactHTML}</div>` : ''}${warningsHTML}${synergiesHTML}<div style="display:flex; gap:8px; margin-top:15px;"><button class="action-btn green" style="flex:1;" onclick='confirmAIMeal(${JSON.stringify(foods.join(' + '))}, ${protein}, ${carbs}, ${fat}, ${calories}, ${fiber}, ${omega3}, ${saturatedFat}, ${refinedCarbs})'>✓ LOG</button><button class="action-btn" style="flex:1; background:rgba(255,255,255,0.1);" onclick="document.getElementById('photoInput').value=''; document.getElementById('photoPreview').style.display='none'">📸 RETAKE</button></div></div>`;
+        } catch (error) { console.error('AI Vision Error:', error); document.getElementById('photoPreview').innerHTML = `<img src="${imgData}" style="width:100%; border-radius:12px; margin-bottom:15px;"><div style="background:rgba(255,69,58,0.1); padding:15px; border-radius:12px; border:1px solid var(--red);"><div style="font-size:0.65rem; color:var(--red); margin-bottom:5px; text-transform:uppercase;">⚠️ AI ERROR</div><div style="font-size:0.75rem; color:#ddd; margin-bottom:15px;">Try again or use quick log.</div><button class="action-btn" style="background:rgba(255,255,255,0.1);" onclick="document.getElementById('photoInput').value=''; document.getElementById('photoPreview').style.display='none'">CLOSE</button></div>`; }
+    };
+    reader.readAsDataURL(file);
 }
 
 
@@ -747,7 +769,7 @@ function switchU(uID) {
     // Clear current display immediately
     document.getElementById('ouraBar').innerHTML = `💍 SWITCHING TO ${uID === 'J' ? 'JERMAINE' : 'SOPHIA'}...`;
     document.getElementById('ouraBar').style.animation = 'pulse 1.5s infinite';
-    document.getElementById('dayContent').innerHTML = '';
+    document.getElementById('dayContent').innerHTML = '<div style="text-align:center; padding:40px; color:#666;">Loading...</div>';
     
     // Reset view
     offset = 0;
@@ -759,21 +781,29 @@ function switchU(uID) {
     });
 }
 
-
 async function fetchOuraData() {
-    const fetchID = user, token = TOKENS[fetchID], range = `start_date=${getDateKey(new Date(Date.now()-864e5*14))}&end_date=${getDateKey(new Date())}`;
+    const fetchID = user;
+    const token = TOKENS[fetchID];
+    const range = `start_date=${getDateKey(new Date(Date.now()-864e5*14))}&end_date=${getDateKey(new Date())}`;
+    
     document.getElementById('ouraBar').style.animation = 'pulse 1.5s infinite';
     document.getElementById('ouraBar').innerHTML = `💍 SYNCING ${fetchID === 'J' ? 'JERMAINE' : 'SOPHIA'}...`;
     
     try {
         const [rRes, aRes] = await Promise.all([
-            fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }), 
-            fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } })
+            fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}`)}`, { 
+                headers: { 'Authorization': `Bearer ${token}` } 
+            }), 
+            fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}`)}`, { 
+                headers: { 'Authorization': `Bearer ${token}` } 
+            })
         ]);
         
-        const rData = await rRes.json(), aData = await aRes.json();
+        const rData = await rRes.json();
+        const aData = await aRes.json();
         
-        if(user !== fetchID) return; // User switched during fetch
+        // User switched during fetch - abort
+        if(user !== fetchID) return false;
         
         if(rData.data) {
             const hist = rData.data.map(day => { 
@@ -790,14 +820,19 @@ async function fetchOuraData() {
             localStorage.setItem(`centurion_oura_cache_${fetchID}`, JSON.stringify({history: hist}));
             document.getElementById('ouraBar').style.animation = '';
             document.getElementById('ouraBar').innerHTML = `💍 ${fetchID === 'J' ? 'JERMAINE' : 'SOPHIA'} READY: <span style="color:${hist[0]?.score >= 75 ? 'var(--green)' : 'var(--red)'}; font-weight:900">${hist[0]?.score || "-"}</span>`;
+            
+            return true;
         }
     } catch(e) { 
+        console.error('Oura sync error:', e);
         document.getElementById('ouraBar').style.animation = ''; 
         if(user === fetchID) { 
             document.getElementById('ouraBar').innerHTML = "💍 SYNC TIMEOUT - TAP TO RETRY"; 
-        } 
+        }
+        return false;
     }
 }
+
 
 
 function changeW(d) { offset += d; render(); }
