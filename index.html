@@ -497,10 +497,7 @@ async function fetchOuraData() {
     const range = `start_date=${getDateKey(new Date(Date.now()-864e5*14))}&end_date=${getDateKey(new Date())}`;
     
     document.getElementById('ouraBar').style.animation = 'pulse 1.5s infinite';
-const ouraBar = document.getElementById('ouraBar');
-ouraBar.innerHTML = `💍 ${fetchID === 'J' ? 'JERMAINE' : 'SOPHIA'} READY: <span style="color:${hist[0]?.score >= 75 ? 'var(--green)' : 'var(--red)'}; font-weight:900">${hist[0]?.score || "-"}</span>`;
-ouraBar.onclick = () => fetchOuraData().then(() => render());
-
+    document.getElementById('ouraBar').innerHTML = `💍 SYNCING ${fetchID === 'J' ? 'JERMAINE' : 'SOPHIA'}...`;
     
     try {
         const [rRes, aRes] = await Promise.all([
@@ -516,7 +513,7 @@ ouraBar.onclick = () => fetchOuraData().then(() => render());
         const aData = await aRes.json();
         
         // User switched during fetch - abort
-        if(user !== fetchID) return;
+        if(user !== fetchID) return false;
         
         if(rData.data) {
             const hist = rData.data.map(day => { 
@@ -532,19 +529,26 @@ ouraBar.onclick = () => fetchOuraData().then(() => render());
             
             localStorage.setItem(`centurion_oura_cache_${fetchID}`, JSON.stringify({history: hist}));
             document.getElementById('ouraBar').style.animation = '';
-            document.getElementById('ouraBar').innerHTML = `💍 ${fetchID === 'J' ? 'JERMAINE' : 'SOPHIA'} READY: <span style="color:${hist[0]?.score >= 75 ? 'var(--green)' : 'var(--red)'}; font-weight:900">${hist[0]?.score || "-"}</span>`;
             
-            return true; // SUCCESS
+            // NOW hist exists - set innerHTML and onclick
+            const ouraBar = document.getElementById('ouraBar');
+            ouraBar.innerHTML = `💍 ${fetchID === 'J' ? 'JERMAINE' : 'SOPHIA'} READY: <span style="color:${hist[0]?.score >= 75 ? 'var(--green)' : 'var(--red)'}; font-weight:900">${hist[0]?.score || "-"}</span>`;
+            ouraBar.onclick = () => fetchOuraData().then(() => render());
+            
+            return true;
         }
     } catch(e) { 
         console.error('Oura sync error:', e);
         document.getElementById('ouraBar').style.animation = ''; 
         if(user === fetchID) { 
-            document.getElementById('ouraBar').innerHTML = "💍 SYNC TIMEOUT - TAP TO RETRY"; 
+            const ouraBar = document.getElementById('ouraBar');
+            ouraBar.innerHTML = "💍 SYNC TIMEOUT - TAP TO RETRY";
+            ouraBar.onclick = () => fetchOuraData().then(() => render());
         }
-        return false; // FAILED
+        return false;
     }
 }
+
 
 
 function confirmAIMeal(name, pro, carb, fat, cal, fiber, omega3, satFat, refinedCarbs) { const dk = getDateKey(selDate), meal = { name, pro, carb, fat, cal, fiber, omega3, satFat, refinedCarbs, aiLogged: true }, dayLog = saveFoodLog(dk, meal); closeModal('mealModal'); showNotification(`✓ ${name} logged | ${dayLog.totalPro}g protein today`); render(); }
