@@ -580,13 +580,35 @@ function getWeeklySummary(history) { if (!history || history.length < 7) return 
 function render() {
     const mon = getMon(offset), tabs = document.getElementById('dayTabs');
     tabs.innerHTML = '';
+    
+    // Show date immediately
     document.getElementById('dateDisplay').innerText = `${mon.toLocaleDateString('en-US',{month:'short',day:'numeric'})} - ${new Date(mon.getTime() + 864e5*6).toLocaleDateString('en-US',{month:'short',day:'numeric'})}`;
+    
     const labReminder = checkLabReminder(user);
-    if (labReminder) { document.getElementById('labReminder').innerHTML = labReminder; document.getElementById('labReminder').style.display = 'block'; } else document.getElementById('labReminder').style.display = 'none';
+    if (labReminder) { 
+        document.getElementById('labReminder').innerHTML = labReminder; 
+        document.getElementById('labReminder').style.display = 'block'; 
+    } else document.getElementById('labReminder').style.display = 'none';
+    
     const bodyScanReminder = checkBodyScanReminder(user);
-    if (bodyScanReminder) { document.getElementById('bodyScanReminder').innerHTML = bodyScanReminder; document.getElementById('bodyScanReminder').style.display = 'block'; } else document.getElementById('bodyScanReminder').style.display = 'none';
-    for(let i=0; i<7; i++){ let d = new Date(mon); d.setDate(mon.getDate()+i); let active = getDateKey(d) === getDateKey(selDate); let t = document.createElement('div'); t.className = 'tab' + (active ? ' active' : ''); t.innerHTML = `${["M","T","W","T","F","S","S"][i]}<br>${d.getDate()}`; t.onclick = () => { selDate = d; render(); }; tabs.appendChild(t); if(active) showDay(d, i+1 === 7 ? 0 : i+1); }
+    if (bodyScanReminder) { 
+        document.getElementById('bodyScanReminder').innerHTML = bodyScanReminder; 
+        document.getElementById('bodyScanReminder').style.display = 'block'; 
+    } else document.getElementById('bodyScanReminder').style.display = 'none';
+    
+    for(let i=0; i<7; i++){ 
+        let d = new Date(mon); 
+        d.setDate(mon.getDate()+i); 
+        let active = getDateKey(d) === getDateKey(selDate); 
+        let t = document.createElement('div'); 
+        t.className = 'tab' + (active ? ' active' : ''); 
+        t.innerHTML = `${["M","T","W","T","F","S","S"][i]}<br>${d.getDate()}`; 
+        t.onclick = () => { selDate = d; render(); }; 
+        tabs.appendChild(t); 
+        if(active) showDay(d, i+1 === 7 ? 0 : i+1); 
+    }
 }
+
 
 function showDay(dObj, idx) {
     const dk = getDateKey(dObj), basePlan = unifiedSchedule[idx], cached = JSON.parse(localStorage.getItem(`centurion_oura_cache_${user}`)) || { history: [] }, rawOura = cached.history.find(d => d.date === dk) || { score: "-", cal: 0, high: 0, med: 0 };
@@ -717,8 +739,13 @@ function resetD() { offset = 0; selDate = getCaDate(); render(); }
 window.onload = () => { 
     loadBaselineData(); 
     document.querySelectorAll('.u-badge').forEach(b => b.classList.toggle('active', b.id === 'b' + user.toLowerCase()));
-    fetchOuraData();
+    
+    // Trigger initial sync and render
+    fetchOuraData().then(() => {
+        render();
+    });
 };
+
 </script>
 </body>
 </html>
