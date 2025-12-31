@@ -497,7 +497,10 @@ async function fetchOuraData() {
     const range = `start_date=${getDateKey(new Date(Date.now()-864e5*14))}&end_date=${getDateKey(new Date())}`;
     
     document.getElementById('ouraBar').style.animation = 'pulse 1.5s infinite';
-    document.getElementById('ouraBar').innerHTML = `💍 SYNCING ${fetchID === 'J' ? 'JERMAINE' : 'SOPHIA'}...`;
+const ouraBar = document.getElementById('ouraBar');
+ouraBar.innerHTML = `💍 ${fetchID === 'J' ? 'JERMAINE' : 'SOPHIA'} READY: <span style="color:${hist[0]?.score >= 75 ? 'var(--green)' : 'var(--red)'}; font-weight:900">${hist[0]?.score || "-"}</span>`;
+ouraBar.onclick = () => fetchOuraData().then(() => render());
+
     
     try {
         const [rRes, aRes] = await Promise.all([
@@ -840,13 +843,15 @@ async function fetchOuraData() {
             return true;
         }
     } catch(e) { 
-        console.error('Oura sync error:', e);
-        document.getElementById('ouraBar').style.animation = ''; 
-        if(user === fetchID) { 
-            document.getElementById('ouraBar').innerHTML = "💍 SYNC TIMEOUT - TAP TO RETRY"; 
-        }
-        return false;
+    console.error('Oura sync error:', e);
+    document.getElementById('ouraBar').style.animation = ''; 
+    if(user === fetchID) { 
+        const ouraBar = document.getElementById('ouraBar');
+        ouraBar.innerHTML = "💍 SYNC TIMEOUT - TAP TO RETRY";
+        ouraBar.onclick = () => fetchOuraData().then(() => render());
     }
+    return false;
+}
 }
 
 
