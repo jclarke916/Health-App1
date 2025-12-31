@@ -754,30 +754,7 @@ const nutHTML = `<div class="premium-card ${isNutCollapsed?'collapsed':''}">
 }
 
 // ADD THIS FUNCTION after logQuickMeal() function:
-async function processPhotoWithAI(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async function(e) {
-        const imgData = e.target.result, base64Data = imgData.split(',')[1];
-        document.getElementById('photoPreview').style.display = 'block';
-        document.getElementById('photoPreview').innerHTML = `<img src="${imgData}" style="width:100%; border-radius:12px; margin-bottom:15px;"><div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:12px; border:1px solid var(--border);"><div style="font-size:0.65rem; color:#888; margin-bottom:10px; text-transform:uppercase;">🤖 AI ANALYZING</div><div style="text-align:center; padding:20px; color:#666;"><div style="font-size:1.2rem; margin-bottom:10px; animation: pulse 1.5s infinite;">🔄 Analyzing nutrients + bio-availability...</div></div></div>`;
-        try {
-            const response = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "Content-Type": "application/json", "anthropic-version": "2023-06-01" }, body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1024, messages: [{ role: "user", content: [{ type: "image", source: { type: "base64", media_type: "image/jpeg", data: base64Data } }, { type: "text", text: `Analyze this food and provide ONLY a JSON response (no markdown):\n{\n  "foods": ["specific food 1", "food 2"],\n  "description": "brief meal description",\n  "protein": grams,\n  "carbs": grams,\n  "fat": grams,\n  "fiber": grams,\n  "omega3": grams,\n  "saturatedFat": grams,\n  "refinedCarbs": grams,\n  "calories": total,\n  "portionSize": "small/medium/large",\n  "confidence": "high/medium/low"\n}` }] }] }) });
-            if (!response.ok) throw new Error('AI Vision unavailable');
-            const data = await response.json(), cleanJson = data.content[0].text.replace(/```json\n?|\n?```/g, '').trim(), foodData = JSON.parse(cleanJson);
-            const { foods, description, protein, carbs, fat, fiber, omega3, saturatedFat, refinedCarbs, calories, portionSize, confidence } = foodData;
-            const dk = getDateKey(selDate), currentLog = getFoodLog(dk), testMeals = [...currentLog.meals, { name: foods.join(' + '), time: Date.now() }], interactions = analyzeMealInteractions(testMeals, user);
-            const tempLog = { totalFiber: fiber, totalOmega3: omega3, totalSatFat: saturatedFat, totalRefinedCarbs: refinedCarbs }, impacts = calculateMacroImpacts(user, tempLog);
-            let impactHTML = '';
-            Object.keys(impacts).forEach(biomarker => { const impact = impacts[biomarker]; if (Math.abs(impact.totalChange) > 0.1) { const color = impact.totalChange < 0 ? 'var(--green)' : 'var(--red)', symbol = impact.totalChange < 0 ? '↓' : '↑'; impactHTML += `<div style="padding:8px; background:rgba(255,255,255,0.02); border-radius:8px; margin-bottom:6px;"><div style="display:flex; justify-content:space-between;"><span style="font-size:0.7rem; color:#888;">${labMetadata[user][biomarker]?.name || biomarker}</span><span style="font-size:0.75rem; font-weight:800; color:${color}">${symbol} ${Math.abs(impact.totalChange).toFixed(1)}</span></div></div>`; } });
-            let warningsHTML = ''; interactions.warnings.forEach(w => { warningsHTML += `<div class="warning-box"><div class="warn-label">⚠️ ${w.severity.toUpperCase()} INTERACTION</div><div class="warn-text">${w.mechanism}</div><div class="warn-action">💡 ${w.solution}</div></div>`; });
-            let synergiesHTML = ''; interactions.synergies.forEach(s => { synergiesHTML += `<div class="synergy-box"><div class="syn-label">✓ SYNERGY DETECTED</div><div class="syn-text">${s.enhancer} + ${s.nutrient}: ${s.enhancement.toFixed(1)}x absorption boost</div></div>`; });
-            document.getElementById('photoPreview').innerHTML = `<img src="${imgData}" style="width:100%; border-radius:12px; margin-bottom:15px;"><div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:12px; border:1px solid var(--border);"><div style="display: flex; justify-content: space-between; margin-bottom:12px;"><div style="font-size:0.65rem; color:var(--green); text-transform:uppercase; font-weight:800;">✓ IDENTIFIED</div><div style="font-size:0.6rem; padding:4px 8px; background:rgba(255,255,255,0.1); border-radius:6px;">${confidence.toUpperCase()}</div></div><div style="margin-bottom:15px;"><div style="font-size:0.9rem; font-weight:800; color:#fff; margin-bottom:5px;">${foods.join(' • ')}</div><div style="font-size:0.7rem; color:#888;">${description} (${portionSize})</div></div><div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:8px; margin-bottom:15px;"><div style="text-align:center; padding:8px; background:rgba(255,255,255,0.03); border-radius:8px;"><div style="font-size:1rem; font-weight:800; color:var(--red)">${protein}</div><div style="font-size:0.5rem; color:#666;">PRO</div></div><div style="text-align:center; padding:8px; background:rgba(255,255,255,0.03); border-radius:8px;"><div style="font-size:1rem; font-weight:800; color:var(--gold)">${carbs}</div><div style="font-size:0.5rem; color:#666;">CARB</div></div><div style="text-align:center; padding:8px; background:rgba(255,255,255,0.03); border-radius:8px;"><div style="font-size:1rem; font-weight:800; color:var(--blue)">${fat}</div><div style="font-size:0.5rem; color:#666;">FAT</div></div><div style="text-align:center; padding:8px; background:rgba(255,255,255,0.03); border-radius:8px;"><div style="font-size:1rem; font-weight:800; color:var(--purple)">${calories}</div><div style="font-size:0.5rem; color:#666;">CAL</div></div></div>${impactHTML ? `<div style="padding:12px; background:rgba(255,214,10,0.05); border-left:2px solid var(--gold); border-radius:8px; margin-bottom:15px;"><div style="font-size:0.6rem; color:var(--gold); margin-bottom:8px; font-weight:800;">📊 BIOMARKER IMPACT</div>${impactHTML}</div>` : ''}${warningsHTML}${synergiesHTML}<div style="display:flex; gap:8px; margin-top:15px;"><button class="action-btn green" style="flex:1;" onclick='confirmAIMeal(${JSON.stringify(foods.join(' + '))}, ${protein}, ${carbs}, ${fat}, ${calories}, ${fiber}, ${omega3}, ${saturatedFat}, ${refinedCarbs})'>✓ LOG</button><button class="action-btn" style="flex:1; background:rgba(255,255,255,0.1);" onclick="document.getElementById('photoInput').value=''; document.getElementById('photoPreview').style.display='none'">📸 RETAKE</button></div></div>`;
-        } catch (error) { console.error('AI Vision Error:', error); document.getElementById('photoPreview').innerHTML = `<img src="${imgData}" style="width:100%; border-radius:12px; margin-bottom:15px;"><div style="background:rgba(255,69,58,0.1); padding:15px; border-radius:12px; border:1px solid var(--red);"><div style="font-size:0.65rem; color:var(--red); margin-bottom:5px; text-transform:uppercase;">⚠️ AI ERROR</div><div style="font-size:0.75rem; color:#ddd; margin-bottom:15px;">Try again or use quick log.</div><button class="action-btn" style="background:rgba(255,255,255,0.1);" onclick="document.getElementById('photoInput').value=''; document.getElementById('photoPreview').style.display='none'">CLOSE</button></div>`; }
-    };
-    reader.readAsDataURL(file);
-}
+
 
 
 function switchU(uID) { 
@@ -800,59 +777,7 @@ function switchU(uID) {
     });
 }
 
-async function fetchOuraData() {
-    const fetchID = user;
-    const token = TOKENS[fetchID];
-    const range = `start_date=${getDateKey(new Date(Date.now()-864e5*14))}&end_date=${getDateKey(new Date())}`;
-    
-    document.getElementById('ouraBar').style.animation = 'pulse 1.5s infinite';
-    document.getElementById('ouraBar').innerHTML = `💍 SYNCING ${fetchID === 'J' ? 'JERMAINE' : 'SOPHIA'}...`;
-    
-    try {
-        const [rRes, aRes] = await Promise.all([
-            fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}`)}`, { 
-                headers: { 'Authorization': `Bearer ${token}` } 
-            }), 
-            fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}`)}`, { 
-                headers: { 'Authorization': `Bearer ${token}` } 
-            })
-        ]);
-        
-        const rData = await rRes.json();
-        const aData = await aRes.json();
-        
-        // User switched during fetch - abort
-        if(user !== fetchID) return false;
-        
-        if(rData.data) {
-            const hist = rData.data.map(day => { 
-                const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null; 
-                return { 
-                    date: day.day, 
-                    score: day.score || "-", 
-                    cal: act ? act.active_calories : 0, 
-                    high: act ? Math.round(act.high_activity_time/60) : 0, 
-                    med: act ? Math.round(act.medium_activity_time/60) : 0 
-                }; 
-            }).reverse();
-            
-            localStorage.setItem(`centurion_oura_cache_${fetchID}`, JSON.stringify({history: hist}));
-            document.getElementById('ouraBar').style.animation = '';
-            document.getElementById('ouraBar').innerHTML = `💍 ${fetchID === 'J' ? 'JERMAINE' : 'SOPHIA'} READY: <span style="color:${hist[0]?.score >= 75 ? 'var(--green)' : 'var(--red)'}; font-weight:900">${hist[0]?.score || "-"}</span>`;
-            
-            return true;
-        }
-    } catch(e) { 
-    console.error('Oura sync error:', e);
-    document.getElementById('ouraBar').style.animation = ''; 
-    if(user === fetchID) { 
-        const ouraBar = document.getElementById('ouraBar');
-        ouraBar.innerHTML = "💍 SYNC TIMEOUT - TAP TO RETRY";
-        ouraBar.onclick = () => fetchOuraData().then(() => render());
-    }
-    return false;
-}
-}
+
 
 
 
