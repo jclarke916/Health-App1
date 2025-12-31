@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v1400.0 Ultimate Intelligence</title>
+    <title>The Centurion | v2000.0 Complete Autopilot</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -17,6 +17,7 @@
             --blue: #0A84FF;
             --red: #FF453A;
             --purple: #BF5AF2;
+            --orange: #FF9F0A;
             --radius: 24px;
         }
 
@@ -31,13 +32,15 @@
 
         .status-bar { text-align: center; color: var(--text-sub); font-size: 0.65rem; font-weight: 600; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; }
         .controls { display: flex; gap: 8px; margin-bottom: 20px; }
-        .nav-btn { background: var(--glass); border: 1px solid var(--border); color: var(--text-sub); padding: 12px; flex: 1; border-radius: 16px; font-size: 0.6rem; font-weight: 700; cursor: pointer; text-transform: uppercase; }
+        .nav-btn { background: var(--glass); border: 1px solid var(--border); color: var(--text-sub); padding: 12px; flex: 1; border-radius: 16px; font-size: 0.6rem; font-weight: 700; cursor: pointer; text-transform: uppercase; transition: all 0.2s; }
+        .nav-btn:active { transform: scale(0.98); }
 
         .tabs { display: flex; gap: 6px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none;}
         .tab { flex: 1; min-width: 45px; padding: 12px 0; background: transparent; color: #555; border-radius: 16px; font-size: 0.6rem; font-weight: 700; text-align: center; cursor: pointer; transition: all 0.3s; }
         .tab.active { background: var(--glass); color: #fff; border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
 
-        .premium-card { background: var(--glass); backdrop-filter: blur(20px); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 12px; overflow: hidden; cursor: pointer; }
+        .premium-card { background: var(--glass); backdrop-filter: blur(20px); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 12px; overflow: hidden; cursor: pointer; transition: all 0.2s; }
+        .premium-card:active { transform: scale(0.99); }
         .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .card-title { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-sub); }
         .card-subtitle { font-size: 0.65rem; color: #555; margin-top: 3px; }
@@ -53,9 +56,6 @@
         .bar-fill { height: 100%; border-radius: 10px; transition: width 0.8s ease; }
         
         .section-header { margin: 25px 0 10px 0; font-size: 0.6rem; color: #666; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
-        .status-pill { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
-        .pill-win { background: rgba(48, 209, 88, 0.15); color: var(--green); border: 1px solid rgba(48, 209, 88, 0.3); }
-        .pill-rest { background: rgba(255, 69, 58, 0.15); color: var(--red); border: 1px solid rgba(255, 69, 58, 0.3); }
         .chevron { font-size: 0.8rem; color: #444; transition: transform 0.3s ease; margin-left: 10px; }
         .premium-card.collapsed .card-body { display: none; }
         .premium-card.collapsed .chevron { transform: rotate(-90deg); }
@@ -66,17 +66,53 @@
         .sci-text { font-size: 0.75rem; color: #ddd; line-height: 1.4; }
         .sci-reason { color: #888; font-style: italic; margin-top: 4px; font-size: 0.7rem; }
 
+        /* ACTION BUTTONS */
+        .action-btn { background: var(--blue); color: #fff; padding: 12px 20px; border-radius: 12px; border: none; font-size: 0.7rem; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; width: 100%; margin-top: 10px; transition: all 0.2s; }
+        .action-btn:active { transform: scale(0.98); }
+        .action-btn.green { background: var(--green); }
+        .action-btn.gold { background: var(--gold); color: #000; }
+        .action-btn.red { background: var(--red); }
+
+        /* MODAL */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 9999; display: none; flex-direction: column; animation: fadeIn 0.2s; }
+        .modal.active { display: flex; }
+        .modal-header { padding: 20px; background: rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; }
+        .modal-title { font-size: 0.8rem; font-weight: 800; color: var(--gold); text-transform: uppercase; letter-spacing: 1.5px; }
+        .modal-close { font-size: 1.8rem; cursor: pointer; color: #666; }
+        .modal-body { flex: 1; overflow-y: auto; padding: 20px; }
+        
+        /* FORM INPUTS */
+        .form-group { margin-bottom: 20px; }
+        .form-label { font-size: 0.65rem; color: var(--text-sub); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; display: block; }
+        .form-input { width: 100%; padding: 14px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 12px; color: #fff; font-size: 0.9rem; font-weight: 600; }
+        .form-input:focus { outline: none; border-color: var(--blue); }
+
+        /* CHART */
+        .chart-container { height: 200px; position: relative; margin: 20px 0; }
+        .chart-canvas { width: 100%; height: 100%; }
+
+        /* NOTIFICATION */
+        .notification { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--glass); backdrop-filter: blur(20px); border: 1px solid var(--border); border-radius: 16px; padding: 15px 25px; z-index: 10000; display: none; animation: slideDown 0.3s; }
+        .notification.active { display: block; }
+        .notification.success { border-color: var(--green); }
+        .notification.error { border-color: var(--red); }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideDown { from { transform: translateX(-50%) translateY(-20px); opacity: 0; } to { transform: translateX(-50%) translateY(0); opacity: 1; } }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
     </style>
 </head>
 <body>
 <div class="container">
-    <header><h1>THE CENTURION PROTOCOL</h1>
+    <header>
+        <h1>THE CENTURION PROTOCOL</h1>
         <div class="badge-row">
             <div id="bj" class="u-badge" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
             <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
         </div>
     </header>
+    
+    <div id="labReminder" class="status-bar" style="color: var(--orange); cursor: default;"></div>
     <div id="ouraBar" class="status-bar" onclick="fetchOuraData()">💍 HANDSHAKE REQUIRED...</div>
     <div id="dateDisplay" class="status-bar" style="margin-bottom: 20px; opacity: 0.7;">...</div>
 
@@ -88,12 +124,70 @@
     
     <div id="dayTabs" class="tabs"></div>
     <div id="dayContent"></div>
-    <div style="text-align:center; color:#333; font-size:10px; margin-top:30px; opacity:0.4;">v1400.0 Ultimate Intelligence</div>
+    <div style="text-align:center; color:#333; font-size:10px; margin-top:30px; opacity:0.4;">v2000.0 Complete Autopilot</div>
 </div>
+
+<!-- MODALS -->
+<div id="bodyModal" class="modal">
+    <div class="modal-header">
+        <div class="modal-title">📊 LOG BODY SCAN</div>
+        <div class="modal-close" onclick="closeModal('bodyModal')">✕</div>
+    </div>
+    <div class="modal-body">
+        <div class="form-group">
+            <label class="form-label">Body Fat %</label>
+            <input type="number" step="0.1" id="bfInput" class="form-input" placeholder="19.0">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Muscle Mass (lbs)</label>
+            <input type="number" step="0.1" id="muscleInput" class="form-input" placeholder="99.0">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Visceral Fat Level</label>
+            <input type="number" id="vfInput" class="form-input" placeholder="10">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Scan Date</label>
+            <input type="date" id="scanDateInput" class="form-input">
+        </div>
+        <button class="action-btn green" onclick="saveBodyScan()">✓ SAVE SCAN</button>
+    </div>
+</div>
+
+<div id="labModal" class="modal">
+    <div class="modal-header">
+        <div class="modal-title">🩸 LOG LAB RESULTS</div>
+        <div class="modal-close" onclick="closeModal('labModal')">✕</div>
+    </div>
+    <div class="modal-body" id="labModalBody"></div>
+</div>
+
+<div id="mealModal" class="modal">
+    <div class="modal-header">
+        <div class="modal-title">📸 LOG MEAL</div>
+        <div class="modal-close" onclick="closeModal('mealModal')">✕</div>
+    </div>
+    <div class="modal-body">
+        <input type="file" accept="image/*" capture="environment" id="photoInput" style="display:none" onchange="processPhoto(event)">
+        <label for="photoInput">
+            <div style="border: 2px dashed var(--border); border-radius: 16px; padding: 40px; text-align: center; cursor: pointer; margin-bottom: 20px;">
+                <div style="font-size: 3rem; margin-bottom: 10px;">📸</div>
+                <div style="font-size: 0.8rem; color: var(--text-sub);">TAP TO CAPTURE MEAL</div>
+            </div>
+        </label>
+        <div id="photoPreview" style="display:none;"></div>
+        <div style="border-top: 1px solid var(--border); padding-top: 20px; margin-top: 20px;">
+            <div style="font-size: 0.65rem; color: #666; margin-bottom: 10px; text-transform: uppercase;">OR QUICK LOG</div>
+            <div id="quickMealButtons"></div>
+        </div>
+    </div>
+</div>
+
+<div id="notification" class="notification"></div>
 
 <script>
 // ==========================================
-// CENTURION v1400.0 ULTIMATE INTELLIGENCE
+// CENTURION v2000.0 - COMPLETE AUTOPILOT
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
@@ -105,34 +199,49 @@ let isWorkoutCollapsed = true;
 let isNutCollapsed = true;
 let isAICollapsed = true;
 let isBioCollapsed = true;
+let isTrendCollapsed = true;
 
-const TOKENS = { 'J': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'S': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
+const TOKENS = { 
+    'J': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 
+    'S': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' 
+};
+
+// ==========================================
+// DATA STRUCTURES
+// ==========================================
 
 const uH = {
     'J': {
-        now: {bf:19.0, m:99.0, vf:10}, goal: {bf:15.0, m:105.0, vf:7},
+        now: {bf:19.0, m:99.0, vf:10}, 
+        goal: {bf:15.0, m:105.0, vf:7},
         labs: { 
-            apob: {val:95, goal:60, name:"ApoB", unit:"mg/dL", low:true}, 
-            hba1c: {val:5.4, goal:5.0, name:"HbA1c", unit:"%", low:true} 
+            apob: {val:95, goal:60, name:"ApoB", unit:"mg/dL", low:true, freq:90}, 
+            hba1c: {val:5.4, goal:5.0, name:"HbA1c", unit:"%", low:true, freq:90},
+            testosterone: {val:650, goal:600, name:"Testosterone", unit:"ng/dL", low:false, freq:180},
+            vitaminD: {val:45, goal:50, name:"Vitamin D", unit:"ng/mL", low:false, freq:180}
         },
-        tests: { vo2: {val:45, goal:55, name:"VO2 Max", unit:"ml/kg"} }
+        tests: { vo2: {val:45, goal:55, name:"VO2 Max", unit:"ml/kg"} },
+        lastLabDate: '2024-12-15',
+        nextLabDate: '2025-03-15'
     },
     'S': {
-        now: {bf:36.1, m:49.2, vf:9}, goal: {bf:22.0, m:60.0, vf:4},
+        now: {bf:36.1, m:49.2, vf:9}, 
+        goal: {bf:22.0, m:60.0, vf:4},
         labs: {
-            calcium: {val:9.0, goal:9.5, name:"Calcium", unit:"mg/dL"},
-            protein: {val:7.4, goal:7.5, name:"Total Protein", unit:"g/dL"},
-            albumin: {val:4.7, goal:4.5, name:"Albumin", unit:"g/dL"},
-            globulin: {val:2.7, goal:2.8, name:"Globulin", unit:"g/dL"},
-            glucose: {val:84, goal:85, name:"Glucose", unit:"mg/dL", low:true},
-            bun: {val:13, goal:15, name:"BUN", unit:"mg/dL"},
-            creatinine: {val:0.82, goal:0.7, name:"Creatinine", unit:"mg/dL"},
-            egfr: {val:94, goal:90, name:"eGFR", unit:""},
-            ana: {val:320, goal:40, name:"ANA Titer", unit:"", low:true},
-            hba1c: {val:5.6, goal:5.0, name:"HbA1c", unit:"%", low:true},
-            ferr: {val:75, goal:70, name:"Ferritin", unit:"ng/mL"}
+            calcium: {val:9.0, goal:9.5, name:"Calcium", unit:"mg/dL", low:false, freq:90},
+            glucose: {val:84, goal:85, name:"Glucose", unit:"mg/dL", low:true, freq:90},
+            bun: {val:13, goal:15, name:"BUN", unit:"mg/dL", low:false, freq:90},
+            creatinine: {val:0.82, goal:0.7, name:"Creatinine", unit:"mg/dL", low:true, freq:90},
+            egfr: {val:94, goal:90, name:"eGFR", unit:"", low:false, freq:90},
+            ana: {val:320, goal:40, name:"ANA Titer", unit:"", low:true, freq:90},
+            hba1c: {val:5.6, goal:5.0, name:"HbA1c", unit:"%", low:true, freq:90},
+            ferr: {val:75, goal:70, name:"Ferritin", unit:"ng/mL", low:false, freq:180},
+            tsh: {val:2.1, goal:2.0, name:"TSH", unit:"mIU/L", low:true, freq:180},
+            vitaminD: {val:38, goal:50, name:"Vitamin D", unit:"ng/mL", low:false, freq:180}
         },
-        tests: { vo2: {val:32, goal:45, name:"VO2 Max", unit:"ml/kg"} }
+        tests: { vo2: {val:32, goal:45, name:"VO2 Max", unit:"ml/kg"} },
+        lastLabDate: '2024-12-20',
+        nextLabDate: '2025-03-20'
     }
 };
 
@@ -198,9 +307,19 @@ function getCurrentWeek(user) { const start = new Date(goalTimeline[user].startD
 function bioBar(label, val, goal, unit, lowerBetter=false) { 
     if(!val || isNaN(val)) return ""; 
     const pct = Math.min(lowerBetter ? (goal/val)*100 : (val/goal)*100, 100); 
-    const color = pct >= 100 ? 'var(--green)' : 'var(--gold)'; 
+    const color = pct >= 100 ? 'var(--green)' : pct >= 70 ? 'var(--gold)' : 'var(--red)'; 
     return `<div class="bio-section"><div class="bar-label"><span>${label}</span><span>${val}${unit}</span></div><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div></div>`; 
 }
+
+function showNotification(message, type='success') {
+    const notif = document.getElementById('notification');
+    notif.textContent = message;
+    notif.className = 'notification active ' + type;
+    setTimeout(() => notif.className = 'notification', 3000);
+}
+
+function openModal(id) { document.getElementById(id).classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 // ==========================================
 // INTELLIGENCE FUNCTIONS
 // ==========================================
@@ -281,8 +400,9 @@ function getWeeklySummary(history) {
     const avgReady = Math.round(week.reduce((s, d) => s + (parseInt(d.score) || 0), 0) / 7);
     const totalCal = week.reduce((s, d) => s + (parseInt(d.cal) || 0), 0);
     const totalHigh = week.reduce((s, d) => s + d.high, 0);
+    const avgSleep = Math.round(week.reduce((s, d) => s + (d.totalSleep || 0), 0) / 7);
     const perfectDays = week.filter(d => parseInt(d.score) >= 85).length;
-    return { avgReady, totalCal, totalHigh, perfectDays, consistency: Math.round((perfectDays / 7) * 100) };
+    return { avgReady, totalCal, totalHigh, avgSleep, perfectDays, consistency: Math.round((perfectDays / 7) * 100) };
 }
 
 function calculateDynamicMacros(user, ouraData, dayType, bodyGoals) {
@@ -463,19 +583,696 @@ function getScienceRationale(user, type, data) {
     
     return { text: "Protocol Optimization", reason: "Standard baseline", science: "Evidence-based targets applied." };
 }
+
+// ==========================================
+// PREDICTIVE MODELING
+// ==========================================
+
+function predictBodyComposition(user, weeks) {
+    const u = uH[user];
+    const history = JSON.parse(localStorage.getItem(`centurion_body_history_${user}`)) || [];
+    
+    if (history.length < 2) {
+        // No trend data yet, use linear projection based on goals
+        const weeklyBFChange = (u.now.bf - u.goal.bf) / 12;
+        const weeklyMuscleGain = (u.goal.m - u.now.m) / 12;
+        
+        return {
+            bf: Math.max(u.goal.bf, u.now.bf - (weeklyBFChange * weeks)),
+            muscle: Math.min(u.goal.m, u.now.m + (weeklyMuscleGain * weeks)),
+            confidence: "LOW"
+        };
+    }
+    
+    // Calculate trend from history
+    const sorted = history.sort((a, b) => new Date(a.date) - new Date(b.date));
+    const first = sorted[0];
+    const last = sorted[sorted.length - 1];
+    const daysBetween = (new Date(last.date) - new Date(first.date)) / 86400000;
+    
+    if (daysBetween < 7) return { bf: u.now.bf, muscle: u.now.m, confidence: "LOW" };
+    
+    const bfChangePerDay = (last.bf - first.bf) / daysBetween;
+    const muscleChangePerDay = (last.m - first.m) / daysBetween;
+    
+    return {
+        bf: Math.max(u.goal.bf, u.now.bf + (bfChangePerDay * weeks * 7)),
+        muscle: Math.min(u.goal.m, u.now.m + (muscleChangePerDay * weeks * 7)),
+        confidence: history.length >= 4 ? "HIGH" : "MEDIUM"
+    };
+}
+
+function predictLabValue(user, labKey, weeks) {
+    const u = uH[user];
+    const lab = u.labs[labKey];
+    if (!lab) return null;
+    
+    const history = JSON.parse(localStorage.getItem(`centurion_lab_history_${user}`)) || {};
+    const labHistory = history[labKey] || [];
+    
+    if (labHistory.length < 2) {
+        // No trend, use linear projection to goal
+        const weeklyChange = (lab.val - lab.goal) / 12;
+        return {
+            value: lab.low ? Math.max(lab.goal, lab.val - (weeklyChange * weeks)) : Math.min(lab.goal, lab.val + (weeklyChange * weeks)),
+            confidence: "LOW"
+        };
+    }
+    
+    const sorted = labHistory.sort((a, b) => new Date(a.date) - new Date(b.date));
+    const first = sorted[0];
+    const last = sorted[sorted.length - 1];
+    const daysBetween = (new Date(last.date) - new Date(first.date)) / 86400000;
+    
+    if (daysBetween < 30) return { value: lab.val, confidence: "LOW" };
+    
+    const changePerDay = (last.val - first.val) / daysBetween;
+    const projected = lab.val + (changePerDay * weeks * 7);
+    
+    return {
+        value: lab.low ? Math.max(lab.goal, projected) : Math.min(lab.goal, projected),
+        confidence: labHistory.length >= 3 ? "HIGH" : "MEDIUM"
+    };
+}
+
+function getTimeToGoal(user, metric) {
+    const u = uH[user];
+    
+    if (metric === 'bf') {
+        const prediction = predictBodyComposition(user, 52); // 1 year projection
+        if (prediction.bf <= u.goal.bf) {
+            // Already at/past goal or will reach it
+            const weeklyRate = (u.now.bf - prediction.bf) / 52;
+            const weeksToGoal = (u.now.bf - u.goal.bf) / weeklyRate;
+            return weeksToGoal > 0 ? Math.ceil(weeksToGoal) : 0;
+        }
+        return null; // Not on track
+    }
+    
+    if (metric.startsWith('lab_')) {
+        const labKey = metric.replace('lab_', '');
+        const prediction = predictLabValue(user, labKey, 52);
+        if (!prediction) return null;
+        
+        const lab = u.labs[labKey];
+        const weeklyRate = (u.now[labKey] - prediction.value) / 52;
+        const weeksToGoal = Math.abs((lab.val - lab.goal) / weeklyRate);
+        return weeksToGoal > 0 ? Math.ceil(weeksToGoal) : 0;
+    }
+    
+    return null;
+}
+
+// ==========================================
+// LAB REMINDER SYSTEM
+// ==========================================
+
+function checkLabReminder(user) {
+    const u = uH[user];
+    const nextDate = new Date(u.nextLabDate);
+    const today = new Date();
+    const daysUntil = Math.floor((nextDate - today) / 86400000);
+    
+    if (daysUntil <= 0) {
+        return `🩸 LAB WORK OVERDUE - Order tests now`;
+    } else if (daysUntil <= 7) {
+        return `🩸 LAB WORK DUE IN ${daysUntil} DAYS`;
+    } else if (daysUntil <= 14) {
+        return `🩸 Next labs: ${daysUntil} days`;
+    }
+    return null;
+}
+
+function updateNextLabDate(user) {
+    const u = uH[user];
+    const last = new Date(u.lastLabDate);
+    last.setDate(last.getDate() + 90); // 3 months
+    u.nextLabDate = last.toISOString().split('T')[0];
+    saveUserData();
+}
+
+// ==========================================
+// DATA PERSISTENCE
+// ==========================================
+
+function saveUserData() {
+    localStorage.setItem('centurion_user_data', JSON.stringify(uH));
+}
+
+function loadUserData() {
+    const saved = localStorage.getItem('centurion_user_data');
+    if (saved) {
+        const data = JSON.parse(saved);
+        Object.keys(data).forEach(u => {
+            if (uH[u]) {
+                Object.assign(uH[u], data[u]);
+            }
+        });
+    }
+}
+
+function saveFoodLog(date, meal) {
+    const log = JSON.parse(localStorage.getItem(`centurion_food_log_${user}`)) || {};
+    if (!log[date]) log[date] = { meals: [], totalPro: 0, totalCarb: 0, totalCal: 0 };
+    
+    log[date].meals.push({ ...meal, time: Date.now() });
+    log[date].totalPro += meal.pro;
+    log[date].totalCarb += meal.carb;
+    log[date].totalCal += meal.cal;
+    
+    localStorage.setItem(`centurion_food_log_${user}`, JSON.stringify(log));
+    return log[date];
+}
+
+function getFoodLog(date) {
+    const log = JSON.parse(localStorage.getItem(`centurion_food_log_${user}`)) || {};
+    return log[date] || { meals: [], totalPro: 0, totalCarb: 0, totalCal: 0 };
+}
+
+function saveBodyScan() {
+    const bf = parseFloat(document.getElementById('bfInput').value);
+    const muscle = parseFloat(document.getElementById('muscleInput').value);
+    const vf = parseInt(document.getElementById('vfInput').value);
+    const date = document.getElementById('scanDateInput').value;
+    
+    if (!bf || !muscle || !vf || !date) {
+        showNotification('Please fill all fields', 'error');
+        return;
+    }
+    
+    uH[user].now = { bf, m: muscle, vf };
+    
+    // Save to history
+    const history = JSON.parse(localStorage.getItem(`centurion_body_history_${user}`)) || [];
+    history.push({ date, bf, m: muscle, vf });
+    localStorage.setItem(`centurion_body_history_${user}`, JSON.stringify(history));
+    
+    saveUserData();
+    closeModal('bodyModal');
+    showNotification('✓ Body scan saved');
+    render();
+}
+
+function saveLabResults(results) {
+    Object.keys(results).forEach(key => {
+        if (uH[user].labs[key]) {
+            uH[user].labs[key].val = results[key].val;
+        }
+    });
+    
+    // Save to history
+    const history = JSON.parse(localStorage.getItem(`centurion_lab_history_${user}`)) || {};
+    Object.keys(results).forEach(key => {
+        if (!history[key]) history[key] = [];
+        history[key].push({ date: results[key].date, val: results[key].val });
+    });
+    localStorage.setItem(`centurion_lab_history_${user}`, JSON.stringify(history));
+    
+    // Update last lab date
+    uH[user].lastLabDate = results[Object.keys(results)[0]].date;
+    updateNextLabDate(user);
+    
+    saveUserData();
+    closeModal('labModal');
+    showNotification('✓ Lab results saved');
+    render();
+}
+
+// Initialize
+loadUserData();
+// ==========================================
+// UI MANAGERS
+// ==========================================
+
+function openBodyScanLogger() {
+    document.getElementById('scanDateInput').value = getDateKey(new Date());
+    document.getElementById('bfInput').value = uH[user].now.bf;
+    document.getElementById('muscleInput').value = uH[user].now.m;
+    document.getElementById('vfInput').value = uH[user].now.vf;
+    openModal('bodyModal');
+}
+
+function openLabLogger() {
+    const u = uH[user];
+    let html = '<div class="form-group"><label class="form-label">Test Date</label><input type="date" id="labDateInput" class="form-input" value="' + getDateKey(new Date()) + '"></div>';
+    
+    Object.keys(u.labs).forEach(key => {
+        const lab = u.labs[key];
+        html += `
+            <div class="form-group">
+                <label class="form-label">${lab.name} (${lab.unit || 'units'})</label>
+                <input type="number" step="0.1" id="lab_${key}" class="form-input" value="${lab.val}" placeholder="${lab.goal}">
+            </div>
+        `;
+    });
+    
+    html += '<button class="action-btn green" onclick="saveLabsFromForm()">✓ SAVE LABS</button>';
+    document.getElementById('labModalBody').innerHTML = html;
+    openModal('labModal');
+}
+
+function saveLabsFromForm() {
+    const date = document.getElementById('labDateInput').value;
+    const results = {};
+    
+    Object.keys(uH[user].labs).forEach(key => {
+        const input = document.getElementById('lab_' + key);
+        if (input) {
+            results[key] = {
+                val: parseFloat(input.value),
+                date: date
+            };
+        }
+    });
+    
+    saveLabResults(results);
+}
+
+function openMealLogger(mealType) {
+    const macros = calculateDynamicMacros(user, { score: 75, cal: 0 }, { focus: "REST" }, uH[user]);
+    const meals = selectOptimalMeals(macros, user);
+    
+    let quickButtons = '';
+    const mealOptions = mealType === 'breakfast' ? mealDB.b : mealType === 'lunch' ? mealDB.l : mealDB.d;
+    
+    mealOptions.forEach(meal => {
+        quickButtons += `
+            <button class="action-btn" style="margin-bottom: 8px;" onclick="logQuickMeal('${meal.name}', ${meal.pro}, ${meal.carb}, ${meal.cal})">
+                ${meal.name} (${meal.pro}P ${meal.carb}C)
+            </button>
+        `;
+    });
+    
+    document.getElementById('quickMealButtons').innerHTML = quickButtons;
+    document.getElementById('photoPreview').style.display = 'none';
+    openModal('mealModal');
+}
+
+function logQuickMeal(name, pro, carb, cal) {
+    const dk = getDateKey(selDate);
+    const meal = { name, pro, carb, cal };
+    const dayLog = saveFoodLog(dk, meal);
+    
+    closeModal('mealModal');
+    showNotification(`✓ Logged: ${name} | Daily: ${dayLog.totalPro}g protein`);
+    render();
+}
+
+async function processPhoto(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        const imgData = e.target.result;
+        
+        document.getElementById('photoPreview').style.display = 'block';
+        document.getElementById('photoPreview').innerHTML = `
+            <img src="${imgData}" style="width:100%; border-radius:12px; margin-bottom:15px;">
+            <div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:12px; border:1px solid var(--border);">
+                <div style="font-size:0.65rem; color:#888; margin-bottom:10px; text-transform:uppercase;">AI ANALYSIS</div>
+                <div style="text-align:center; padding:20px; color:#666;">
+                    <div style="font-size:1.2rem; margin-bottom:10px;">🔄 Analyzing...</div>
+                    <div style="font-size:0.7rem;">Estimating macros from photo</div>
+                </div>
+            </div>
+        `;
+        
+        // Simulate AI analysis (in production, would call Claude API)
+        setTimeout(() => {
+            const estimatedPro = 35 + Math.floor(Math.random() * 20);
+            const estimatedCarb = 40 + Math.floor(Math.random() * 30);
+            const estimatedCal = (estimatedPro * 4) + (estimatedCarb * 4) + (15 * 9);
+            
+            document.getElementById('photoPreview').innerHTML = `
+                <img src="${imgData}" style="width:100%; border-radius:12px; margin-bottom:15px;">
+                <div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:12px; border:1px solid var(--border);">
+                    <div style="font-size:0.65rem; color:#888; margin-bottom:10px; text-transform:uppercase;">AI ESTIMATE</div>
+                    <div style="display:flex; gap:10px; margin-bottom:15px;">
+                        <div style="flex:1; text-align:center; padding:10px; background:rgba(255,255,255,0.03); border-radius:8px;">
+                            <div style="font-size:1.2rem; font-weight:800; color:var(--red)">${estimatedPro}</div>
+                            <div style="font-size:0.5rem; color:#666; margin-top:2px;">PROTEIN</div>
+                        </div>
+                        <div style="flex:1; text-align:center; padding:10px; background:rgba(255,255,255,0.03); border-radius:8px;">
+                            <div style="font-size:1.2rem; font-weight:800; color:var(--gold)">${estimatedCarb}</div>
+                            <div style="font-size:0.5rem; color:#666; margin-top:2px;">CARBS</div>
+                        </div>
+                        <div style="flex:1; text-align:center; padding:10px; background:rgba(255,255,255,0.03); border-radius:8px;">
+                            <div style="font-size:1.2rem; font-weight:800; color:var(--blue)">${estimatedCal}</div>
+                            <div style="font-size:0.5rem; color:#666; margin-top:2px;">CALORIES</div>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <button class="action-btn green" style="flex:1;" onclick="confirmPhotoMeal(${estimatedPro}, ${estimatedCarb}, ${estimatedCal})">✓ CONFIRM</button>
+                        <button class="action-btn" style="flex:1; background:rgba(255,255,255,0.1);" onclick="document.getElementById('photoPreview').style.display='none'">RETAKE</button>
+                    </div>
+                </div>
+            `;
+        }, 2000);
+    };
+    
+    reader.readAsDataURL(file);
+}
+
+function confirmPhotoMeal(pro, carb, cal) {
+    const dk = getDateKey(selDate);
+    const meal = { name: "Photo Logged Meal", pro, carb, cal };
+    const dayLog = saveFoodLog(dk, meal);
+    
+    closeModal('mealModal');
+    showNotification(`✓ Meal logged | Daily: ${dayLog.totalPro}g protein`);
+    render();
+}
+
+// ==========================================
+// TREND CHARTS
+// ==========================================
+
+function renderBodyCompTrend() {
+    const history = JSON.parse(localStorage.getItem(`centurion_body_history_${user}`)) || [];
+    if (history.length < 2) {
+        return `<div style="text-align:center; padding:40px; color:#666; font-size:0.7rem;">Need 2+ body scans to show trend</div>`;
+    }
+    
+    const sorted = history.sort((a, b) => new Date(a.date) - new Date(b.date));
+    const latest = sorted[sorted.length - 1];
+    const oldest = sorted[0];
+    
+    const bfChange = latest.bf - oldest.bf;
+    const muscleChange = latest.m - oldest.m;
+    const vfChange = latest.vf - oldest.vf;
+    
+    // Simple text-based trend for now
+    return `
+        <div style="background:rgba(255,255,255,0.03); border-radius:12px; padding:15px; margin-bottom:15px;">
+            <div style="font-size:0.65rem; color:#888; margin-bottom:10px; text-transform:uppercase;">8-WEEK TREND</div>
+            <div style="display:flex; gap:10px;">
+                <div style="flex:1; text-align:center; padding:10px; background:rgba(255,255,255,0.03); border-radius:8px;">
+                    <div style="font-size:0.9rem; font-weight:800; color:${bfChange < 0 ? 'var(--green)' : 'var(--red)'}">${bfChange > 0 ? '+' : ''}${bfChange.toFixed(1)}%</div>
+                    <div style="font-size:0.5rem; color:#666; margin-top:2px;">BODY FAT</div>
+                </div>
+                <div style="flex:1; text-align:center; padding:10px; background:rgba(255,255,255,0.03); border-radius:8px;">
+                    <div style="font-size:0.9rem; font-weight:800; color:${muscleChange > 0 ? 'var(--green)' : 'var(--red)'}">${muscleChange > 0 ? '+' : ''}${muscleChange.toFixed(1)}lb</div>
+                    <div style="font-size:0.5rem; color:#666; margin-top:2px;">MUSCLE</div>
+                </div>
+                <div style="flex:1; text-align:center; padding:10px; background:rgba(255,255,255,0.03); border-radius:8px;">
+                    <div style="font-size:0.9rem; font-weight:800; color:${vfChange < 0 ? 'var(--green)' : 'var(--red)'}">${vfChange > 0 ? '+' : ''}${vfChange}</div>
+                    <div style="font-size:0.5rem; color:#666; margin-top:2px;">VISC FAT</div>
+                </div>
+            </div>
+            <div style="margin-top:15px; padding-top:15px; border-top:1px solid rgba(255,255,255,0.05);">
+                <div style="font-size:0.6rem; color:#666; text-transform:uppercase; margin-bottom:5px;">Data Points</div>
+                <div style="font-size:0.7rem; color:#888;">${history.length} scans from ${new Date(oldest.date).toLocaleDateString()} to ${new Date(latest.date).toLocaleDateString()}</div>
+            </div>
+        </div>
+    `;
+}
+
+function renderLabTrend(labKey) {
+    const history = JSON.parse(localStorage.getItem(`centurion_lab_history_${user}`)) || {};
+    const labHistory = history[labKey] || [];
+    
+    if (labHistory.length < 2) {
+        return `<div style="font-size:0.65rem; color:#666; margin-top:5px;">Need 2+ tests to show trend</div>`;
+    }
+    
+    const sorted = labHistory.sort((a, b) => new Date(a.date) - new Date(b.date));
+    const latest = sorted[sorted.length - 1];
+    const oldest = sorted[0];
+    const change = latest.val - oldest.val;
+    const lab = uH[user].labs[labKey];
+    
+    const improving = lab.low ? change < 0 : change > 0;
+    
+    return `
+        <div style="margin-top:8px; padding:8px; background:rgba(255,255,255,0.02); border-radius:8px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div style="font-size:0.65rem; color:#666;">TREND</div>
+                <div style="font-size:0.8rem; font-weight:700; color:${improving ? 'var(--green)' : 'var(--red)'}">
+                    ${change > 0 ? '+' : ''}${change.toFixed(1)}${lab.unit} 
+                    <span style="font-size:0.6rem; opacity:0.6;">(${labHistory.length} tests)</span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderPredictions() {
+    const bf4wk = predictBodyComposition(user, 4);
+    const bf12wk = predictBodyComposition(user, 12);
+    
+    let html = `
+        <div class="premium-card" style="background:linear-gradient(135deg, rgba(10,132,255,0.15), rgba(191,90,242,0.1)); border-color:rgba(10,132,255,0.3); margin-bottom:12px;">
+            <div style="margin-bottom:15px;">
+                <div class="card-title" style="color:var(--blue);">TRAJECTORY PREDICTIONS</div>
+                <div class="card-subtitle">Based on current rate of change</div>
+            </div>
+            
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px;">
+                <div style="padding:12px; background:rgba(255,255,255,0.03); border-radius:10px;">
+                    <div style="font-size:0.6rem; color:#888; margin-bottom:5px;">4 WEEKS</div>
+                    <div style="font-size:1.2rem; font-weight:800; color:#fff">${bf4wk.bf.toFixed(1)}%</div>
+                    <div style="font-size:0.55rem; color:#666; margin-top:2px;">BODY FAT</div>
+                </div>
+                <div style="padding:12px; background:rgba(255,255,255,0.03); border-radius:10px;">
+                    <div style="font-size:0.6rem; color:#888; margin-bottom:5px;">12 WEEKS</div>
+                    <div style="font-size:1.2rem; font-weight:800; color:#fff">${bf12wk.bf.toFixed(1)}%</div>
+                    <div style="font-size:0.55rem; color:#666; margin-top:2px;">BODY FAT</div>
+                </div>
+            </div>
+            
+            <div style="padding:10px; background:rgba(255,255,255,0.04); border-radius:8px; border-left:2px solid var(--blue);">
+                <div style="font-size:0.6rem; color:var(--blue); margin-bottom:3px; text-transform:uppercase;">CONFIDENCE</div>
+                <div style="font-size:0.75rem; color:#ddd;">${bf4wk.confidence} - ${bf4wk.confidence === 'HIGH' ? 'Based on 4+ data points' : bf4wk.confidence === 'MEDIUM' ? 'Based on 2-3 data points' : 'Needs more data'}</div>
+            </div>
+    `;
+    
+    // Lab predictions
+    const primaryLab = user === 'J' ? 'apob' : 'ana';
+    const lab12wk = predictLabValue(user, primaryLab, 12);
+    
+    if (lab12wk) {
+        html += `
+            <div style="margin-top:15px; padding-top:15px; border-top:1px solid rgba(255,255,255,0.1);">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div style="font-size:0.6rem; color:#888;">12-WEEK ${uH[user].labs[primaryLab].name.toUpperCase()}</div>
+                        <div style="font-size:1.1rem; font-weight:800; color:var(--purple); margin-top:3px;">${lab12wk.value.toFixed(1)} ${uH[user].labs[primaryLab].unit}</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-size:0.6rem; color:#888;">GOAL</div>
+                        <div style="font-size:1.1rem; font-weight:800; color:#fff; margin-top:3px;">${uH[user].labs[primaryLab].goal} ${uH[user].labs[primaryLab].unit}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    html += '</div>';
+    return html;
+}
+
+function renderComplianceDashboard() {
+    const cached = JSON.parse(localStorage.getItem(`centurion_oura_cache_${user}`)) || { history: [] };
+    const last7 = cached.history.slice(0, 7);
+    
+    if (last7.length < 7) return '';
+    
+    // Calculate compliance metrics
+    const workoutsCompleted = last7.filter(d => d.high > 10 || d.med > 20).length;
+    const avgReadiness = Math.round(last7.reduce((s, d) => s + (parseInt(d.score) || 0), 0) / 7);
+    const perfectDays = last7.filter(d => parseInt(d.score) >= 85).length;
+    
+    // Food logging compliance
+    let mealsLogged = 0;
+    last7.forEach(d => {
+        const log = getFoodLog(d.date);
+        mealsLogged += log.meals.length;
+    });
+    const mealCompliancePct = Math.round((mealsLogged / 21) * 100); // 3 meals/day * 7 days
+    
+    return `
+        <div class="premium-card" style="margin-bottom:12px;">
+            <div class="card-header">
+                <div>
+                    <div class="card-title" style="color:var(--gold);">WEEKLY COMPLIANCE</div>
+                    <div class="card-subtitle">Last 7 Days</div>
+                </div>
+                <div class="card-val-lg">${Math.round((workoutsCompleted/7 + perfectDays/7 + mealCompliancePct/100)/3*100)}%</div>
+            </div>
+            
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <div style="padding:12px; background:rgba(255,255,255,0.03); border-radius:10px; text-align:center;">
+                    <div style="font-size:1.3rem; font-weight:800; color:var(--green)">${workoutsCompleted}/7</div>
+                    <div style="font-size:0.55rem; color:#888; margin-top:3px;">WORKOUTS</div>
+                </div>
+                <div style="padding:12px; background:rgba(255,255,255,0.03); border-radius:10px; text-align:center;">
+                    <div style="font-size:1.3rem; font-weight:800; color:var(--blue)">${perfectDays}/7</div>
+                    <div style="font-size:0.55rem; color:#888; margin-top:3px;">PERFECT DAYS</div>
+                </div>
+                <div style="padding:12px; background:rgba(255,255,255,0.03); border-radius:10px; text-align:center;">
+                    <div style="font-size:1.3rem; font-weight:800; color:var(--purple)">${avgReadiness}</div>
+                    <div style="font-size:0.55rem; color:#888; margin-top:3px;">AVG READY</div>
+                </div>
+                <div style="padding:12px; background:rgba(255,255,255,0.03); border-radius:10px; text-align:center;">
+                    <div style="font-size:1.3rem; font-weight:800; color:var(--gold)">${mealCompliancePct}%</div>
+                    <div style="font-size:0.55rem; color:#888; margin-top:3px;">MEALS LOG</div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderSupplementRecommendations() {
+    const u = uH[user];
+    const recommendations = [];
+    
+    if (user === 'J') {
+        if (u.labs.apob.val > 80) {
+            recommendations.push({
+                name: "Omega-3 EPA/DHA",
+                dose: "2-3g/day",
+                reason: "Reduces ApoB by ~5-10mg/dL",
+                science: "EPA/DHA increase LDL particle size and reduce VLDL production"
+            });
+        }
+        if (u.labs.vitaminD && u.labs.vitaminD.val < 40) {
+            recommendations.push({
+                name: "Vitamin D3",
+                dose: "4000 IU/day",
+                reason: "Optimize to 50+ ng/mL",
+                science: "Low D3 correlates with increased CVD risk"
+            });
+        }
+        if (u.labs.testosterone && u.labs.testosterone.val < 600) {
+            recommendations.push({
+                name: "Zinc + Magnesium",
+                dose: "30mg Zn + 400mg Mg",
+                reason: "Support testosterone production",
+                science: "Zinc is cofactor for testosterone synthesis"
+            });
+        }
+    } else {
+        if (u.labs.ana.val > 160) {
+            recommendations.push({
+                name: "Curcumin (Turmeric)",
+                dose: "500mg 2x/day",
+                reason: "Reduce systemic inflammation",
+                science: "Curcumin inhibits NF-κB pathway, reducing autoimmune markers"
+            });
+            recommendations.push({
+                name: "Omega-3 EPA/DHA",
+                dose: "2g/day",
+                reason: "Anti-inflammatory for autoimmune",
+                science: "EPA/DHA suppress IL-6 and TNF-α production"
+            });
+        }
+        if (u.labs.ferr.val > 100) {
+            recommendations.push({
+                name: "Reduce Iron Intake",
+                dose: "Limit red meat",
+                reason: "Lower ferritin below 70",
+                science: "High ferritin increases oxidative stress"
+            });
+        }
+        if (u.labs.vitaminD && u.labs.vitaminD.val < 40) {
+            recommendations.push({
+                name: "Vitamin D3",
+                dose: "5000 IU/day",
+                reason: "Critical for immune regulation",
+                science: "D3 modulates T-cell function in autoimmune conditions"
+            });
+        }
+    }
+    
+    if (recommendations.length === 0) {
+        return '<div style="text-align:center; padding:20px; color:#666; font-size:0.7rem;">No supplement recommendations - biomarkers optimal</div>';
+    }
+    
+    let html = '';
+    recommendations.forEach(rec => {
+        html += `
+            <div class="data-row" style="flex-direction:column; align-items:flex-start; padding:15px;">
+                <div style="display:flex; justify-content:space-between; width:100%; margin-bottom:8px;">
+                    <div class="data-label" style="font-size:0.75rem;">${rec.name}</div>
+                    <div class="data-val" style="font-size:0.75rem; color:var(--gold);">${rec.dose}</div>
+                </div>
+                <div style="font-size:0.7rem; color:#888; line-height:1.4; margin-bottom:5px;">${rec.reason}</div>
+                <div style="font-size:0.65rem; color:#666; font-style:italic;">📊 ${rec.science}</div>
+            </div>
+        `;
+    });
+    
+    return html;
+}
+
+function renderSleepAnalysis(ouraData) {
+    if (!ouraData.totalSleep) {
+        return '<div style="font-size:0.7rem; color:#666; padding:10px;">Sleep data syncing...</div>';
+    }
+    
+    const sleepHours = (ouraData.totalSleep / 60).toFixed(1);
+    const deepHours = (ouraData.deepSleep / 60).toFixed(1);
+    const remHours = (ouraData.remSleep / 60).toFixed(1);
+    
+    const sleepQuality = sleepHours >= 8 && deepHours >= 1.5 && remHours >= 1.5 ? 'EXCELLENT' : 
+                         sleepHours >= 7 && deepHours >= 1.0 ? 'GOOD' : 'NEEDS IMPROVEMENT';
+    
+    const color = sleepQuality === 'EXCELLENT' ? 'var(--green)' : sleepQuality === 'GOOD' ? 'var(--gold)' : 'var(--red)';
+    
+    return `
+        <div style="padding:12px; background:rgba(255,255,255,0.03); border-radius:12px; border-left:3px solid ${color}; margin-top:15px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <div style="font-size:0.65rem; color:#888; text-transform:uppercase;">SLEEP QUALITY</div>
+                <div style="font-size:0.7rem; font-weight:800; color:${color}">${sleepQuality}</div>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <div style="flex:1; text-align:center; padding:8px; background:rgba(255,255,255,0.03); border-radius:8px;">
+                    <div style="font-size:1rem; font-weight:800; color:#fff">${sleepHours}h</div>
+                    <div style="font-size:0.5rem; color:#666; margin-top:2px;">TOTAL</div>
+                </div>
+                <div style="flex:1; text-align:center; padding:8px; background:rgba(255,255,255,0.03); border-radius:8px;">
+                    <div style="font-size:1rem; font-weight:800; color:var(--blue)">${deepHours}h</div>
+                    <div style="font-size:0.5rem; color:#666; margin-top:2px;">DEEP</div>
+                </div>
+                <div style="flex:1; text-align:center; padding:8px; background:rgba(255,255,255,0.03); border-radius:8px;">
+                    <div style="font-size:1rem; font-weight:800; color:var(--purple)">${remHours}h</div>
+                    <div style="font-size:0.5rem; color:#666; margin-top:2px;">REM</div>
+                </div>
+            </div>
+            ${sleepHours < 8 ? '<div style="margin-top:10px; font-size:0.7rem; color:var(--gold);">⚠️ Target 8+ hours for optimal recovery</div>' : ''}
+        </div>
+    `;
+}
 // ==========================================
 // RENDER ENGINE
 // ==========================================
 
 function render() {
-    const mon = getMon(offset); const tabs = document.getElementById('dayTabs'); tabs.innerHTML = '';
+    const mon = getMon(offset); 
+    const tabs = document.getElementById('dayTabs'); 
+    tabs.innerHTML = '';
+    
     document.getElementById('dateDisplay').innerText = `${mon.toLocaleDateString('en-US',{month:'short',day:'numeric'})} - ${new Date(mon.getTime() + 864e5*6).toLocaleDateString('en-US',{month:'short',day:'numeric'})}`;
+    
+    // Lab reminder
+    const labReminder = checkLabReminder(user);
+    if (labReminder) {
+        document.getElementById('labReminder').innerHTML = labReminder + ' <span style="cursor:pointer; text-decoration:underline;" onclick="openLabLogger()">LOG NOW</span>';
+        document.getElementById('labReminder').style.display = 'block';
+    } else {
+        document.getElementById('labReminder').style.display = 'none';
+    }
+    
     for(let i=0; i<7; i++){
-        let d = new Date(mon); d.setDate(mon.getDate()+i);
+        let d = new Date(mon); 
+        d.setDate(mon.getDate()+i);
         let active = getDateKey(d) === getDateKey(selDate);
-        let t = document.createElement('div'); t.className = 'tab' + (active ? ' active' : '');
+        let t = document.createElement('div'); 
+        t.className = 'tab' + (active ? ' active' : '');
         t.innerHTML = `${["M","T","W","T","F","S","S"][i]}<br>${d.getDate()}`;
-        t.onclick = () => { selDate = d; render(); }; tabs.appendChild(t);
+        t.onclick = () => { selDate = d; render(); }; 
+        tabs.appendChild(t);
         if(active) showDay(d, i+1 === 7 ? 0 : i+1);
     }
 }
@@ -484,7 +1281,7 @@ function showDay(dObj, idx) {
     const dk = getDateKey(dObj); 
     const basePlan = unifiedSchedule[idx] || unifiedSchedule[1]; 
     const cached = JSON.parse(localStorage.getItem(`centurion_oura_cache_${user}`)) || { history: [] };
-    const rawOura = cached.history.find(d => d.date === dk) || { score: "-", cal: "-", high: 0, med: 0, rhr: "-" };
+    const rawOura = cached.history.find(d => d.date === dk) || { score: "-", cal: "-", high: 0, med: 0, rhr: "-", totalSleep: 0, deepSleep: 0, remSleep: 0 };
     const hasData = rawOura.score !== "-";
     
     const burnout = predictBurnout(cached.history);
@@ -509,6 +1306,12 @@ function showDay(dObj, idx) {
         ${dayData.override ? `<div style="margin-top:10px; padding:10px; background:rgba(0,0,0,0.3); border-radius:8px; font-size:0.7rem; color:var(--gold);">📋 AUTO-ADJUSTED: ${dayData.reason}</div>` : ''}
     </div>` : "";
     
+    // COMPLIANCE DASHBOARD
+    const complianceHTML = renderComplianceDashboard();
+    
+    // PREDICTIONS
+    const predictionsHTML = renderPredictions();
+    
     // WEEKLY SUMMARY
     const weekSum = getWeeklySummary(cached.history);
     const summaryHTML = weekSum ? `
@@ -517,6 +1320,7 @@ function showDay(dObj, idx) {
             <div><div style="font-size:1.4rem; font-weight:900; color:#fff">${weekSum.avgReady}</div><div style="font-size:0.55rem; color:#888; margin-top:2px;">AVG READY</div></div>
             <div><div style="font-size:1.4rem; font-weight:900; color:var(--green)">${weekSum.perfectDays}/7</div><div style="font-size:0.55rem; color:#888; margin-top:2px;">PERFECT</div></div>
             <div><div style="font-size:1.4rem; font-weight:900; color:var(--red)">${weekSum.totalHigh}m</div><div style="font-size:0.55rem; color:#888; margin-top:2px;">HIGH HR</div></div>
+            <div><div style="font-size:1.4rem; font-weight:900; color:var(--blue)">${weekSum.avgSleep}m</div><div style="font-size:0.55rem; color:#888; margin-top:2px;">AVG SLEEP</div></div>
         </div>
     </div>` : "";
     
@@ -570,6 +1374,7 @@ function showDay(dObj, idx) {
                 <div style="font-size:0.8rem; color:#fff; line-height:1.5;">${recovery.advice}</div>
             </div>
             <div style="font-size:0.8rem; color:#ddd; line-height:1.5; margin-bottom:10px;">${dayData.tasks}</div>
+            ${renderSleepAnalysis(rawOura)}
             <div class="science-box">
                 <div class="sci-label">SCIENTIFIC RATIONALE</div>
                 <div class="sci-text">${sciProtocol.text}</div>
@@ -620,17 +1425,39 @@ function showDay(dObj, idx) {
     const meals = selectOptimalMeals(macros, user);
     const id = Math.floor(dObj.getTime()/864e5);
     const j = juiceDB[Math.abs(id)%juiceDB.length].split('|');
+    const foodLog = getFoodLog(dk);
     
     const nutHTML = `
-    <div class="premium-card ${isNutCollapsed?'collapsed':''}" onclick="isNutCollapsed=!isNutCollapsed;render()">
+    <div class="premium-card ${isNutCollapsed?'collapsed':''}" onclick="event.stopPropagation(); isNutCollapsed=!isNutCollapsed;render()">
         <div class="card-header">
             <div>
                 <div class="card-title accent-green">NUTRITION</div>
                 <div class="card-subtitle">${macros.calories} CAL • ${macros.mods.rationale}</div>
             </div>
-            <div class="card-val-lg">${macros.protein} <span style="font-size:0.9rem; opacity:0.7">PRO</span> <span class="chevron">▼</span></div>
+            <div class="card-val-lg">${foodLog.totalPro || macros.protein} <span style="font-size:0.9rem; opacity:0.7">PRO</span> <span class="chevron">▼</span></div>
         </div>
         <div class="card-body">
+            ${foodLog.meals.length > 0 ? `
+                <div style="padding:12px; background:rgba(48,209,88,0.1); border-left:3px solid var(--green); border-radius:8px; margin-bottom:15px;">
+                    <div style="font-size:0.65rem; color:var(--green); margin-bottom:5px; text-transform:uppercase;">LOGGED TODAY</div>
+                    <div style="display:flex; gap:10px;">
+                        <div style="flex:1; text-align:center;">
+                            <div style="font-size:1.1rem; font-weight:800; color:#fff">${foodLog.totalPro}g</div>
+                            <div style="font-size:0.5rem; color:#888; margin-top:2px;">PROTEIN</div>
+                        </div>
+                        <div style="flex:1; text-align:center;">
+                            <div style="font-size:1.1rem; font-weight:800; color:#fff">${foodLog.totalCarb}g</div>
+                            <div style="font-size:0.5rem; color:#888; margin-top:2px;">CARBS</div>
+                        </div>
+                        <div style="flex:1; text-align:center;">
+                            <div style="font-size:1.1rem; font-weight:800; color:#fff">${foodLog.totalCal}</div>
+                            <div style="font-size:0.5rem; color:#888; margin-top:2px;">CALORIES</div>
+                        </div>
+                    </div>
+                    <div style="margin-top:10px; font-size:0.65rem; color:#888;">${foodLog.meals.length} meal${foodLog.meals.length > 1 ? 's' : ''} logged</div>
+                </div>
+            ` : ''}
+            
             <div style="display:flex; gap:8px; margin-bottom:15px;">
                 <div style="flex:1; text-align:center; padding:8px; background:rgba(255,255,255,0.03); border-radius:10px;">
                     <div style="font-size:1.1rem; font-weight:800; color:${macros.mods.proteinChange > 0 ? 'var(--green)' : 'var(--red)'}">${macros.mods.proteinChange > 0 ? '+' : ''}${macros.mods.proteinChange}%</div>
@@ -642,19 +1469,30 @@ function showDay(dObj, idx) {
                 </div>
             </div>
             
-            <div class="section-header">ADAPTIVE MEAL PLAN</div>
-            <div class="data-row"><div class="data-label">${meals.breakfast.name}</div><div class="data-val">${meals.breakfast.pro}P ${meals.breakfast.carb}C</div></div>
-            <div style="font-size:0.6rem; color:#666; margin:-4px 0 8px 0; padding-left:14px;">👉 ${meals.breakfast.reason}</div>
+            <div class="section-header">SUGGESTED MEALS</div>
+            <div class="data-row" onclick="event.stopPropagation(); openMealLogger('breakfast')">
+                <div class="data-label">${meals.breakfast.name}</div>
+                <div class="data-val">${meals.breakfast.pro}P ${meals.breakfast.carb}C <span style="margin-left:8px; font-size:0.6rem; color:var(--green);">+ LOG</span></div>
+            </div>
+            <div style="font-size:0.6rem; color:#666; margin:-4px 0 8px 14px;">👉 ${meals.breakfast.reason}</div>
             
-            <div class="data-row"><div class="data-label">${meals.lunch.name}</div><div class="data-val">${meals.lunch.pro}P ${meals.lunch.carb}C</div></div>
-            <div style="font-size:0.6rem; color:#666; margin:-4px 0 8px 0; padding-left:14px;">👉 ${meals.lunch.reason}</div>
+            <div class="data-row" onclick="event.stopPropagation(); openMealLogger('lunch')">
+                <div class="data-label">${meals.lunch.name}</div>
+                <div class="data-val">${meals.lunch.pro}P ${meals.lunch.carb}C <span style="margin-left:8px; font-size:0.6rem; color:var(--green);">+ LOG</span></div>
+            </div>
+            <div style="font-size:0.6rem; color:#666; margin:-4px 0 8px 14px;">👉 ${meals.lunch.reason}</div>
 
-            <div class="data-row"><div class="data-label">${meals.dinner.name}</div><div class="data-val">${meals.dinner.pro}P ${meals.dinner.carb}C</div></div>
-            <div style="font-size:0.6rem; color:#666; margin:-4px 0 8px 0; padding-left:14px;">👉 ${meals.dinner.reason}</div>
+            <div class="data-row" onclick="event.stopPropagation(); openMealLogger('dinner')">
+                <div class="data-label">${meals.dinner.name}</div>
+                <div class="data-val">${meals.dinner.pro}P ${meals.dinner.carb}C <span style="margin-left:8px; font-size:0.6rem; color:var(--green);">+ LOG</span></div>
+            </div>
+            <div style="font-size:0.6rem; color:#666; margin:-4px 0 8px 14px;">👉 ${meals.dinner.reason}</div>
 
             <div class="section-header">ESSENTIALS</div>
             <div class="data-row"><div class="data-label">SEA MOSS</div><div class="data-val">2 TBSP</div></div>
             <div class="data-row"><div class="data-label">${j[0]}</div><div class="data-val" style="font-size:0.6rem; color:#888; text-align:right;">${j[3]}</div></div>
+            
+            <button class="action-btn" onclick="event.stopPropagation(); openMealLogger('custom')">📸 LOG MEAL</button>
             
             <div class="science-box">
                 <div class="sci-label">NUTRITION PRIORITY</div>
@@ -715,11 +1553,30 @@ function showDay(dObj, idx) {
         </div>
     </div>`;
     
+    // TREND & BIO CARD
+    const trendHTML = `
+    <div class="premium-card ${isTrendCollapsed?'collapsed':''}" onclick="isTrendCollapsed=!isTrendCollapsed;render()">
+        <div class="card-header">
+            <div>
+                <div class="card-title" style="color:var(--orange)">TRENDS & SUPPLEMENTS</div>
+                <div class="card-subtitle">Body Composition + Recommendations</div>
+            </div>
+            <div class="card-val-lg"><span class="chevron">▼</span></div>
+        </div>
+        <div class="card-body">
+            ${renderBodyCompTrend()}
+            <div class="section-header">SUPPLEMENT STACK</div>
+            ${renderSupplementRecommendations()}
+            <button class="action-btn gold" onclick="event.stopPropagation(); openBodyScanLogger()">📊 LOG BODY SCAN</button>
+        </div>
+    </div>`;
+    
     // BIO DASHBOARD
     let labsHTML = "";
     Object.keys(uH[user].labs).forEach(k => { 
         const lab = uH[user].labs[k];
-        labsHTML += bioBar(lab.name, lab.val, lab.goal, " "+(lab.unit||""), lab.low); 
+        labsHTML += bioBar(lab.name, lab.val, lab.goal, " "+(lab.unit||""), lab.low);
+        labsHTML += renderLabTrend(k);
     });
     
     const bioHTML = `
@@ -736,6 +1593,7 @@ function showDay(dObj, idx) {
             ${bioBar("VO2 Max", uH[user].tests.vo2.val, uH[user].tests.vo2.goal, " ml/kg")}
             <div class="section-header">VERIFIED LABS</div>
             ${labsHTML}
+            <button class="action-btn blue" onclick="event.stopPropagation(); openLabLogger()">🩸 UPDATE LABS</button>
             <div class="science-box">
                 <div class="sci-label">PRIMARY INTERVENTION</div>
                 <div class="sci-text">${user === 'S' ? 'Reduce Visceral Fat to < 4' : 'Lower ApoB to < 60 mg/dL'}</div>
@@ -744,11 +1602,23 @@ function showDay(dObj, idx) {
         </div>
     </div>`;
     
-    document.getElementById('dayContent').innerHTML = burnoutAlert + summaryHTML + milestoneHTML + protocolHTML + workoutHTML + stressHTML + nutHTML + aiHTML + bioHTML;
+    document.getElementById('dayContent').innerHTML = 
+        burnoutAlert + 
+        complianceHTML + 
+        predictionsHTML +
+        summaryHTML + 
+        milestoneHTML + 
+        protocolHTML + 
+        workoutHTML + 
+        stressHTML + 
+        nutHTML + 
+        aiHTML + 
+        trendHTML +
+        bioHTML;
 }
 
 // ==========================================
-// V1400 HANDSHAKE PROTOCOL
+// API INTEGRATION
 // ==========================================
 
 function switchU(uID) {
@@ -758,36 +1628,45 @@ function switchU(uID) {
     document.getElementById('dayContent').innerHTML = `<div style="text-align:center; padding:50px; color:#444; font-size:0.7rem; letter-spacing:2px;">AUTHENTICATING...</div>`;
     document.getElementById('ouraBar').innerHTML = "💍 HANDSHAKE: " + (uID === 'J' ? 'JERMAINE' : 'SOPHIA');
     document.querySelectorAll('.u-badge').forEach(b => b.classList.toggle('active', b.id === 'b' + uID.toLowerCase()));
+    
     fetchOuraData();
 }
 
 async function fetchOuraData() {
-    const fetchID = user; const token = TOKENS[fetchID];
+    const fetchID = user; 
+    const token = TOKENS[fetchID];
     const range = `start_date=${getDateKey(new Date(Date.now()-864e5*14))}&end_date=${getDateKey(new Date())}`;
     
     document.getElementById('ouraBar').style.animation = 'pulse 1.5s infinite';
     
     try {
-        const [rRes, aRes] = await Promise.all([
+        const [rRes, aRes, sRes] = await Promise.all([
             fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}&t=${Date.now()}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
-            fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}&t=${Date.now()}`)}`, { headers: { 'Authorization': `Bearer ${token}` } })
+            fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}&t=${Date.now()}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
+            fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?${range}&t=${Date.now()}`)}`, { headers: { 'Authorization': `Bearer ${token}` } })
         ]);
         
         const rData = await rRes.json();
         const aData = await aRes.json();
+        const sData = await sRes.json();
         
         if(user !== fetchID) return;
         
         if(rData.data) {
             const hist = rData.data.map(day => {
                 const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
+                const sleep = sData.data ? sData.data.find(s => s.day === day.day) : null;
+                
                 return { 
                     date: day.day, 
                     score: day.score || "-", 
                     cal: act ? act.active_calories : "-", 
                     high: act ? Math.round(act.high_activity_time/60) : 0, 
                     med: act ? Math.round(act.medium_activity_time/60) : 0,
-                    rhr: day.contributors?.resting_heart_rate || "-"
+                    rhr: day.contributors?.resting_heart_rate || "-",
+                    totalSleep: sleep ? sleep.total_sleep_duration : 0,
+                    deepSleep: sleep ? sleep.deep_sleep_duration : 0,
+                    remSleep: sleep ? sleep.rem_sleep_duration : 0
                 };
             }).reverse();
             
@@ -798,14 +1677,24 @@ async function fetchOuraData() {
         }
     } catch(e) { 
         document.getElementById('ouraBar').style.animation = '';
-        if(user === fetchID) document.getElementById('ouraBar').innerHTML = "💍 SYNC TIMEOUT"; 
-        render();
+        if(user === fetchID) {
+            document.getElementById('ouraBar').innerHTML = "💍 SYNC TIMEOUT";
+            render();
+        }
     }
 }
 
 function changeW(d) { offset += d; render(); }
 function resetD() { offset = 0; selDate = getCaDate(); render(); }
-window.onload = () => { switchU(user); };
+
+// ==========================================
+// INITIALIZE
+// ==========================================
+
+window.onload = () => { 
+    loadUserData();
+    switchU(user); 
+};
 </script>
 </body>
 </html>
