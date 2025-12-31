@@ -187,7 +187,7 @@
     
     <div id="labReminder" class="status-bar" style="color: var(--orange); cursor: default;"></div>
     <div id="bodyScanReminder" class="status-bar" style="color: var(--blue); cursor: default;"></div>
-<div id="ouraBar" class="status-bar" onclick="fetchOuraData().then(() => render())">💍 HANDSHAKE REQUIRED...</div>
+<div id="ouraBar" class="status-bar">💍 HANDSHAKE REQUIRED...</div>
     <div id="dateDisplay" class="status-bar" style="margin-bottom: 20px; opacity: 0.7;">...</div>
 
     <div class="controls">
@@ -577,9 +577,13 @@ async function processPhotoWithAI(event) {
     reader.readAsDataURL(file);
 }
 
+    function openMealLoggerFromCard(e) {
+    e.stopPropagation();
+    openMealLogger();
+}
 function openMealLogger() { 
     let quickButtons = '';
-    
+        quickButtons += `</div>`;
     // Breakfast
     quickButtons += `<div class="meal-category"><div class="meal-category-title">🌅 BREAKFAST</div>`;
     mealDB.b.forEach(meal => {
@@ -606,7 +610,7 @@ function openMealLogger() {
     mealDB.s.forEach(meal => {
         quickButtons += `<button class="action-btn" style="margin-bottom: 8px;" onclick='logQuickMeal(${JSON.stringify(meal.name)}, ${meal.pro}, ${meal.carb}, ${meal.fat}, ${meal.cal}, ${meal.fiber}, ${meal.omega3}, ${meal.satFat}, ${meal.refinedCarbs})'>${meal.name} <span style="opacity:0.6; font-size:0.65rem;">(${meal.pro}P ${meal.fiber}F)</span></button>`;
     });
-    quickButtons += `</div>`;
+
     
     document.getElementById('quickMealButtons').innerHTML = quickButtons; 
     document.getElementById('photoPreview').style.display = 'none'; 
@@ -737,7 +741,8 @@ const nutHTML = `<div class="premium-card ${isNutCollapsed?'collapsed':''}">
             </div>
         </div>
         
-        <button class="action-btn green" onclick="event.stopPropagation(); openMealLogger()">📸 LOG MEAL WITH AI</button>
+<button class="action-btn green" onclick="openMealLoggerFromCard(event)">
+
     </div>
 </div>`;
     const lastTest = baselineData[user].lastLabTest, testDate = new Date(lastTest.date).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
@@ -793,6 +798,9 @@ window.onload = async () => {
     loadBaselineData(); 
     document.querySelectorAll('.u-badge').forEach(b => b.classList.toggle('active', b.id === 'b' + user.toLowerCase()));
     
+    // Set up Oura bar click handler ONCE
+    document.getElementById('ouraBar').onclick = () => fetchOuraData().then(() => render());
+    
     // Always render first with cached data
     render();
     
@@ -803,6 +811,7 @@ window.onload = async () => {
         }
     });
 };
+
 
 
 
