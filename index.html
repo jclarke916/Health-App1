@@ -611,23 +611,44 @@ function showDay(dObj, idx) {
     
 const nutHTML = `<div class="premium-card ${isNutCollapsed?'collapsed':''}">
     <div class="card-header" onclick="isNutCollapsed=!isNutCollapsed;render()">
-v style="margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.1);"><div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:8px;"><div style="text-align:center;"><div style="font-size:1rem; font-weight:800;">${foodLog.totalPro}g</div><div style="font-size:0.5rem; color:#888;">PRO</div></div><div style="text-align:center;"><div style="font-size:1rem; font-weight:800;">${foodLog.totalFiber}g</div><div style="font-size:0.5rem; color:#888;">FIBER</div></div><div style="text-align:center;"><div style="font-size:1rem; font-weight:800;">${foodLog.totalOmega3.toFixed(1)}g</div><div style="font-size:0.5rem; color:#888;">Ω-3</div></div><div style="text-align:center;"><div style="font-size:1rem; font-weight:800;">${foodLog.totalCal}</div><div style="font-size:0.5rem; color:#888;">CAL</div></div></div></div></div>` : '<div style="padding:20px; text-align:center; background:rgba(255,255,255,0.02); border-radius:12px; margin-bottom:15px;"><div style="font-size:0.7rem; color:#666;">No meals logged</div></div>'}<button class="action-btn green" onclick="event.stopPropagation(); openMealLogger()">📸 LOG MEAL WITH AI</button></div></div>`;
-    
-    const lastTest = baselineData[user].lastLabTest, testDate = new Date(lastTest.date).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
-    let labComparisonHTML = '';
-    Object.keys(labMetadata[user]).forEach(key => {
-        const meta = labMetadata[user][key], currentVal = lastTest[key], pred = predictLabValueForDate(user, key, dk);
-        if (currentVal && pred) {
-            const delta = pred.value - currentVal, deltaPercent = ((delta / currentVal) * 100).toFixed(1), improving = meta.lowerBetter ? delta < 0 : delta > 0, goal = baselineData[user].goals[key];
-            const currentPct = Math.min(meta.lowerBetter ? (goal/currentVal)*100 : (currentVal/goal)*100, 100), predPct = Math.min(meta.lowerBetter ? (goal/pred.value)*100 : (pred.value/goal)*100, 100);
-            labComparisonHTML += `<div style="padding:15px; background:rgba(255,255,255,0.03); border-radius:12px; margin-bottom:12px; border:1px solid ${improving ? 'rgba(48,209,88,0.3)' : 'rgba(255,255,255,0.1)'}"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;"><div><div class="data-label">${meta.name}</div><div style="font-size:0.55rem; color:#666; margin-top:2px;">Goal: ${goal}${meta.unit}</div></div><div style="text-align:right;"><div style="font-size:0.65rem; color:${improving ? 'var(--green)' : delta === 0 ? '#888' : 'var(--orange)'}; font-weight:800; margin-bottom:2px;">${delta > 0 ? '+' : ''}${delta.toFixed(1)}${meta.unit}</div><div style="font-size:0.55rem; color:#666;">${deltaPercent > 0 ? '+' : ''}${deltaPercent}%</div></div></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;"><div><div style="font-size:0.55rem; color:#888; margin-bottom:5px; text-transform:uppercase;">Baseline (${testDate})</div><div style="font-size:1.1rem; font-weight:800; color:#fff; margin-bottom:5px;">${currentVal}${meta.unit}</div><div class="bar-track" style="height:6px;"><div class="bar-fill" style="width:${currentPct}%; background:${currentPct >= 100 ? 'var(--green)' : currentPct >= 70 ? 'var(--gold)' : 'var(--red)'}"></div></div></div><div><div style="font-size:0.55rem; color:var(--purple); margin-bottom:5px; text-transform:uppercase; display:flex; align-items:center; gap:5px;">Predicted (Today) <span class="prediction-badge" style="margin:0;">AI</span></div><div style="font-size:1.1rem; font-weight:800; color:${improving ? 'var(--green)' : delta === 0 ? '#fff' : 'var(--orange)'}; margin-bottom:5px;">${pred.value}${meta.unit}</div><div class="bar-track" style="height:6px;"><div class="bar-fill" style="width:${predPct}%; background:${predPct >= 100 ? 'var(--green)' : predPct >= 70 ? 'var(--gold)' : 'var(--red)'}"></div></div></div></div><div style="font-size:0.6rem; color:#666; margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.05);">${pred.confidence} confidence • ${pred.dataSource.replace(/_/g, ' ').toLowerCase()}</div></div>`;
-        }
-    });
-    
-    const bioHTML = `<div class="premium-card ${isBioCollapsed?'collapsed':''}" onclick="isBioCollapsed=!isBioCollapsed;render()"><div class="card-header"><div><div class="card-title" style="color:var(--purple)">BIOMETRICS</div><div class="card-subtitle">Baseline vs AI-Predicted</div></div><div class="card-val-lg">${bodyPred.vf} <span style="font-size:0.7rem; opacity:0.6">VF</span> <span class="chevron">▼</span></div></div><div class="card-body">${labComparisonHTML}<button class="action-btn blue" onclick="event.stopPropagation(); openLabLogger()">🩸 LOG TEST RESULTS</button></div></div>`;
-    
-    document.getElementById('dayContent').innerHTML = burnoutAlert + summaryHTML + bioavailHTML + energyHTML + predictionsHTML + protocolHTML + workoutHTML + nutHTML + bioHTML;
-}
+        <div>
+            <div class="card-title" style="color:var(--green)">NUTRITION</div>
+            <div class="card-subtitle">${foodLog.meals.length} meals</div>
+        </div>
+        <div class="card-val-lg">${foodLog.totalPro || 0}g <span style="font-size:0.7rem; opacity:0.6">PRO</span> <span class="chevron">▼</span></div>
+    </div>
+    <div class="card-body">
+        ${foodLog.meals.length > 0 ? `<div style="padding:12px; background:rgba(48,209,88,0.1); border-left:3px solid var(--green); border-radius:8px; margin-bottom:15px;">
+            <div style="font-size:0.65rem; color:var(--green); margin-bottom:8px; font-weight:800;">✓ LOGGED</div>
+            ${foodLog.meals.map(m => `<div style="font-size:0.7rem; color:#ddd; margin-bottom:4px; display:flex; justify-content:space-between;">
+                <span>${m.name}${m.aiLogged ? ' 🤖' : ''}</span>
+                <span style="color:#888;">${m.pro}P ${m.fiber}F</span>
+            </div>`).join('')}
+            <div style="margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.1);">
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:8px;">
+                    <div style="text-align:center;">
+                        <div style="font-size:1rem; font-weight:800;">${foodLog.totalPro}g</div>
+                        <div style="font-size:0.5rem; color:#888;">PRO</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <div style="font-size:1rem; font-weight:800;">${foodLog.totalFiber}g</div>
+                        <div style="font-size:0.5rem; color:#888;">FIBER</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <div style="font-size:1rem; font-weight:800;">${foodLog.totalOmega3.toFixed(1)}g</div>
+                        <div style="font-size:0.5rem; color:#888;">Ω-3</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <div style="font-size:1rem; font-weight:800;">${foodLog.totalCal}</div>
+                        <div style="font-size:0.5rem; color:#888;">CAL</div>
+                    </div>
+                </div>
+            </div>
+        </div>` : '<div style="padding:20px; text-align:center; background:rgba(255,255,255,0.02); border-radius:12px; margin-bottom:15px;"><div style="font-size:0.7rem; color:#666;">No meals logged</div></div>'}
+        <button class="action-btn green" onclick="event.stopPropagation(); openMealLogger()">📸 LOG MEAL WITH AI</button>
+    </div>
+</div>`;
+
 
 function switchU(uID) { 
     user = uID; 
