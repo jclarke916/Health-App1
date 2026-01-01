@@ -772,25 +772,51 @@ const nutHTML = `<div class="premium-card ${isNutCollapsed?'collapsed':''}" oncl
 
 
 
+// ==========================================
+// CORRECTED v510 HANDSHAKE ENGINE
+// ==========================================
+
 function switchU(uID) { 
+    // 1. Immediately update global user state
     user = uID; 
     localStorage.setItem('centurion_active_user', uID); 
+    
+    // 2. UI Reset: Clear existing badges and content
     document.querySelectorAll('.u-badge').forEach(b => b.classList.toggle('active', b.id === 'b' + uID.toLowerCase())); 
+    document.getElementById('dayContent').innerHTML = '<div style="text-align:center; padding:50px; color:#444; font-size:0.7rem; letter-spacing:2px;">AUTHENTICATING...</div>';
     
-    // Clear current display immediately
-    document.getElementById('ouraBar').innerHTML = `💍 SWITCHING TO ${uID === 'J' ? 'JERMAINE' : 'SOPHIA'}...`;
-    document.getElementById('ouraBar').style.animation = 'pulse 1.5s infinite';
-    document.getElementById('dayContent').innerHTML = '<div style="text-align:center; padding:40px; color:#666;">Loading...</div>';
+    // 3. Status Bar Feedback
+    const ouraBar = document.getElementById('ouraBar');
+    ouraBar.innerHTML = `💍 SHAKING HANDS WITH ${uID === 'J' ? 'JERMAINE' : 'SOPHIA'}...`;
+    ouraBar.style.animation = 'pulse 1.5s infinite';
     
-    // Reset view
+    // 4. Force Reset View
     offset = 0;
     selDate = getCaDate();
     
-    // Fetch new user's Oura data, then render
+    // 5. Trigger Sequential Fetch Handshake
     fetchOuraData().then(() => {
-        render();
+        render(); // Final render only after data confirm
     });
 }
+
+// Ensure window.onload uses the new handshake logic
+window.onload = async () => { 
+    loadBaselineData(); 
+    // Initialize UI
+    document.querySelectorAll('.u-badge').forEach(b => b.classList.toggle('active', b.id === 'b' + user.toLowerCase()));
+    
+    // Set up Oura bar retry handler
+    document.getElementById('ouraBar').onclick = () => fetchOuraData().then(() => render());
+    
+    // Initial Render
+    render();
+    
+    // Fresh Background Sync
+    fetchOuraData().then((success) => {
+        if (success !== false) render();
+    });
+};
 
 
 
