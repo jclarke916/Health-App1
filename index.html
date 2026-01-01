@@ -516,7 +516,7 @@
         </div>
 
         <!-- ==========================================
-             4. TRAINING (Calories Burned)
+             4. TRAINING (Auto-synced from Oura)
              ========================================== -->
         <div class="card">
             <div class="card-header" onclick="toggleSection('training')">
@@ -531,7 +531,24 @@
                 </div>
             </div>
             <div class="card-content" id="training-content">
-                <button class="action-btn" onclick="openModal('trainingModal')">⚡ LOG TRAINING SESSION</button>
+                <div style="padding: 15px; background: rgba(255,214,10,0.05); border-radius: 12px; border: 1px solid rgba(255,214,10,0.2);">
+                    <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 8px;">
+                        📱 AUTO-SYNCED FROM OURA RING
+                    </div>
+                    <div style="font-size: 0.7rem; line-height: 1.5; color: var(--text);">
+                        Active calories are automatically pulled from your Oura Ring activity data. Tap "Sync Oura Data" above to refresh.
+                    </div>
+                </div>
+                
+                <div style="margin-top: 15px; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 10px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span style="font-size: 0.7rem; color: var(--text-dim);">DAILY GOAL</span>
+                        <span style="font-size: 0.7rem; color: var(--gold); font-weight: 700;">700 CAL</span>
+                    </div>
+                    <div class="metric-bar" style="height: 10px;">
+                        <div class="metric-fill" id="trainingProgressBar" style="width: 23%; background: linear-gradient(90deg, var(--gold) 0%, #FFA500 100%);"></div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -645,7 +662,10 @@
             </div>
             <div class="card-content" id="projections-content">
                 <div class="metric-grid" id="projectionsGrid">
-                    <!-- AI will populate projections here -->
+                    <div style="padding: 20px; text-align: center; color: var(--text-dim);">
+                        <div style="font-size: 2rem; margin-bottom: 10px;">🔮</div>
+                        <div style="font-size: 0.8rem;">AI projections will appear here based on your daily adherence to protocol, nutrition, and biomarker trends.</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -692,7 +712,7 @@
                 <div class="metric-grid">
                     <div class="metric-item">
                         <div class="metric-label">CALORIES IN</div>
-                        <div class="metric-value status-optimal" id="caloriesIn">2,450</div>
+                        <div class="metric-value status-optimal" id="caloriesIn">0</div>
                     </div>
                     <div class="metric-item">
                         <div class="metric-label">CALORIES OUT</div>
@@ -765,27 +785,6 @@
         </div>
     </div>
 
-    <!-- Training Logger Modal -->
-    <div id="trainingModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div class="modal-title">⚡ LOG TRAINING</div>
-                <button class="close-btn" onclick="closeModal('trainingModal')">×</button>
-            </div>
-            
-            <label>Calories Burned</label>
-            <input type="number" id="trainingCalories" placeholder="Enter calories burned">
-            
-            <label>Duration (minutes)</label>
-            <input type="number" id="trainingDuration" placeholder="Enter duration">
-            
-            <label>Workout Type</label>
-            <input type="text" id="trainingType" placeholder="e.g., REFORM, Boxing, UFC Gym">
-            
-            <button class="action-btn" onclick="logTraining()">💾 SAVE TRAINING</button>
-        </div>
-    </div>
-
     <!-- Protocol Selector Modal -->
     <div id="protocolModal" class="modal">
         <div class="modal-content">
@@ -839,6 +838,17 @@
 // ==========================================
 
 let user = 'J'; // Current user (J = Jermaine, S = Sophia)
+
+// Oura API Tokens
+const TOKENS = {
+    J: 'YOUR_JERMAINE_OURA_TOKEN_HERE',
+    S: 'YOUR_SOPHIA_OURA_TOKEN_HERE'
+};
+
+// Helper: Convert Date to YYYY-MM-DD
+function getDateKey(date) {
+    return date.toISOString().split('T')[0];
+}
 
 // Baseline biomarker data from October 31, 2025
 const baselineData = {
@@ -1287,6 +1297,9 @@ function switchUser(newUser) {
     
     // Refresh all displays
     updateDashboard();
+    
+    // Load cached Oura data for this user
+    loadCachedOuraData();
 }
 
 // Toggle collapsible sections
@@ -1321,13 +1334,13 @@ function updateDashboard() {
     // Life expectancy
     document.getElementById('lifeExpectancy').textContent = baseline.lifeExpectancy;
     
-    // Oura score
+    // Oura score (will be updated by sync)
     document.getElementById('ouraScore').textContent = ouraReadiness;
     
     // Protocol
     document.getElementById('protocolName').textContent = todayProtocol;
     
-    // Training
+    // Training (will be updated by Oura sync)
     document.getElementById('caloriesBurned').textContent = caloriesBurned;
     
     // Macro targets
@@ -1402,6 +1415,170 @@ function updateEnergyBalance() {
     document.getElementById('caloriesIn').textContent = caloriesIn.toLocaleString();
     document.getElementById('caloriesOut').textContent = caloriesOut.toLocaleString();
     document.getElementById('energyBalance').textContent = (balance >= 0 ? '+' : '') + balance;
+}
+
+// ==========================================
+// OURA SYNC - YOUR EXACT HANDSHAKE PROTOCOL
+// ==========================================
+
+async function updateOura() {
+    // 1. Capture the user ID at the moment the button was pressed
+    const fetchID = user; 
+    const token = TOKENS[fetchID];
+    const range = `start_date=${getDateKey(new Date(Date.now()-864e5*14))}&end_date=${getDateKey(new Date())}`;
+
+    try {
+        // Show loading state
+        document.getElementById('ouraScore').textContent = '...';
+        document.getElementById('caloriesBurned').textContent = '...';
+        
+        // 2. Sequential Fetch (Readiness First)
+        const rRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}&t=${Date.now()}`)}`, { 
+            headers: { 'Authorization': `Bearer ${token}` } 
+        });
+        const rData = await rRes.json();
+
+        // 3. Activity Fetch (Only after Readiness succeeds)
+        const aRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}&t=${Date.now()}`)}`, { 
+            headers: { 'Authorization': `Bearer ${token}` } 
+        });
+        const aData = await aRes.json();
+
+        // 4. Critical Guard: Did the user switch while we were waiting?
+        if(user !== fetchID) return;
+
+        // 5. Process & Cache Data
+        if(rData.data && rData.data.length > 0) {
+            const hist = rData.data.map(day => {
+                const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
+                return { 
+                    date: day.day, 
+                    score: day.score || 0, 
+                    cal: act ? act.active_calories : 0, 
+                    high: act ? Math.round(act.high_activity_time/60) : 0, 
+                    med: act ? Math.round(act.medium_activity_time/60) : 0,
+                    steps: act ? act.steps : 0,
+                    distance: act ? act.equivalent_walking_distance : 0
+                };
+            }).reverse();
+
+            // Cache the data
+            localStorage.setItem(`centurion_oura_cache_${fetchID}`, JSON.stringify({
+                history: hist,
+                lastSync: new Date().toISOString()
+            }));
+            
+            // 6. Update UI with latest day's data (only if we are still on the correct user)
+            const latest = hist[0];
+            
+            if (latest) {
+                // Update Oura Readiness Score
+                ouraReadiness = latest.score;
+                document.getElementById('ouraScore').textContent = ouraReadiness;
+                
+                // Update Training Calories
+                caloriesBurned = latest.cal;
+                document.getElementById('caloriesBurned').textContent = caloriesBurned;
+                
+                // Update training percentage
+                const percentOfGoal = Math.round((caloriesBurned / 700) * 100);
+                document.getElementById('trainingPercent').textContent = percentOfGoal + '%';
+                
+                // Update training progress bar
+                const progressBar = document.getElementById('trainingProgressBar');
+                if (progressBar) {
+                    progressBar.style.width = Math.min(percentOfGoal, 100) + '%';
+                    
+                    // Update color based on achievement
+                    if (percentOfGoal >= 100) {
+                        progressBar.style.background = 'linear-gradient(90deg, var(--green) 0%, #00cc00 100%)';
+                    } else if (percentOfGoal >= 70) {
+                        progressBar.style.background = 'linear-gradient(90deg, var(--gold) 0%, #FFA500 100%)';
+                    } else {
+                        progressBar.style.background = 'linear-gradient(90deg, var(--red) 0%, #cc0000 100%)';
+                    }
+                }
+                
+                // Update energy balance
+                updateEnergyBalance();
+                
+                // Success message
+                alert(`✅ Oura synced for ${fetchID === 'J' ? 'JERMAINE' : 'SOPHIA'}!\n\n💍 Readiness: ${latest.score}\n🔥 Active Calories: ${latest.cal}\n👟 Steps: ${latest.steps?.toLocaleString() || 'N/A'}`);
+            }
+            
+        } else {
+            throw new Error('No Oura data available');
+        }
+        
+    } catch(e) {
+        console.error('Oura sync error:', e);
+        
+        // 7. Error Handling: Only show error if user hasn't switched away
+        if(user === fetchID) {
+            // Try to load from cache
+            const cached = localStorage.getItem(`centurion_oura_cache_${fetchID}`);
+            if (cached) {
+                const data = JSON.parse(cached);
+                const latest = data.history[0];
+                
+                if (latest) {
+                    ouraReadiness = latest.score;
+                    caloriesBurned = latest.cal;
+                    document.getElementById('ouraScore').textContent = ouraReadiness;
+                    document.getElementById('caloriesBurned').textContent = caloriesBurned;
+                    
+                    const percentOfGoal = Math.round((caloriesBurned / 700) * 100);
+                    document.getElementById('trainingPercent').textContent = percentOfGoal + '%';
+                    
+                    alert(`⚠️ Oura sync timeout. Using cached data from ${new Date(data.lastSync).toLocaleDateString()}`);
+                } else {
+                    document.getElementById('ouraScore').textContent = '85';
+                    document.getElementById('caloriesBurned').textContent = '0';
+                    alert('⚠️ Oura sync failed. No cached data available.');
+                }
+            } else {
+                // Fallback to defaults
+                document.getElementById('ouraScore').textContent = '85';
+                document.getElementById('caloriesBurned').textContent = '0';
+                alert('⚠️ Oura sync failed. Please check your connection and try again.');
+            }
+        }
+    }
+}
+
+// Load cached Oura data on page load
+function loadCachedOuraData() {
+    const cached = localStorage.getItem(`centurion_oura_cache_${user}`);
+    if (cached) {
+        const data = JSON.parse(cached);
+        const latest = data.history[0];
+        
+        if (latest) {
+            ouraReadiness = latest.score;
+            caloriesBurned = latest.cal;
+            document.getElementById('ouraScore').textContent = ouraReadiness;
+            document.getElementById('caloriesBurned').textContent = caloriesBurned;
+            
+            const percentOfGoal = Math.round((caloriesBurned / 700) * 100);
+            document.getElementById('trainingPercent').textContent = percentOfGoal + '%';
+            
+            // Update progress bar if it exists
+            const progressBar = document.getElementById('trainingProgressBar');
+            if (progressBar) {
+                progressBar.style.width = Math.min(percentOfGoal, 100) + '%';
+                
+                if (percentOfGoal >= 100) {
+                    progressBar.style.background = 'linear-gradient(90deg, var(--green) 0%, #00cc00 100%)';
+                } else if (percentOfGoal >= 70) {
+                    progressBar.style.background = 'linear-gradient(90deg, var(--gold) 0%, #FFA500 100%)';
+                } else {
+                    progressBar.style.background = 'linear-gradient(90deg, var(--red) 0%, #cc0000 100%)';
+                }
+            }
+            
+            updateEnergyBalance();
+        }
+    }
 }
 // ==========================================
 // MEAL LOGGING SYSTEM
@@ -1553,38 +1730,6 @@ function handlePhotoCapture(event) {
 }
 
 // ==========================================
-// TRAINING LOGGING
-// ==========================================
-
-function logTraining() {
-    const calories = parseInt(document.getElementById('trainingCalories').value) || 0;
-    const duration = parseInt(document.getElementById('trainingDuration').value) || 0;
-    const type = document.getElementById('trainingType').value || 'Training';
-    
-    if (calories > 0) {
-        caloriesBurned += calories;
-        document.getElementById('caloriesBurned').textContent = caloriesBurned;
-        
-        // Update training percentage
-        const percentOfGoal = Math.round((caloriesBurned / 700) * 100);
-        document.getElementById('trainingPercent').textContent = percentOfGoal + '%';
-        
-        // Update energy balance
-        updateEnergyBalance();
-        
-        // Clear inputs
-        document.getElementById('trainingCalories').value = '';
-        document.getElementById('trainingDuration').value = '';
-        document.getElementById('trainingType').value = '';
-        
-        closeModal('trainingModal');
-        alert(`✅ ${type} logged: ${calories} calories burned in ${duration} minutes!`);
-    } else {
-        alert('⚠️ Please enter calories burned');
-    }
-}
-
-// ==========================================
 // PROTOCOL SELECTION
 // ==========================================
 
@@ -1611,38 +1756,6 @@ function selectProtocol(protocol) {
     
     closeModal('protocolModal');
     alert(`✅ Today's protocol set to: ${protocol}`);
-}
-
-// ==========================================
-// OURA SYNC (KEEP EXACTLY AS IS)
-// ==========================================
-
-async function updateOura() {
-    try {
-        const response = await fetch('https://api.ouraring.com/v2/usercollection/daily_readiness', {
-            headers: {
-                'Authorization': 'Bearer YOUR_OURA_TOKEN_HERE'
-            }
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            if (data.data && data.data.length > 0) {
-                const latestReadiness = data.data[0];
-                ouraReadiness = latestReadiness.score || 85;
-                document.getElementById('ouraScore').textContent = ouraReadiness;
-                alert('✅ Oura data synced successfully!');
-            }
-        } else {
-            // Fallback for demo
-            ouraReadiness = 85;
-            document.getElementById('ouraScore').textContent = ouraReadiness;
-            alert('📱 Oura sync demo mode (replace with actual token)');
-        }
-    } catch (error) {
-        console.error('Oura sync error:', error);
-        alert('⚠️ Oura sync failed. Using cached data.');
-    }
 }
 
 // ==========================================
@@ -1686,7 +1799,7 @@ function updateBiometrics() {
 function updateBiometricsDisplay() {
     const baseline = baselineData[user];
     
-    // Create biometrics grid
+    // Create biometrics grid with all blood markers + fitness metrics
     const biometricsHTML = `
         <!-- CALCIUM -->
         <div class="metric-item">
@@ -1945,9 +2058,15 @@ function updateBiometricsDisplay() {
 window.onload = function() {
     updateDashboard();
     updateBiometricsDisplay();
+    loadCachedOuraData();
 };
 
 </script>
 </body>
 </html>
+
+
+
+
+
 
