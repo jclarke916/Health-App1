@@ -492,60 +492,51 @@ function checkBodyScanReminder(userID) {
 }
 
 async function fetchOuraData() {
-    const fetchID = user;
+    // 1. Capture the user ID at the moment the button was pressed
+    const fetchID = user; 
     const token = TOKENS[fetchID];
     const range = `start_date=${getDateKey(new Date(Date.now()-864e5*14))}&end_date=${getDateKey(new Date())}`;
-    
-    document.getElementById('ouraBar').style.animation = 'pulse 1.5s infinite';
-    document.getElementById('ouraBar').innerHTML = `💍 SYNCING ${fetchID === 'J' ? 'JERMAINE' : 'SOPHIA'}...`;
-    
+
     try {
-        const [rRes, aRes] = await Promise.all([
-            fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}`)}`, { 
-                headers: { 'Authorization': `Bearer ${token}` } 
-            }), 
-            fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}`)}`, { 
-                headers: { 'Authorization': `Bearer ${token}` } 
-            })
-        ]);
-        
+        // 2. Sequential Fetch (Readiness First)
+        const rRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}&t=${Date.now()}`)}`, { 
+            headers: { 'Authorization': `Bearer ${token}` } 
+        });
         const rData = await rRes.json();
+
+        // 3. Activity Fetch (Only after Readiness succeeds)
+        const aRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}&t=${Date.now()}`)}`, { 
+            headers: { 'Authorization': `Bearer ${token}` } 
+        });
         const aData = await aRes.json();
-        
-        // User switched during fetch - abort
-        if(user !== fetchID) return false;
-        
+
+        // 4. Critical Guard: Did the user switch while we were waiting?
+        if(user !== fetchID) return;
+
+        // 5. Process & Cache Data
         if(rData.data) {
-            const hist = rData.data.map(day => { 
-                const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null; 
+            const hist = rData.data.map(day => {
+                const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
                 return { 
                     date: day.day, 
                     score: day.score || "-", 
-                    cal: act ? act.active_calories : 0, 
+                    cal: act ? act.active_calories : "-", 
                     high: act ? Math.round(act.high_activity_time/60) : 0, 
                     med: act ? Math.round(act.medium_activity_time/60) : 0 
-                }; 
+                };
             }).reverse();
-            
+
             localStorage.setItem(`centurion_oura_cache_${fetchID}`, JSON.stringify({history: hist}));
-            document.getElementById('ouraBar').style.animation = '';
             
-            // NOW hist exists - set innerHTML and onclick
-            const ouraBar = document.getElementById('ouraBar');
-            ouraBar.innerHTML = `💍 ${fetchID === 'J' ? 'JERMAINE' : 'SOPHIA'} READY: <span style="color:${hist[0]?.score >= 75 ? 'var(--green)' : 'var(--red)'}; font-weight:900">${hist[0]?.score || "-"}</span>`;
-            ouraBar.onclick = () => fetchOuraData().then(() => render());
+            // 6. Update UI only if we are still on the correct user
+            const latest = hist[0]?.score || "-";
+            document.getElementById('ouraBar').innerHTML = `💍 ${fetchID === 'J' ? 'JERMAINE' : 'SOPHIA'} READY: <span style="color:${latest >= 75 ? 'var(--green)' : 'var(--red)'}; font-weight:900">${latest}</span>`;
             
-            return true;
+            render();
         }
-    } catch(e) { 
-        console.error('Oura sync error:', e);
-        document.getElementById('ouraBar').style.animation = ''; 
-        if(user === fetchID) { 
-            const ouraBar = document.getElementById('ouraBar');
-            ouraBar.innerHTML = "💍 SYNC TIMEOUT - TAP TO RETRY";
-            ouraBar.onclick = () => fetchOuraData().then(() => render());
-        }
-        return false;
+    } catch(e) {
+        // 7. Error Handling: Only show error if user hasn't switched away
+        if(user === fetchID) document.getElementById('ouraBar').innerHTML = "💍 SYNC TIMEOUT";
     }
 }
 
