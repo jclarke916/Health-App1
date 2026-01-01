@@ -495,6 +495,10 @@
                 <button class="action-btn" onclick="updateOura()">📱 SYNC OURA DATA</button>
             </div>
         </div>
+                    <!-- SMART SUGGESTIONS BUTTON -->
+        <button class="action-btn" onclick="showDailySuggestions()" style="margin: 0 15px 20px 15px;">
+                        🤖 VIEW DAILY INTELLIGENCE BRIEFING
+        </button>
 
         <!-- ==========================================
              3. PROTOCOL (Today's Workout)
@@ -2059,6 +2063,666 @@ window.onload = function() {
     updateDashboard();
     updateBiometricsDisplay();
     loadCachedOuraData();
+};
+// ==========================================
+// INTELLIGENCE & SCIENCE LAYER
+// ==========================================
+
+// Daily quality tracker (+/- good/bad days)
+let dailyQuality = {
+    sleep: 0,      // -2 to +2
+    nutrition: 0,  // -2 to +2
+    training: 0,   // -2 to +2
+    recovery: 0,   // -2 to +2
+    stress: 0      // -2 to +2
+};
+
+// Burnout detection state
+let burnoutMetrics = {
+    consecutiveHardDays: 0,
+    hrvTrend: [],
+    readinessTrend: [],
+    lastRestDay: null,
+    needsRest: false
+};
+
+// ==========================================
+// TIME-BASED MEAL SUGGESTIONS
+// ==========================================
+
+function getTimeBasedMealSuggestions() {
+    const now = new Date();
+    const hour = now.getHours();
+    const currentUser = user;
+    const baseline = baselineData[currentUser];
+    
+    let suggestions = {
+        timeOfDay: '',
+        mealType: '',
+        recommendations: [],
+        reasoning: ''
+    };
+    
+    // MORNING (5 AM - 11 AM) - BREAKFAST
+    if (hour >= 5 && hour < 11) {
+        suggestions.timeOfDay = 'MORNING';
+        suggestions.mealType = 'BREAKFAST';
+        
+        if (currentUser === 'J') {
+            // Jermaine's morning priorities: ApoB reduction, VO2 max support
+            suggestions.recommendations = [
+                {
+                    meal: "Wild Salmon Bowl (Quinoa + Brussels + Flax)",
+                    reason: "High omega-3 (5.5g) supports ApoB reduction. Complex carbs fuel morning training.",
+                    priority: "HIGH"
+                },
+                {
+                    meal: "Longevity Power Bowl (Sardines + Avocado + Spinach + Walnuts)",
+                    reason: "Omega-3 bomb (4.2g) for cardiovascular health. Anti-inflammatory for recovery.",
+                    priority: "HIGH"
+                },
+                {
+                    meal: "Berry Longevity Smoothie (Greens + Chia + Walnuts + Cocoa)",
+                    reason: "Quick pre-workout option. Antioxidants support VO2 max and reduce oxidative stress.",
+                    priority: "MEDIUM"
+                }
+            ];
+            suggestions.reasoning = "🔬 SCIENCE: Morning omega-3 intake optimizes lipid metabolism throughout the day. Studies show omega-3s reduce ApoB by 15-25% when consumed consistently. Complex carbs + protein support glycogen replenishment for REFORM/UFC training.";
+            
+        } else {
+            // Sophia's morning priorities: ANA reduction, ferritin optimization
+            suggestions.recommendations = [
+                {
+                    meal: "Greek Yogurt Longevity Bowl (Walnuts + Berries + Flax + Kefir)",
+                    reason: "Probiotics support gut health (linked to autoimmune regulation). Berries are anti-inflammatory.",
+                    priority: "HIGH"
+                },
+                {
+                    meal: "Steel-Cut Oats Ultimate (Walnuts + Berries + Hemp + Flax)",
+                    reason: "Soluble fiber supports immune balance. Omega-3s reduce systemic inflammation.",
+                    priority: "HIGH"
+                },
+                {
+                    meal: "Berry Longevity Smoothie (Greens + Chia + Walnuts + Cocoa)",
+                    reason: "Antioxidants combat oxidative stress. Easy digestion for sensitive mornings.",
+                    priority: "MEDIUM"
+                }
+            ];
+            suggestions.reasoning = "🔬 SCIENCE: Anti-inflammatory foods in the morning set the tone for the day. Probiotics + polyphenols from berries have been shown to reduce autoimmune markers (ANA) by modulating gut-immune axis.";
+        }
+    }
+    
+    // MIDDAY (11 AM - 2 PM) - LUNCH
+    else if (hour >= 11 && hour < 14) {
+        suggestions.timeOfDay = 'MIDDAY';
+        suggestions.mealType = 'LUNCH';
+        
+        if (currentUser === 'J') {
+            suggestions.recommendations = [
+                {
+                    meal: "Sardine Power Salad (Quinoa + Kale + Avocado + Walnuts)",
+                    reason: "Double sardine dose = 5.8g omega-3. Maximum ApoB impact. High fiber for satiety.",
+                    priority: "HIGH"
+                },
+                {
+                    meal: "Wild Salmon Buddha Bowl (Lentils + Greens + Seeds)",
+                    reason: "48g protein supports afternoon muscle recovery. Omega-3 + fiber combo.",
+                    priority: "HIGH"
+                },
+                {
+                    meal: "Mackerel Rice Bowl (Brown Rice + Kimchi + Seaweed)",
+                    reason: "Fermented foods support gut microbiome. Omega-3 (4.8g) for cardiovascular health.",
+                    priority: "MEDIUM"
+                }
+            ];
+            suggestions.reasoning = "🔬 SCIENCE: Lunch is prime time for omega-3 loading. Peak absorption occurs 4-6 hours post-consumption, aligning with evening recovery. High protein maintains lean mass during caloric restriction.";
+            
+        } else {
+            suggestions.recommendations = [
+                {
+                    meal: "White Fish + Shrimp Ceviche (Avocado + Cilantro + Lime)",
+                    reason: "Light, anti-inflammatory. Cilantro supports heavy metal detox. Vitamin C from lime boosts iron absorption.",
+                    priority: "HIGH"
+                },
+                {
+                    meal: "Dungeness Crab Salad Bowl (Avocado + Mango + Greens)",
+                    reason: "Selenium from crab supports thyroid function. Mango provides vitamin A for immune regulation.",
+                    priority: "HIGH"
+                },
+                {
+                    meal: "Cod Taco Bowl (Black Beans + Cabbage Slaw + Lime)",
+                    reason: "Fiber-rich, supports gut health. Cabbage is anti-inflammatory cruciferous vegetable.",
+                    priority: "MEDIUM"
+                }
+            ];
+            suggestions.reasoning = "🔬 SCIENCE: Midday anti-inflammatory focus helps manage ANA levels. Vitamin C from citrus enhances non-heme iron absorption from plant sources, addressing low ferritin without excess supplementation.";
+        }
+    }
+    
+    // AFTERNOON (2 PM - 5 PM) - SNACK
+    else if (hour >= 14 && hour < 17) {
+        suggestions.timeOfDay = 'AFTERNOON';
+        suggestions.mealType = 'SNACK';
+        
+        if (currentUser === 'J') {
+            suggestions.recommendations = [
+                {
+                    meal: "Sardine Avocado Toast (Sprouted Bread + Arugula)",
+                    reason: "Pre-workout omega-3 + complex carbs. Sustains energy for evening UFC training.",
+                    priority: "HIGH"
+                },
+                {
+                    meal: "Greek Yogurt Power Cup (Walnuts + Chia + Berries)",
+                    reason: "Protein + healthy fats. Anti-inflammatory antioxidants for recovery.",
+                    priority: "MEDIUM"
+                },
+                {
+                    meal: "Hard-Boiled Eggs (3) + Avocado + Kimchi",
+                    reason: "Protein-rich, probiotic support. Quick prep for busy afternoons.",
+                    priority: "MEDIUM"
+                }
+            ];
+            suggestions.reasoning = "🔬 SCIENCE: Afternoon snacks bridge lunch-dinner gap, preventing cortisol spikes from fasting. Omega-3s consumed 2-3 hours pre-training reduce exercise-induced inflammation.";
+            
+        } else {
+            suggestions.recommendations = [
+                {
+                    meal: "Kefir Longevity Smoothie (Berries + Walnuts + Flax)",
+                    reason: "Probiotic-rich for gut-immune health. Berries combat afternoon oxidative stress.",
+                    priority: "HIGH"
+                },
+                {
+                    meal: "Cottage Cheese Supreme (Walnuts + Flax + Berries + Hemp)",
+                    reason: "Casein protein for sustained release. Omega-3s support immune balance.",
+                    priority: "MEDIUM"
+                },
+                {
+                    meal: "Edamame Bowl (Seaweed + Sesame + Kimchi)",
+                    reason: "Plant protein + fermented foods. Iodine from seaweed supports thyroid (TSH optimization).",
+                    priority: "MEDIUM"
+                }
+            ];
+            suggestions.reasoning = "🔬 SCIENCE: Probiotics consumed between meals have maximum colonization potential. Omega-3s + antioxidants work synergistically to reduce inflammatory cytokines linked to elevated ANA.";
+        }
+    }
+    
+    // EVENING (5 PM - 9 PM) - DINNER
+    else if (hour >= 17 && hour < 21) {
+        suggestions.timeOfDay = 'EVENING';
+        suggestions.mealType = 'DINNER';
+        
+        if (currentUser === 'J') {
+            suggestions.recommendations = [
+                {
+                    meal: "Wild Salmon Centurion (Lentils + Kale + Walnuts)",
+                    reason: "6.5g omega-3 for overnight recovery. 52g protein for muscle repair after training.",
+                    priority: "HIGH"
+                },
+                {
+                    meal: "Bison Organ Blend (20% Liver + Sweet Potato + Brussels)",
+                    reason: "Nutrient-dense organ meats. Vitamin A, B12, iron. Supports testosterone + recovery.",
+                    priority: "HIGH"
+                },
+                {
+                    meal: "Mackerel Mediterranean (Quinoa + Olives + Greens)",
+                    reason: "5.5g omega-3. Polyphenols from olives support cardiovascular health.",
+                    priority: "MEDIUM"
+                }
+            ];
+            suggestions.reasoning = "🔬 SCIENCE: Evening omega-3 consumption maximizes overnight anti-inflammatory processes. Growth hormone peaks during deep sleep - protein intake supports muscle protein synthesis. Organ meats provide micronutrients often depleted by intense training.";
+            
+        } else {
+            suggestions.recommendations = [
+                {
+                    meal: "Cod + White Beans (Kale + Lemon + Garlic)",
+                    reason: "Light, anti-inflammatory. White beans provide folate for immune regulation.",
+                    priority: "HIGH"
+                },
+                {
+                    meal: "Whole Branzino (Lemon + Herbs + Roasted Vegetables)",
+                    reason: "Omega-3 from whole fish. Herbs (rosemary, thyme) are anti-inflammatory.",
+                    priority: "HIGH"
+                },
+                {
+                    meal: "Garlic Shrimp Zoodles (Lemon + Cherry Tomatoes)",
+                    reason: "Low-carb for evening. Garlic has antimicrobial + immune-supporting properties.",
+                    priority: "MEDIUM"
+                }
+            ];
+            suggestions.reasoning = "🔬 SCIENCE: Evening meals should be anti-inflammatory and easy to digest for optimal sleep quality. Garlic and allium vegetables have been shown to modulate immune response and reduce autoimmune markers.";
+        }
+    }
+    
+    // LATE NIGHT (9 PM - 5 AM) - AVOID OR LIGHT SNACK
+    else {
+        suggestions.timeOfDay = 'LATE NIGHT';
+        suggestions.mealType = 'LIGHT SNACK (IF NEEDED)';
+        
+        suggestions.recommendations = [
+            {
+                meal: "Kefir Longevity Smoothie (Berries + Walnuts + Flax)",
+                reason: "Easy to digest. Probiotics support overnight gut repair. Magnesium aids sleep.",
+                priority: "LOW"
+            },
+            {
+                meal: "Greek Yogurt Power Cup (Walnuts + Chia + Berries)",
+                reason: "Casein protein for overnight muscle recovery. Tryptophan supports sleep.",
+                priority: "LOW"
+            }
+        ];
+        suggestions.reasoning = "⚠️ CAUTION: Late-night eating disrupts circadian rhythm and sleep quality. If hungry, opt for easily digestible protein + healthy fats. Avoid carbs to prevent insulin spike before bed.";
+    }
+    
+    return suggestions;
+}
+
+// ==========================================
+// JUICE RECOMMENDATION ENGINE
+// ==========================================
+
+function getPersonalizedJuiceRecommendation() {
+    const currentUser = user;
+    const baseline = baselineData[currentUser];
+    const readiness = ouraReadiness;
+    
+    let recommendation = {
+        primary: null,
+        secondary: null,
+        reasoning: '',
+        timing: '',
+        benefits: []
+    };
+    
+    if (currentUser === 'J') {
+        // Jermaine's biomarker priorities: ApoB (85), VO2 Max (52.3)
+        
+        if (readiness < 70) {
+            // LOW READINESS - Recovery focus
+            recommendation.primary = "Green Longevity Juice (Celery + Cucumber + Spinach + Lemon)";
+            recommendation.secondary = "Orange Immune Juice (Carrot + Orange + Turmeric)";
+            recommendation.reasoning = "🔬 LOW READINESS DETECTED: Focus on alkalizing, anti-inflammatory juices to support recovery. Turmeric's curcumin reduces systemic inflammation (↓hsCRP), supporting cardiovascular recovery.";
+            recommendation.timing = "BEST TIME: Empty stomach, 30 min before breakfast";
+            recommendation.benefits = [
+                "Celery reduces blood pressure via phthalides",
+                "Turmeric inhibits NF-κB inflammatory pathway",
+                "Vitamin C supports cortisol regulation during stress",
+                "Alkalizing effect balances pH after intense training"
+            ];
+            
+        } else if (baseline.apoB > 80) {
+            // ELEVATED APOB - Cardiovascular focus
+            recommendation.primary = "Beet Vitality Juice (Beet + Carrot + Apple + Ginger)";
+            recommendation.secondary = "Red Power Juice (Beet + Pomegranate + Berry)";
+            recommendation.reasoning = "🔬 APOB OPTIMIZATION: Beets are the #1 juice for cardiovascular health. Dietary nitrates convert to nitric oxide, improving endothelial function and reducing ApoB particle oxidation. Studies show 8-10% ApoB reduction with daily beet juice.";
+            recommendation.timing = "BEST TIME: 2-3 hours before training for max NO₂ effect";
+            recommendation.benefits = [
+                "Nitric oxide improves blood flow and VO2 max (3-5% increase)",
+                "Betalains reduce LDL oxidation (key for ApoB management)",
+                "Pomegranate reduces arterial plaque by 30% (clinical studies)",
+                "Anthocyanins from berries improve HDL function"
+            ];
+            
+        } else {
+            // MAINTENANCE - Performance focus
+            recommendation.primary = "Beet Vitality Juice (Beet + Carrot + Apple + Ginger)";
+            recommendation.secondary = "Green Apple Detox (Apple + Kale + Cucumber + Mint)";
+            recommendation.reasoning = "🔬 PERFORMANCE OPTIMIZATION: Beets for VO2 max, greens for liver detox and nutrient density. Your biomarkers are solid - maintain with daily anti-inflammatory juicing.";
+            recommendation.timing = "BEST TIME: Morning on empty stomach or 2 hours pre-training";
+            recommendation.benefits = [
+                "Beet nitrates improve oxygen efficiency during exercise",
+                "Kale's chlorophyll supports liver Phase 2 detoxification",
+                "Ginger reduces exercise-induced muscle soreness by 25%",
+                "Beta-carotene from carrots supports immune function"
+            ];
+        }
+        
+    } else {
+        // Sophia's biomarker priorities: ANA (1.2), Ferritin (28)
+        
+        if (readiness < 70) {
+            // LOW READINESS - Recovery focus
+            recommendation.primary = "Orange Immune Juice (Carrot + Orange + Turmeric)";
+            recommendation.secondary = "Green Longevity Juice (Celery + Cucumber + Spinach + Lemon)";
+            recommendation.reasoning = "🔬 LOW READINESS DETECTED: Vitamin C megadose supports immune recovery. Turmeric is a powerful immune modulator, reducing autoimmune inflammation without suppressing necessary immune function.";
+            recommendation.timing = "BEST TIME: Empty stomach, 30 min before breakfast";
+            recommendation.benefits = [
+                "Vitamin C (500mg+) supports adrenal recovery during stress",
+                "Turmeric modulates T-regulatory cells (autoimmune balance)",
+                "Beta-carotene supports thyroid function (TSH optimization)",
+                "Alkalizing effect reduces inflammatory cytokines"
+            ];
+            
+        } else if (baseline.ana > 1.0 || baseline.ferritin < 30) {
+            // ELEVATED ANA OR LOW FERRITIN - Anti-inflammatory + Iron absorption focus
+            recommendation.primary = "Orange Immune Juice (Carrot + Orange + Turmeric)";
+            recommendation.secondary = "Green Longevity Juice (Celery + Cucumber + Spinach + Lemon)";
+            recommendation.reasoning = "🔬 AUTOIMMUNE OPTIMIZATION: Vitamin C enhances non-heme iron absorption (critical for low ferritin). Turmeric reduces ANA by modulating immune response. Studies show 20-40% reduction in autoimmune markers with curcumin.";
+            recommendation.timing = "BEST TIME: With iron-rich meals (spinach, lentils, beans) for maximum absorption";
+            recommendation.benefits = [
+                "Vitamin C increases iron absorption by 300-400%",
+                "Turmeric's curcumin reduces autoimmune antibodies (ANA/RF)",
+                "Carrot beta-carotene converts to vitamin A (immune regulation)",
+                "Ginger improves gut health (70% of immune system is gut-based)"
+            ];
+            
+        } else {
+            // MAINTENANCE - Immune balance focus
+            recommendation.primary = "Green Longevity Juice (Celery + Cucumber + Spinach + Lemon)";
+            recommendation.secondary = "Citrus Glow Juice (Grapefruit + Orange + Lemon)";
+            recommendation.reasoning = "🔬 IMMUNE BALANCE: Your markers are improving! Maintain with daily greens for alkalizing effect and vitamin C for continued immune support. Grapefruit supports liver detoxification.";
+            recommendation.timing = "BEST TIME: Morning on empty stomach";
+            recommendation.benefits = [
+                "Greens provide magnesium for stress resilience",
+                "Vitamin C supports collagen production (skin, joints)",
+                "Grapefruit supports Phase 1 liver detoxification",
+                "Alkalizing effect reduces systemic inflammation"
+            ];
+        }
+    }
+    
+    return recommendation;
+}
+
+// ==========================================
+// BURNOUT DETECTION & AUTO-REST PROTOCOL
+// ==========================================
+
+function checkBurnoutStatus() {
+    const readiness = ouraReadiness;
+    const today = new Date();
+    
+    // Update readiness trend (last 7 days)
+    burnoutMetrics.readinessTrend.push(readiness);
+    if (burnoutMetrics.readinessTrend.length > 7) {
+        burnoutMetrics.readinessTrend.shift();
+    }
+    
+    // Calculate average readiness
+    const avgReadiness = burnoutMetrics.readinessTrend.reduce((a, b) => a + b, 0) / burnoutMetrics.readinessTrend.length;
+    
+    // BURNOUT DETECTION LOGIC
+    let burnoutRisk = {
+        level: 'LOW',
+        indicators: [],
+        recommendation: '',
+        autoRestRequired: false
+    };
+    
+    // Indicator 1: Consecutive low readiness days
+    if (readiness < 70) {
+        burnoutMetrics.consecutiveHardDays++;
+    } else {
+        burnoutMetrics.consecutiveHardDays = 0;
+    }
+    
+    if (burnoutMetrics.consecutiveHardDays >= 3) {
+        burnoutRisk.indicators.push(`⚠️ ${burnoutMetrics.consecutiveHardDays} consecutive days with readiness < 70`);
+    }
+    
+    // Indicator 2: Declining readiness trend
+    if (burnoutMetrics.readinessTrend.length >= 5) {
+        const recentAvg = burnoutMetrics.readinessTrend.slice(-3).reduce((a, b) => a + b, 0) / 3;
+        const earlierAvg = burnoutMetrics.readinessTrend.slice(0, 3).reduce((a, b) => a + b, 0) / 3;
+        
+        if (recentAvg < earlierAvg - 10) {
+            burnoutRisk.indicators.push(`📉 Readiness declining: ${earlierAvg.toFixed(0)} → ${recentAvg.toFixed(0)}`);
+        }
+    }
+    
+    // Indicator 3: Very low current readiness
+    if (readiness < 60) {
+        burnoutRisk.indicators.push(`🚨 Critical readiness: ${readiness}/100`);
+    }
+    
+    // Indicator 4: No recent rest day
+    if (burnoutMetrics.lastRestDay) {
+        const daysSinceRest = Math.floor((today - burnoutMetrics.lastRestDay) / (1000 * 60 * 60 * 24));
+        if (daysSinceRest >= 6) {
+            burnoutRisk.indicators.push(`⏰ ${daysSinceRest} days since last rest`);
+        }
+    }
+    
+    // DETERMINE BURNOUT LEVEL
+    if (burnoutRisk.indicators.length >= 3 || readiness < 60 || burnoutMetrics.consecutiveHardDays >= 4) {
+        burnoutRisk.level = 'HIGH';
+        burnoutRisk.autoRestRequired = true;
+        burnoutRisk.recommendation = `🛑 MANDATORY REST DAY\n\nYour body is showing clear signs of overtraining:\n${burnoutRisk.indicators.join('\n')}\n\n🔬 SCIENCE: Chronic under-recovery leads to elevated cortisol, suppressed testosterone, increased injury risk, and diminished training adaptations. Rest is when you get stronger, not during training.\n\n✅ TODAY'S PROTOCOL: Complete rest or light yoga/walking only. Focus on sleep, nutrition, and recovery.`;
+        
+        // Auto-set protocol to REST DAY
+        todayProtocol = 'REST DAY';
+        document.getElementById('protocolName').textContent = 'REST DAY';
+        document.getElementById('protocolScore').textContent = '95';
+        
+    } else if (burnoutRisk.indicators.length >= 2 || readiness < 70 || burnoutMetrics.consecutiveHardDays >= 2) {
+        burnoutRisk.level = 'MEDIUM';
+        burnoutRisk.recommendation = `⚠️ RECOVERY FOCUS RECOMMENDED\n\nYour readiness indicates elevated fatigue:\n${burnoutRisk.indicators.join('\n')}\n\n🔬 SCIENCE: Training stress + life stress are cumulative. When readiness drops, training intensity should decrease to prevent overtraining syndrome.\n\n✅ TODAY'S PROTOCOL: Consider light activity (REFORM, Yoga) or reduce training volume by 30-40%. Prioritize sleep and anti-inflammatory nutrition.`;
+        
+    } else if (avgReadiness >= 85 && readiness >= 80) {
+        burnoutRisk.level = 'OPTIMAL';
+        burnoutRisk.recommendation = `✅ READY TO PERFORM\n\nYour recovery metrics are excellent! You're primed for high-intensity training.\n\n🔬 SCIENCE: High readiness = optimal HRV, low resting HR, quality sleep. This is your window for progressive overload.\n\n✅ TODAY'S PROTOCOL: Full intensity training (UFC GYM, CS4, Boxing). Your body can handle the stress and will adapt positively.`;
+    }
+    
+    burnoutMetrics.needsRest = burnoutRisk.autoRestRequired;
+    
+    return burnoutRisk;
+}
+
+function markRestDay() {
+    burnoutMetrics.lastRestDay = new Date();
+    burnoutMetrics.consecutiveHardDays = 0;
+}
+
+// ==========================================
+// DAILY QUALITY TRACKER (+/-)
+// ==========================================
+
+function updateDailyQuality() {
+    const readiness = ouraReadiness;
+    const nutritionScore = parseInt(document.getElementById('nutritionScore').textContent) || 0;
+    const caloriesGoal = macroTargets[user].calories;
+    const actualCalories = dailyNutrition.calories;
+    
+    // SLEEP QUALITY (based on Oura readiness)
+    if (readiness >= 85) dailyQuality.sleep = 2;       // ++
+    else if (readiness >= 75) dailyQuality.sleep = 1;  // +
+    else if (readiness >= 65) dailyQuality.sleep = 0;  // neutral
+    else if (readiness >= 55) dailyQuality.sleep = -1; // -
+    else dailyQuality.sleep = -2;                       // --
+    
+    // NUTRITION QUALITY (based on macro adherence)
+    if (nutritionScore >= 90) dailyQuality.nutrition = 2;
+    else if (nutritionScore >= 75) dailyQuality.nutrition = 1;
+    else if (nutritionScore >= 60) dailyQuality.nutrition = 0;
+    else if (nutritionScore >= 40) dailyQuality.nutrition = -1;
+    else dailyQuality.nutrition = -2;
+    
+    // TRAINING QUALITY (based on calories burned vs goal)
+    const trainingPercent = (caloriesBurned / 700) * 100;
+    if (trainingPercent >= 100) dailyQuality.training = 2;
+    else if (trainingPercent >= 80) dailyQuality.training = 1;
+    else if (trainingPercent >= 50) dailyQuality.training = 0;
+    else if (trainingPercent >= 30) dailyQuality.training = -1;
+    else dailyQuality.training = -2;
+    
+    // RECOVERY QUALITY (inverse of training - rest is valuable)
+    if (todayProtocol === 'REST DAY') {
+        dailyQuality.recovery = 2; // Rest days are excellent for recovery
+    } else if (readiness >= 75 && trainingPercent < 100) {
+        dailyQuality.recovery = 1; // Good readiness with moderate training
+    } else if (readiness < 65 && trainingPercent >= 100) {
+        dailyQuality.recovery = -2; // Low readiness but high training = poor recovery
+    } else {
+        dailyQuality.recovery = 0;
+    }
+    
+    // CALCULATE OVERALL DAY QUALITY
+    const totalScore = dailyQuality.sleep + dailyQuality.nutrition + dailyQuality.training + dailyQuality.recovery;
+    
+    let dayQuality = {
+        score: totalScore,
+        rating: '',
+        emoji: '',
+        color: ''
+    };
+    
+    if (totalScore >= 6) {
+        dayQuality.rating = 'EXCEPTIONAL DAY';
+        dayQuality.emoji = '🔥🔥';
+        dayQuality.color = 'var(--green)';
+    } else if (totalScore >= 4) {
+        dayQuality.rating = 'GREAT DAY';
+        dayQuality.emoji = '✅';
+        dayQuality.color = 'var(--green)';
+    } else if (totalScore >= 2) {
+        dayQuality.rating = 'GOOD DAY';
+        dayQuality.emoji = '👍';
+        dayQuality.color = 'var(--gold)';
+    } else if (totalScore >= 0) {
+        dayQuality.rating = 'AVERAGE DAY';
+        dayQuality.emoji = '➖';
+        dayQuality.color = 'var(--text-dim)';
+    } else if (totalScore >= -2) {
+        dayQuality.rating = 'RECOVERY NEEDED';
+        dayQuality.emoji = '⚠️';
+        dayQuality.color = '#FFA500';
+    } else {
+        dayQuality.rating = 'POOR DAY';
+        dayQuality.emoji = '🚨';
+        dayQuality.color = 'var(--red)';
+    }
+    
+    return dayQuality;
+}
+
+// ==========================================
+// SMART SUGGESTION ENGINE
+// ==========================================
+
+function generateSmartSuggestions() {
+    const suggestions = [];
+    const burnout = checkBurnoutStatus();
+    const mealSuggestions = getTimeBasedMealSuggestions();
+    const juiceRec = getPersonalizedJuiceRecommendation();
+    const dayQuality = updateDailyQuality();
+    
+    // PRIORITY 1: Burnout/Rest
+    if (burnout.autoRestRequired) {
+        suggestions.push({
+            priority: 'CRITICAL',
+            category: 'RECOVERY',
+            title: '🛑 MANDATORY REST DAY',
+            message: burnout.recommendation,
+            action: 'Set protocol to REST DAY',
+            actionFunction: () => selectProtocol('REST DAY')
+        });
+    } else if (burnout.level === 'MEDIUM') {
+        suggestions.push({
+            priority: 'HIGH',
+            category: 'RECOVERY',
+            title: '⚠️ RECOVERY FOCUS',
+            message: burnout.recommendation,
+            action: 'Switch to light protocol (REFORM/Yoga)',
+            actionFunction: () => openProtocolSelector()
+        });
+    }
+    
+    // PRIORITY 2: Nutrition timing
+    if (mealSuggestions.recommendations.length > 0) {
+        const topMeal = mealSuggestions.recommendations[0];
+        suggestions.push({
+            priority: 'HIGH',
+            category: 'NUTRITION',
+            title: `🍽️ ${mealSuggestions.timeOfDay} - ${mealSuggestions.mealType}`,
+            message: `${topMeal.meal}\n\n${topMeal.reason}\n\n${mealSuggestions.reasoning}`,
+            action: 'View meal options',
+            actionFunction: () => openMealLogger()
+        });
+    }
+    
+    // PRIORITY 3: Juice recommendation
+    if (juiceRec.primary) {
+        suggestions.push({
+            priority: 'MEDIUM',
+            category: 'OPTIMIZATION',
+            title: `🧃 PERSONALIZED JUICE`,
+            message: `${juiceRec.primary}\n\n${juiceRec.reasoning}\n\n⏰ ${juiceRec.timing}\n\n✨ Benefits:\n${juiceRec.benefits.map(b => `• ${b}`).join('\n')}`,
+            action: 'View juice recipes',
+            actionFunction: () => openMealLogger()
+        });
+    }
+    
+    // PRIORITY 4: Day quality feedback
+    suggestions.push({
+        priority: 'INFO',
+        category: 'TRACKING',
+        title: `${dayQuality.emoji} ${dayQuality.rating}`,
+        message: `Overall Score: ${dayQuality.score}/8\n\n💤 Sleep: ${'★'.repeat(Math.max(0, dailyQuality.sleep + 2))}${'☆'.repeat(Math.max(0, 2 - dailyQuality.sleep))}\n🥗 Nutrition: ${'★'.repeat(Math.max(0, dailyQuality.nutrition + 2))}${'☆'.repeat(Math.max(0, 2 - dailyQuality.nutrition))}\n🔥 Training: ${'★'.repeat(Math.max(0, dailyQuality.training + 2))}${'☆'.repeat(Math.max(0, 2 - dailyQuality.training))}\n🧘 Recovery: ${'★'.repeat(Math.max(0, dailyQuality.recovery + 2))}${'☆'.repeat(Math.max(0, 2 - dailyQuality.recovery))}`,
+        action: null
+    });
+    
+    return suggestions;
+}
+
+// ==========================================
+// DISPLAY SUGGESTIONS TO USER
+// ==========================================
+
+function showDailySuggestions() {
+    const suggestions = generateSmartSuggestions();
+    
+    let html = '<div style="padding: 20px;">';
+    html += '<div style="font-size: 1.2rem; font-weight: 800; color: var(--gold); margin-bottom: 20px;">🤖 DAILY INTELLIGENCE BRIEFING</div>';
+    
+    suggestions.forEach(sug => {
+        const priorityColors = {
+            'CRITICAL': 'var(--red)',
+            'HIGH': '#FFA500',
+            'MEDIUM': 'var(--gold)',
+            'INFO': 'var(--text-dim)'
+        };
+        
+        html += `
+            <div style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; margin-bottom: 15px; border-left: 4px solid ${priorityColors[sug.priority]};">
+                <div style="font-size: 0.65rem; color: ${priorityColors[sug.priority]}; font-weight: 800; margin-bottom: 8px;">${sug.category}</div>
+                <div style="font-size: 0.85rem; font-weight: 700; color: var(--text); margin-bottom: 10px;">${sug.title}</div>
+                <div style="font-size: 0.75rem; line-height: 1.6; color: var(--text); white-space: pre-line;">${sug.message}</div>
+                ${sug.action ? `<button class="action-btn" style="margin-top: 10px; padding: 10px 15px; font-size: 0.75rem;" onclick="${sug.actionFunction ? sug.actionFunction.name + '()' : ''}">${sug.action}</button>` : ''}
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    
+    // Create modal for suggestions
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.id = 'suggestionsModal';
+    modal.style.display = 'block';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">🤖 CENTURION INTELLIGENCE</div>
+                <button class="close-btn" onclick="document.getElementById('suggestionsModal').remove()">×</button>
+            </div>
+            ${html}
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+// Auto-show suggestions on Oura sync
+const originalUpdateOura = updateOura;
+updateOura = async function() {
+    await originalUpdateOura();
+    
+    // After Oura sync, check if we should show suggestions
+    setTimeout(() => {
+        const burnout = checkBurnoutStatus();
+        if (burnout.level === 'HIGH' || burnout.level === 'MEDIUM') {
+            showDailySuggestions();
+        }
+    }, 1000);
 };
 
 </script>
