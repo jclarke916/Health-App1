@@ -114,6 +114,141 @@
 
         .sync-footer { position: fixed; bottom: 0; left: 0; width: 100%; background: #000; padding: 12px 16px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-family: var(--font-data); font-size: 0.6rem; color: #555; z-index: 200; }
         .pulse { animation: pulse 2s infinite; display: inline-block; width: 6px; height: 6px; background: var(--acid); border-radius: 50%; margin-right: 6px; }
+    .summary-card {
+    background: linear-gradient(135deg, rgba(204, 255, 0, 0.05) 0%, rgba(0, 240, 255, 0.03) 100%);
+    border: 2px solid var(--acid);
+    box-shadow: 0 0 20px rgba(204, 255, 0, 0.1);
+}
+
+.summary-score {
+    font-family: var(--font-data);
+    font-size: 3rem;
+    font-weight: 900;
+    line-height: 1;
+    margin: 10px 0;
+    background: linear-gradient(135deg, var(--acid) 0%, var(--cyan) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 15px 0;
+}
+
+.summary-metric {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.summary-metric-label {
+    font-size: 0.5rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+
+.summary-metric-value {
+    font-family: var(--font-data);
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.summary-metric-value.good {
+    color: var(--acid);
+}
+
+.summary-metric-value.warning {
+    color: var(--gold);
+}
+
+.summary-metric-value.alert {
+    color: var(--alert);
+}
+
+.summary-bar {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 4px;
+}
+
+.summary-bar-fill {
+    height: 100%;
+    transition: width 1s ease;
+    border-radius: 3px;
+}
+
+.summary-insights {
+    margin-top: 15px;
+    padding: 12px;
+    background: rgba(0, 240, 255, 0.05);
+    border-left: 3px solid var(--cyan);
+    border-radius: 0 8px 8px 0;
+}
+
+.summary-insight {
+    font-size: 0.65rem;
+    color: #aaa;
+    line-height: 1.5;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.summary-insight:last-child {
+    margin-bottom: 0;
+}
+
+.summary-insight::before {
+    content: '▸';
+    color: var(--cyan);
+    font-weight: 900;
+    flex-shrink: 0;
+}
+
+.summary-grade {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-weight: 900;
+    font-size: 0.7rem;
+    margin-left: 10px;
+}
+
+.grade-s {
+    background: linear-gradient(135deg, var(--acid) 0%, #9acd32 100%);
+    color: #000;
+}
+
+.grade-a {
+    background: rgba(0, 240, 255, 0.2);
+    color: var(--cyan);
+    border: 1px solid var(--cyan);
+}
+
+.grade-b {
+    background: rgba(255, 214, 10, 0.2);
+    color: var(--gold);
+    border: 1px solid var(--gold);
+}
+
+.grade-c {
+    background: rgba(255, 69, 58, 0.2);
+    color: var(--alert);
+    border: 1px solid var(--alert);
+}
+
     </style>
 </head>
 <body>
@@ -525,17 +660,190 @@ class CenturionCore {
     }
 
     renderTimeline() {
-        const container = document.getElementById('timeline-feed');
-        const nowHour = new Date().getHours();
+    const container = document.getElementById('timeline-feed');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const isToday = this.viewDate.getTime() === today.getTime();
+    
+    const viewState = isToday ? this.state : this.getHistoricalState(this.viewDate);
+    
+    if (!viewState) {
+        container.innerHTML = '<div style="padding: 40px 20px; text-align: center; color: var(--text-muted); font-size: 0.75rem;">No data for this date</div>';
+        return;
+    }
+    
+    const nowHour = new Date().getHours();
+    const meals = viewState.dailyMeals || this.state.dailyMeals;
+    const workout = this.getWorkoutForDay(viewState.readiness);
+    
+    const schedule = [
+        { 
+            t: 7, 
+            type: 'sup',
+            title: "Hydration Protocol", 
+            desc: "Sea Moss Gel (2 tbsp)", 
+            mech: "Thyroid iodine prime + mineral cofactors", 
+            tags: [{t:"FOUNDATION",c:"bio"}],
+            macros: {p:0, c:2, f:0, fiber:1}
+        },
+        { 
+            t: 8, 
+            type: 'juice',
+            title: "Bioactive Juice", 
+            desc: meals.juice.name, 
+            mech: meals.juice.reason, 
+            tags: [{t:"BIO-ACTIVE",c:"syn"}, this.user === 'J' ? {t:"APOB↓",c:"omega"} : {t:"ANA↓",c:"omega"}],
+            meal: meals.juice
+        },
+        {
+            t: 9,
+            type: 'workout',
+            title: workout.title,
+            desc: workout.desc,
+            mech: workout.reason,
+            tags: workout.tags,
+            workoutData: {
+                target_z2: workout.target_z2,
+                target_z5: workout.target_z5,
+                actual_z2: Math.floor(viewState.z2_time),
+                actual_z5: Math.floor(viewState.z5_time)
+            }
+        },
+        { 
+            t: 10, 
+            type: 'breakfast',
+            title: "Breakfast", 
+            desc: meals.breakfast.name, 
+            mech: meals.breakfast.reason, 
+            tags: [{t:"PROTEIN",c:"bio"}, meals.breakfast.omega3 >= 4 ? {t:"Ω3 LOADED",c:"omega"} : null].filter(Boolean),
+            meal: meals.breakfast
+        },
+        { 
+            t: 13, 
+            type: 'lunch',
+            title: "Lunch", 
+            desc: meals.lunch.name + " + Kombucha", 
+            mech: meals.lunch.reason, 
+            tags: [
+                {t:"FUEL",c:"bio"}, 
+                meals.lunch.trigger ? {t:"TEST MEAL",c:"alert"} : null,
+                meals.lunch.omega3 >= 4 ? {t:"Ω3 MAX",c:"omega"} : null
+            ].filter(Boolean),
+            meal: meals.lunch
+        },
+        { 
+            t: 16, 
+            type: 'snack',
+            title: "Metabolic Gap Fill", 
+            desc: meals.snack.name, 
+            mech: meals.snack.reason, 
+            tags: [{t:"SUSTAIN",c:"syn"}],
+            meal: meals.snack
+        },
+        { 
+            t: 19, 
+            type: 'dinner',
+            title: "Dinner", 
+            desc: meals.dinner.name, 
+            mech: meals.dinner.reason, 
+            tags: [
+                {t:"RECOVERY",c:"bio"},
+                meals.dinner.omega3 >= 5 ? {t:"Ω3 PEAK",c:"omega"} : null
+            ].filter(Boolean),
+            meal: meals.dinner
+        },
+        { 
+            t: 22, 
+            type: 'summary',
+            title: "Day Summary", 
+            desc: "Performance analysis & insights", 
+            mech: "Algorithmic evaluation of daily execution", 
+            tags: [{t:"ANALYTICS",c:"syn"}, {t:"OPTIMIZATION",c:"bio"}],
+            isSummary: true
+        }
+    ];
+
+    let html = '';
+    schedule.forEach(slot => {
+        const isChecked = viewState.checked.includes(slot.type);
+        let stateClass = isChecked ? "past" : "";
+        let btnTxt = isChecked ? "✓" : "○";
         
-        const lunchMeal = (this.user === 'S') ? "Grilled Chicken Wrap (Gluten)" : "Super Mince Bowl";
-        const lunchID = (this.user === 'S') ? 'l_trigger' : 'l';
-        const juiceName = (this.user === 'J') ? "Beet Vitality" : "Orange Immune";
-        const juiceID = (this.user === 'J') ? "juice_j" : "juice_s";
-        const bfastName = (this.user === 'J') ? "Ancestral Sausage" : "Omega Scramble";
-        const bfastID = (this.user === 'J') ? "b_j" : "b_s";
-        const dinName = (this.state.score >= 80) ? "Bison & Sweet Potato" : "White Fish & Asparagus";
-        const dinID = (this.state.score >= 80) ? "d_ana" : "d_rep";
+        if (isToday && !isChecked && nowHour >= slot.t && nowHour < slot.t + 2) { 
+            stateClass = "active"; 
+        }
+
+        let tags = "";
+        slot.tags.forEach(tag => {
+            const cls = tag.c === 'syn' ? 'b-syn' : 
+                       tag.c === 'alert' ? 'b-alert' :
+                       tag.c === 'omega' ? 'b-omega' : 'b-bio';
+            tags += `<span class="ts-badge ${cls}">${tag.t}</span>`;
+        });
+
+        let macroDisplay = "";
+        
+        // DAY SUMMARY DISPLAY
+        if (slot.isSummary) {
+            const summary = this.calculateDaySummary(viewState);
+            macroDisplay = this.getDaySummaryHTML(summary);
+        }
+        // WORKOUT DISPLAY
+        else if (slot.type === 'workout') {
+            const wd = slot.workoutData;
+            const z2_pct = wd.target_z2 > 0 ? Math.round((wd.actual_z2 / wd.target_z2) * 100) : 0;
+            const z5_pct = wd.target_z5 > 0 ? Math.round((wd.actual_z5 / wd.target_z5) * 100) : 0;
+            
+            macroDisplay = `<div style="margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.05); font-size:0.6rem;">
+                <span class="workout-stat">Z2: ${wd.actual_z2}/${wd.target_z2}min (${z2_pct}%)</span>
+                ${wd.target_z5 > 0 ? `<span class="workout-stat">Z5: ${wd.actual_z5}/${wd.target_z5}min (${z5_pct}%)</span>` : ''}
+            </div>`;
+        }
+        // MEAL DISPLAY
+        else if (slot.meal) {
+            macroDisplay = `<div style="margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.05); font-size:0.6rem; color:var(--text-muted); display:flex; gap:10px; flex-wrap: wrap;">
+                <span>P: ${slot.meal.p}g</span>
+                <span>C: ${slot.meal.c}g</span>
+                <span>F: ${slot.meal.f}g</span>
+                <span>Fiber: ${slot.meal.fiber}g</span>
+                ${slot.meal.omega3 ? `<span style="color:var(--gold)">Ω3: ${slot.meal.omega3}g</span>` : ''}
+            </div>`;
+        } else if (slot.macros) {
+            macroDisplay = `<div style="margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.05); font-size:0.6rem; color:var(--text-muted);">
+                Minimal macros: ${slot.macros.c}g carbs, ${slot.macros.fiber}g fiber
+            </div>`;
+        }
+
+        const cardClass = slot.type === 'workout' ? 'ts-card workout-card' : 
+                         slot.isSummary ? 'ts-card summary-card' : 
+                         'ts-card';
+        const checkBtn = isToday && slot.type !== 'workout' && !slot.isSummary ? `<button class="check-btn" onclick="centurion.checkMeal('${slot.type}')">${btnTxt}</button>` : '';
+
+        html += `
+            <div class="time-slot ${stateClass}" id="slot-${slot.type}">
+                <div class="ts-time">${this.formatTime(slot.t)}</div>
+                <div class="${cardClass}">
+                    <div class="badge-row">${tags}</div>
+                    <div class="ts-title">${slot.title}</div>
+                    <div class="ts-desc">${slot.desc}</div>
+                    <div class="ts-mech">${slot.mech}</div>
+                    ${macroDisplay}
+                    ${checkBtn}
+                </div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+    t: 22, 
+    type: 'summary',
+    title: "Day Summary", 
+    desc: "Performance analysis & insights", 
+    mech: "Algorithmic evaluation of daily execution", 
+    tags: [{t:"ANALYTICS",c:"syn"}, {t:"OPTIMIZATION",c:"bio"}],
+    isSummary: true
+}
 
         // WORKOUT LOGIC
         const mode = this.state.score >= 80 ? "anabolic" : "repair";
@@ -566,6 +874,152 @@ class CenturionCore {
                 const cls = tag.c === 'syn' ? 'b-syn' : 'b-bio';
                 tags += `<span class="ts-badge ${cls}">${tag.t}</span>`;
             });
+calculateDaySummary(viewState) {
+    const u = USERS[this.user];
+    
+    // Macro scores
+    const proScore = Math.min((viewState.pro / u.goals.pro) * 100, 100);
+    const carbScore = Math.min((viewState.carb / u.goals.carb) * 100, 100);
+    const fatScore = Math.min((viewState.fat / u.goals.fat) * 100, 100);
+    const fiberScore = Math.min((viewState.fiber / u.goals.fiber) * 100, 100);
+    const macroAvg = (proScore + carbScore + fatScore + fiberScore) / 4;
+    
+    // Training scores
+    const z2Score = Math.min((viewState.z2_time / u.goals.z2) * 100, 100);
+    const z5Score = Math.min((viewState.z5_time / u.goals.z5) * 100, 100);
+    const trainingAvg = (z2Score + z5Score) / 2;
+    
+    // Readiness score (already 0-100)
+    const readinessScore = viewState.readiness;
+    
+    // Overall performance score (weighted average)
+    const overallScore = Math.round(
+        (macroAvg * 0.4) + 
+        (trainingAvg * 0.35) + 
+        (readinessScore * 0.25)
+    );
+    
+    // Grade
+    let grade = 'C';
+    let gradeClass = 'grade-c';
+    if (overallScore >= 90) { grade = 'S'; gradeClass = 'grade-s'; }
+    else if (overallScore >= 80) { grade = 'A'; gradeClass = 'grade-a'; }
+    else if (overallScore >= 70) { grade = 'B'; gradeClass = 'grade-b'; }
+    
+    // Generate insights
+    const insights = [];
+    
+    // Macro insights
+    if (proScore < 80) {
+        insights.push(`Protein ${Math.round(proScore)}% of target. Increase lean sources to optimize recovery.`);
+    } else if (proScore >= 95) {
+        insights.push(`Protein intake optimal at ${viewState.pro}g. Muscle protein synthesis maximized.`);
+    }
+    
+    if (viewState.omega3 >= 4) {
+        insights.push(`Omega-3 loaded at ${viewState.omega3.toFixed(1)}g. ${this.user === 'J' ? 'ApoB suppression active' : 'Anti-inflammatory state maintained'}.`);
+    } else if (viewState.omega3 < 2) {
+        insights.push(`Omega-3 suboptimal. Increase fatty fish intake for cardiovascular benefits.`);
+    }
+    
+    // Training insights
+    if (z2Score >= 100) {
+        insights.push(`Zone 2 target exceeded. Mitochondrial density stimulus achieved.`);
+    } else if (z2Score < 60) {
+        insights.push(`Zone 2 volume insufficient at ${Math.floor(viewState.z2_time)}/${u.goals.z2}min. Aerobic base compromised.`);
+    }
+    
+    if (z5Score >= 100) {
+        insights.push(`VO2 Max stimulus complete. Peak cardiovascular adaptation triggered.`);
+    }
+    
+    // Recovery insights
+    if (readinessScore < 60) {
+        insights.push(`Low readiness score. Prioritize sleep quality and reduce training intensity.`);
+    } else if (readinessScore >= 85) {
+        insights.push(`Readiness optimal. Body prepared for high-intensity stimulus.`);
+    }
+    
+    // User-specific insights
+    if (this.user === 'J' && viewState.omega3 >= 5 && proScore >= 90) {
+        insights.push(`ApoB reduction protocol fully engaged. Expect 15-25% biomarker improvement.`);
+    }
+    
+    if (this.user === 'S' && viewState.inflammationScore > 0) {
+        insights.push(`Trigger event detected. Monitor ANA response over next 48-72 hours.`);
+    }
+    
+    // If no insights, add default
+    if (insights.length === 0) {
+        insights.push(`Solid execution across all metrics. Maintain consistency for optimal results.`);
+    }
+    
+    return {
+        overallScore,
+        grade,
+        gradeClass,
+        macroAvg: Math.round(macroAvg),
+        trainingAvg: Math.round(trainingAvg),
+        readinessScore,
+        proScore: Math.round(proScore),
+        carbScore: Math.round(carbScore),
+        fatScore: Math.round(fatScore),
+        fiberScore: Math.round(fiberScore),
+        z2Score: Math.round(z2Score),
+        z5Score: Math.round(z5Score),
+        insights,
+        totalMacros: viewState.pro + viewState.carb + viewState.fat,
+        totalTraining: Math.floor(viewState.z2_time + viewState.z5_time)
+    };
+}
+
+getDaySummaryHTML(summary) {
+    return `
+        <div style="text-align: center; padding: 15px 0;">
+            <div style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">DAILY PERFORMANCE</div>
+            <div class="summary-score">${summary.overallScore}<span style="font-size: 1.5rem;">/100</span></div>
+            <div style="margin-top: -10px;">
+                <span class="summary-grade ${summary.gradeClass}">${summary.grade} GRADE</span>
+            </div>
+        </div>
+
+        <div class="summary-grid">
+            <div class="summary-metric">
+                <div class="summary-metric-label">Nutrition</div>
+                <div class="summary-metric-value ${summary.macroAvg >= 85 ? 'good' : summary.macroAvg >= 70 ? 'warning' : 'alert'}">${summary.macroAvg}%</div>
+                <div class="summary-bar">
+                    <div class="summary-bar-fill" style="width: ${summary.macroAvg}%; background: ${summary.macroAvg >= 85 ? 'var(--acid)' : summary.macroAvg >= 70 ? 'var(--gold)' : 'var(--alert)'};"></div>
+                </div>
+            </div>
+            <div class="summary-metric">
+                <div class="summary-metric-label">Training</div>
+                <div class="summary-metric-value ${summary.trainingAvg >= 85 ? 'good' : summary.trainingAvg >= 70 ? 'warning' : 'alert'}">${summary.trainingAvg}%</div>
+                <div class="summary-bar">
+                    <div class="summary-bar-fill" style="width: ${summary.trainingAvg}%; background: ${summary.trainingAvg >= 85 ? 'var(--cyan)' : summary.trainingAvg >= 70 ? 'var(--gold)' : 'var(--alert)'};"></div>
+                </div>
+            </div>
+            <div class="summary-metric">
+                <div class="summary-metric-label">Protein</div>
+                <div class="summary-metric-value ${summary.proScore >= 90 ? 'good' : summary.proScore >= 75 ? 'warning' : 'alert'}">${summary.proScore}%</div>
+                <div class="summary-bar">
+                    <div class="summary-bar-fill" style="width: ${summary.proScore}%; background: var(--cyan);"></div>
+                </div>
+            </div>
+            <div class="summary-metric">
+                <div class="summary-metric-label">Fiber</div>
+                <div class="summary-metric-value ${summary.fiberScore >= 90 ? 'good' : summary.fiberScore >= 75 ? 'warning' : 'alert'}">${summary.fiberScore}%</div>
+                <div class="summary-bar">
+                    <div class="summary-bar-fill" style="width: ${summary.fiberScore}%; background: var(--cyan);"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="summary-insights">
+            <div style="font-size: 0.55rem; color: var(--cyan); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; font-weight: 900;">📊 KEY INSIGHTS</div>
+            ${summary.insights.map(insight => `<div class="summary-insight">${insight}</div>`).join('')}
+        </div>
+    `;
+}
 
             // Workout HTML injection
             let extraHTML = "";
