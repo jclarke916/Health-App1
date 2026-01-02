@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v4600.0 FINAL</title>
+    <title>The Centurion | v4900.0 CHRONOS</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -23,99 +23,88 @@
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { margin: 0; padding: 0 0 100px 0; background: var(--bg-deep); color: var(--text-main); font-family: var(--font-ui); min-height: 100vh; background-image: radial-gradient(circle at top right, #111 0%, #000 70%); }
 
-        /* HEADER */
-        .hud-header { padding: 20px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.9); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100; }
+        /* --- GATEWAY --- */
+        #gateway-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s; }
+        .gate-ring { width: 60px; height: 60px; border: 2px solid var(--border); border-top: 2px solid var(--acid); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        .gate-text { font-family: var(--font-data); font-size: 0.7rem; color: var(--acid); letter-spacing: 2px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* --- HEADER & NAV --- */
+        .hud-header { padding: 15px 16px; background: rgba(0,0,0,0.95); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); }
+        .top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .app-name { font-size: 0.6rem; font-weight: 900; letter-spacing: 2px; color: var(--text-muted); }
-        .live-badge { font-family: var(--font-data); font-size: 0.55rem; color: var(--acid); border: 1px solid var(--acid); padding: 2px 6px; border-radius: 4px; animation: blink 2s infinite; cursor: pointer; }
-        .live-badge:hover { background: var(--acid); color: #000; }
         .user-switch { display: flex; gap: 4px; background: #222; padding: 2px; border-radius: 20px; }
         .u-btn { padding: 4px 12px; border-radius: 16px; font-size: 0.6rem; font-weight: 700; color: #666; background: transparent; border: none; cursor: pointer; transition: all 0.2s; }
         .u-btn.active { background: var(--text-main); color: #000; }
-        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
 
-        /* HERO SECTION */
+        /* DATE NAVIGATOR */
+        .date-nav { display: flex; align-items: center; justify-content: center; gap: 20px; font-family: var(--font-data); font-size: 0.8rem; font-weight: 700; color: #fff; padding: 5px 0; }
+        .nav-arrow { color: var(--gold); cursor: pointer; font-size: 1.2rem; user-select: none; padding: 0 10px; }
+        .nav-arrow:active { transform: scale(0.9); }
+        .date-display { min-width: 100px; text-align: center; letter-spacing: 1px; }
+
+        /* --- HERO --- */
         .hero-section { padding: 25px 16px 10px; display: flex; align-items: center; justify-content: space-between; }
         .ring-container { width: 110px; height: 110px; position: relative; display: flex; align-items: center; justify-content: center; }
         .ring-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
         .ring-bg { fill: none; stroke: var(--border); stroke-width: 6; }
-        .ring-fg { fill: none; stroke: var(--acid); stroke-width: 6; stroke-dasharray: 283; stroke-dashoffset: 283; transition: stroke-dashoffset 1s ease, stroke 0.5s ease; stroke-linecap: round; }
+        .ring-fg { fill: none; stroke: var(--acid); stroke-width: 6; stroke-dasharray: 283; stroke-dashoffset: 283; transition: stroke-dashoffset 1s ease; stroke-linecap: round; }
         .ring-data { position: absolute; text-align: center; }
         .ring-val { font-family: var(--font-data); font-size: 1.8rem; font-weight: 700; color: #fff; line-height: 1; }
         .ring-label { font-size: 0.5rem; font-weight: 700; color: var(--text-muted); margin-top: 2px; }
 
-        .tactical-box { flex: 1; margin-left: 20px; background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, transparent 100%); border-left: 3px solid var(--acid); padding: 12px; border-radius: 0 12px 12px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); }
+        .tactical-box { flex: 1; margin-left: 20px; background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, transparent 100%); border-left: 3px solid var(--acid); padding: 12px; border-radius: 0 12px 12px 0; border: 1px solid var(--border); border-left-width: 3px; }
         .tac-label { font-size: 0.55rem; color: var(--acid); font-weight: 900; letter-spacing: 1px; margin-bottom: 4px; text-transform: uppercase; }
         .tac-cmd { font-size: 0.85rem; font-weight: 700; color: #fff; line-height: 1.3; }
         .tac-meta { font-family: var(--font-data); font-size: 0.55rem; color: var(--text-muted); margin-top: 4px; }
 
-        /* GRIDS */
-        .section-label { font-size: 0.55rem; font-weight: 900; color: var(--text-muted); letter-spacing: 1px; margin: 20px 16px 10px; text-transform: uppercase; display: flex; justify-content: space-between; }
+        /* --- GRIDS --- */
+        .section-label { font-size: 0.55rem; font-weight: 900; color: var(--text-muted); letter-spacing: 1px; margin: 20px 16px 10px; text-transform: uppercase; }
         .telemetry-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 10px; }
-        .macro-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 30px; }
         
         .orb-card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 10px 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
         .orb-container { width: 60px; height: 60px; position: relative; display: flex; align-items: center; justify-content: center; margin-bottom: 5px; }
         .orb-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
         .orb-bg { fill: none; stroke: #222; stroke-width: 5; }
         .orb-fg { fill: none; stroke: var(--cyan); stroke-width: 5; stroke-dasharray: 158; stroke-dashoffset: 158; transition: stroke-dashoffset 1s ease; stroke-linecap: round; }
-        
-        .orb-val-box { position: absolute; text-align: center; }
         .orb-val { font-family: var(--font-data); font-size: 0.75rem; font-weight: 700; color: #fff; line-height: 1; }
         .orb-unit { font-size: 0.4rem; color: var(--text-muted); display: block; margin-top: 2px; }
         .orb-label { font-size: 0.5rem; font-weight: 700; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; }
 
-        .live-dot { width: 5px; height: 5px; background: var(--alert); border-radius: 50%; position: absolute; top: 8px; right: 8px; box-shadow: 0 0 5px var(--alert); animation: pulse-fast 1s infinite; display: none; }
+        .live-dot { width: 5px; height: 5px; background: var(--alert); border-radius: 50%; position: absolute; top: 8px; right: 8px; box-shadow: 0 0 5px var(--alert); animation: pulse 1s infinite; display: none; }
         .orb-card.live .live-dot { display: block; }
-        @keyframes pulse-fast { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
 
-        /* TIMELINE */
+        /* --- TIMELINE --- */
         .timeline-container { padding: 0 16px; }
         .time-slot { display: flex; gap: 12px; margin-bottom: 20px; position: relative; transition: opacity 0.3s; }
         .time-slot.past { opacity: 0.4; }
-        .time-slot.active { animation: pulse-glow 2s infinite; }
-        @keyframes pulse-glow { 0%, 100% { opacity: 1; } 50% { opacity: 0.85; } }
-        
         .time-slot::before { content: ''; position: absolute; left: 22px; top: 25px; bottom: -25px; width: 1px; background: var(--border); z-index: 0; }
         .time-slot:last-child::before { display: none; }
 
         .ts-time { width: 45px; font-family: var(--font-data); font-size: 0.75rem; color: var(--text-muted); text-align: right; padding-top: 5px; z-index: 1; }
         .ts-card { flex: 1; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 15px; position: relative; z-index: 1; overflow: hidden; transition: all 0.3s; }
-        .ts-card:hover { border-color: var(--acid); }
         
-        .badge-row { display: flex; gap: 5px; margin-bottom: 8px; flex-wrap: wrap; }
-        .ts-badge { font-size: 0.5rem; padding: 2px 6px; border-radius: 4px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid transparent; }
-        .b-bio { background: rgba(255,255,255,0.1); color: var(--text-muted); border-color: var(--border); }
-        .b-syn { background: rgba(0, 240, 255, 0.1); color: var(--cyan); border-color: rgba(0, 240, 255, 0.3); }
-        .b-alert { background: rgba(255, 69, 58, 0.2); color: var(--alert); border-color: var(--alert); animation: blink 1s infinite; }
-        .b-omega { background: rgba(255, 214, 10, 0.15); color: var(--gold); border-color: rgba(255, 214, 10, 0.4); }
-
         .ts-title { font-size: 0.85rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
         .ts-desc { font-size: 0.75rem; color: #aaa; line-height: 1.4; margin-bottom: 8px; }
         .ts-mech { font-family: var(--font-data); font-size: 0.55rem; color: var(--text-muted); padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 5px; }
-        .ts-mech::before { content: '🔬'; font-size: 0.6rem; }
+        
+        .ts-badge { font-size: 0.5rem; padding: 2px 6px; border-radius: 4px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid transparent; background: rgba(255,255,255,0.1); color: var(--text-muted); display: inline-block; margin-bottom: 5px; }
+        .ts-badge.syn { background: rgba(0, 240, 255, 0.1); color: var(--cyan); border-color: rgba(0, 240, 255, 0.3); }
 
-        .check-btn { position: absolute; top: 15px; right: 15px; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border); background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; font-weight: 800; font-size: 0.7rem; color: #666; }
-        .check-btn:hover { transform: scale(1.1); border-color: var(--acid); }
+        .check-btn { position: absolute; top: 15px; right: 15px; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border); background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; color: transparent; transition: all 0.2s; color: #000; font-weight: 800; font-size: 0.7rem; }
         .time-slot.past .check-btn { background: var(--acid); border-color: var(--acid); color: #000; }
 
+        /* WORKOUT DETAILS EXPANSION */
+        .workout-detail { margin-top: 10px; background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px; display: none; }
+        .time-slot.expanded .workout-detail { display: block; animation: slideDown 0.3s; }
+        .w-row { display: flex; justify-content: space-between; font-family: var(--font-data); font-size: 0.7rem; color: #ccc; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px; }
+        .w-set { color: var(--gold); font-weight: 700; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* SYNC FOOTER */
         .sync-footer { position: fixed; bottom: 0; left: 0; width: 100%; background: #000; padding: 12px 16px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-family: var(--font-data); font-size: 0.6rem; color: #555; z-index: 200; }
         .pulse { animation: pulse 2s infinite; display: inline-block; width: 6px; height: 6px; background: var(--acid); border-radius: 50%; margin-right: 6px; }
-        @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.2); } }
-
-        /* OURA MODAL */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; justify-content: center; align-items: center; }
-        .modal.active { display: flex; }
-        .modal-content { background: var(--bg-panel); border: 1px solid var(--acid); border-radius: 20px; padding: 30px; max-width: 400px; width: 90%; box-shadow: 0 0 40px rgba(204,255,0,0.2); }
-        .modal-title { font-size: 0.9rem; font-weight: 900; color: var(--gold); margin-bottom: 20px; text-align: center; letter-spacing: 2px; }
-        .modal-btn { background: linear-gradient(135deg, var(--acid) 0%, #9acd32 100%); color: #000; border: none; padding: 14px; border-radius: 12px; font-weight: 800; font-size: 0.85rem; cursor: pointer; width: 100%; margin-top: 10px; transition: all 0.3s; }
-        .modal-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(204,255,0,0.4); }
-        .modal-close { background: rgba(255,255,255,0.1); color: var(--text-muted); }
-        .sync-status { font-family: var(--font-data); font-size: 0.65rem; color: var(--cyan); text-align: center; margin: 15px 0; padding: 10px; background: rgba(0,240,255,0.05); border-radius: 8px; border: 1px dashed var(--cyan); }
-        .oura-data { background: rgba(255,255,255,0.03); padding: 12px; border-radius: 10px; margin-top: 15px; font-family: var(--font-data); font-size: 0.65rem; }
-        .oura-data-row { display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .oura-data-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-        .oura-label { color: var(--text-muted); }
-        .oura-value { color: var(--acid); font-weight: 700; }
     </style>
 </head>
 <body>
@@ -133,859 +122,336 @@
       </defs>
     </svg>
 
-    <div class="hud-header">
-        <div class="app-name">CENTURION v4600</div>
-        <div class="live-badge" onclick="centurion.openOuraModal()">OURA SYNC</div>
-        <div class="user-switch">
-            <button id="btn-J" class="u-btn active" onclick="centurion.switchUser('J')">JER</button>
-            <button id="btn-S" class="u-btn" onclick="centurion.switchUser('S')">SOPH</button>
-        </div>
+    <div id="gateway-layer">
+        <div class="gate-ring"></div>
+        <div class="gate-text">AUTHENTICATING...</div>
     </div>
 
-    <div class="hero-section">
-        <div class="ring-container">
-            <svg class="ring-svg">
-                <circle class="ring-bg" cx="55" cy="55" r="45"></circle>
-                <circle id="activity-ring" class="ring-fg" cx="55" cy="55" r="45" style="stroke: var(--acid)"></circle>
-            </svg>
-            <div class="ring-data">
-                <div class="ring-val" id="readiness-val">--</div>
-                <div class="ring-label">READINESS</div>
+    <div id="app-layer" style="display:none; opacity:0; transition:opacity 1s;">
+        
+        <div class="hud-header">
+            <div class="top-row">
+                <div class="app-name">CENTURION v4900</div>
+                <div class="user-switch">
+                    <button id="btn-J" class="u-btn active" onclick="app.switchUser('J')">JER</button>
+                    <button id="btn-S" class="u-btn" onclick="app.switchUser('S')">SOPH</button>
+                </div>
+            </div>
+            <div class="date-nav">
+                <span class="nav-arrow" onclick="app.changeDay(-1)">◀</span>
+                <span class="date-display" id="date-display">TODAY</span>
+                <span class="nav-arrow" onclick="app.changeDay(1)">▶</span>
             </div>
         </div>
 
-        <div class="tactical-box" id="tactical-box">
-            <div class="tac-label" id="tac-label">DIRECTIVE:</div>
-            <div class="tac-cmd" id="tac-cmd">AWAITING OURA SYNC</div>
-            <div class="tac-meta" id="tac-reason">Connect Oura Ring for biometric analysis</div>
+        <div class="hero-section">
+            <div class="ring-container">
+                <svg class="ring-svg">
+                    <circle class="ring-bg" cx="55" cy="55" r="45"></circle>
+                    <circle id="activity-ring" class="ring-fg" cx="55" cy="55" r="45" style="stroke: var(--acid)"></circle>
+                </svg>
+                <div class="ring-data">
+                    <div class="ring-val" id="vo2-val">--</div>
+                    <div class="ring-label">VO2 MAX</div>
+                </div>
+            </div>
+            <div class="tactical-box" id="tactical-box">
+                <div class="tac-label" id="tac-label">STATUS</div>
+                <div class="tac-cmd" id="tac-cmd">CALCULATING...</div>
+                <div class="tac-meta" id="tac-reason">...</div>
+            </div>
         </div>
-    </div>
 
-    <div class="section-label">CARDIO-METABOLIC STATUS</div>
-    <div class="telemetry-grid">
-        <div class="orb-card live">
-            <div class="live-dot"></div>
-            <div class="orb-container">
-                <svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-hr" class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--cyan)"></circle></svg>
-                <div class="orb-val-box"><div id="val-hr" class="orb-val">--</div><span class="orb-unit">BPM</span></div>
+        <div class="section-label">CARDIO-METABOLIC STATUS</div>
+        <div class="telemetry-grid">
+            <div class="orb-card live">
+                <div class="live-dot"></div>
+                <div class="orb-container">
+                    <svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-hr" class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--cyan)"></circle></svg>
+                    <div class="orb-val-box"><div id="val-hr" class="orb-val">--</div><span class="orb-unit">BPM</span></div>
+                </div>
+                <div class="orb-label">LIVE HR</div>
             </div>
-            <div class="orb-label">LIVE HR</div>
-        </div>
-        <div class="orb-card">
-            <div class="orb-container">
-                <svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-z2" class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-zone2)"></circle></svg>
-                <div class="orb-val-box"><div id="val-z2" class="orb-val">--</div><span class="orb-unit">Z2 MIN</span></div>
+            <div class="orb-card">
+                <div class="orb-container">
+                    <svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-z2" class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-zone2)"></circle></svg>
+                    <div class="orb-val-box"><div id="val-z2" class="orb-val">--</div><span class="orb-unit">Z2 MIN</span></div>
+                </div>
+                <div class="orb-label">BASE</div>
             </div>
-            <div class="orb-label">BASE</div>
-        </div>
-        <div class="orb-card">
-            <div class="orb-container">
-                <svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-z5" class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-zone5)"></circle></svg>
-                <div class="orb-val-box"><div id="val-z5" class="orb-val">--</div><span class="orb-unit">Z5 MIN</span></div>
+            <div class="orb-card">
+                <div class="orb-container">
+                    <svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-z5" class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-zone5)"></circle></svg>
+                    <div class="orb-val-box"><div id="val-z5" class="orb-val">--</div><span class="orb-unit">Z5 MIN</span></div>
+                </div>
+                <div class="orb-label">PEAK</div>
             </div>
-            <div class="orb-label">PEAK</div>
-        </div>
-        <div class="orb-card">
-            <div class="orb-container">
-                <svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-hrv" class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--acid)"></circle></svg>
-                <div class="orb-val-box"><div id="val-hrv" class="orb-val">--</div><span class="orb-unit">HRV</span></div>
+            <div class="orb-card">
+                <div class="orb-container">
+                    <svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-stress" class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--acid)"></circle></svg>
+                    <div class="orb-val-box"><div id="val-stress" class="orb-val">--</div><span class="orb-unit">HRV</span></div>
+                </div>
+                <div class="orb-label">STRESS</div>
             </div>
-            <div class="orb-label">HRV</div>
         </div>
-    </div>
 
-    <div class="section-label">
-        <span>MACRO ADHERENCE</span>
-        <span id="macro-score" style="color: var(--acid)">--</span>
-    </div>
-    <div class="macro-grid">
-        <div class="orb-card">
-            <div class="orb-container">
-                <svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-pro" class="orb-fg" cx="30" cy="30" r="25"></circle></svg>
-                <div class="orb-val-box"><div id="val-pro" class="orb-val">--</div><span class="orb-unit">PRO</span></div>
+        <div class="section-label">CHRONO-PROTOCOL</div>
+        <div class="timeline-container" id="timeline-feed">
             </div>
-            <div class="orb-label">PROTEIN</div>
-        </div>
-        <div class="orb-card">
-            <div class="orb-container">
-                <svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-carb" class="orb-fg" cx="30" cy="30" r="25"></circle></svg>
-                <div class="orb-val-box"><div id="val-carb" class="orb-val">--</div><span class="orb-unit">CARB</span></div>
-            </div>
-            <div class="orb-label">CARBS</div>
-        </div>
-        <div class="orb-card">
-            <div class="orb-container">
-                <svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-fat" class="orb-fg" cx="30" cy="30" r="25"></circle></svg>
-                <div class="orb-val-box"><div id="val-fat" class="orb-val">--</div><span class="orb-unit">FAT</span></div>
-            </div>
-            <div class="orb-label">FATS</div>
-        </div>
-        <div class="orb-card">
-            <div class="orb-container">
-                <svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-fiber" class="orb-fg" cx="30" cy="30" r="25"></circle></svg>
-                <div class="orb-val-box"><div id="val-fiber" class="orb-val">--</div><span class="orb-unit">FIB</span></div>
-            </div>
-            <div class="orb-label">FIBER</div>
-        </div>
-    </div>
 
-    <div class="timeline-container">
-        <div class="section-label">
-            <span>CHRONO-PROTOCOL</span>
-            <span id="current-time" style="color:var(--acid)">--:--</span>
+        <div class="sync-footer">
+            <div><span class="pulse"></span><span id="sync-text">LIVE FEED ACTIVE</span></div>
+            <div id="sync-time">SYNCING...</div>
         </div>
-        <div id="timeline-feed"></div>
-    </div>
-
-    <!-- OURA SYNC MODAL -->
-    <div id="ouraModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-title">💍 OURA RING SYNC</div>
-            <div id="oura-status" class="sync-status">Ready to connect...</div>
-            <div id="oura-data-display"></div>
-            <button class="modal-btn" onclick="centurion.connectOura()">CONNECT OURA</button>
-            <button class="modal-btn modal-close" onclick="centurion.closeOuraModal()">CLOSE</button>
-        </div>
-    </div>
-
-    <div class="sync-footer">
-        <div><span class="pulse"></span>ADAPTIVE FEED</div>
-        <div id="sync-time">LEARNING...</div>
     </div>
 
 <script>
 /**
- * CENTURION v4600.0 - FINAL BUILD
- * Full Oura OAuth2 + API Integration
+ * CENTURION v4900.0 - CHRONOS-KINETIC
+ * Features: Date Navigation, Workout Detail Module, History Persistence
  */
 
-// OURA API CONFIGURATION
-const OURA_CONFIG = {
-    clientId: 'YOUR_CLIENT_ID',
-    clientSecret: 'YOUR_CLIENT_SECRET',
-    redirectUri: window.location.origin + window.location.pathname,
-    authUrl: 'https://cloud.ouraring.com/oauth/authorize',
-    tokenUrl: 'https://api.ouraring.com/oauth/token',
-    apiBase: 'https://api.ouraring.com/v2'
-};
-
 const USERS = {
-    'J': { 
-        name: "Jermaine", 
-        vo2: 52.3, 
-        max_hr: 178, 
-        rhr: 48, 
-        goals: { z2: 60, z5: 20, pro: 180, carb: 200, fat: 80, fiber: 40 },
-        biomarkers: { apoB: 68, ldl: 89, hdl: 52, glucose: 91, hsCRP: 0.3 },
-        primaryFocus: "ApoB Reduction",
-        ouraToken: null
-    },
-    'S': { 
-        name: "Sophia", 
-        vo2: 44.2, 
-        max_hr: 185, 
-        rhr: 58, 
-        goals: { z2: 45, z5: 15, pro: 120, carb: 150, fat: 60, fiber: 35 },
-        biomarkers: { ana: 1.3, ferritin: 18, ldl: 112, hdl: 64, glucose: 86, hsCRP: 0.8 },
-        primaryFocus: "ANA Suppression",
-        triggers: ["gluten", "dairy"],
-        ouraToken: null
-    }
+    'J': { name: "Jermaine", vo2: 45, max_hr: 190, rhr: 48, goals: { z2: 60, z5: 20 } },
+    'S': { name: "Sophia", vo2: 32, max_hr: 185, rhr: 58, goals: { z2: 45, z5: 15 } }
 };
 
-const MEAL_DB = {
-    'J': {
-        juice: [
-            { name: "Beet Vitality (Beet+Carrot+Ginger)", p:3, c:28, f:0, fiber:3, omega3:0, apoB_impact: -2, reason: "Nitric oxide boost → ↓ApoB oxidation" },
-            { name: "Green Longevity (Celery+Cucumber+Spinach)", p:2, c:18, f:0, fiber:4, omega3:0, apoB_impact: -1, reason: "Alkalizing, anti-inflammatory" }
-        ],
-        breakfast: [
-            { name: "Wild Salmon Bowl (Quinoa+Brussels+Flax)", p:42, c:38, f:22, fiber:14, omega3:5.5, apoB_impact: -3, reason: "5.5g omega-3 → 15-25% ApoB ↓" },
-            { name: "Sardine Power Bowl (Avocado+Spinach+Walnuts)", p:32, c:18, f:28, fiber:12, omega3:4.2, apoB_impact: -2, reason: "Double omega-3 dose" }
-        ],
-        lunch: [
-            { name: "Sardine Quinoa Salad (Kale+Avocado+Walnuts)", p:38, c:42, f:32, fiber:16, omega3:5.8, apoB_impact: -3, reason: "Max omega-3 loading" },
-            { name: "Mackerel Rice Bowl (Brown Rice+Kimchi)", p:42, c:48, f:22, fiber:12, omega3:4.8, apoB_impact: -2, reason: "Omega-3 + probiotics" }
-        ],
-        snack: [
-            { name: "Greek Yogurt Power Cup (Walnuts+Berries)", p:26, c:28, f:20, fiber:11, omega3:4.2, apoB_impact: -1, reason: "Sustained omega-3" },
-            { name: "Sardine Avocado Toast", p:28, c:24, f:24, fiber:12, omega3:3.8, apoB_impact: -2, reason: "Pre-workout omega-3" }
-        ],
-        dinner: [
-            { name: "Wild Salmon Centurion (Lentils+Kale+Walnuts)", p:52, c:38, f:28, fiber:20, omega3:6.5, apoB_impact: -4, reason: "6.5g omega-3 for overnight recovery" },
-            { name: "Bison Organ Blend (20% Liver+Sweet Potato)", p:48, c:42, f:20, fiber:16, omega3:0.8, apoB_impact: 0, reason: "Micronutrient optimization" }
-        ]
-    },
-    'S': {
-        juice: [
-            { name: "Orange Immune (Carrot+Orange+Turmeric)", p:2, c:32, f:0, fiber:2, ana_impact: -2, ferritin_boost: true, reason: "Vitamin C → ↑iron absorption, turmeric → ↓ANA" },
-            { name: "Green Longevity (Spinach+Cucumber+Lemon)", p:2, c:18, f:0, fiber:3, ana_impact: -1, ferritin_boost: false, reason: "Anti-inflammatory, alkalizing" }
-        ],
-        breakfast: [
-            { name: "Omega Scramble (Eggs+Salmon+Spinach+Chia)", p:38, c:15, f:26, fiber:10, omega3:4.8, ana_impact: -2, reason: "Omega-3 anti-inflammatory" },
-            { name: "Greek Yogurt Longevity Bowl (Berries+Walnuts)", p:32, c:28, f:20, fiber:11, omega3:4.2, ana_impact: -1, reason: "Probiotics + polyphenols" }
-        ],
-        lunch: [
-            { name: "White Fish Ceviche (Avocado+Cilantro+Lime)", p:42, c:24, f:14, fiber:12, omega3:1.8, ana_impact: -1, ferritin_boost: true, reason: "Light, anti-inflammatory, vitamin C" },
-            { name: "Grilled Chicken Wrap (Gluten-Free+Greens)", p:40, c:35, f:12, fiber:14, omega3:0.5, ana_impact: 0, trigger: false, reason: "Safe carbs, no triggers" },
-            { name: "Standard Chicken Wrap (Whole Wheat)", p:40, c:45, f:12, fiber:8, omega3:0.5, ana_impact: 2, trigger: true, triggerType: "gluten", reason: "TEST MEAL - Potential trigger" }
-        ],
-        snack: [
-            { name: "Kefir Smoothie (Berries+Walnuts+Flax)", p:22, c:32, f:18, fiber:12, omega3:4.0, ana_impact: -2, reason: "Probiotic-rich for gut-immune health" },
-            { name: "Hard-Boiled Eggs + Kimchi", p:22, c:12, f:28, fiber:10, omega3:1.2, ana_impact: -1, reason: "Probiotics support immune regulation" }
-        ],
-        dinner: [
-            { name: "Cod + White Beans (Kale+Lemon+Garlic)", p:46, c:38, f:14, fiber:18, omega3:1.0, ana_impact: -2, ferritin_boost: true, reason: "White beans provide folate for immune regulation" },
-            { name: "Chicken Thighs (Quinoa+Brussels+Chimichurri)", p:46, c:40, f:20, fiber:14, omega3:0.6, ana_impact: -1, reason: "Anti-inflammatory herbs" }
-        ]
-    }
+// WORKOUT DB
+const WORKOUTS = {
+    'anabolic_j': { title: "Heavy Compounds", subtitle: "Hypertrophy A", exercises: ["Deadlifts 5x5 @ 225lbs", "Bench Press 4x8 @ 185lbs", "Weighted Pullups 3x8"] },
+    'repair_j': { title: "Zone 2 Flush", subtitle: "Active Recovery", exercises: ["Ruck 45m @ 35lbs", "Sauna 20m @ 180F", "Cold Plunge 3m"] },
+    'anabolic_s': { title: "Glute/Core Stability", subtitle: "Strength Flow", exercises: ["Hip Thrusts 4x10", "Pallof Press 3x12", "Kettlebell Swings 4x15"] },
+    'repair_s': { title: "Yoga & Mobility", subtitle: "Parasympathetic", exercises: ["Vinyasa Flow 45m", "Foam Rolling 10m", "Breathwork 5m"] }
 };
 
-class CenturionCore {
+class ChronosApp {
     constructor() {
-        this.user = localStorage.getItem('c_user') || 'J';
-        
-        try {
-            this.state = JSON.parse(localStorage.getItem(`c_state_${this.user}`)) || this.getDefaultState();
-            this.history = JSON.parse(localStorage.getItem(`c_history_${this.user}`)) || [];
-            
-            USERS.J.ouraToken = localStorage.getItem('oura_token_J');
-            USERS.S.ouraToken = localStorage.getItem('oura_token_S');
-        } catch(e) {
-            this.state = this.getDefaultState();
-            this.history = [];
-        }
-        
+        this.user = localStorage.getItem('v49_user') || 'J';
+        this.history = JSON.parse(localStorage.getItem(`v49_hist_${this.user}`)) || {};
+        this.dayOffset = 0; // 0 = Today
         this.circumference = 158; 
-        this.init();
+        
+        // Boot Sequence
+        setTimeout(() => {
+            document.getElementById('gateway-layer').style.opacity = 0;
+            setTimeout(() => {
+                document.getElementById('gateway-layer').style.display = 'none';
+                document.getElementById('app-layer').style.display = 'block';
+                setTimeout(() => document.getElementById('app-layer').style.opacity = 1, 100);
+            }, 500);
+            this.init();
+        }, 1500);
     }
 
-    getDefaultState() {
-    const uid = this.user || 'J';
-    
-    return { 
-        hr: 60, 
-        z2_time: 0, 
-        z5_time: 0, 
-        hrv: 0,
-        readiness: 0,
-        deepSleep: 0,
-        remSleep: 0,
-        pro: 0, 
-        carb: 0, 
-        fat: 0,
-        fiber: 0, // ← CRITICAL: Must be 0, not undefined
-        omega3: 0,
-        checked: [], 
-        drift_phase: 0,
-        dailyMeals: this.generateDailyMeals(uid),
-        inflammationScore: 0,
-        lastMealTime: null,
-        lastOuraSync: null
-    };
-}
-
+    // UTILS
+    get dateKey() {
+        const d = new Date();
+        d.setDate(d.getDate() + this.dayOffset);
+        return d.toISOString().split('T')[0];
+    }
 
     init() {
-        this.handleOAuthCallback();
-        
         this.switchUser(this.user);
         this.startClock();
         this.startLiveSim();
-        this.startAdaptiveLearning();
-        this.renderTimeline();
-        
-        if (USERS[this.user].ouraToken) {
-            setTimeout(() => this.syncOuraData(), 2000);
-        }
-    }
-    handleOAuthCallback() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const code = urlParams.get('code');
-        
-        if (code) {
-            this.exchangeCodeForToken(code);
-            window.history.replaceState({}, document.title, window.location.pathname);
-        }
-    }
-
-    async connectOura() {
-        const state = Math.random().toString(36).substring(7);
-        localStorage.setItem('oura_oauth_state', state);
-        localStorage.setItem('oura_oauth_user', this.user);
-        
-        const authUrl = `${OURA_CONFIG.authUrl}?` +
-            `client_id=${OURA_CONFIG.clientId}&` +
-            `redirect_uri=${encodeURIComponent(OURA_CONFIG.redirectUri)}&` +
-            `response_type=code&` +
-            `scope=daily personal email&` +
-            `state=${state}`;
-        
-        window.location.href = authUrl;
-    }
-
-    async exchangeCodeForToken(code) {
-        const statusEl = document.getElementById('oura-status');
-        statusEl.textContent = 'Exchanging authorization code...';
-        
-        try {
-            const response = await fetch(OURA_CONFIG.tokenUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({
-                    grant_type: 'authorization_code',
-                    code: code,
-                    redirect_uri: OURA_CONFIG.redirectUri,
-                    client_id: OURA_CONFIG.clientId,
-                    client_secret: OURA_CONFIG.clientSecret
-                })
-            });
-            
-            const data = await response.json();
-            
-            if (data.access_token) {
-                const oauthUser = localStorage.getItem('oura_oauth_user') || this.user;
-                USERS[oauthUser].ouraToken = data.access_token;
-                localStorage.setItem(`oura_token_${oauthUser}`, data.access_token);
-                
-                statusEl.textContent = '✅ Connected! Syncing data...';
-                statusEl.style.borderColor = 'var(--acid)';
-                statusEl.style.color = 'var(--acid)';
-                
-                await this.syncOuraData();
-            } else {
-                throw new Error('No access token received');
-            }
-        } catch (error) {
-            console.error('Oura token exchange error:', error);
-            statusEl.textContent = '❌ Connection failed. Try again.';
-            statusEl.style.borderColor = 'var(--alert)';
-            statusEl.style.color = 'var(--alert)';
-        }
-    }
-
-    async syncOuraData() {
-        const token = USERS[this.user].ouraToken;
-        if (!token) return;
-        
-        const statusEl = document.getElementById('oura-status');
-        if (statusEl) statusEl.textContent = 'Syncing biometric data...';
-        
-        try {
-            const today = new Date().toISOString().split('T')[0];
-            const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-            
-            const readinessRes = await fetch(
-                `${OURA_CONFIG.apiBase}/usercollection/daily_readiness?start_date=${yesterday}&end_date=${today}`,
-                { headers: { 'Authorization': `Bearer ${token}` } }
-            );
-            const readinessData = await readinessRes.json();
-            
-            const sleepRes = await fetch(
-                `${OURA_CONFIG.apiBase}/usercollection/daily_sleep?start_date=${yesterday}&end_date=${today}`,
-                { headers: { 'Authorization': `Bearer ${token}` } }
-            );
-            const sleepData = await sleepRes.json();
-            
-            if (readinessData.data && readinessData.data.length > 0) {
-                const latest = readinessData.data[readinessData.data.length - 1];
-                this.state.readiness = latest.score || 85;
-            }
-            
-            if (sleepData.data && sleepData.data.length > 0) {
-                const latest = sleepData.data[sleepData.data.length - 1];
-                this.state.deepSleep = Math.round((latest.contributors?.deep_sleep || 0) / 60);
-                this.state.remSleep = Math.round((latest.contributors?.rem_sleep || 0) / 60);
-                this.state.hrv = latest.contributors?.hrv_balance || 0;
-            }
-            
-            this.state.lastOuraSync = new Date().toISOString();
-            this.saveState();
-            this.updateHUD();
-            
-            const dataDisplay = document.getElementById('oura-data-display');
-            if (dataDisplay) {
-                dataDisplay.innerHTML = `
-                    <div class="oura-data">
-                        <div class="oura-data-row">
-                            <span class="oura-label">Readiness:</span>
-                            <span class="oura-value">${this.state.readiness}</span>
-                        </div>
-                        <div class="oura-data-row">
-                            <span class="oura-label">Deep Sleep:</span>
-                            <span class="oura-value">${this.state.deepSleep} min</span>
-                        </div>
-                        <div class="oura-data-row">
-                            <span class="oura-label">REM Sleep:</span>
-                            <span class="oura-value">${this.state.remSleep} min</span>
-                        </div>
-                        <div class="oura-data-row">
-                            <span class="oura-label">HRV Balance:</span>
-                            <span class="oura-value">${this.state.hrv}</span>
-                        </div>
-                    </div>
-                `;
-            }
-            
-            if (statusEl) {
-                statusEl.textContent = '✅ Sync complete!';
-                statusEl.style.borderColor = 'var(--acid)';
-                statusEl.style.color = 'var(--acid)';
-            }
-            
-        } catch (error) {
-            console.error('Oura sync error:', error);
-            if (statusEl) {
-                statusEl.textContent = '⚠️ Sync failed. Token may be expired.';
-                statusEl.style.borderColor = 'var(--alert)';
-            }
-        }
-    }
-
-    openOuraModal() {
-        document.getElementById('ouraModal').classList.add('active');
-        
-        const token = USERS[this.user].ouraToken;
-        const statusEl = document.getElementById('oura-status');
-        
-        if (token) {
-            statusEl.textContent = 'Connected to Oura Ring';
-            statusEl.style.borderColor = 'var(--acid)';
-            statusEl.style.color = 'var(--acid)';
-            this.syncOuraData();
-        } else {
-            statusEl.textContent = 'Ready to connect...';
-            statusEl.style.borderColor = 'var(--cyan)';
-            statusEl.style.color = 'var(--cyan)';
-        }
-    }
-
-    closeOuraModal() {
-        document.getElementById('ouraModal').classList.remove('active');
-    }
-
-    startAdaptiveLearning() {
-        setInterval(() => {
-            const now = new Date().getHours();
-            const checkedMeals = this.state.checked.length;
-            const expectedMeals = Math.floor((now - 7) / 3);
-            
-            if (checkedMeals < expectedMeals - 1) {
-                this.updateTactical("NUTRIENT GAP DETECTED", "Protein intake below threshold. Next meal critical.", "var(--alert)");
-            }
-            
-            if (new Date().getMinutes() % 30 === 0) {
-                this.saveHistory();
-            }
-        }, 60000);
-    }
-
-    saveHistory() {
-        const today = new Date().toDateString();
-        const existing = this.history.findIndex(h => h.date === today);
-        
-        const snapshot = {
-            date: today,
-            macros: { pro: this.state.pro, carb: this.state.carb, fat: this.state.fat, fiber: this.state.fiber, omega3: this.state.omega3 },
-            training: { z2: this.state.z2_time, z5: this.state.z5_time },
-            sleep: { deep: this.state.deepSleep, rem: this.state.remSleep },
-            readiness: this.state.readiness,
-            mealsCompleted: this.state.checked.length,
-            inflammationEvents: this.state.inflammationScore
-        };
-        
-        if (existing >= 0) {
-            this.history[existing] = snapshot;
-        } else {
-            this.history.unshift(snapshot);
-        }
-        
-        if (this.history.length > 30) this.history = this.history.slice(0, 30);
-        
-        localStorage.setItem(`c_history_${this.user}`, JSON.stringify(this.history));
-    }
-
-    generateDailyMeals(uid) {
-        const db = MEAL_DB[uid];
-        
-        return {
-            juice: this.selectBestMeal(db.juice, 'juice'),
-            breakfast: this.selectBestMeal(db.breakfast, 'breakfast'),
-            lunch: this.selectBestMeal(db.lunch, 'lunch'),
-            snack: this.selectBestMeal(db.snack, 'snack'),
-            dinner: this.selectBestMeal(db.dinner, 'dinner')
-        };
-    }
-
-    selectBestMeal(options, mealType) {
-        if (this.user === 'J') {
-            options.sort((a, b) => {
-                const scoreA = (a.omega3 || 0) * 10 + (a.apoB_impact || 0) * 5;
-                const scoreB = (b.omega3 || 0) * 10 + (b.apoB_impact || 0) * 5;
-                return scoreB - scoreA;
-            });
-        } else {
-            options = options.filter(m => !m.trigger);
-            options.sort((a, b) => {
-                const scoreA = (a.ana_impact || 0) * 10 + (a.ferritin_boost ? 5 : 0);
-                const scoreB = (b.ana_impact || 0) * 10 + (b.ferritin_boost ? 5 : 0);
-                return scoreB - scoreA;
-            });
-        }
-        
-        return options[0];
     }
 
     switchUser(uid) {
         this.user = uid;
-        localStorage.setItem('c_user', uid);
+        localStorage.setItem('v49_user', uid);
+        this.history = JSON.parse(localStorage.getItem(`v49_hist_${uid}`)) || {};
         
-        try {
-            this.state = JSON.parse(localStorage.getItem(`c_state_${uid}`)) || this.getDefaultState();
-            this.history = JSON.parse(localStorage.getItem(`c_history_${uid}`)) || [];
-        } catch(e) {
-            this.state = this.getDefaultState();
-            this.history = [];
-        }
-
-        if (!this.state.dailyMeals || Object.keys(this.state.dailyMeals).length === 0) {
-            this.state.dailyMeals = this.generateDailyMeals(uid);
-        }
-
         document.querySelectorAll('.u-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(`btn-${uid}`).classList.add('active');
         
-        const color = this.state.readiness >= 80 ? '#ccff00' : this.state.readiness >= 60 ? '#FFD60A' : '#ff453a';
-        document.documentElement.style.setProperty('--acid', color); 
+        this.loadDay();
+    }
+
+    changeDay(delta) {
+        this.dayOffset += delta;
+        this.loadDay();
+    }
+
+    loadDay() {
+        const dateStr = this.dayOffset === 0 ? "TODAY" : 
+                        this.dayOffset === -1 ? "YESTERDAY" : 
+                        this.dateKey;
+        document.getElementById('date-display').innerText = dateStr;
+
+        // Init Day Record if missing
+        if (!this.history[this.dateKey]) {
+            this.history[this.dateKey] = {
+                hr: 60, z2_time: 0, z5_time: 0, stress: 85, score: 88, 
+                checked: [], drift_phase: 0
+            };
+        }
+        
+        this.state = this.history[this.dateKey]; // Reference active day
+        
+        // Visuals
+        const isLive = (this.dayOffset === 0);
+        document.getElementById('sync-text').innerText = isLive ? "LIVE FEED ACTIVE" : "ARCHIVE VIEW";
+        document.querySelector('.orb-card.live .live-dot').style.display = isLive ? 'block' : 'none';
         
         this.updateHUD();
         this.renderTimeline();
-        
-        if (USERS[uid].ouraToken) {
-            this.syncOuraData();
-        }
     }
 
     saveState() {
-        localStorage.setItem(`c_state_${this.user}`, JSON.stringify(this.state));
+        // Save current state back to history object
+        this.history[this.dateKey] = this.state;
+        localStorage.setItem(`v49_hist_${this.user}`, JSON.stringify(this.history));
     }
 
+    // SIMULATION (Only runs on Today)
     startLiveSim() {
-        const updateSim = () => {
+        setInterval(() => {
+            if (this.dayOffset !== 0) return; // Only simulate today
+
             const u = USERS[this.user];
-            
             this.state.drift_phase = (this.state.drift_phase + 1) % 60; 
             
-            let targetHR = u.rhr + 10;
-            if (this.state.drift_phase > 40) targetHR = 135;
-            
+            let targetHR = u.rhr + 10; 
+            if (this.state.drift_phase > 40 && this.state.drift_phase < 55) targetHR = 135; 
+
             const flutter = Math.floor(Math.random() * 6) - 3;
             this.state.hr = targetHR + flutter;
 
-            if (this.state.hr >= 120 && this.state.hr < 155) {
-                this.state.z2_time += (1 / 60); 
-            } else if (this.state.hr >= 155) {
-                this.state.z5_time += (1 / 60);
-            }
+            if (this.state.hr >= 120 && this.state.hr < 155) this.state.z2_time = (this.state.z2_time || 0) + (1/60); 
+            else if (this.state.hr >= 155) this.state.z5_time = (this.state.z5_time || 0) + (1/60);
 
             if (new Date().getSeconds() % 5 === 0) this.saveState();
 
-            this.updateHRRing(this.state.hr);
-            this.updateHUDValues();
-        };
-        
-        updateSim();
-        setInterval(updateSim, 1000);
+            this.updateHUDValues(); 
+        }, 1000);
     }
 
     startClock() {
-        const updateTime = () => {
+        setInterval(() => {
             const now = new Date();
-            document.getElementById('current-time').innerText = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-            document.getElementById('sync-time').innerText = now.toLocaleTimeString('en-US', { hour12: false });
-        };
-        
-        updateTime();
-        setInterval(updateTime, 1000);
+            document.getElementById('sync-time').innerText = now.toLocaleTimeString();
+        }, 1000);
     }
 
-    formatTime(h) { 
-        const ampm = h >= 12 ? 'PM' : 'AM'; 
-        const hour = h % 12 || 12; 
-        return `${hour} ${ampm}`; 
-    }
-
+    // UI UPDATES
     updateHUDValues() {
-    document.getElementById('val-hr').innerText = this.state.hr;
-    document.getElementById('val-z2').innerText = Math.floor(this.state.z2_time);
-    document.getElementById('val-z5').innerText = Math.floor(this.state.z5_time);
-    document.getElementById('val-hrv').innerText = this.state.hrv || '--';
-    
-    const u = USERS[this.user];
-    const proScore = Math.min((this.state.pro / u.goals.pro) * 100, 100);
-    const carbScore = Math.min((this.state.carb / u.goals.carb) * 100, 100);
-    const fatScore = Math.min((this.state.fat / u.goals.fat) * 100, 100);
-    const fiberScore = Math.min((this.state.fiber / u.goals.fiber) * 100, 100);
-    
-    // SAFETY: Check if all macros are zero to avoid NaN
-    const avgScore = (this.state.pro === 0 && this.state.carb === 0 && this.state.fat === 0 && this.state.fiber === 0) 
-        ? 0 
-        : Math.round((proScore + carbScore + fatScore + fiberScore) / 4);
-    
-    document.getElementById('macro-score').innerText = avgScore + "%";
-}
-
-
-
+        if(this.dayOffset === 0) {
+            document.getElementById('val-hr').innerText = this.state.hr;
+            this.updateHRRing(this.state.hr);
+        }
+        document.getElementById('val-z2').innerText = Math.floor(this.state.z2_time || 0);
+        document.getElementById('val-z5').innerText = Math.floor(this.state.z5_time || 0);
+        this.updateRing('z2', this.state.z2_time, USERS[this.user].goals.z2);
+        this.updateRing('z5', this.state.z5_time, USERS[this.user].goals.z5);
+    }
 
     updateHUD() {
-    const u = USERS[this.user];
-    const s = this.state;
-    
-    this.updateRing('z2', s.z2_time, u.goals.z2);
-    this.updateRing('z5', s.z5_time, u.goals.z5);
-    this.updateRing('hrv', s.hrv, 100);
-    this.updateRing('activity', s.readiness, 100);
-    
-    this.updateMacroRing('pro', s.pro, u.goals.pro);
-    this.updateMacroRing('carb', s.carb, u.goals.carb);
-    this.updateMacroRing('fat', s.fat, u.goals.fat);
-    this.updateMacroRing('fiber', s.fiber, u.goals.fiber);
+        const u = USERS[this.user];
+        const s = this.state;
+        
+        document.getElementById('val-hr').innerText = this.dayOffset === 0 ? s.hr : "--";
+        document.getElementById('val-z2').innerText = Math.floor(s.z2_time || 0);
+        document.getElementById('val-z5').innerText = Math.floor(s.z5_time || 0);
+        document.getElementById('val-stress').innerText = s.stress;
+        document.getElementById('vo2-val').innerText = u.vo2;
+        
+        this.updateRing('z2', s.z2_time, u.goals.z2);
+        this.updateRing('z5', s.z5_time, u.goals.z5);
+        this.updateRing('stress', s.stress, 100);
+        this.updateRing('activity', s.score, 100);
+        
+        // Tactics
+        let cmd = "MAINTAIN FLOW", color = "var(--acid)";
+        if (s.z5_time >= u.goals.z5) { cmd = "PEAK REACHED"; color = "var(--gold)"; }
+        else if (s.z2_time < u.goals.z2 * 0.2) { cmd = "BASE BUILDING"; color = "var(--cyan)"; }
+        
+        document.getElementById('tac-cmd').innerText = this.dayOffset===0 ? cmd : "HISTORY RECORD";
+        document.getElementById('tac-cmd').style.color = color;
+        document.getElementById('tactical-box').style.borderLeftColor = color;
+    }
 
-    document.getElementById('val-hrv').innerText = s.hrv || '--';
-    document.getElementById('val-pro').innerText = s.pro + "g";
-    document.getElementById('val-carb').innerText = s.carb + "g";
-    document.getElementById('val-fat').innerText = s.fat + "g";
-    document.getElementById('val-fiber').innerText = (s.fiber || 0) + "g"; // FIX: Force 0 if undefined
-    document.getElementById('readiness-val').innerText = s.readiness || "--";
-    
-    this.runTactics(s, u);
-}
-
-
+    updateRing(id, val, max) {
+        const circ = id === 'activity' ? 283 : 158;
+        const pct = Math.min((val || 0) / max, 1);
+        const offset = circ - (pct * circ);
+        const el = document.getElementById(`ring-${id}`);
+        if(el) el.style.strokeDashoffset = offset;
+    }
 
     updateHRRing(hr) {
         const u = USERS[this.user];
         const pct = Math.min(hr / u.max_hr, 1);
         const offset = 158 - (pct * 158);
         const ring = document.getElementById('ring-hr');
-        ring.style.strokeDashoffset = offset;
-        if (hr > 155) ring.style.stroke = "var(--alert)";
-        else if (hr > 120) ring.style.stroke = "var(--cyan)";
-        else ring.style.stroke = "#444";
+        if(ring) {
+            ring.style.strokeDashoffset = offset;
+            if (hr > 155) ring.style.stroke = "var(--alert)";
+            else if (hr > 120) ring.style.stroke = "var(--cyan)";
+            else ring.style.stroke = "#444";
+        }
     }
 
-    updateRing(id, val, max) {
-        const circ = id === 'activity' ? 283 : 158;
-        const pct = Math.min(val / max, 1);
-        const offset = circ - (pct * circ);
-        const el = document.getElementById(`ring-${id}`);
-        if(el) el.style.strokeDashoffset = offset;
-    }
-
-    updateMacroRing(id, val, max) {
-        const pct = val / max;
-        const offset = 158 - (Math.min(pct, 1) * 158);
-        const el = document.getElementById(`ring-${id}`);
-        if (!el) return;
-        
-        el.style.strokeDashoffset = offset;
-        
-        if (pct > 1.1) el.style.stroke = "var(--alert)";
-        else if (pct >= 0.9) el.style.stroke = "var(--acid)";
-        else el.style.stroke = "var(--cyan)";
-    }
-
-    updateTactical(cmd, reason, color) {
-        document.getElementById('tac-cmd').innerText = cmd;
-        document.getElementById('tac-cmd').style.color = color;
-        document.getElementById('tac-reason').innerText = reason;
-        document.getElementById('tactical-box').style.borderLeftColor = color;
-        document.getElementById('tac-label').style.color = color;
-    }
-
-    runTactics(s, u) {
-        let cmd = "", reason = "", color = "var(--acid)";
-        
-        if (s.readiness > 0 && s.readiness < 60) {
-            cmd = "RECOVERY PRIORITY";
-            reason = `Readiness: ${s.readiness}. Deep: ${s.deepSleep}m, REM: ${s.remSleep}m. Rest required.`;
-            color = "var(--alert)";
-        } else if (this.state.inflammationScore > 0) {
-            cmd = "INFLAMMATION DETECTED";
-            reason = `Trigger response active. Omega-3 flush recommended.`;
-            color = "var(--alert)";
-        } else if (s.omega3 >= 3.0 && this.user === 'J') {
-            cmd = "APOB SUPPRESSION ACTIVE";
-            reason = `${s.omega3.toFixed(1)}g omega-3 loaded. 15-25% ApoB reduction protocol engaged.`;
-            color = "var(--acid)";
-        } else if (this.user === 'S' && s.pro >= u.goals.pro * 0.8) {
-            cmd = "PROTEIN OPTIMIZATION";
-            reason = "ANA suppression pathway active. Anti-inflammatory state maintained.";
-            color = "var(--cyan)";
-        } else if (s.z5_time >= u.goals.z5) {
-            cmd = "PEAK STIMULUS COMPLETE"; 
-            reason = "VO2 Max adaptation triggered. Recovery protocol initiated."; 
-            color = "var(--gold)";
-        } else if (s.z2_time < (u.goals.z2 * 0.3)) {
-            cmd = "AEROBIC BASE REQUIRED"; 
-            reason = "Mitochondrial density insufficient. Zone 2 volume critical."; 
-            color = "var(--cyan)";
-        } else if (s.pro < u.goals.pro * 0.5) {
-            cmd = "PROTEIN DEFICIT";
-            reason = "Muscle protein synthesis compromised. Next meal critical.";
-            color = "var(--alert)";
+    // ACTIONS
+    toggleItem(id) {
+        if (this.state.checked.includes(id)) {
+            this.state.checked = this.state.checked.filter(i => i !== id);
         } else {
-            cmd = "SYSTEMS NOMINAL"; 
-            reason = "All biomarkers tracking within optimal range."; 
-            color = "var(--acid)";
+            this.state.checked.push(id);
         }
-        
-        this.updateTactical(cmd, reason, color);
+        this.saveState();
+        this.renderTimeline(); // Re-render to update UI
     }
 
-    checkMeal(mealType) {
-        if(this.state.checked.includes(mealType)) return;
-        
-        const meal = this.state.dailyMeals[mealType];
-        
-        if (mealType === 'sup') {
-            this.state.carb += 2;
-            this.state.fiber += 1;
-            this.state.checked.push(mealType);
-            this.saveState();
-            this.updateHUD();
-            this.renderTimeline();
-            return;
-        }
-        
-        if(!meal) return;
-
-        this.state.pro += meal.p;
-        this.state.carb += meal.c;
-        this.state.fat += meal.f;
-        this.state.fiber += (meal.fiber || 0);
-        this.state.omega3 += (meal.omega3 || 0);
-        this.state.checked.push(mealType);
-        this.state.lastMealTime = new Date();
-        this.saveState();
-        
-        this.updateHUD();
-        this.renderTimeline();
+    toggleWorkoutDisplay(el) {
+        el.classList.toggle('expanded');
     }
 
     renderTimeline() {
         const container = document.getElementById('timeline-feed');
         const nowHour = new Date().getHours();
-        const meals = this.state.dailyMeals;
         
+        // LOGIC: Anabolic vs Repair
+        const mode = this.state.score >= 80 ? "anabolic" : "repair";
+        const wKey = `${mode}_${this.user.toLowerCase()}`;
+        const workout = WORKOUTS[wKey];
+
         const schedule = [
-            { 
-                t: 7, 
-                type: 'sup',
-                title: "Hydration Protocol", 
-                desc: "Sea Moss Gel (2 tbsp)", 
-                mech: "Thyroid iodine prime + mineral cofactors", 
-                tags: [{t:"FOUNDATION",c:"bio"}],
-                macros: {p:0, c:2, f:0, fiber:1}
-            },
-            { 
-                t: 8, 
-                type: 'juice',
-                title: "Bioactive Juice", 
-                desc: meals.juice.name, 
-                mech: meals.juice.reason, 
-                tags: [{t:"BIO-ACTIVE",c:"syn"}, this.user === 'J' ? {t:"APOB↓",c:"omega"} : {t:"ANA↓",c:"omega"}],
-                meal: meals.juice
-            },
-            { 
-                t: 10, 
-                type: 'breakfast',
-                title: "Breakfast", 
-                desc: meals.breakfast.name, 
-                mech: meals.breakfast.reason, 
-                tags: [{t:"PROTEIN",c:"bio"}, meals.breakfast.omega3 >= 4 ? {t:"Ω3 LOADED",c:"omega"} : null].filter(Boolean),
-                meal: meals.breakfast
-            },
-            { 
-                t: 13, 
-                type: 'lunch',
-                title: "Lunch", 
-                desc: meals.lunch.name + " + Kombucha", 
-                mech: meals.lunch.reason, 
-                tags: [
-                    {t:"FUEL",c:"bio"}, 
-                    meals.lunch.trigger ? {t:"TEST MEAL",c:"alert"} : null,
-                    meals.lunch.omega3 >= 4 ? {t:"Ω3 MAX",c:"omega"} : null
-                ].filter(Boolean),
-                meal: meals.lunch
-            },
-            { 
-                t: 16, 
-                type: 'snack',
-                title: "Metabolic Gap Fill", 
-                desc: meals.snack.name, 
-                mech: meals.snack.reason, 
-                tags: [{t:"SUSTAIN",c:"syn"}],
-                meal: meals.snack
-            },
-            { 
-                t: 19, 
-                type: 'dinner',
-                title: "Dinner", 
-                desc: meals.dinner.name, 
-                mech: meals.dinner.reason, 
-                tags: [
-                    {t:"RECOVERY",c:"bio"},
-                    meals.dinner.omega3 >= 5 ? {t:"Ω3 PEAK",c:"omega"} : null
-                ].filter(Boolean),
-                meal: meals.dinner
-            }
+            { t: 7, title: "Hydration", desc: "Sea Moss Gel (2 tbsp)", id:'sup', tags: [{t:"PRIME",c:"bio"}] },
+            { t: 8, title: "Juice Protocol", desc: this.user==='J'?"Beet Vitality":"Orange Immune", id:'juice', tags: [{t:"BIO-ACTIVE",c:"syn"}] },
+            { t: 17, title: workout.title, desc: workout.subtitle, id:'workout', isWorkout: true, exercises: workout.exercises, tags: [{t:"TRAINING",c:"bio"}] },
+            { t: 19, title: "Dinner", desc: mode==='anabolic'?"Steak & Potato":"White Fish & Greens", id:'din', tags: [{t:mode.toUpperCase(),c:"syn"}] }
         ];
 
         let html = '';
         schedule.forEach(slot => {
-            const isChecked = this.state.checked.includes(slot.type);
+            const isChecked = this.state.checked.includes(slot.id);
             let stateClass = isChecked ? "past" : "";
             let btnTxt = isChecked ? "✓" : "○";
             
-            if (!isChecked && nowHour >= slot.t && nowHour < slot.t + 2) { 
-                stateClass = "active"; 
-            }
+            if (!isChecked && this.dayOffset === 0 && nowHour >= slot.t && nowHour < slot.t + 2) stateClass = "active";
 
-            let tags = "";
-            slot.tags.forEach(tag => {
-                const cls = tag.c === 'syn' ? 'b-syn' : 
-                           tag.c === 'alert' ? 'b-alert' :
-                           tag.c === 'omega' ? 'b-omega' : 'b-bio';
-                tags += `<span class="ts-badge ${cls}">${tag.t}</span>`;
-            });
-
-            let macroDisplay = "";
-            if (slot.meal) {
-                macroDisplay = `<div style="margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.05); font-size:0.6rem; color:var(--text-muted); display:flex; gap:10px; flex-wrap: wrap;">
-                    <span>P: ${slot.meal.p}g</span>
-                    <span>C: ${slot.meal.c}g</span>
-                    <span>F: ${slot.meal.f}g</span>
-                    <span>Fiber: ${slot.meal.fiber}g</span>
-                    ${slot.meal.omega3 ? `<span style="color:var(--gold)">Ω3: ${slot.meal.omega3}g</span>` : ''}
-                </div>`;
-            } else if (slot.macros) {
-                macroDisplay = `<div style="margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.05); font-size:0.6rem; color:var(--text-muted);">
-                    Minimal macros: ${slot.macros.c}g carbs, ${slot.macros.fiber}g fiber
-                </div>`;
+            // Workout Expansion Logic
+            let extraHTML = '';
+            let clickAction = `app.toggleItem('${slot.id}')`;
+            let cardClick = '';
+            
+            if (slot.isWorkout) {
+                cardClick = `onclick="app.toggleWorkoutDisplay(this.parentElement)"`;
+                extraHTML = `<div class="workout-detail">`;
+                slot.exercises.forEach(ex => {
+                    extraHTML += `<div class="w-row"><span>${ex.split('@')[0]}</span><span class="w-set">${ex.split('@')[1] || ''}</span></div>`;
+                });
+                extraHTML += `</div>`;
             }
 
             html += `
-                <div class="time-slot ${stateClass}" id="slot-${slot.type}">
-                    <div class="ts-time">${this.formatTime(slot.t)}</div>
-                    <div class="ts-card">
-                        <div class="badge-row">${tags}</div>
+                <div class="time-slot ${stateClass}">
+                    <div class="ts-time">${slot.t}:00</div>
+                    <div class="ts-card" ${cardClick}>
                         <div class="ts-title">${slot.title}</div>
                         <div class="ts-desc">${slot.desc}</div>
-                        <div class="ts-mech">${slot.mech}</div>
-                        ${macroDisplay}
-                        <button class="check-btn" onclick="centurion.checkMeal('${slot.type}')">${btnTxt}</button>
+                        ${extraHTML}
+                        <button class="check-btn" onclick="event.stopPropagation(); ${clickAction}">${btnTxt}</button>
                     </div>
                 </div>
             `;
@@ -994,7 +460,7 @@ class CenturionCore {
     }
 }
 
-const centurion = new CenturionCore();
+const app = new ChronosApp();
 </script>
 </body>
 </html>
