@@ -368,22 +368,24 @@ class CenturionCore {
     }
 
     getDefaultState() {
+    const uid = this.user || 'J'; // Use current user or default to J
+    
     return { 
         hr: 60, 
         z2_time: 0, 
         z5_time: 0, 
-        hrv: 0, // Changed from undefined
+        hrv: 0,
         readiness: 0,
         deepSleep: 0,
         remSleep: 0,
         pro: 0, 
         carb: 0, 
         fat: 0,
-        fiber: 0, // CRITICAL: Initialize to 0
+        fiber: 0,
         omega3: 0,
         checked: [], 
         drift_phase: 0,
-        dailyMeals: this.generateDailyMeals(this.user || 'J'),
+        dailyMeals: this.generateDailyMeals(uid), // GENERATE MEALS HERE
         inflammationScore: 0,
         lastMealTime: null,
         lastOuraSync: null
@@ -391,20 +393,25 @@ class CenturionCore {
 }
 
 
+
     init() {
-        // Check for OAuth callback
-        this.handleOAuthCallback();
-        
-        this.switchUser(this.user);
-        this.startClock();
-        this.startLiveSim();
-        this.startAdaptiveLearning();
-        
-        // Auto-sync Oura if token exists
-        if (USERS[this.user].ouraToken) {
-            setTimeout(() => this.syncOuraData(), 2000);
-        }
+    // Check for OAuth callback
+    this.handleOAuthCallback();
+    
+    this.switchUser(this.user);
+    this.startClock();
+    this.startLiveSim();
+    this.startAdaptiveLearning();
+    
+    // CRITICAL: Render timeline on load
+    this.renderTimeline(); // ADD THIS LINE
+    
+    // Auto-sync Oura if token exists
+    if (USERS[this.user].ouraToken) {
+        setTimeout(() => this.syncOuraData(), 2000);
     }
+}
+
 
     // ==========================================
     // OURA OAUTH2 FLOW
@@ -666,70 +673,83 @@ class CenturionCore {
     }
 
     switchUser(uid) {
-        this.user = uid;
-        localStorage.setItem('c_user', uid);
-        
-        try {
-            this.state = JSON.parse(localStorage.getItem(`c_state_${uid}`)) || this.getDefaultState();
-            this.history = JSON.parse(localStorage.getItem(`c_history_${uid}`)) || [];
-        } catch(e) {
-            this.state = this.getDefaultState();
-            this.history = [];
-        }
-
-        this.state.dailyMeals = this.generateDailyMeals(uid);
-
-        document.querySelectorAll('.u-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(`btn-${uid}`).classList.add('active');
-        
-        const color = this.state.readiness >= 80 ? '#ccff00' : this.state.readiness >= 60 ? '#FFD60A' : '#ff453a';
-        document.documentElement.style.setProperty('--acid', color); 
-        
-        this.updateHUD();
-        this.renderTimeline();
-        
-        // Auto-sync if token exists
-        if (USERS[uid].ouraToken) {
-            this.syncOuraData();
-        }
+    this.user = uid;
+    localStorage.setItem('c_user', uid);
+    
+    try {
+        this.state = JSON.parse(localStorage.getItem(`c_state_${uid}`)) || this.getDefaultState();
+        this.history = JSON.parse(localStorage.getItem(`c_history_${uid}`)) || [];
+    } catch(e) {
+        this.state = this.getDefaultState();
+        this.history = [];
     }
+
+    // CRITICAL: Generate meals BEFORE rendering timeline
+    if (!this.state.dailyMeals || Object.keys(this.state.dailyMeals).length === 0) {
+        this.state.dailyMeals = this.generateDailyMeals(uid);
+    }
+
+    document.querySelectorAll('.u-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(`btn-${uid}`).classList.add('active');
+    
+    const color = this.state.readiness >= 80 ? '#ccff00' : this.state.readiness >= 60 ? '#FFD60A' : '#ff453a';
+    document.documentElement.style.setProperty('--acid', color); 
+    
+    this.updateHUD();
+    this.renderTimeline(); // This should now work
+    
+    // Auto-sync if token exists
+    if (USERS[uid].ouraToken) {
+        this.syncOuraData();
+    }
+}
+
 
     saveState() {
         localStorage.setItem(`c_state_${this.user}`, JSON.stringify(this.state));
     }
 
     startLiveSim() {
-        setInterval(() => {
-            const u = USERS[this.user];
-            
-            this.state.drift_phase = (this.state.drift_phase + 1) % 60; 
-            
-            let targetHR = u.rhr + 10;
-            if (this.state.drift_phase > 40) targetHR = 135;
-            
-            const flutter = Math.floor(Math.random() * 6) - 3;
-            this.state.hr = targetHR + flutter;
+    const updateSim = () => {
+        const u = USERS[this.user];
+        
+        this.state.drift_phase = (this.state.drift_phase + 1) % 60; 
+        
+        let targetHR = u.rhr + 10;
+        if (this.state.drift_phase > 40) targetHR = 135;
+        
+        const flutter = Math.floor(Math.random() * 6) - 3;
+        this.state.hr = targetHR + flutter;
 
-            if (this.state.hr >= 120 && this.state.hr < 155) {
-                this.state.z2_time += (1 / 60); 
-            } else if (this.state.hr >= 155) {
-                this.state.z5_time += (1 / 60);
-            }
+        if (this.state.hr >= 120 && this.state.hr < 155) {
+            this.state.z2_time += (1 / 60); 
+        } else if (this.state.hr >= 155) {
+            this.state.z5_time += (1 / 60);
+        }
 
-            if (new Date().getSeconds() % 5 === 0) this.saveState();
+        if (new Date().getSeconds() % 5 === 0) this.saveState();
 
-            this.updateHRRing(this.state.hr);
-            this.updateHUDValues();
-        }, 1000);
-    }
+        this.updateHRRing(this.state.hr);
+        this.updateHUDValues();
+    };
+    
+    updateSim(); // Call immediately
+    setInterval(updateSim, 1000); // Then every second
+}
+
 
     startClock() {
-        setInterval(() => {
-            const now = new Date();
-            document.getElementById('current-time').innerText = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-            document.getElementById('sync-time').innerText = now.toLocaleTimeString('en-US', { hour12: false });
-        }, 1000);
-    }
+    // Update immediately on load
+    const updateTime = () => {
+        const now = new Date();
+        document.getElementById('current-time').innerText = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        document.getElementById('sync-time').innerText = now.toLocaleTimeString('en-US', { hour12: false });
+    };
+    
+    updateTime(); // Call immediately
+    setInterval(updateTime, 1000); // Then every second
+}
+
 
     formatTime(h) { 
         const ampm = h >= 12 ? 'PM' : 'AM'; 
