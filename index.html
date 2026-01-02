@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v4600.0 BULLETPROOF</title>
+    <title>The Centurion | v4700.0 CLEAN</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -48,7 +48,7 @@
         .tac-meta { font-family: var(--font-data); font-size: 0.55rem; color: var(--text-muted); margin-top: 4px; }
 
         /* GRIDS */
-        .section-label { font-size: 0.55rem; font-weight: 900; color: var(--text-muted); letter-spacing: 1px; margin: 20px 16px 10px; text-transform: uppercase; display: flex; justify-content: space-between; }
+        .section-label { font-size: 0.55rem; font-weight: 900; color: var(--text-muted); letter-spacing: 1px; margin: 20px 16px 10px; text-transform: uppercase; }
         .telemetry-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 10px; }
         .macro-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 30px; }
         
@@ -69,6 +69,8 @@
 
         /* TIMELINE */
         .timeline-container { padding: 0 16px; }
+        .section-header { font-size: 0.6rem; font-weight: 900; color: var(--text-muted); letter-spacing: 1px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        
         .time-slot { display: flex; gap: 12px; margin-bottom: 20px; position: relative; transition: opacity 0.3s; }
         .time-slot.past { opacity: 0.4; }
         .time-slot::before { content: ''; position: absolute; left: 22px; top: 25px; bottom: -25px; width: 1px; background: var(--border); z-index: 0; }
@@ -116,8 +118,8 @@
     </svg>
 
     <div class="hud-header">
-        <div class="app-name">CENTURION v4600</div>
-        <div class="live-badge">STABLE CORE</div>
+        <div class="app-name">CENTURION v4700</div>
+        <div class="live-badge">AUTONOMIC</div>
         <div class="user-switch">
             <button id="btn-J" class="u-btn active" onclick="centurion.switchUser('J')">JER</button>
             <button id="btn-S" class="u-btn" onclick="centurion.switchUser('S')">SOPH</button>
@@ -137,9 +139,9 @@
         </div>
 
         <div class="tactical-box" id="tactical-box">
-            <div class="tac-label" id="tac-label">COMMAND:</div>
+            <div class="tac-label" id="tac-label">LIVE INTELLIGENCE</div>
             <div class="tac-cmd" id="tac-cmd">SYSTEMS NOMINAL</div>
-            <div class="tac-meta" id="tac-reason">Scanning Zones...</div>
+            <div class="tac-meta" id="tac-reason">Tracking autonomic drift...</div>
         </div>
     </div>
 
@@ -216,8 +218,8 @@
 
 <script>
 /**
- * CENTURION v4600.0 - BULLETPROOF
- * Fixes: Crash Prevention, Accurate 1/60s Timing, ID-Safe Macros.
+ * CENTURION v4700.0 - CLEAN SLATE
+ * Features: Auto-Repair Storage, Passive Drift Sim, Safe Math.
  */
 
 const USERS = {
@@ -225,6 +227,7 @@ const USERS = {
     'S': { name: "Sophia", vo2: 32, max_hr: 185, rhr: 58, goals: { z2: 45, z5: 15, pro: 120, carb: 150, fat: 60 } }
 };
 
+// Safe Lookup System
 const MACRO_LOOKUP = {
     'sup': {p:0, c:2, f:0},
     'juice_j': {p:2, c:15, f:0},
@@ -234,18 +237,17 @@ const MACRO_LOOKUP = {
     'l': {p:45, c:40, f:15},
     'l_trigger': {p:30, c:45, f:12},
     'snack_pro': {p:20, c:8, f:0},
-    'snack_imm': {p:15, c:0, f:2},
     'd_ana': {p:50, c:50, f:18},
     'd_rep': {p:40, c:10, f:12}
 };
 
 class CenturionCore {
     constructor() {
-        this.user = localStorage.getItem('c_user') || 'J';
+        this.user = localStorage.getItem('v47_user') || 'J';
         
-        // SAFE LOAD: If storage is corrupt, reset it.
+        // AUTO-REPAIR: If storage is null or corrupt, use default
         try {
-            this.state = JSON.parse(localStorage.getItem(`c_state_${this.user}`)) || this.getDefaultState();
+            this.state = JSON.parse(localStorage.getItem(`v47_state_${this.user}`)) || this.getDefaultState();
         } catch(e) {
             this.state = this.getDefaultState();
         }
@@ -266,10 +268,10 @@ class CenturionCore {
 
     switchUser(uid) {
         this.user = uid;
-        localStorage.setItem('c_user', uid);
+        localStorage.setItem('v47_user', uid);
         
         try {
-            this.state = JSON.parse(localStorage.getItem(`c_state_${uid}`)) || this.getDefaultState();
+            this.state = JSON.parse(localStorage.getItem(`v47_state_${uid}`)) || this.getDefaultState();
         } catch(e) {
             this.state = this.getDefaultState();
         }
@@ -285,35 +287,39 @@ class CenturionCore {
     }
 
     saveState() {
-        localStorage.setItem(`c_state_${this.user}`, JSON.stringify(this.state));
+        localStorage.setItem(`v47_state_${this.user}`, JSON.stringify(this.state));
     }
 
-    // 1. PRECISION SIMULATION (Drift Logic)
+    // 1. PASSIVE DRIFT SIMULATION (Smooth Logic)
     startLiveSim() {
         setInterval(() => {
             const u = USERS[this.user];
             
-            // "Autonomic Drift" - Cycles high/low every 30s to simulate activity
+            // Loop phase 0-59 (1 minute cycle)
             this.state.drift_phase = (this.state.drift_phase + 1) % 60; 
             
             let targetHR = u.rhr + 10; // Baseline
-            if (this.state.drift_phase > 40) targetHR = 135; // Simulated movement
             
+            // Simulate activity spike at seconds 40-55
+            if (this.state.drift_phase > 40 && this.state.drift_phase < 55) { 
+                targetHR = 135; 
+            }
+
             const flutter = Math.floor(Math.random() * 6) - 3;
             this.state.hr = targetHR + flutter;
 
-            // PRECISE ACCUMULATION: 1 sec = 1/60 min
+            // ZONE ACCUMULATION (Safe Math)
+            // 1 second = 1/60th of a minute
             if (this.state.hr >= 120 && this.state.hr < 155) {
-                this.state.z2_time += (1 / 60); 
+                this.state.z2_time = (this.state.z2_time || 0) + (1/60); 
             } else if (this.state.hr >= 155) {
-                this.state.z5_time += (1 / 60);
+                this.state.z5_time = (this.state.z5_time || 0) + (1/60);
             }
 
-            // Save state occasionally to prevent loss
             if (new Date().getSeconds() % 5 === 0) this.saveState();
 
             this.updateHRRing(this.state.hr);
-            this.updateHUDValues(); // Efficient value update
+            this.updateHUDValues(); 
         }, 1000);
     }
 
@@ -329,8 +335,8 @@ class CenturionCore {
     // 2. HUD UPDATER
     updateHUDValues() {
         document.getElementById('val-hr').innerText = this.state.hr;
-        document.getElementById('val-z2').innerText = Math.floor(this.state.z2_time);
-        document.getElementById('val-z5').innerText = Math.floor(this.state.z5_time);
+        document.getElementById('val-z2').innerText = Math.floor(this.state.z2_time || 0);
+        document.getElementById('val-z5').innerText = Math.floor(this.state.z5_time || 0);
     }
 
     updateHUD() {
@@ -362,35 +368,38 @@ class CenturionCore {
         const pct = Math.min(hr / u.max_hr, 1);
         const offset = 158 - (pct * 158);
         const ring = document.getElementById('ring-hr');
-        ring.style.strokeDashoffset = offset;
-        if (hr > 155) ring.style.stroke = "var(--alert)";
-        else if (hr > 120) ring.style.stroke = "var(--cyan)";
-        else ring.style.stroke = "#444";
+        if(ring) {
+            ring.style.strokeDashoffset = offset;
+            if (hr > 155) ring.style.stroke = "var(--alert)";
+            else if (hr > 120) ring.style.stroke = "var(--cyan)";
+            else ring.style.stroke = "#444";
+        }
     }
 
     updateRing(id, val, max) {
         const circ = id === 'activity' ? 283 : 158;
-        const pct = Math.min(val / max, 1);
+        const pct = Math.min((val || 0) / max, 1);
         const offset = circ - (pct * circ);
         const el = document.getElementById(`ring-${id}`);
         if(el) el.style.strokeDashoffset = offset;
     }
 
     updateMacroRing(id, val, max) {
-        const pct = val / max;
+        const pct = (val || 0) / max;
         const offset = 158 - (Math.min(pct, 1) * 158);
         const el = document.getElementById(`ring-${id}`);
-        el.style.strokeDashoffset = offset;
-        
-        if (pct > 1.1) el.style.stroke = "var(--alert)";
-        else if (pct >= 0.9) el.style.stroke = "var(--acid)";
-        else el.style.stroke = "var(--cyan)";
+        if(el) {
+            el.style.strokeDashoffset = offset;
+            if (pct > 1.1) el.style.stroke = "var(--alert)";
+            else if (pct >= 0.9) el.style.stroke = "var(--acid)";
+            else el.style.stroke = "var(--cyan)";
+        }
     }
 
     runTactics(s, u) {
         let cmd = "", reason = "", color = "var(--acid)";
         if (s.z5_time >= u.goals.z5) {
-            cmd = "PEAK REACHED"; reason = "VO2 Max Stimulus Achieved. Recover."; color = "var(--gold)";
+            cmd = "PEAK REACHED"; reason = "VO2 Max Stimulus Done. Recover."; color = "var(--gold)";
         } else if (s.z2_time < (u.goals.z2 * 0.2)) {
             cmd = "BASE BUILDING"; reason = "Aerobic System requires volume."; color = "var(--cyan)";
         } else {
@@ -403,29 +412,27 @@ class CenturionCore {
         document.getElementById('tac-label').style.color = color;
     }
 
-    // 3. MEAL CHECK (SAFE LOGIC)
+    // 3. MEAL CHECK (Safe)
     checkMeal(btn, mealID) {
-        // Prevent double checking
         const card = btn.parentElement;
         if(card.classList.contains('past')) return;
         if(this.state.checked.includes(mealID)) return;
         
         const macros = MACRO_LOOKUP[mealID];
-        if(!macros) return; // Safety check
+        if(!macros) return; 
 
         // Update State
-        this.state.pro += macros.p;
-        this.state.carb += macros.c;
-        this.state.fat += macros.f;
+        this.state.pro = (this.state.pro || 0) + macros.p;
+        this.state.carb = (this.state.carb || 0) + macros.c;
+        this.state.fat = (this.state.fat || 0) + macros.f;
         this.state.checked.push(mealID);
         this.saveState();
         
-        this.updateHUD(); // Animate Rings
+        this.updateHUD();
 
         card.classList.add('past');
         btn.innerText = "✓";
         
-        // Scan Effect
         const overlay = document.createElement('div');
         overlay.className = 'scan-overlay';
         overlay.style.display = 'block';
@@ -462,7 +469,6 @@ class CenturionCore {
     renderTimeline() {
         const container = document.getElementById('timeline-feed');
         const nowHour = new Date().getHours();
-        
         const lunchMeal = (this.user === 'S') ? "Grilled Chicken Wrap (Gluten)" : "Super Mince Bowl";
         const lunchID = (this.user === 'S') ? 'l_trigger' : 'l';
         const juiceName = (this.user === 'J') ? "Beet Vitality" : "Orange Immune";
