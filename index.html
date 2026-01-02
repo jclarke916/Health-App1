@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v4300.0 OMNI-MACRO</title>
+    <title>The Centurion | v4400.0 VO2-KINETIC</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -14,6 +14,7 @@
             --cyan: #00f0ff;
             --gold: #FFD60A;
             --alert: #ff453a;
+            --purple: #bf5af2;
             --text-main: #ffffff;
             --text-muted: #666;
             --font-ui: 'Inter', sans-serif;
@@ -33,7 +34,7 @@
 
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
 
-        /* --- HERO RING --- */
+        /* --- TACTICAL COMMAND --- */
         .hero-section { padding: 25px 16px 10px; display: flex; align-items: center; justify-content: space-between; }
         .ring-container { width: 110px; height: 110px; position: relative; display: flex; align-items: center; justify-content: center; }
         .ring-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
@@ -43,14 +44,15 @@
         .ring-val { font-family: var(--font-data); font-size: 1.8rem; font-weight: 700; color: #fff; line-height: 1; }
         .ring-label { font-size: 0.5rem; font-weight: 700; color: var(--text-muted); margin-top: 2px; }
 
-        .tactical-box { flex: 1; margin-left: 20px; background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, transparent 100%); border-left: 3px solid var(--acid); padding: 12px; border-radius: 0 12px 12px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); }
+        .tactical-box { flex: 1; margin-left: 20px; background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, transparent 100%); border-left: 3px solid var(--acid); padding: 12px; border-radius: 0 12px 12px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); transition: border-color 0.5s ease; }
         .tac-label { font-size: 0.55rem; color: var(--acid); font-weight: 900; letter-spacing: 1px; margin-bottom: 4px; text-transform: uppercase; }
         .tac-cmd { font-size: 0.85rem; font-weight: 700; color: #fff; line-height: 1.3; }
         .tac-meta { font-family: var(--font-data); font-size: 0.55rem; color: var(--text-muted); margin-top: 4px; }
 
-        /* --- TELEMETRY GRIDS --- */
-        .section-label { font-size: 0.55rem; font-weight: 900; color: var(--text-muted); letter-spacing: 1px; margin: 20px 16px 10px; text-transform: uppercase; }
+        /* --- ORBITAL GRIDS --- */
+        .section-label { font-size: 0.55rem; font-weight: 900; color: var(--text-muted); letter-spacing: 1px; margin: 20px 16px 10px; text-transform: uppercase; display: flex; justify-content: space-between; }
         .telemetry-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 10px; }
+        .macro-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 30px; }
         
         .orb-card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 10px 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
         .orb-container { width: 60px; height: 60px; position: relative; display: flex; align-items: center; justify-content: center; margin-bottom: 5px; }
@@ -63,18 +65,13 @@
         .orb-unit { font-size: 0.4rem; color: var(--text-muted); display: block; margin-top: 2px; }
         .orb-label { font-size: 0.5rem; font-weight: 700; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; }
 
-        /* MACRO GRID (3 Cols) */
-        .macro-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 30px; }
-
-        /* LIVE DOT */
+        /* LIVE DOT & PULSE */
         .live-dot { width: 5px; height: 5px; background: var(--alert); border-radius: 50%; position: absolute; top: 8px; right: 8px; box-shadow: 0 0 5px var(--alert); animation: pulse-fast 1s infinite; display: none; }
         .orb-card.live .live-dot { display: block; }
         @keyframes pulse-fast { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
 
         /* --- TIMELINE --- */
         .timeline-container { padding: 0 16px; }
-        .section-header { font-size: 0.6rem; font-weight: 900; color: var(--text-muted); letter-spacing: 1px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
-        
         .time-slot { display: flex; gap: 12px; margin-bottom: 20px; position: relative; transition: opacity 0.3s; }
         .time-slot.past { opacity: 0.4; }
         .time-slot::before { content: ''; position: absolute; left: 22px; top: 25px; bottom: -25px; width: 1px; background: var(--border); z-index: 0; }
@@ -111,19 +108,23 @@
 
     <svg style="width:0; height:0; position:absolute;" aria-hidden="true" focusable="false">
       <defs>
-        <linearGradient id="grad-ring" x1="0%" y1="0%" x2="100%" y2="0%">
+        <linearGradient id="grad-zone2" x1="0%" y1="0%" x2="100%" y2="0%">
           <stop offset="0%" style="stop-color:#00f0ff;stop-opacity:1" />
-          <stop offset="100%" style="stop-color:#ccff00;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#0080ff;stop-opacity:1" />
+        </linearGradient>
+        <linearGradient id="grad-zone5" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" style="stop-color:#ff453a;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#ff9f0a;stop-opacity:1" />
         </linearGradient>
       </defs>
     </svg>
 
     <div class="hud-header">
-        <div class="app-name">CENTURION v4300</div>
-        <div class="live-badge">OMNI-MACRO LINK</div>
+        <div class="app-name">CENTURION v4400</div>
+        <div class="live-badge">VO2-KINETIC</div>
         <div class="user-switch">
-            <button id="btn-J" class="u-btn active" onclick="defense.loadUser('J')">JER</button>
-            <button id="btn-S" class="u-btn" onclick="defense.loadUser('S')">SOPH</button>
+            <button id="btn-J" class="u-btn active" onclick="vo2.loadUser('J')">JER</button>
+            <button id="btn-S" class="u-btn" onclick="vo2.loadUser('S')">SOPH</button>
         </div>
     </div>
 
@@ -134,42 +135,45 @@
                 <circle id="activity-ring" class="ring-fg" cx="55" cy="55" r="45" style="stroke: var(--acid)"></circle>
             </svg>
             <div class="ring-data">
-                <div class="ring-val" id="score-val">--</div>
-                <div class="ring-label">SCORE</div>
+                <div class="ring-val" id="vo2-val">--</div>
+                <div class="ring-label">VO2 MAX</div>
             </div>
         </div>
 
         <div class="tactical-box" id="tactical-box">
             <div class="tac-label" id="tac-label">COMMAND:</div>
             <div class="tac-cmd" id="tac-cmd">SYSTEMS NOMINAL</div>
-            <div class="tac-meta" id="tac-reason">Monitoring post-prandial biomarkers...</div>
+            <div class="tac-meta" id="tac-reason">Scanning Zones...</div>
         </div>
     </div>
 
-    <div class="section-label">BIO-METRICS</div>
+    <div class="section-label"><span>CARDIO-METABOLIC STATUS</span><span>LIVE</span></div>
     <div class="telemetry-grid">
         <div class="orb-card live">
             <div class="live-dot"></div>
             <div class="orb-container">
-                <svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-hr" class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-ring)"></circle></svg>
+                <svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-hr" class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--cyan)"></circle></svg>
                 <div class="orb-val-box"><div id="val-hr" class="orb-val">--</div><span class="orb-unit">BPM</span></div>
             </div>
             <div class="orb-label">LIVE HR</div>
         </div>
+        
         <div class="orb-card">
             <div class="orb-container">
-                <svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-cal" class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--gold)"></circle></svg>
-                <div class="orb-val-box"><div id="val-cal" class="orb-val">--</div><span class="orb-unit">CAL</span></div>
+                <svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-z2" class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-zone2)"></circle></svg>
+                <div class="orb-val-box"><div id="val-z2" class="orb-val">--</div><span class="orb-unit">Z2 MIN</span></div>
             </div>
-            <div class="orb-label">BURN</div>
+            <div class="orb-label">BASE</div>
         </div>
+
         <div class="orb-card">
             <div class="orb-container">
-                <svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-step" class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--cyan)"></circle></svg>
-                <div class="orb-val-box"><div id="val-step" class="orb-val">--</div><span class="orb-unit">K</span></div>
+                <svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-z5" class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-zone5)"></circle></svg>
+                <div class="orb-val-box"><div id="val-z5" class="orb-val">--</div><span class="orb-unit">Z5 MIN</span></div>
             </div>
-            <div class="orb-label">STEPS</div>
+            <div class="orb-label">PEAK</div>
         </div>
+
         <div class="orb-card">
             <div class="orb-container">
                 <svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-stress" class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--acid)"></circle></svg>
@@ -209,24 +213,23 @@
             <span>CHRONO-PROTOCOL</span>
             <span id="current-time" style="color:var(--acid)">--:--</span>
         </div>
-        <div id="timeline-feed">
-            </div>
+        <div id="timeline-feed"></div>
     </div>
 
     <div class="sync-footer">
-        <div><span class="pulse"></span>OURA BIOMETRIC SCAN</div>
+        <div><span class="pulse"></span>OURA TELEMETRY</div>
         <div id="sync-time">LISTENING...</div>
     </div>
 
 <script>
 /**
- * CENTURION v4300.0 - OMNI-MACRO
- * Logic: Live Macro Tracking + Bio-Defense Integration
+ * CENTURION v4400.0 - VO2-KINETIC
+ * Logic: Dual-Zone Tracking (Base vs Peak) + VO2 Max Optimization
  */
 
 const USERS = {
-    'J': { name: "Jermaine", rhr: 48, goals: { cal: 700, steps: 10000, pro: 180, carb: 200, fat: 80 } },
-    'S': { name: "Sophia", rhr: 58, goals: { cal: 450, steps: 12000, pro: 120, carb: 150, fat: 60 } }
+    'J': { name: "Jermaine", vo2: 45, max_hr: 190, goals: { z2: 60, z5: 20, pro: 180, carb: 200, fat: 80 } },
+    'S': { name: "Sophia", vo2: 32, max_hr: 185, goals: { z2: 45, z5: 15, pro: 120, carb: 150, fat: 60 } }
 };
 
 const DB = {
@@ -235,16 +238,17 @@ const DB = {
     meals: { 
         b: { name: "Omega Scramble", mech: "DHA for Neural Repair", mac: {p:35, c:5, f:20} },
         l: { name: "Super Mince Bowl", mech: "Fiber Binds Bile Acids", mac: {p:45, c:40, f:15} },
-        l_trigger: { name: "Grilled Chicken Wrap", mech: "Quick Fuel", mac: {p:30, c:45, f:12} }, // Trigger
+        l_trigger: { name: "Grilled Chicken Wrap", mech: "Quick Fuel", mac: {p:30, c:45, f:12} },
         d: { name: "Bison & Sweet Potato", mech: "Glycogen Restore", mac: {p:50, c:50, f:18} }
     }
 };
 
-class DefenseEngine {
+class Vo2Engine {
     constructor() {
         this.user = 'J';
-        this.liveData = { hr: 60, cal: 300, steps: 4000, stress: 85, score: 88, pro: 0, carb: 0, fat: 0 };
-        this.circumference = 158; // 2 * PI * r(25)
+        // z2_time and z5_time accumulate based on live HR sim
+        this.liveData = { hr: 60, z2_time: 15, z5_time: 2, stress: 85, score: 88, pro: 0, carb: 0, fat: 0 };
+        this.circumference = 158; 
         this.init();
     }
 
@@ -260,36 +264,38 @@ class DefenseEngine {
         document.getElementById(`btn-${uid}`).classList.add('active');
         
         // Reset Visuals
-        this.liveData.pro = 0; this.liveData.carb = 0; this.liveData.fat = 0; // Reset Macros
+        this.liveData.pro = 0; this.liveData.carb = 0; this.liveData.fat = 0;
+        this.liveData.z2_time = 15; this.liveData.z5_time = 0; // Fresh start simulation
+        
         document.documentElement.style.setProperty('--acid', '#ccff00'); 
-        document.getElementById('tac-cmd').innerText = "SYSTEMS NOMINAL";
-        document.getElementById('tac-cmd').style.color = "#fff";
-        document.getElementById('tactical-box').style.borderLeftColor = "var(--acid)";
         
         this.updateHUD();
         this.renderTimeline();
     }
 
-    // 1. LIVE SIMULATION
+    // 1. LIVE SIMULATION (Zone Accumulation)
     startLiveSim() {
         setInterval(() => {
-            const baseHR = USERS[this.user].rhr + 15;
-            const flutter = Math.floor(Math.random() * 6) - 3;
+            const u = USERS[this.user];
+            // Simulate HR drifting up and down (Zone 2 to 5)
+            const baseHR = 135; // Simulating a workout
+            const flutter = Math.floor(Math.random() * 40) - 10; // 125 - 165 range
             this.liveData.hr = baseHR + flutter;
             
-            if (new Date().getSeconds() % 4 === 0) {
-                this.liveData.cal += 1;
-                this.updateHUD();
-            }
-            this.updateRing('hr', this.liveData.hr, 190);
+            // Accumulate Zone Time based on HR
+            if (this.liveData.hr > 120 && this.liveData.hr < 150) this.liveData.z2_time += 0.05; // Simulate minutes ticking
+            if (this.liveData.hr > 160) this.liveData.z5_time += 0.05;
+
+            // Live Pulse UI
+            this.updateHRRing(this.liveData.hr);
+            this.updateHUD();
         }, 1000);
     }
 
     startClock() {
         setInterval(() => {
             const now = new Date();
-            const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-            document.getElementById('current-time').innerText = timeStr;
+            document.getElementById('current-time').innerText = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
         }, 1000);
     }
 
@@ -300,26 +306,45 @@ class DefenseEngine {
         const u = USERS[this.user];
         const d = this.liveData;
         
-        this.updateRing('cal', d.cal, u.goals.cal);
-        this.updateRing('step', d.steps, u.goals.steps);
+        // Update Rings
+        this.updateRing('z2', d.z2_time, u.goals.z2);
+        this.updateRing('z5', d.z5_time, u.goals.z5);
         this.updateRing('stress', d.stress, 100);
         
-        // MACRO RINGS
+        // Macro Rings
         this.updateMacroRing('pro', d.pro, u.goals.pro);
         this.updateMacroRing('carb', d.carb, u.goals.carb);
         this.updateMacroRing('fat', d.fat, u.goals.fat);
 
+        // Values
         document.getElementById('val-hr').innerText = d.hr;
-        document.getElementById('val-cal').innerText = d.cal;
-        document.getElementById('val-step').innerText = (d.steps / 1000).toFixed(1);
+        document.getElementById('val-z2').innerText = Math.floor(d.z2_time);
+        document.getElementById('val-z5').innerText = Math.floor(d.z5_time);
         document.getElementById('val-stress').innerText = d.stress;
+        
         document.getElementById('val-pro').innerText = d.pro + "g";
         document.getElementById('val-carb').innerText = d.carb + "g";
         document.getElementById('val-fat').innerText = d.fat + "g";
         
-        document.getElementById('score-val').innerText = d.score;
-        const rOffset = 283 - (d.score / 100) * 283;
-        document.getElementById('activity-ring').style.strokeDashoffset = rOffset;
+        // Main Ring (VO2)
+        document.getElementById('vo2-val').innerText = u.vo2;
+        
+        this.runTactics(d, u);
+    }
+
+    updateHRRing(hr) {
+        const u = USERS[this.user];
+        const max = u.max_hr;
+        const pct = Math.min(hr / max, 1);
+        const offset = this.circumference - (pct * this.circumference);
+        const ring = document.getElementById('ring-hr');
+        
+        ring.style.strokeDashoffset = offset;
+        
+        // Dynamic HR Color
+        if (hr > 160) ring.style.stroke = "var(--alert)"; // Zone 5
+        else if (hr > 120) ring.style.stroke = "var(--cyan)"; // Zone 2
+        else ring.style.stroke = "#666"; // Rest
     }
 
     updateRing(id, val, max) {
@@ -334,19 +359,36 @@ class DefenseEngine {
         const el = document.getElementById(`ring-${id}`);
         el.style.strokeDashoffset = offset;
         
-        // Color Logic: Cyan (Building) -> Green (Good) -> Red (Over)
         if (pct > 1.1) el.style.stroke = "var(--alert)";
         else if (pct >= 0.9) el.style.stroke = "var(--acid)";
         else el.style.stroke = "var(--cyan)";
     }
 
-    // 3. MEAL CHECK & BIOMETRIC SCANNER
+    // 3. TACTICAL LOGIC
+    runTactics(d, u) {
+        let cmd = "", reason = "", color = "var(--acid)";
+
+        if (d.z5_time >= u.goals.z5) {
+            cmd = "CAPACITY REACHED"; reason = "VO2 Max Stimulus Achieved. Cool Down."; color = "var(--gold)";
+        } else if (d.z2_time < (u.goals.z2 * 0.5)) {
+            cmd = "BUILD AEROBIC BASE"; reason = `Target 135 BPM for ${Math.floor(u.goals.z2 - d.z2_time)} more mins.`; color = "var(--cyan)";
+        } else {
+            cmd = "PUSH INTENSITY"; reason = "Heart Rate Optimal. Maintain Output."; color = "var(--acid)";
+        }
+
+        document.getElementById('tac-cmd').innerText = cmd;
+        document.getElementById('tac-cmd').style.color = color;
+        document.getElementById('tac-reason').innerText = reason;
+        document.getElementById('tactical-box').style.borderLeftColor = color;
+        document.getElementById('tac-label').style.color = color;
+    }
+
+    // 4. TIMELINE + SCANNERS
     checkMeal(btn, mealKey, macros) {
         const card = btn.parentElement;
         const timelineID = `scan-${mealKey}`;
         if(card.classList.contains('past')) return;
         
-        // Update Macros
         this.liveData.pro += macros.p;
         this.liveData.carb += macros.c;
         this.liveData.fat += macros.f;
@@ -359,7 +401,7 @@ class DefenseEngine {
         overlay.className = 'scan-overlay';
         overlay.id = timelineID;
         overlay.style.display = 'block';
-        overlay.innerHTML = `<div class="scan-line"><span>SCANNING HR RESPONSE...</span></div>`;
+        overlay.innerHTML = `<div class="scan-line"><span>SCANNING GLUCOSE RESPONSE...</span></div>`;
         card.appendChild(overlay);
 
         const isTrigger = (this.user === 'S' && mealKey === 'l_trigger');
@@ -369,34 +411,27 @@ class DefenseEngine {
                 this.triggerAlert(timelineID, "Gluten/Dairy");
             } else {
                 overlay.innerHTML = `
-                    <div class="scan-line"><span>HR DELTA:</span><span class="scan-result" style="color:var(--acid)">+4 BPM</span></div>
-                    <div class="scan-line"><span>STRESS:</span><span class="scan-result" style="color:var(--acid)">LOW</span></div>
-                    <div style="margin-top:4px; color:#fff">TOLERATED WELL ✓</div>
+                    <div class="scan-line"><span>HR DELTA:</span><span class="scan-result" style="color:var(--acid)">STABLE</span></div>
+                    <div class="scan-line"><span>INSULIN:</span><span class="scan-result" style="color:var(--acid)">BLUNTED</span></div>
+                    <div style="margin-top:4px; color:#fff">METABOLICALLY EFFICIENT ✓</div>
                 `;
             }
-        }, 2000);
+        }, 1500);
     }
 
     triggerAlert(elID, suspectedIngredient) {
         const el = document.getElementById(elID);
         el.style.borderColor = "var(--alert)";
         el.innerHTML = `
-            <div class="scan-line"><span>HR DELTA:</span><span class="scan-result scan-fail">+18 BPM</span></div>
-            <div class="ts-badge b-alert" style="margin-top:6px; display:inline-block">INFLAMMATION DETECTED</div>
+            <div class="scan-line"><span>HR DELTA:</span><span class="scan-result scan-fail">+15 BPM</span></div>
+            <div class="ts-badge b-alert" style="margin-top:6px; display:inline-block">INFLAMMATION SPIKE</div>
             <div style="margin-top:4px; color:#fff">POSSIBLE TRIGGER: ${suspectedIngredient}</div>
         `;
-        const tacBox = document.getElementById('tactical-box');
-        tacBox.style.background = "rgba(255, 69, 58, 0.1)";
-        tacBox.style.borderLeftColor = "var(--alert)";
-        document.getElementById('tac-label').innerText = "ALERT:";
-        document.getElementById('tac-label').style.color = "var(--alert)";
         document.getElementById('tac-cmd').innerText = "SYSTEM FLUSH REQUIRED";
         document.getElementById('tac-cmd').style.color = "var(--alert)";
-        document.getElementById('tac-reason').innerText = "Digestive Stress. Drink 20oz Water.";
         document.documentElement.style.setProperty('--acid', '#ff453a');
     }
 
-    // 4. TIMELINE
     renderTimeline() {
         const container = document.getElementById('timeline-feed');
         const nowHour = new Date().getHours();
@@ -431,7 +466,7 @@ class DefenseEngine {
                         <div class="ts-title">${slot.title}</div>
                         <div class="ts-desc">${slot.desc}</div>
                         <div class="ts-mech">${slot.mech}</div>
-                        <button class="check-btn" onclick="defense.checkMeal(this, '${slot.id}', ${JSON.stringify(slot.mac)})">${btnTxt}</button>
+                        <button class="check-btn" onclick="vo2.checkMeal(this, '${slot.id}', ${JSON.stringify(slot.mac)})">${btnTxt}</button>
                     </div>
                 </div>
             `;
@@ -440,7 +475,7 @@ class DefenseEngine {
     }
 }
 
-const defense = new DefenseEngine();
+const vo2 = new Vo2Engine();
 </script>
 </body>
 </html>
