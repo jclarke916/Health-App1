@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v4600.0 ADAPTIVE CORE</title>
+    <title>The Centurion | v4600.0 OURA CONNECTED</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -26,7 +26,8 @@
         /* HEADER */
         .hud-header { padding: 20px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.9); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100; }
         .app-name { font-size: 0.6rem; font-weight: 900; letter-spacing: 2px; color: var(--text-muted); }
-        .live-badge { font-family: var(--font-data); font-size: 0.55rem; color: var(--acid); border: 1px solid var(--acid); padding: 2px 6px; border-radius: 4px; animation: blink 2s infinite; }
+        .live-badge { font-family: var(--font-data); font-size: 0.55rem; color: var(--acid); border: 1px solid var(--acid); padding: 2px 6px; border-radius: 4px; animation: blink 2s infinite; cursor: pointer; }
+        .live-badge:hover { background: var(--acid); color: #000; }
         .user-switch { display: flex; gap: 4px; background: #222; padding: 2px; border-radius: 20px; }
         .u-btn { padding: 4px 12px; border-radius: 16px; font-size: 0.6rem; font-weight: 700; color: #666; background: transparent; border: none; cursor: pointer; transition: all 0.2s; }
         .u-btn.active { background: var(--text-main); color: #000; }
@@ -105,6 +106,21 @@
         .sync-footer { position: fixed; bottom: 0; left: 0; width: 100%; background: #000; padding: 12px 16px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-family: var(--font-data); font-size: 0.6rem; color: #555; z-index: 200; }
         .pulse { animation: pulse 2s infinite; display: inline-block; width: 6px; height: 6px; background: var(--acid); border-radius: 50%; margin-right: 6px; }
         @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.2); } }
+
+        /* OURA MODAL */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; justify-content: center; align-items: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: var(--bg-panel); border: 1px solid var(--acid); border-radius: 20px; padding: 30px; max-width: 400px; width: 90%; box-shadow: 0 0 40px rgba(204,255,0,0.2); }
+        .modal-title { font-size: 0.9rem; font-weight: 900; color: var(--gold); margin-bottom: 20px; text-align: center; letter-spacing: 2px; }
+        .modal-btn { background: linear-gradient(135deg, var(--acid) 0%, #9acd32 100%); color: #000; border: none; padding: 14px; border-radius: 12px; font-weight: 800; font-size: 0.85rem; cursor: pointer; width: 100%; margin-top: 10px; transition: all 0.3s; }
+        .modal-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(204,255,0,0.4); }
+        .modal-close { background: rgba(255,255,255,0.1); color: var(--text-muted); }
+        .sync-status { font-family: var(--font-data); font-size: 0.65rem; color: var(--cyan); text-align: center; margin: 15px 0; padding: 10px; background: rgba(0,240,255,0.05); border-radius: 8px; border: 1px dashed var(--cyan); }
+        .oura-data { background: rgba(255,255,255,0.03); padding: 12px; border-radius: 10px; margin-top: 15px; font-family: var(--font-data); font-size: 0.65rem; }
+        .oura-data-row { display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .oura-data-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .oura-label { color: var(--text-muted); }
+        .oura-value { color: var(--acid); font-weight: 700; }
     </style>
 </head>
 <body>
@@ -124,7 +140,7 @@
 
     <div class="hud-header">
         <div class="app-name">CENTURION v4600</div>
-        <div class="live-badge">ADAPTIVE CORE</div>
+        <div class="live-badge" onclick="centurion.openOuraModal()">OURA SYNC</div>
         <div class="user-switch">
             <button id="btn-J" class="u-btn active" onclick="centurion.switchUser('J')">JER</button>
             <button id="btn-S" class="u-btn" onclick="centurion.switchUser('S')">SOPH</button>
@@ -138,15 +154,15 @@
                 <circle id="activity-ring" class="ring-fg" cx="55" cy="55" r="45" style="stroke: var(--acid)"></circle>
             </svg>
             <div class="ring-data">
-                <div class="ring-val" id="vo2-val">--</div>
-                <div class="ring-label">VO2 MAX</div>
+                <div class="ring-val" id="readiness-val">--</div>
+                <div class="ring-label">READINESS</div>
             </div>
         </div>
 
         <div class="tactical-box" id="tactical-box">
             <div class="tac-label" id="tac-label">DIRECTIVE:</div>
-            <div class="tac-cmd" id="tac-cmd">SYSTEMS NOMINAL</div>
-            <div class="tac-meta" id="tac-reason">Analyzing biometrics...</div>
+            <div class="tac-cmd" id="tac-cmd">AWAITING OURA SYNC</div>
+            <div class="tac-meta" id="tac-reason">Connect Oura Ring for biometric analysis</div>
         </div>
     </div>
 
@@ -176,10 +192,10 @@
         </div>
         <div class="orb-card">
             <div class="orb-container">
-                <svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-stress" class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--acid)"></circle></svg>
-                <div class="orb-val-box"><div id="val-stress" class="orb-val">--</div><span class="orb-unit">HRV</span></div>
+                <svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-hrv" class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--acid)"></circle></svg>
+                <div class="orb-val-box"><div id="val-hrv" class="orb-val">--</div><span class="orb-unit">HRV</span></div>
             </div>
-            <div class="orb-label">STRESS</div>
+            <div class="orb-label">HRV</div>
         </div>
     </div>
 
@@ -226,6 +242,17 @@
         <div id="timeline-feed"></div>
     </div>
 
+    <!-- OURA SYNC MODAL -->
+    <div id="ouraModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">💍 OURA RING SYNC</div>
+            <div id="oura-status" class="sync-status">Ready to connect...</div>
+            <div id="oura-data-display"></div>
+            <button class="modal-btn" onclick="centurion.connectOura()">CONNECT OURA</button>
+            <button class="modal-btn modal-close" onclick="centurion.closeOuraModal()">CLOSE</button>
+        </div>
+    </div>
+
     <div class="sync-footer">
         <div><span class="pulse"></span>ADAPTIVE FEED</div>
         <div id="sync-time">LEARNING...</div>
@@ -233,9 +260,19 @@
 
 <script>
 /**
- * CENTURION v4600.0 - ADAPTIVE INTELLIGENCE CORE
- * Fixed: Checkbox functionality + Added fiber tracking
+ * CENTURION v4600.0 - OURA CONNECTED
+ * Full Oura OAuth2 + API Integration
  */
+
+// OURA API CONFIGURATION
+const OURA_CONFIG = {
+    clientId: 'YOUR_CLIENT_ID', // Replace with your Oura client ID
+    clientSecret: 'YOUR_CLIENT_SECRET', // Replace with your Oura client secret
+    redirectUri: window.location.origin + window.location.pathname,
+    authUrl: 'https://cloud.ouraring.com/oauth/authorize',
+    tokenUrl: 'https://api.ouraring.com/oauth/token',
+    apiBase: 'https://api.ouraring.com/v2'
+};
 
 const USERS = {
     'J': { 
@@ -245,7 +282,8 @@ const USERS = {
         rhr: 48, 
         goals: { z2: 60, z5: 20, pro: 180, carb: 200, fat: 80, fiber: 40 },
         biomarkers: { apoB: 68, ldl: 89, hdl: 52, glucose: 91, hsCRP: 0.3 },
-        primaryFocus: "ApoB Reduction"
+        primaryFocus: "ApoB Reduction",
+        ouraToken: null
     },
     'S': { 
         name: "Sophia", 
@@ -255,11 +293,12 @@ const USERS = {
         goals: { z2: 45, z5: 15, pro: 120, carb: 150, fat: 60, fiber: 35 },
         biomarkers: { ana: 1.3, ferritin: 18, ldl: 112, hdl: 64, glucose: 86, hsCRP: 0.8 },
         primaryFocus: "ANA Suppression",
-        triggers: ["gluten", "dairy"]
+        triggers: ["gluten", "dairy"],
+        ouraToken: null
     }
 };
 
-// INTELLIGENT MEAL DATABASE with biomarker optimization + FIBER
+// MEAL DATABASE WITH FIBER FIXED
 const MEAL_DB = {
     'J': {
         juice: [
@@ -315,6 +354,10 @@ class CenturionCore {
         try {
             this.state = JSON.parse(localStorage.getItem(`c_state_${this.user}`)) || this.getDefaultState();
             this.history = JSON.parse(localStorage.getItem(`c_history_${this.user}`)) || [];
+            
+            // Load Oura tokens
+            USERS.J.ouraToken = localStorage.getItem('oura_token_J');
+            USERS.S.ouraToken = localStorage.getItem('oura_token_S');
         } catch(e) {
             this.state = this.getDefaultState();
             this.history = [];
@@ -329,8 +372,10 @@ class CenturionCore {
             hr: 60, 
             z2_time: 0, 
             z5_time: 0, 
-            stress: 85, 
-            score: 88, 
+            hrv: 0,
+            readiness: 0,
+            deepSleep: 0,
+            remSleep: 0,
             pro: 0, 
             carb: 0, 
             fat: 0,
@@ -340,16 +385,210 @@ class CenturionCore {
             drift_phase: 0,
             dailyMeals: this.generateDailyMeals(this.user || 'J'),
             inflammationScore: 0,
-            lastMealTime: null
+            lastMealTime: null,
+            lastOuraSync: null
         };
     }
 
     init() {
+        // Check for OAuth callback
+        this.handleOAuthCallback();
+        
         this.switchUser(this.user);
         this.startClock();
         this.startLiveSim();
         this.startAdaptiveLearning();
+        
+        // Auto-sync Oura if token exists
+        if (USERS[this.user].ouraToken) {
+            setTimeout(() => this.syncOuraData(), 2000);
+        }
     }
+
+    // ==========================================
+    // OURA OAUTH2 FLOW
+    // ==========================================
+    
+    handleOAuthCallback() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        
+        if (code) {
+            this.exchangeCodeForToken(code);
+            // Clean URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    }
+
+    async connectOura() {
+        const state = Math.random().toString(36).substring(7);
+        localStorage.setItem('oura_oauth_state', state);
+        localStorage.setItem('oura_oauth_user', this.user);
+        
+        const authUrl = `${OURA_CONFIG.authUrl}?` +
+            `client_id=${OURA_CONFIG.clientId}&` +
+            `redirect_uri=${encodeURIComponent(OURA_CONFIG.redirectUri)}&` +
+            `response_type=code&` +
+            `scope=daily personal email&` +
+            `state=${state}`;
+        
+        window.location.href = authUrl;
+    }
+
+    async exchangeCodeForToken(code) {
+        const statusEl = document.getElementById('oura-status');
+        statusEl.textContent = 'Exchanging authorization code...';
+        
+        try {
+            const response = await fetch(OURA_CONFIG.tokenUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: new URLSearchParams({
+                    grant_type: 'authorization_code',
+                    code: code,
+                    redirect_uri: OURA_CONFIG.redirectUri,
+                    client_id: OURA_CONFIG.clientId,
+                    client_secret: OURA_CONFIG.clientSecret
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.access_token) {
+                const oauthUser = localStorage.getItem('oura_oauth_user') || this.user;
+                USERS[oauthUser].ouraToken = data.access_token;
+                localStorage.setItem(`oura_token_${oauthUser}`, data.access_token);
+                
+                statusEl.textContent = '✅ Connected! Syncing data...';
+                statusEl.style.borderColor = 'var(--acid)';
+                statusEl.style.color = 'var(--acid)';
+                
+                await this.syncOuraData();
+            } else {
+                throw new Error('No access token received');
+            }
+        } catch (error) {
+            console.error('Oura token exchange error:', error);
+            statusEl.textContent = '❌ Connection failed. Try again.';
+            statusEl.style.borderColor = 'var(--alert)';
+            statusEl.style.color = 'var(--alert)';
+        }
+    }
+
+    async syncOuraData() {
+        const token = USERS[this.user].ouraToken;
+        if (!token) {
+            console.log('No Oura token for user:', this.user);
+            return;
+        }
+        
+        const statusEl = document.getElementById('oura-status');
+        if (statusEl) {
+            statusEl.textContent = 'Syncing biometric data...';
+        }
+        
+        try {
+            const today = new Date().toISOString().split('T')[0];
+            const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+            
+            // Fetch readiness
+            const readinessRes = await fetch(
+                `${OURA_CONFIG.apiBase}/usercollection/daily_readiness?start_date=${yesterday}&end_date=${today}`,
+                { headers: { 'Authorization': `Bearer ${token}` } }
+            );
+            const readinessData = await readinessRes.json();
+            
+            // Fetch sleep
+            const sleepRes = await fetch(
+                `${OURA_CONFIG.apiBase}/usercollection/daily_sleep?start_date=${yesterday}&end_date=${today}`,
+                { headers: { 'Authorization': `Bearer ${token}` } }
+            );
+            const sleepData = await sleepRes.json();
+            
+            // Parse latest data
+            if (readinessData.data && readinessData.data.length > 0) {
+                const latest = readinessData.data[readinessData.data.length - 1];
+                this.state.readiness = latest.score || 85;
+            }
+            
+            if (sleepData.data && sleepData.data.length > 0) {
+                const latest = sleepData.data[sleepData.data.length - 1];
+                this.state.deepSleep = Math.round((latest.contributors?.deep_sleep || 0) / 60);
+                this.state.remSleep = Math.round((latest.contributors?.rem_sleep || 0) / 60);
+                this.state.hrv = latest.contributors?.hrv_balance || 0;
+            }
+            
+            this.state.lastOuraSync = new Date().toISOString();
+            this.saveState();
+            this.updateHUD();
+            
+            // Display in modal
+            const dataDisplay = document.getElementById('oura-data-display');
+            if (dataDisplay) {
+                dataDisplay.innerHTML = `
+                    <div class="oura-data">
+                        <div class="oura-data-row">
+                            <span class="oura-label">Readiness:</span>
+                            <span class="oura-value">${this.state.readiness}</span>
+                        </div>
+                        <div class="oura-data-row">
+                            <span class="oura-label">Deep Sleep:</span>
+                            <span class="oura-value">${this.state.deepSleep} min</span>
+                        </div>
+                        <div class="oura-data-row">
+                            <span class="oura-label">REM Sleep:</span>
+                            <span class="oura-value">${this.state.remSleep} min</span>
+                        </div>
+                        <div class="oura-data-row">
+                            <span class="oura-label">HRV Balance:</span>
+                            <span class="oura-value">${this.state.hrv}</span>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            if (statusEl) {
+                statusEl.textContent = '✅ Sync complete!';
+                statusEl.style.borderColor = 'var(--acid)';
+                statusEl.style.color = 'var(--acid)';
+            }
+            
+        } catch (error) {
+            console.error('Oura sync error:', error);
+            if (statusEl) {
+                statusEl.textContent = '⚠️ Sync failed. Token may be expired.';
+                statusEl.style.borderColor = 'var(--alert)';
+            }
+        }
+    }
+
+    openOuraModal() {
+        document.getElementById('ouraModal').classList.add('active');
+        
+        const token = USERS[this.user].ouraToken;
+        const statusEl = document.getElementById('oura-status');
+        
+        if (token) {
+            statusEl.textContent = 'Connected to Oura Ring';
+            statusEl.style.borderColor = 'var(--acid)';
+            statusEl.style.color = 'var(--acid)';
+            this.syncOuraData();
+        } else {
+            statusEl.textContent = 'Ready to connect...';
+            statusEl.style.borderColor = 'var(--cyan)';
+            statusEl.style.color = 'var(--cyan)';
+        }
+    }
+
+    closeOuraModal() {
+        document.getElementById('ouraModal').classList.remove('active');
+    }
+
+    // ==========================================
+    // REST OF THE CORE FUNCTIONS
+    // ==========================================
 
     startAdaptiveLearning() {
         setInterval(() => {
@@ -375,9 +614,10 @@ class CenturionCore {
             date: today,
             macros: { pro: this.state.pro, carb: this.state.carb, fat: this.state.fat, fiber: this.state.fiber, omega3: this.state.omega3 },
             training: { z2: this.state.z2_time, z5: this.state.z5_time },
+            sleep: { deep: this.state.deepSleep, rem: this.state.remSleep },
+            readiness: this.state.readiness,
             mealsCompleted: this.state.checked.length,
-            inflammationEvents: this.state.inflammationScore,
-            score: this.state.score
+            inflammationEvents: this.state.inflammationScore
         };
         
         if (existing >= 0) {
@@ -406,8 +646,6 @@ class CenturionCore {
     }
 
     selectBestMeal(options, mealType) {
-        const u = USERS[this.user];
-        
         if (this.user === 'J') {
             options.sort((a, b) => {
                 const scoreA = (a.omega3 || 0) * 10 + (a.apoB_impact || 0) * 5;
@@ -443,11 +681,16 @@ class CenturionCore {
         document.querySelectorAll('.u-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(`btn-${uid}`).classList.add('active');
         
-        const color = this.state.score >= 80 ? '#ccff00' : '#FFD60A';
+        const color = this.state.readiness >= 80 ? '#ccff00' : this.state.readiness >= 60 ? '#FFD60A' : '#ff453a';
         document.documentElement.style.setProperty('--acid', color); 
         
         this.updateHUD();
         this.renderTimeline();
+        
+        // Auto-sync if token exists
+        if (USERS[uid].ouraToken) {
+            this.syncOuraData();
+        }
     }
 
     saveState() {
@@ -497,6 +740,7 @@ class CenturionCore {
         document.getElementById('val-hr').innerText = this.state.hr;
         document.getElementById('val-z2').innerText = Math.floor(this.state.z2_time);
         document.getElementById('val-z5').innerText = Math.floor(this.state.z5_time);
+        document.getElementById('val-hrv').innerText = this.state.hrv;
         
         const u = USERS[this.user];
         const proScore = Math.min((this.state.pro / u.goals.pro) * 100, 100);
@@ -514,21 +758,20 @@ class CenturionCore {
         
         this.updateRing('z2', s.z2_time, u.goals.z2);
         this.updateRing('z5', s.z5_time, u.goals.z5);
-        this.updateRing('stress', s.stress, 100);
+        this.updateRing('hrv', s.hrv, 100);
+        this.updateRing('activity', s.readiness, 100);
         
         this.updateMacroRing('pro', s.pro, u.goals.pro);
         this.updateMacroRing('carb', s.carb, u.goals.carb);
         this.updateMacroRing('fat', s.fat, u.goals.fat);
         this.updateMacroRing('fiber', s.fiber, u.goals.fiber);
 
-        document.getElementById('val-stress').innerText = s.stress;
+        document.getElementById('val-hrv').innerText = s.hrv;
         document.getElementById('val-pro').innerText = s.pro + "g";
         document.getElementById('val-carb').innerText = s.carb + "g";
         document.getElementById('val-fat').innerText = s.fat + "g";
         document.getElementById('val-fiber').innerText = s.fiber + "g";
-        
-        document.getElementById('vo2-val').innerText = u.vo2;
-        this.updateRing('activity', s.score, 100);
+        document.getElementById('readiness-val').innerText = s.readiness || "--";
         
         this.runTactics(s, u);
     }
@@ -576,7 +819,12 @@ class CenturionCore {
     runTactics(s, u) {
         let cmd = "", reason = "", color = "var(--acid)";
         
-        if (this.state.inflammationScore > 0) {
+        // READINESS-BASED DIRECTIVES
+        if (s.readiness > 0 && s.readiness < 60) {
+            cmd = "RECOVERY PRIORITY";
+            reason = `Readiness: ${s.readiness}. Deep: ${s.deepSleep}m, REM: ${s.remSleep}m. Rest required.`;
+            color = "var(--alert)";
+        } else if (this.state.inflammationScore > 0) {
             cmd = "INFLAMMATION DETECTED";
             reason = `Trigger response active. Omega-3 flush recommended.`;
             color = "var(--alert)";
@@ -610,13 +858,20 @@ class CenturionCore {
     }
 
     checkMeal(mealType) {
-        // CRITICAL FIX: Don't use 'this' inside event handlers - use centurion instance
         if(this.state.checked.includes(mealType)) return;
         
         const meal = this.state.dailyMeals[mealType];
-        if(!meal) return;
+        if(!meal) {
+            // Handle supplement (no meal object)
+            if (mealType === 'sup') {
+                this.state.checked.push(mealType);
+                this.saveState();
+                this.renderTimeline();
+                return;
+            }
+            return;
+        }
 
-        // UPDATE STATE
         this.state.pro += meal.p;
         this.state.carb += meal.c;
         this.state.fat += meal.f;
@@ -627,7 +882,7 @@ class CenturionCore {
         this.saveState();
         
         this.updateHUD();
-        this.renderTimeline(); // Re-render to update UI
+        this.renderTimeline();
     }
 
     triggerInflammation(mealType, triggerType, mealName) {
@@ -638,7 +893,8 @@ class CenturionCore {
         document.documentElement.style.setProperty('--acid', '#ff453a');
         
         setTimeout(() => {
-            document.documentElement.style.setProperty('--acid', '#ccff00');
+            const color = this.state.readiness >= 80 ? '#ccff00' : this.state.readiness >= 60 ? '#FFD60A' : '#ff453a';
+            document.documentElement.style.setProperty('--acid', color);
             this.runTactics(this.state, USERS[this.user]);
         }, 120000);
     }
@@ -656,7 +912,7 @@ class CenturionCore {
                 desc: "Sea Moss Gel (2 tbsp)", 
                 mech: "Thyroid iodine prime + mineral cofactors", 
                 tags: [{t:"FOUNDATION",c:"bio"}],
-                macros: {p:0, c:2, f:0, fiber:0}
+                macros: {p:0, c:2, f:0, fiber:1}
             },
             { 
                 t: 8, 
@@ -741,11 +997,10 @@ class CenturionCore {
                 </div>`;
             } else if (slot.macros) {
                 macroDisplay = `<div style="margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.05); font-size:0.6rem; color:var(--text-muted);">
-                    Minimal macros: ${slot.macros.c}g carbs
+                    Minimal macros: ${slot.macros.c}g carbs, ${slot.macros.fiber}g fiber
                 </div>`;
             }
 
-            // CRITICAL FIX: Use onclick with string that calls centurion.checkMeal
             html += `
                 <div class="time-slot ${stateClass}" id="slot-${slot.type}">
                     <div class="ts-time">${this.formatTime(slot.t)}</div>
