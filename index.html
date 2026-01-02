@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v4400.0 VO2-KINETIC</title>
+    <title>The Centurion | v4500.0 KINETIC-MACRO</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -34,7 +34,7 @@
 
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
 
-        /* --- TACTICAL COMMAND --- */
+        /* --- HERO SECTION --- */
         .hero-section { padding: 25px 16px 10px; display: flex; align-items: center; justify-content: space-between; }
         .ring-container { width: 110px; height: 110px; position: relative; display: flex; align-items: center; justify-content: center; }
         .ring-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
@@ -58,7 +58,7 @@
         .orb-container { width: 60px; height: 60px; position: relative; display: flex; align-items: center; justify-content: center; margin-bottom: 5px; }
         .orb-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
         .orb-bg { fill: none; stroke: #222; stroke-width: 5; }
-        .orb-fg { fill: none; stroke: var(--cyan); stroke-width: 5; stroke-dasharray: 158; stroke-dashoffset: 158; transition: stroke-dashoffset 1s ease; stroke-linecap: round; }
+        .orb-fg { fill: none; stroke: var(--cyan); stroke-width: 5; stroke-dasharray: 158; stroke-dashoffset: 158; transition: stroke-dashoffset 1s ease, stroke 0.5s ease; stroke-linecap: round; }
         
         .orb-val-box { position: absolute; text-align: center; }
         .orb-val { font-family: var(--font-data); font-size: 0.75rem; font-weight: 700; color: #fff; line-height: 1; }
@@ -120,11 +120,11 @@
     </svg>
 
     <div class="hud-header">
-        <div class="app-name">CENTURION v4400</div>
-        <div class="live-badge">VO2-KINETIC</div>
+        <div class="app-name">CENTURION v4500</div>
+        <div class="live-badge">MACRO-LINK</div>
         <div class="user-switch">
-            <button id="btn-J" class="u-btn active" onclick="vo2.loadUser('J')">JER</button>
-            <button id="btn-S" class="u-btn" onclick="vo2.loadUser('S')">SOPH</button>
+            <button id="btn-J" class="u-btn active" onclick="centurion.loadUser('J')">JER</button>
+            <button id="btn-S" class="u-btn" onclick="centurion.loadUser('S')">SOPH</button>
         </div>
     </div>
 
@@ -157,7 +157,6 @@
             </div>
             <div class="orb-label">LIVE HR</div>
         </div>
-        
         <div class="orb-card">
             <div class="orb-container">
                 <svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-z2" class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-zone2)"></circle></svg>
@@ -165,7 +164,6 @@
             </div>
             <div class="orb-label">BASE</div>
         </div>
-
         <div class="orb-card">
             <div class="orb-container">
                 <svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-z5" class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-zone5)"></circle></svg>
@@ -173,7 +171,6 @@
             </div>
             <div class="orb-label">PEAK</div>
         </div>
-
         <div class="orb-card">
             <div class="orb-container">
                 <svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-stress" class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--acid)"></circle></svg>
@@ -183,7 +180,7 @@
         </div>
     </div>
 
-    <div class="section-label">MACRO ADHERENCE</div>
+    <div class="section-label">MACRO ADHERENCE (DYNAMIC)</div>
     <div class="macro-grid">
         <div class="orb-card">
             <div class="orb-container">
@@ -217,14 +214,14 @@
     </div>
 
     <div class="sync-footer">
-        <div><span class="pulse"></span>OURA TELEMETRY</div>
+        <div><span class="pulse"></span>BIO-CORE LINKED</div>
         <div id="sync-time">LISTENING...</div>
     </div>
 
 <script>
 /**
- * CENTURION v4400.0 - VO2-KINETIC
- * Logic: Dual-Zone Tracking (Base vs Peak) + VO2 Max Optimization
+ * CENTURION v4500.0 - KINETIC-MACRO
+ * Logic: Macros dynamically update orbital rings. Gap logic auto-fills snacks.
  */
 
 const USERS = {
@@ -232,21 +229,32 @@ const USERS = {
     'S': { name: "Sophia", vo2: 32, max_hr: 185, goals: { z2: 45, z5: 15, pro: 120, carb: 150, fat: 60 } }
 };
 
+// FULL MEAL DATABASE WITH MACROS
 const DB = {
     supplements: { seamoss: { name: "Sea Moss Gel (2 tbsp)", mech: "Thyroid Prime", mac: {p:0, c:2, f:0} } },
-    juices: { j: { name: "Beet Vitality", mech: "Nitric Oxide", mac: {p:2, c:15, f:0} }, s: { name: "Orange Immune", mech: "Anti-Inflammatory", mac: {p:1, c:12, f:0} } },
+    juices: { 
+        j: { name: "Beet Vitality", mech: "Nitric Oxide", mac: {p:2, c:15, f:0} }, 
+        s: { name: "Orange Immune", mech: "Anti-Inflammatory", mac: {p:1, c:12, f:0} } 
+    },
     meals: { 
-        b: { name: "Omega Scramble", mech: "DHA for Neural Repair", mac: {p:35, c:5, f:20} },
+        b_j: { name: "Ancestral Sausage + Berries", mech: "Heme Iron + Polyphenols", mac: {p:40, c:15, f:22} },
+        b_s: { name: "Omega Scramble", mech: "DHA for Neural Repair", mac: {p:30, c:5, f:18} },
         l: { name: "Super Mince Bowl", mech: "Fiber Binds Bile Acids", mac: {p:45, c:40, f:15} },
         l_trigger: { name: "Grilled Chicken Wrap", mech: "Quick Fuel", mac: {p:30, c:45, f:12} },
-        d: { name: "Bison & Sweet Potato", mech: "Glycogen Restore", mac: {p:50, c:50, f:18} }
+        d: { name: "Bison & Sweet Potato", mech: "Glycogen Restore", mac: {p:50, c:50, f:18} },
+        d_repair: { name: "White Fish & Asparagus", mech: "Low Insulin / Gut Rest", mac: {p:40, c:10, f:12} }
+    },
+    snacks: {
+        pro_gap: { name: "Greek Yogurt Power Cup", mech: "Gap Closure: Protein", mac: {p:20, c:8, f:0} },
+        carb_gap: { name: "Banana + Honey", mech: "Gap Closure: Glycogen", mac: {p:1, c:30, f:0} },
+        immune: { name: "Bone Broth + Collagen", mech: "Gut Lining Repair", mac: {p:15, c:0, f:2} }
     }
 };
 
-class Vo2Engine {
+class CenturionCore {
     constructor() {
         this.user = 'J';
-        // z2_time and z5_time accumulate based on live HR sim
+        // Base state. Zone times accumulate. Macros accumulate via clicks.
         this.liveData = { hr: 60, z2_time: 15, z5_time: 2, stress: 85, score: 88, pro: 0, carb: 0, fat: 0 };
         this.circumference = 158; 
         this.init();
@@ -265,7 +273,7 @@ class Vo2Engine {
         
         // Reset Visuals
         this.liveData.pro = 0; this.liveData.carb = 0; this.liveData.fat = 0;
-        this.liveData.z2_time = 15; this.liveData.z5_time = 0; // Fresh start simulation
+        this.liveData.z2_time = 15; this.liveData.z5_time = 0; 
         
         document.documentElement.style.setProperty('--acid', '#ccff00'); 
         
@@ -273,17 +281,15 @@ class Vo2Engine {
         this.renderTimeline();
     }
 
-    // 1. LIVE SIMULATION (Zone Accumulation)
+    // 1. LIVE SIMULATION
     startLiveSim() {
         setInterval(() => {
-            const u = USERS[this.user];
-            // Simulate HR drifting up and down (Zone 2 to 5)
-            const baseHR = 135; // Simulating a workout
-            const flutter = Math.floor(Math.random() * 40) - 10; // 125 - 165 range
+            const baseHR = 135; 
+            const flutter = Math.floor(Math.random() * 40) - 10;
             this.liveData.hr = baseHR + flutter;
             
-            // Accumulate Zone Time based on HR
-            if (this.liveData.hr > 120 && this.liveData.hr < 150) this.liveData.z2_time += 0.05; // Simulate minutes ticking
+            // Accrue Zone Time
+            if (this.liveData.hr > 120 && this.liveData.hr < 150) this.liveData.z2_time += 0.05; 
             if (this.liveData.hr > 160) this.liveData.z5_time += 0.05;
 
             // Live Pulse UI
@@ -306,12 +312,12 @@ class Vo2Engine {
         const u = USERS[this.user];
         const d = this.liveData;
         
-        // Update Rings
+        // Update Zone Rings
         this.updateRing('z2', d.z2_time, u.goals.z2);
         this.updateRing('z5', d.z5_time, u.goals.z5);
         this.updateRing('stress', d.stress, 100);
         
-        // Macro Rings
+        // Update Macro Rings (Logic: Add dynamic coloring)
         this.updateMacroRing('pro', d.pro, u.goals.pro);
         this.updateMacroRing('carb', d.carb, u.goals.carb);
         this.updateMacroRing('fat', d.fat, u.goals.fat);
@@ -326,7 +332,6 @@ class Vo2Engine {
         document.getElementById('val-carb').innerText = d.carb + "g";
         document.getElementById('val-fat').innerText = d.fat + "g";
         
-        // Main Ring (VO2)
         document.getElementById('vo2-val').innerText = u.vo2;
         
         this.runTactics(d, u);
@@ -338,13 +343,10 @@ class Vo2Engine {
         const pct = Math.min(hr / max, 1);
         const offset = this.circumference - (pct * this.circumference);
         const ring = document.getElementById('ring-hr');
-        
         ring.style.strokeDashoffset = offset;
-        
-        // Dynamic HR Color
-        if (hr > 160) ring.style.stroke = "var(--alert)"; // Zone 5
-        else if (hr > 120) ring.style.stroke = "var(--cyan)"; // Zone 2
-        else ring.style.stroke = "#666"; // Rest
+        if (hr > 160) ring.style.stroke = "var(--alert)";
+        else if (hr > 120) ring.style.stroke = "var(--cyan)";
+        else ring.style.stroke = "#666";
     }
 
     updateRing(id, val, max) {
@@ -353,21 +355,21 @@ class Vo2Engine {
         document.getElementById(`ring-${id}`).style.strokeDashoffset = offset;
     }
 
+    // MACRO RING LOGIC (Cyan -> Green -> Red)
     updateMacroRing(id, val, max) {
         const pct = val / max;
         const offset = this.circumference - (Math.min(pct, 1) * this.circumference);
         const el = document.getElementById(`ring-${id}`);
         el.style.strokeDashoffset = offset;
         
-        if (pct > 1.1) el.style.stroke = "var(--alert)";
-        else if (pct >= 0.9) el.style.stroke = "var(--acid)";
-        else el.style.stroke = "var(--cyan)";
+        if (pct > 1.1) el.style.stroke = "var(--alert)"; // Over
+        else if (pct >= 0.9) el.style.stroke = "var(--acid)"; // Sweet Spot
+        else el.style.stroke = "var(--cyan)"; // Building
     }
 
     // 3. TACTICAL LOGIC
     runTactics(d, u) {
         let cmd = "", reason = "", color = "var(--acid)";
-
         if (d.z5_time >= u.goals.z5) {
             cmd = "CAPACITY REACHED"; reason = "VO2 Max Stimulus Achieved. Cool Down."; color = "var(--gold)";
         } else if (d.z2_time < (u.goals.z2 * 0.5)) {
@@ -375,7 +377,6 @@ class Vo2Engine {
         } else {
             cmd = "PUSH INTENSITY"; reason = "Heart Rate Optimal. Maintain Output."; color = "var(--acid)";
         }
-
         document.getElementById('tac-cmd').innerText = cmd;
         document.getElementById('tac-cmd').style.color = color;
         document.getElementById('tac-reason').innerText = reason;
@@ -389,14 +390,16 @@ class Vo2Engine {
         const timelineID = `scan-${mealKey}`;
         if(card.classList.contains('past')) return;
         
+        // --- ADD MACROS ---
         this.liveData.pro += macros.p;
         this.liveData.carb += macros.c;
         this.liveData.fat += macros.f;
-        this.updateHUD();
+        this.updateHUD(); // Visual Fill Animation
 
         card.classList.add('past');
         btn.innerText = "✓";
         
+        // Scan Simulation
         const overlay = document.createElement('div');
         overlay.className = 'scan-overlay';
         overlay.id = timelineID;
@@ -411,9 +414,8 @@ class Vo2Engine {
                 this.triggerAlert(timelineID, "Gluten/Dairy");
             } else {
                 overlay.innerHTML = `
-                    <div class="scan-line"><span>HR DELTA:</span><span class="scan-result" style="color:var(--acid)">STABLE</span></div>
                     <div class="scan-line"><span>INSULIN:</span><span class="scan-result" style="color:var(--acid)">BLUNTED</span></div>
-                    <div style="margin-top:4px; color:#fff">METABOLICALLY EFFICIENT ✓</div>
+                    <div class="scan-line"><span>MACROS:</span><span class="scan-result" style="color:var(--cyan)">LOGGED</span></div>
                 `;
             }
         }, 1500);
@@ -432,18 +434,24 @@ class Vo2Engine {
         document.documentElement.style.setProperty('--acid', '#ff453a');
     }
 
+    // 5. TIMELINE GENERATOR (With Gap Filling)
     renderTimeline() {
         const container = document.getElementById('timeline-feed');
         const nowHour = new Date().getHours();
         const lunchMeal = (this.user === 'S') ? DB.meals.l_trigger : DB.meals.l;
         const lunchKey = (this.user === 'S') ? 'l_trigger' : 'l';
+        
+        // GAP LOGIC: Check Gap
+        // For simulation, assuming user needs Protein boost
+        const snack = this.user === 'J' ? DB.snacks.pro_gap : DB.snacks.immune;
 
         const schedule = [
             { t: 7, title: "Hydration", desc: DB.supplements.seamoss.name, mech: DB.supplements.seamoss.mech, id:'sup', mac:DB.supplements.seamoss.mac, tags: [{t:"PRIME",c:"bio"}] },
             { t: 8, title: "Juice", desc: this.user === 'J' ? DB.juices.j.name : DB.juices.s.name, mech: "Immune Boost", id:'juice', mac:this.user==='J'?DB.juices.j.mac:DB.juices.s.mac, tags: [{t:"BIO-ACTIVE",c:"syn"}] },
-            { t: 10, title: "Breakfast", desc: DB.meals.b.name, mech: DB.meals.b.mech, id:'b', mac:DB.meals.b.mac, tags: [{t:"PROTEIN",c:"bio"}] },
+            { t: 10, title: "Breakfast", desc: this.user === 'J' ? DB.meals.b_j.name : DB.meals.b_s.name, mech: this.user === 'J' ? DB.meals.b_j.mech : DB.meals.b_s.mech, id:'b', mac:this.user==='J'?DB.meals.b_j.mac:DB.meals.b_s.mac, tags: [{t:"PROTEIN",c:"bio"}] },
             { t: 13, title: "Lunch", desc: lunchMeal.name, mech: lunchMeal.mech, id: lunchKey, mac:lunchMeal.mac, tags: [{t:"FUEL",c:"bio"}] },
-            { t: 19, title: "Dinner", desc: DB.meals.d.name, mech: DB.meals.d.mech, id:'d', mac:DB.meals.d.mac, tags: [{t:"GROWTH",c:"bio"}] }
+            { t: 16, title: "Gap Snack", desc: snack.name, mech: snack.mech, id: 'snack', mac: snack.mac, tags: [{t:"GAP CLOSE", c:"syn"}] },
+            { t: 19, title: "Dinner", desc: this.user==='J' ? DB.meals.d.name : DB.meals.d_repair.name, mech: this.user==='J'?DB.meals.d.mech:DB.meals.d_repair.mech, id:'d', mac:this.user==='J'?DB.meals.d.mac:DB.meals.d_repair.mac, tags: [{t:"RECOVERY",c:"bio"}] }
         ];
 
         let html = '';
@@ -466,7 +474,7 @@ class Vo2Engine {
                         <div class="ts-title">${slot.title}</div>
                         <div class="ts-desc">${slot.desc}</div>
                         <div class="ts-mech">${slot.mech}</div>
-                        <button class="check-btn" onclick="vo2.checkMeal(this, '${slot.id}', ${JSON.stringify(slot.mac)})">${btnTxt}</button>
+                        <button class="check-btn" onclick="centurion.checkMeal(this, '${slot.id}', ${JSON.stringify(slot.mac)})">${btnTxt}</button>
                     </div>
                 </div>
             `;
@@ -475,7 +483,7 @@ class Vo2Engine {
     }
 }
 
-const vo2 = new Vo2Engine();
+const centurion = new CenturionCore();
 </script>
 </body>
 </html>
