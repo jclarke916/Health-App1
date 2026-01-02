@@ -374,174 +374,313 @@
 <script>
 /**
  * CENTURION v4700.2 - CHRONOS-PATCH
- * Changes: Added Day History, Date Nav, Workout Card. Kept Core Logic.
  */
 
 const USERS = {
-    'J': { name: "Jermaine", vo2: 45, max_hr: 190, rhr: 48, goals: { z2: 60, z5: 20, pro: 180, carb: 200, fat: 80 } },
-    'S': { name: "Sophia", vo2: 32, max_hr: 185, rhr: 58, goals: { z2: 45, z5: 15, pro: 120, carb: 150, fat: 60 } }
+    'J': { 
+        name: "Jermaine", 
+        vo2: 52.3, 
+        max_hr: 178, 
+        rhr: 48, 
+        goals: { z2: 60, z5: 20, pro: 180, carb: 200, fat: 80, fiber: 40 },
+        biomarkers: { apoB: 68, ldl: 89, hdl: 52, glucose: 91, hsCRP: 0.3 },
+        primaryFocus: "ApoB Reduction"
+    },
+    'S': { 
+        name: "Sophia", 
+        vo2: 44.2, 
+        max_hr: 185, 
+        rhr: 58, 
+        goals: { z2: 45, z5: 15, pro: 120, carb: 150, fat: 60, fiber: 35 },
+        biomarkers: { ana: 1.3, ferritin: 18, ldl: 112, hdl: 64, glucose: 86, hsCRP: 0.8 },
+        primaryFocus: "ANA Suppression",
+        triggers: ["gluten", "dairy"]
+    }
 };
 
-const MACRO_LOOKUP = {
-    'sup': {p:0, c:2, f:0},
-    'juice_j': {p:2, c:15, f:0},
-    'juice_s': {p:1, c:12, f:0},
-    'b_j': {p:40, c:15, f:22},
-    'b_s': {p:30, c:5, f:18},
-    'l': {p:45, c:40, f:15},
-    'l_trigger': {p:30, c:45, f:12},
-    'snack_pro': {p:20, c:8, f:0},
-    'snack_imm': {p:15, c:0, f:2},
-    'd_ana': {p:50, c:50, f:18},
-    'd_rep': {p:40, c:10, f:12}
-};
-
-const WORKOUTS = {
-    'anabolic_j': { title: "Heavy Compounds", sub: "Hypertrophy A", exercises: ["Deadlifts 5x5", "Bench Press 4x8", "Pullups 3x8"] },
-    'repair_j': { title: "Zone 2 Flush", sub: "Active Recovery", exercises: ["Ruck 45m @ 35lbs", "Sauna 20m", "Cold Plunge 3m"] },
-    'anabolic_s': { title: "Glute/Core", sub: "Strength", exercises: ["Hip Thrusts 4x10", "Pallof Press 3x12", "KB Swings 4x15"] },
-    'repair_s': { title: "Yoga Flow", sub: "Parasympathetic", exercises: ["Vinyasa 45m", "Foam Roll 10m", "Breathwork 5m"] }
+const MEAL_DB = {
+    'J': {
+        juice: [
+            { name: "Beet Vitality (Beet+Carrot+Ginger)", p:3, c:28, f:0, fiber:3, omega3:0, apoB_impact: -2, reason: "Nitric oxide boost → ↓ApoB oxidation" }
+        ],
+        breakfast: [
+            { name: "Wild Salmon Bowl (Quinoa+Brussels+Flax)", p:42, c:38, f:22, fiber:14, omega3:5.5, apoB_impact: -3, reason: "5.5g omega-3 → 15-25% ApoB ↓" }
+        ],
+        lunch: [
+            { name: "Sardine Quinoa Salad (Kale+Avocado+Walnuts)", p:38, c:42, f:32, fiber:16, omega3:5.8, apoB_impact: -3, reason: "Max omega-3 loading" }
+        ],
+        snack: [
+            { name: "Greek Yogurt Power Cup (Walnuts+Berries)", p:26, c:28, f:20, fiber:11, omega3:4.2, apoB_impact: -1, reason: "Sustained omega-3" }
+        ],
+        dinner: [
+            { name: "Wild Salmon Centurion (Lentils+Kale+Walnuts)", p:52, c:38, f:28, fiber:20, omega3:6.5, apoB_impact: -4, reason: "6.5g omega-3 for overnight recovery" }
+        ]
+    },
+    'S': {
+        juice: [
+            { name: "Orange Immune (Carrot+Orange+Turmeric)", p:2, c:32, f:0, fiber:2, omega3:0, ana_impact: -2, ferritin_boost: true, reason: "Vitamin C → ↑iron absorption" }
+        ],
+        breakfast: [
+            { name: "Omega Scramble (Eggs+Salmon+Spinach+Chia)", p:38, c:15, f:26, fiber:10, omega3:4.8, ana_impact: -2, reason: "Omega-3 anti-inflammatory" }
+        ],
+        lunch: [
+            { name: "White Fish Ceviche (Avocado+Cilantro+Lime)", p:42, c:24, f:14, fiber:12, omega3:1.8, ana_impact: -1, ferritin_boost: true, reason: "Light, anti-inflammatory" }
+        ],
+        snack: [
+            { name: "Kefir Smoothie (Berries+Walnuts+Flax)", p:22, c:32, f:18, fiber:12, omega3:4.0, ana_impact: -2, reason: "Probiotic-rich for gut health" }
+        ],
+        dinner: [
+            { name: "Cod + White Beans (Kale+Lemon+Garlic)", p:46, c:38, f:14, fiber:18, omega3:1.0, ana_impact: -2, ferritin_boost: true, reason: "Folate for immune regulation" }
+        ]
+    }
 };
 
 class CenturionCore {
     constructor() {
         this.user = localStorage.getItem('v47_user') || 'J';
-        this.dayOffset = 0; // 0 = Today
+        this.viewDate = new Date();
+        this.viewDate.setHours(0, 0, 0, 0);
         this.circumference = 158; 
         
-        // Load History or Init
-        this.history = JSON.parse(localStorage.getItem(`v47_history_${this.user}`)) || {};
+        try {
+            this.state = JSON.parse(localStorage.getItem(`v47_state_${this.user}`)) || this.getDefaultState();
+            this.history = JSON.parse(localStorage.getItem(`v47_history_${this.user}`)) || [];
+        } catch(e) {
+            this.state = this.getDefaultState();
+            this.history = [];
+        }
+        
         this.init();
     }
 
-    get dateKey() {
-        const d = new Date();
-        d.setDate(d.getDate() + this.dayOffset);
-        return d.toISOString().split('T')[0];
-    }
-
     getDefaultState() {
-        return { hr: 60, z2_time: 15, z5_time: 2, stress: 85, score: 88, pro: 0, carb: 0, fat: 0, checked: [], drift_phase: 0 };
+        const uid = this.user || 'J';
+        return { 
+            hr: 60, 
+            z2_time: 0, 
+            z5_time: 0, 
+            hrv: 0,
+            readiness: 0,
+            deepSleep: 0,
+            remSleep: 0,
+            pro: 0, 
+            carb: 0, 
+            fat: 0,
+            fiber: 0,
+            omega3: 0,
+            checked: [], 
+            drift_phase: 0,
+            dailyMeals: this.generateDailyMeals(uid),
+            inflammationScore: 0,
+            lastMealTime: null
+        };
     }
 
     init() {
         this.switchUser(this.user);
         this.startClock();
         this.startLiveSim();
+        this.updateDateDisplay();
+        this.renderTimeline();
+    }
+
+    changeDay(delta) {
+        this.viewDate = new Date(this.viewDate);
+        this.viewDate.setDate(this.viewDate.getDate() + delta);
+        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (this.viewDate > today) {
+            this.viewDate = today;
+            return;
+        }
+        
+        this.updateDateDisplay();
+        this.renderTimeline();
+    }
+
+    updateDateDisplay() {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const isToday = this.viewDate.getTime() === today.getTime();
+        const dateEl = document.getElementById('date-display');
+        
+        if (isToday) {
+            dateEl.innerText = 'TODAY';
+        } else {
+            const options = { month: 'short', day: 'numeric' };
+            dateEl.innerText = this.viewDate.toLocaleDateString('en-US', options).toUpperCase();
+        }
+    }
+
+    getHistoricalState(date) {
+        const dateStr = date.toDateString();
+        const historical = this.history.find(h => h.date === dateStr);
+        
+        if (historical) {
+            return {
+                ...this.state,
+                pro: historical.macros.pro,
+                carb: historical.macros.carb,
+                fat: historical.macros.fat,
+                fiber: historical.macros.fiber,
+                omega3: historical.macros.omega3,
+                z2_time: historical.training.z2,
+                z5_time: historical.training.z5,
+                readiness: historical.readiness,
+                deepSleep: historical.sleep.deep,
+                remSleep: historical.sleep.rem,
+                checked: historical.mealsCompleted ? Array(historical.mealsCompleted).fill('checked') : [],
+                dailyMeals: this.state.dailyMeals
+            };
+        }
+        
+        return null;
+    }
+
+    getWorkoutForDay(readiness) {
+        if (readiness >= 80) {
+            return {
+                title: "HIGH INTENSITY SESSION",
+                desc: "5x4min Z5 intervals (4min recovery) + 30min Z2 cool",
+                target_z2: 45,
+                target_z5: 20,
+                reason: "Peak readiness enables maximal stimulus",
+                tags: [{t:"PEAK LOAD",c:"alert"}, {t:"VO2 MAX",c:"bio"}]
+            };
+        } else if (readiness >= 65) {
+            return {
+                title: "MODERATE THRESHOLD",
+                desc: "3x8min Z4 tempo (3min recovery) + 20min Z2",
+                target_z2: 35,
+                target_z5: 0,
+                reason: "Threshold work maintains fitness",
+                tags: [{t:"TEMPO",c:"syn"}, {t:"SUSTAINABLE",c:"bio"}]
+            };
+        } else {
+            return {
+                title: "ACTIVE RECOVERY",
+                desc: "45min Z2 aerobic base building",
+                target_z2: 45,
+                target_z5: 0,
+                reason: "Low readiness demands aerobic-only stimulus",
+                tags: [{t:"RECOVERY",c:"bio"}, {t:"ZONE 2",c:"syn"}]
+            };
+        }
+    }
+
+    generateDailyMeals(uid) {
+        const db = MEAL_DB[uid];
+        return {
+            juice: db.juice[0],
+            breakfast: db.breakfast[0],
+            lunch: db.lunch[0],
+            snack: db.snack[0],
+            dinner: db.dinner[0]
+        };
     }
 
     switchUser(uid) {
         this.user = uid;
         localStorage.setItem('v47_user', uid);
-        this.history = JSON.parse(localStorage.getItem(`v47_history_${uid}`)) || {};
         
+        try {
+            this.state = JSON.parse(localStorage.getItem(`v47_state_${uid}`)) || this.getDefaultState();
+            this.history = JSON.parse(localStorage.getItem(`v47_history_${uid}`)) || [];
+        } catch(e) {
+            this.state = this.getDefaultState();
+            this.history = [];
+        }
+
+        if (!this.state.dailyMeals || Object.keys(this.state.dailyMeals).length === 0) {
+            this.state.dailyMeals = this.generateDailyMeals(uid);
+        }
+
         document.querySelectorAll('.u-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(`btn-${uid}`).classList.add('active');
-        
-        this.loadDay();
-    }
-
-    changeDay(delta) {
-        this.dayOffset += delta;
-        this.loadDay();
-    }
-
-    loadDay() {
-        // Init day if new
-        if (!this.history[this.dateKey]) {
-            this.history[this.dateKey] = this.getDefaultState();
-        }
-        
-        this.state = this.history[this.dateKey];
-        
-        // Update UI Text
-        const label = this.dayOffset === 0 ? "TODAY" : this.dayOffset === -1 ? "YESTERDAY" : this.dateKey;
-        document.getElementById('date-display').innerText = label;
-        
-        // Live vs Archive Mode
-        const isLive = (this.dayOffset === 0);
-        document.getElementById('sync-status').innerText = isLive ? "LIVE FEED ACTIVE" : "ARCHIVE MODE";
-        document.querySelector('.orb-card.live .live-dot').style.display = isLive ? 'block' : 'none';
-
-        // Set Acid Color based on Score
-        const color = this.state.score >= 80 ? '#ccff00' : '#FFD60A';
-        document.documentElement.style.setProperty('--acid', color); 
         
         this.updateHUD();
         this.renderTimeline();
     }
 
     saveState() {
-        this.history[this.dateKey] = this.state;
-        localStorage.setItem(`v47_history_${this.user}`, JSON.stringify(this.history));
+        localStorage.setItem(`v47_state_${this.user}`, JSON.stringify(this.state));
     }
 
-    // 1. LIVE SIMULATION (Only runs if dayOffset === 0)
     startLiveSim() {
-        setInterval(() => {
-            if (this.dayOffset !== 0) return; // Stop sim for past days
+        const updateSim = () => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const isToday = this.viewDate.getTime() === today.getTime();
+            
+            if (!isToday) return;
 
             const u = USERS[this.user];
-            this.state.drift_phase = (this.state.drift_phase + 1) % 60; 
+            this.state.drift_phase = (this.state.drift_phase + 1) % 60;
             
-            let targetHR = u.rhr + 10; 
-            if (this.state.drift_phase > 40 && this.state.drift_phase < 55) targetHR = 135; 
-
+            let targetHR = u.rhr + 10;
+            if (this.state.drift_phase > 40) targetHR = 135;
+            
             const flutter = Math.floor(Math.random() * 6) - 3;
             this.state.hr = targetHR + flutter;
 
-            if (this.state.hr >= 120 && this.state.hr < 155) this.state.z2_time = (this.state.z2_time || 0) + (1/60); 
-            else if (this.state.hr >= 155) this.state.z5_time = (this.state.z5_time || 0) + (1/60);
+            if (this.state.hr >= 120 && this.state.hr < 155) {
+                this.state.z2_time += (1 / 60);
+            } else if (this.state.hr >= 155) {
+                this.state.z5_time += (1 / 60);
+            }
 
             if (new Date().getSeconds() % 5 === 0) this.saveState();
 
             this.updateHRRing(this.state.hr);
-            this.updateHUDValues(); 
-        }, 1000);
+            this.updateHUDValues();
+        };
+        
+        updateSim();
+        setInterval(updateSim, 1000);
     }
 
     startClock() {
-        setInterval(() => {
+        const updateTime = () => {
             const now = new Date();
             document.getElementById('current-time').innerText = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-        }, 1000);
+        };
+        
+        updateTime();
+        setInterval(updateTime, 1000);
     }
 
-    formatTime(h) { const ampm = h >= 12 ? 'PM' : 'AM'; const hour = h % 12 || 12; return `${hour} ${ampm}`; }
+    formatTime(h) {
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const hour = h % 12 || 12;
+        return `${hour} ${ampm}`;
+    }
 
-    // 2. HUD UPDATER
     updateHUDValues() {
-        if (this.dayOffset !== 0) return; // Static in archive
         document.getElementById('val-hr').innerText = this.state.hr;
-        document.getElementById('val-z2').innerText = Math.floor(this.state.z2_time || 0);
-        document.getElementById('val-z5').innerText = Math.floor(this.state.z5_time || 0);
+        document.getElementById('val-z2').innerText = Math.floor(this.state.z2_time);
+        document.getElementById('val-z5').innerText = Math.floor(this.state.z5_time);
+        document.getElementById('val-stress').innerText = this.state.hrv || '--';
     }
 
     updateHUD() {
         const u = USERS[this.user];
         const s = this.state;
         
-        // Static values for archive mode
-        document.getElementById('val-hr').innerText = this.dayOffset === 0 ? s.hr : "--";
-        document.getElementById('val-z2').innerText = Math.floor(s.z2_time || 0);
-        document.getElementById('val-z5').innerText = Math.floor(s.z5_time || 0);
-
         this.updateRing('z2', s.z2_time, u.goals.z2);
         this.updateRing('z5', s.z5_time, u.goals.z5);
-        this.updateRing('stress', s.stress, 100);
+        this.updateRing('stress', s.hrv, 100);
         
         this.updateMacroRing('pro', s.pro, u.goals.pro);
         this.updateMacroRing('carb', s.carb, u.goals.carb);
         this.updateMacroRing('fat', s.fat, u.goals.fat);
 
-        document.getElementById('val-stress').innerText = s.stress;
+        document.getElementById('val-stress').innerText = s.hrv || '--';
         document.getElementById('val-pro').innerText = s.pro + "g";
         document.getElementById('val-carb').innerText = s.carb + "g";
         document.getElementById('val-fat').innerText = s.fat + "g";
-        
         document.getElementById('vo2-val').innerText = u.vo2;
-        document.getElementById('score-val').innerText = s.score;
-        this.updateRing('activity', s.score, 100);
         
         this.runTactics(s, u);
     }
@@ -551,48 +690,50 @@ class CenturionCore {
         const pct = Math.min(hr / u.max_hr, 1);
         const offset = 158 - (pct * 158);
         const ring = document.getElementById('ring-hr');
-        if(ring) {
-            ring.style.strokeDashoffset = offset;
-            if (hr > 155) ring.style.stroke = "var(--alert)";
-            else if (hr > 120) ring.style.stroke = "var(--cyan)";
-            else ring.style.stroke = "#444";
-        }
+        ring.style.strokeDashoffset = offset;
+        if (hr > 155) ring.style.stroke = "var(--alert)";
+        else if (hr > 120) ring.style.stroke = "var(--cyan)";
+        else ring.style.stroke = "#444";
     }
 
     updateRing(id, val, max) {
-        const circ = id === 'activity' ? 283 : 158;
-        const pct = Math.min((val || 0) / max, 1);
+        const circ = 158;
+        const pct = Math.min(val / max, 1);
         const offset = circ - (pct * circ);
         const el = document.getElementById(`ring-${id}`);
         if(el) el.style.strokeDashoffset = offset;
     }
 
     updateMacroRing(id, val, max) {
-        const pct = (val || 0) / max;
+        const pct = val / max;
         const offset = 158 - (Math.min(pct, 1) * 158);
         const el = document.getElementById(`ring-${id}`);
-        if(el) {
-            el.style.strokeDashoffset = offset;
-            if (pct > 1.1) el.style.stroke = "var(--alert)";
-            else if (pct >= 0.9) el.style.stroke = "var(--acid)";
-            else el.style.stroke = "var(--cyan)";
-        }
+        if (!el) return;
+        
+        el.style.strokeDashoffset = offset;
+        
+        if (pct > 1.1) el.style.stroke = "var(--alert)";
+        else if (pct >= 0.9) el.style.stroke = "var(--acid)";
+        else el.style.stroke = "var(--cyan)";
     }
 
     runTactics(s, u) {
         let cmd = "", reason = "", color = "var(--acid)";
+        
         if (s.z5_time >= u.goals.z5) {
-            cmd = "PEAK REACHED"; reason = "VO2 Max Stimulus Done. Recover."; color = "var(--gold)";
-        } else if (s.z2_time < (u.goals.z2 * 0.2)) {
-            cmd = "BASE BUILDING"; reason = "Aerobic System requires volume."; color = "var(--cyan)";
+            cmd = "PEAK STIMULUS COMPLETE";
+            reason = "VO2 Max adaptation triggered. Recovery protocol initiated.";
+            color = "var(--gold)";
+        } else if (s.z2_time < (u.goals.z2 * 0.3)) {
+            cmd = "AEROBIC BASE REQUIRED";
+            reason = "Mitochondrial density insufficient. Zone 2 volume critical.";
+            color = "var(--cyan)";
         } else {
-            cmd = "MAINTAIN FLOW"; reason = "Biometrics Stable."; color = "var(--acid)";
+            cmd = "SYSTEMS NOMINAL";
+            reason = "All biomarkers tracking within optimal range.";
+            color = "var(--acid)";
         }
         
-        if (this.dayOffset !== 0) {
-            cmd = "HISTORY LOG"; reason = "Data Archived."; color = "#666";
-        }
-
         document.getElementById('tac-cmd').innerText = cmd;
         document.getElementById('tac-cmd').style.color = color;
         document.getElementById('tac-reason').innerText = reason;
@@ -600,453 +741,286 @@ class CenturionCore {
         document.getElementById('tac-label').style.color = color;
     }
 
-    // 3. MEAL CHECK
-    checkMeal(btn, mealID) {
-        const card = btn.parentElement;
-        if(card.classList.contains('past')) return;
-        if(this.state.checked.includes(mealID)) return;
+    checkMeal(mealType) {
+        if(this.state.checked.includes(mealType)) return;
         
-        const macros = MACRO_LOOKUP[mealID];
-        if(!macros) return; 
+        const meal = this.state.dailyMeals[mealType];
+        
+        if (mealType === 'sup') {
+            this.state.carb += 2;
+            this.state.fiber += 1;
+            this.state.checked.push(mealType);
+            this.saveState();
+            this.updateHUD();
+            this.renderTimeline();
+            return;
+        }
+        
+        if(!meal) return;
 
-        this.state.pro = (this.state.pro || 0) + macros.p;
-        this.state.carb = (this.state.carb || 0) + macros.c;
-        this.state.fat = (this.state.fat || 0) + macros.f;
-        this.state.checked.push(mealID);
+        this.state.pro += meal.p;
+        this.state.carb += meal.c;
+        this.state.fat += meal.f;
+        this.state.fiber += (meal.fiber || 0);
+        this.state.omega3 += (meal.omega3 || 0);
+        this.state.checked.push(mealType);
+        this.state.lastMealTime = new Date();
         this.saveState();
         
         this.updateHUD();
+        this.renderTimeline();
+    }
 
-        card.classList.add('past');
-        btn.innerText = "✓";
+    calculateDaySummary(viewState) {
+        const u = USERS[this.user];
         
-        const overlay = document.createElement('div');
-        overlay.className = 'scan-overlay';
-        overlay.style.display = 'block';
-        overlay.innerHTML = `<div class="scan-line"><span>SCANNING GLUCOSE RESPONSE...</span></div>`;
-        card.appendChild(overlay);
-
-        const isTrigger = (this.user === 'S' && mealID === 'l_trigger');
-
-        setTimeout(() => {
-            if (isTrigger) {
-                this.triggerAlert(card, "Gluten/Dairy");
-            } else {
-                overlay.innerHTML = `
-                    <div class="scan-line"><span>INSULIN:</span><span class="scan-result" style="color:var(--acid)">BLUNTED</span></div>
-                    <div class="scan-line"><span>MACROS:</span><span class="scan-result" style="color:var(--cyan)">LOGGED</span></div>
-                `;
-            }
-        }, 1200);
+        const proScore = Math.min((viewState.pro / u.goals.pro) * 100, 100);
+        const carbScore = Math.min((viewState.carb / u.goals.carb) * 100, 100);
+        const fatScore = Math.min((viewState.fat / u.goals.fat) * 100, 100);
+        const fiberScore = Math.min((viewState.fiber / u.goals.fiber) * 100, 100);
+        const macroAvg = (proScore + carbScore + fatScore + fiberScore) / 4;
+        
+        const z2Score = Math.min((viewState.z2_time / u.goals.z2) * 100, 100);
+        const z5Score = Math.min((viewState.z5_time / u.goals.z5) * 100, 100);
+        const trainingAvg = (z2Score + z5Score) / 2;
+        
+        const readinessScore = viewState.readiness || 0;
+        
+        const overallScore = Math.round(
+            (macroAvg * 0.4) + 
+            (trainingAvg * 0.35) + 
+            (readinessScore * 0.25)
+        );
+        
+        let grade = 'C';
+        let gradeClass = 'grade-c';
+        if (overallScore >= 90) { grade = 'S'; gradeClass = 'grade-s'; }
+        else if (overallScore >= 80) { grade = 'A'; gradeClass = 'grade-a'; }
+        else if (overallScore >= 70) { grade = 'B'; gradeClass = 'grade-b'; }
+        
+        const insights = [];
+        
+        if (proScore < 80) {
+            insights.push(`Protein ${Math.round(proScore)}% of target. Increase lean sources to optimize recovery.`);
+        } else if (proScore >= 95) {
+            insights.push(`Protein intake optimal at ${viewState.pro}g. Muscle protein synthesis maximized.`);
+        }
+        
+        if (viewState.omega3 >= 4) {
+            insights.push(`Omega-3 loaded at ${viewState.omega3.toFixed(1)}g. ${this.user === 'J' ? 'ApoB suppression active' : 'Anti-inflammatory state maintained'}.`);
+        }
+        
+        if (z2Score >= 100) {
+            insights.push(`Zone 2 target exceeded. Mitochondrial density stimulus achieved.`);
+        } else if (z2Score < 60) {
+            insights.push(`Zone 2 volume insufficient at ${Math.floor(viewState.z2_time)}/${u.goals.z2}min.`);
+        }
+        
+        if (insights.length === 0) {
+            insights.push(`Solid execution across all metrics. Maintain consistency for optimal results.`);
+        }
+        
+        return {
+            overallScore,
+            grade,
+            gradeClass,
+            macroAvg: Math.round(macroAvg),
+            trainingAvg: Math.round(trainingAvg),
+            readinessScore,
+            proScore: Math.round(proScore),
+            fiberScore: Math.round(fiberScore),
+            insights
+        };
     }
 
-    triggerAlert(card, ing) {
-        const overlay = card.querySelector('.scan-overlay');
-        overlay.style.borderColor = "var(--alert)";
-        overlay.innerHTML = `
-            <div class="scan-line"><span>HR DELTA:</span><span class="scan-result scan-fail">+15 BPM</span></div>
-            <div class="ts-badge b-alert" style="margin-top:6px; display:inline-block">INFLAMMATION SPIKE</div>
-            <div style="margin-top:4px; color:#fff">POSSIBLE TRIGGER: ${ing}</div>
+    getDaySummaryHTML(summary) {
+        return `
+            <div style="text-align: center; padding: 15px 0;">
+                <div style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">DAILY PERFORMANCE</div>
+                <div class="summary-score">${summary.overallScore}<span style="font-size: 1.5rem;">/100</span></div>
+                <div style="margin-top: -10px;">
+                    <span class="summary-grade ${summary.gradeClass}">${summary.grade} GRADE</span>
+                </div>
+            </div>
+
+            <div class="summary-grid">
+                <div class="summary-metric">
+                    <div class="summary-metric-label">Nutrition</div>
+                    <div class="summary-metric-value ${summary.macroAvg >= 85 ? 'good' : summary.macroAvg >= 70 ? 'warning' : 'alert'}">${summary.macroAvg}%</div>
+                    <div class="summary-bar">
+                        <div class="summary-bar-fill" style="width: ${summary.macroAvg}%; background: ${summary.macroAvg >= 85 ? 'var(--acid)' : summary.macroAvg >= 70 ? 'var(--gold)' : 'var(--alert)'};"></div>
+                    </div>
+                </div>
+                <div class="summary-metric">
+                    <div class="summary-metric-label">Training</div>
+                    <div class="summary-metric-value ${summary.trainingAvg >= 85 ? 'good' : summary.trainingAvg >= 70 ? 'warning' : 'alert'}">${summary.trainingAvg}%</div>
+                    <div class="summary-bar">
+                        <div class="summary-bar-fill" style="width: ${summary.trainingAvg}%; background: ${summary.trainingAvg >= 85 ? 'var(--cyan)' : summary.trainingAvg >= 70 ? 'var(--gold)' : 'var(--alert)'};"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="summary-insights">
+                <div style="font-size: 0.55rem; color: var(--cyan); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; font-weight: 900;">📊 KEY INSIGHTS</div>
+                ${summary.insights.map(insight => `<div class="summary-insight">${insight}</div>`).join('')}
+            </div>
         `;
-        document.getElementById('tac-cmd').innerText = "SYSTEM FLUSH REQUIRED";
-        document.getElementById('tac-cmd').style.color = "var(--alert)";
-        document.documentElement.style.setProperty('--acid', '#ff453a');
-    }
-
-    // 4. TOGGLE WORKOUT DETAILS
-    toggleWorkout(card) {
-        const details = card.querySelector('.workout-detail');
-        if (details) details.classList.toggle('active');
     }
 
     renderTimeline() {
-    const container = document.getElementById('timeline-feed');
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const isToday = this.viewDate.getTime() === today.getTime();
-    
-    const viewState = isToday ? this.state : this.getHistoricalState(this.viewDate);
-    
-    if (!viewState) {
-        container.innerHTML = '<div style="padding: 40px 20px; text-align: center; color: var(--text-muted); font-size: 0.75rem;">No data for this date</div>';
-        return;
-    }
-    
-    const nowHour = new Date().getHours();
-    const meals = viewState.dailyMeals || this.state.dailyMeals;
-    const workout = this.getWorkoutForDay(viewState.readiness);
-    
-    const schedule = [
-        { 
-            t: 7, 
-            type: 'sup',
-            title: "Hydration Protocol", 
-            desc: "Sea Moss Gel (2 tbsp)", 
-            mech: "Thyroid iodine prime + mineral cofactors", 
-            tags: [{t:"FOUNDATION",c:"bio"}],
-            macros: {p:0, c:2, f:0, fiber:1}
-        },
-        { 
-            t: 8, 
-            type: 'juice',
-            title: "Bioactive Juice", 
-            desc: meals.juice.name, 
-            mech: meals.juice.reason, 
-            tags: [{t:"BIO-ACTIVE",c:"syn"}, this.user === 'J' ? {t:"APOB↓",c:"omega"} : {t:"ANA↓",c:"omega"}],
-            meal: meals.juice
-        },
-        {
-            t: 9,
-            type: 'workout',
-            title: workout.title,
-            desc: workout.desc,
-            mech: workout.reason,
-            tags: workout.tags,
-            workoutData: {
-                target_z2: workout.target_z2,
-                target_z5: workout.target_z5,
-                actual_z2: Math.floor(viewState.z2_time),
-                actual_z5: Math.floor(viewState.z5_time)
-            }
-        },
-        { 
-            t: 10, 
-            type: 'breakfast',
-            title: "Breakfast", 
-            desc: meals.breakfast.name, 
-            mech: meals.breakfast.reason, 
-            tags: [{t:"PROTEIN",c:"bio"}, meals.breakfast.omega3 >= 4 ? {t:"Ω3 LOADED",c:"omega"} : null].filter(Boolean),
-            meal: meals.breakfast
-        },
-        { 
-            t: 13, 
-            type: 'lunch',
-            title: "Lunch", 
-            desc: meals.lunch.name + " + Kombucha", 
-            mech: meals.lunch.reason, 
-            tags: [
-                {t:"FUEL",c:"bio"}, 
-                meals.lunch.trigger ? {t:"TEST MEAL",c:"alert"} : null,
-                meals.lunch.omega3 >= 4 ? {t:"Ω3 MAX",c:"omega"} : null
-            ].filter(Boolean),
-            meal: meals.lunch
-        },
-        { 
-            t: 16, 
-            type: 'snack',
-            title: "Metabolic Gap Fill", 
-            desc: meals.snack.name, 
-            mech: meals.snack.reason, 
-            tags: [{t:"SUSTAIN",c:"syn"}],
-            meal: meals.snack
-        },
-        { 
-            t: 19, 
-            type: 'dinner',
-            title: "Dinner", 
-            desc: meals.dinner.name, 
-            mech: meals.dinner.reason, 
-            tags: [
-                {t:"RECOVERY",c:"bio"},
-                meals.dinner.omega3 >= 5 ? {t:"Ω3 PEAK",c:"omega"} : null
-            ].filter(Boolean),
-            meal: meals.dinner
-        },
-        { 
-            t: 22, 
-            type: 'summary',
-            title: "Day Summary", 
-            desc: "Performance analysis & insights", 
-            mech: "Algorithmic evaluation of daily execution", 
-            tags: [{t:"ANALYTICS",c:"syn"}, {t:"OPTIMIZATION",c:"bio"}],
-            isSummary: true
-        }
-    ];
-
-    let html = '';
-    schedule.forEach(slot => {
-        const isChecked = viewState.checked.includes(slot.type);
-        let stateClass = isChecked ? "past" : "";
-        let btnTxt = isChecked ? "✓" : "○";
+        const container = document.getElementById('timeline-feed');
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const isToday = this.viewDate.getTime() === today.getTime();
         
-        if (isToday && !isChecked && nowHour >= slot.t && nowHour < slot.t + 2) { 
-            stateClass = "active"; 
-        }
-
-        let tags = "";
-        slot.tags.forEach(tag => {
-            const cls = tag.c === 'syn' ? 'b-syn' : 
-                       tag.c === 'alert' ? 'b-alert' :
-                       tag.c === 'omega' ? 'b-omega' : 'b-bio';
-            tags += `<span class="ts-badge ${cls}">${tag.t}</span>`;
-        });
-
-        let macroDisplay = "";
+        const viewState = isToday ? this.state : this.getHistoricalState(this.viewDate);
         
-        // DAY SUMMARY DISPLAY
-        if (slot.isSummary) {
-            const summary = this.calculateDaySummary(viewState);
-            macroDisplay = this.getDaySummaryHTML(summary);
+        if (!viewState) {
+            container.innerHTML = '<div style="padding: 40px 20px; text-align: center; color: var(--text-muted); font-size: 0.75rem;">No data for this date</div>';
+            return;
         }
-        // WORKOUT DISPLAY
-        else if (slot.type === 'workout') {
-            const wd = slot.workoutData;
-            const z2_pct = wd.target_z2 > 0 ? Math.round((wd.actual_z2 / wd.target_z2) * 100) : 0;
-            const z5_pct = wd.target_z5 > 0 ? Math.round((wd.actual_z5 / wd.target_z5) * 100) : 0;
-            
-            macroDisplay = `<div style="margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.05); font-size:0.6rem;">
-                <span class="workout-stat">Z2: ${wd.actual_z2}/${wd.target_z2}min (${z2_pct}%)</span>
-                ${wd.target_z5 > 0 ? `<span class="workout-stat">Z5: ${wd.actual_z5}/${wd.target_z5}min (${z5_pct}%)</span>` : ''}
-            </div>`;
-        }
-        // MEAL DISPLAY
-        else if (slot.meal) {
-            macroDisplay = `<div style="margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.05); font-size:0.6rem; color:var(--text-muted); display:flex; gap:10px; flex-wrap: wrap;">
-                <span>P: ${slot.meal.p}g</span>
-                <span>C: ${slot.meal.c}g</span>
-                <span>F: ${slot.meal.f}g</span>
-                <span>Fiber: ${slot.meal.fiber}g</span>
-                ${slot.meal.omega3 ? `<span style="color:var(--gold)">Ω3: ${slot.meal.omega3}g</span>` : ''}
-            </div>`;
-        } else if (slot.macros) {
-            macroDisplay = `<div style="margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.05); font-size:0.6rem; color:var(--text-muted);">
-                Minimal macros: ${slot.macros.c}g carbs, ${slot.macros.fiber}g fiber
-            </div>`;
-        }
-
-        const cardClass = slot.type === 'workout' ? 'ts-card workout-card' : 
-                         slot.isSummary ? 'ts-card summary-card' : 
-                         'ts-card';
-        const checkBtn = isToday && slot.type !== 'workout' && !slot.isSummary ? `<button class="check-btn" onclick="centurion.checkMeal('${slot.type}')">${btnTxt}</button>` : '';
-
-        html += `
-            <div class="time-slot ${stateClass}" id="slot-${slot.type}">
-                <div class="ts-time">${this.formatTime(slot.t)}</div>
-                <div class="${cardClass}">
-                    <div class="badge-row">${tags}</div>
-                    <div class="ts-title">${slot.title}</div>
-                    <div class="ts-desc">${slot.desc}</div>
-                    <div class="ts-mech">${slot.mech}</div>
-                    ${macroDisplay}
-                    ${checkBtn}
-                </div>
-            </div>
-        `;
-    });
-    container.innerHTML = html;
-}
-
-    t: 22, 
-    type: 'summary',
-    title: "Day Summary", 
-    desc: "Performance analysis & insights", 
-    mech: "Algorithmic evaluation of daily execution", 
-    tags: [{t:"ANALYTICS",c:"syn"}, {t:"OPTIMIZATION",c:"bio"}],
-    isSummary: true
-}
-
-        // WORKOUT LOGIC
-        const mode = this.state.score >= 80 ? "anabolic" : "repair";
-        const wKey = `${mode}_${this.user.toLowerCase()}`;
-        const workout = WORKOUTS[wKey];
-
+        
+        const nowHour = new Date().getHours();
+        const meals = viewState.dailyMeals;
+        const workout = this.getWorkoutForDay(viewState.readiness);
+        
         const schedule = [
-            { t: 7, title: "Hydration", desc: "Sea Moss Gel (2 tbsp)", mech: "Thyroid Prime", id:'sup', tags: [{t:"PRIME",c:"bio"}] },
-            { t: 8, title: "Juice Protocol", desc: juiceName, mech: "Immune/VO2 Boost", id:juiceID, tags: [{t:"BIO-ACTIVE",c:"syn"}] },
-            { t: 10, title: "Breakfast", desc: bfastName, mech: "Protein/Fat Anchor", id:bfastID, tags: [{t:"PROTEIN",c:"bio"}] },
-            { t: 13, title: "Lunch", desc: lunchMeal + " + Kombucha", mech: "Fiber + Acetic Acid", id: lunchID, tags: [{t:"FUEL",c:"bio"}] },
-            { t: 16, title: "Metabolic Gap", desc: "Greek Yogurt Power Cup", mech: "Protein Closure", id: 'snack_pro', tags: [{t:"GAP FILL",c:"syn"}] },
-            { t: 17, title: workout.title, desc: workout.sub, mech: "Training Block", id:'workout', isWorkout:true, exercises: workout.exercises, tags: [{t:"TRAINING",c:"bio"}] },
-            { t: 19, title: "Dinner", desc: dinName, mech: "Recovery Protocol", id:dinID, tags: [{t:"GROWTH",c:"bio"}] }
+            { 
+                t: 7, 
+                type: 'sup',
+                title: "Hydration Protocol", 
+                desc: "Sea Moss Gel (2 tbsp)", 
+                mech: "Thyroid iodine prime + mineral cofactors", 
+                tags: [{t:"FOUNDATION",c:"bio"}]
+            },
+            { 
+                t: 8, 
+                type: 'juice',
+                title: "Bioactive Juice", 
+                desc: meals.juice.name, 
+                mech: meals.juice.reason, 
+                tags: [{t:"BIO-ACTIVE",c:"syn"}],
+                meal: meals.juice
+            },
+            {
+                t: 9,
+                type: 'workout',
+                title: workout.title,
+                desc: workout.desc,
+                mech: workout.reason,
+                tags: workout.tags,
+                isWorkout: true,
+                workoutData: {
+                    target_z2: workout.target_z2,
+                    target_z5: workout.target_z5,
+                    actual_z2: Math.floor(viewState.z2_time),
+                    actual_z5: Math.floor(viewState.z5_time)
+                }
+            },
+            { 
+                t: 10, 
+                type: 'breakfast',
+                title: "Breakfast", 
+                desc: meals.breakfast.name, 
+                mech: meals.breakfast.reason, 
+                tags: [{t:"PROTEIN",c:"bio"}],
+                meal: meals.breakfast
+            },
+            { 
+                t: 13, 
+                type: 'lunch',
+                title: "Lunch", 
+                desc: meals.lunch.name + " + Kombucha", 
+                mech: meals.lunch.reason, 
+                tags: [{t:"FUEL",c:"bio"}],
+                meal: meals.lunch
+            },
+            { 
+                t: 16, 
+                type: 'snack',
+                title: "Metabolic Gap Fill", 
+                desc: meals.snack.name, 
+                mech: meals.snack.reason, 
+                tags: [{t:"SUSTAIN",c:"syn"}],
+                meal: meals.snack
+            },
+            { 
+                t: 19, 
+                type: 'dinner',
+                title: "Dinner", 
+                desc: meals.dinner.name, 
+                mech: meals.dinner.reason, 
+                tags: [{t:"RECOVERY",c:"bio"}],
+                meal: meals.dinner
+            },
+            { 
+                t: 22, 
+                type: 'summary',
+                title: "Day Summary", 
+                desc: "Performance analysis & insights", 
+                mech: "Algorithmic evaluation of daily execution", 
+                tags: [{t:"ANALYTICS",c:"syn"}],
+                isSummary: true
+            }
         ];
 
         let html = '';
         schedule.forEach(slot => {
-            const isChecked = this.state.checked.includes(slot.id);
+            const isChecked = viewState.checked.includes(slot.type);
             let stateClass = isChecked ? "past" : "";
             let btnTxt = isChecked ? "✓" : "○";
             
-            // Auto-highlight current
-            if (!isChecked && this.dayOffset === 0 && nowHour >= slot.t && nowHour < slot.t + 2) stateClass = "active";
+            if (isToday && !isChecked && nowHour >= slot.t && nowHour < slot.t + 2) { 
+                stateClass = "active"; 
+            }
 
             let tags = "";
             slot.tags.forEach(tag => {
-                const cls = tag.c === 'syn' ? 'b-syn' : 'b-bio';
+                const cls = tag.c === 'syn' ? 'b-syn' : tag.c === 'alert' ? 'b-alert' : 'b-bio';
                 tags += `<span class="ts-badge ${cls}">${tag.t}</span>`;
             });
-calculateDaySummary(viewState) {
-    const u = USERS[this.user];
-    
-    // Macro scores
-    const proScore = Math.min((viewState.pro / u.goals.pro) * 100, 100);
-    const carbScore = Math.min((viewState.carb / u.goals.carb) * 100, 100);
-    const fatScore = Math.min((viewState.fat / u.goals.fat) * 100, 100);
-    const fiberScore = Math.min((viewState.fiber / u.goals.fiber) * 100, 100);
-    const macroAvg = (proScore + carbScore + fatScore + fiberScore) / 4;
-    
-    // Training scores
-    const z2Score = Math.min((viewState.z2_time / u.goals.z2) * 100, 100);
-    const z5Score = Math.min((viewState.z5_time / u.goals.z5) * 100, 100);
-    const trainingAvg = (z2Score + z5Score) / 2;
-    
-    // Readiness score (already 0-100)
-    const readinessScore = viewState.readiness;
-    
-    // Overall performance score (weighted average)
-    const overallScore = Math.round(
-        (macroAvg * 0.4) + 
-        (trainingAvg * 0.35) + 
-        (readinessScore * 0.25)
-    );
-    
-    // Grade
-    let grade = 'C';
-    let gradeClass = 'grade-c';
-    if (overallScore >= 90) { grade = 'S'; gradeClass = 'grade-s'; }
-    else if (overallScore >= 80) { grade = 'A'; gradeClass = 'grade-a'; }
-    else if (overallScore >= 70) { grade = 'B'; gradeClass = 'grade-b'; }
-    
-    // Generate insights
-    const insights = [];
-    
-    // Macro insights
-    if (proScore < 80) {
-        insights.push(`Protein ${Math.round(proScore)}% of target. Increase lean sources to optimize recovery.`);
-    } else if (proScore >= 95) {
-        insights.push(`Protein intake optimal at ${viewState.pro}g. Muscle protein synthesis maximized.`);
-    }
-    
-    if (viewState.omega3 >= 4) {
-        insights.push(`Omega-3 loaded at ${viewState.omega3.toFixed(1)}g. ${this.user === 'J' ? 'ApoB suppression active' : 'Anti-inflammatory state maintained'}.`);
-    } else if (viewState.omega3 < 2) {
-        insights.push(`Omega-3 suboptimal. Increase fatty fish intake for cardiovascular benefits.`);
-    }
-    
-    // Training insights
-    if (z2Score >= 100) {
-        insights.push(`Zone 2 target exceeded. Mitochondrial density stimulus achieved.`);
-    } else if (z2Score < 60) {
-        insights.push(`Zone 2 volume insufficient at ${Math.floor(viewState.z2_time)}/${u.goals.z2}min. Aerobic base compromised.`);
-    }
-    
-    if (z5Score >= 100) {
-        insights.push(`VO2 Max stimulus complete. Peak cardiovascular adaptation triggered.`);
-    }
-    
-    // Recovery insights
-    if (readinessScore < 60) {
-        insights.push(`Low readiness score. Prioritize sleep quality and reduce training intensity.`);
-    } else if (readinessScore >= 85) {
-        insights.push(`Readiness optimal. Body prepared for high-intensity stimulus.`);
-    }
-    
-    // User-specific insights
-    if (this.user === 'J' && viewState.omega3 >= 5 && proScore >= 90) {
-        insights.push(`ApoB reduction protocol fully engaged. Expect 15-25% biomarker improvement.`);
-    }
-    
-    if (this.user === 'S' && viewState.inflammationScore > 0) {
-        insights.push(`Trigger event detected. Monitor ANA response over next 48-72 hours.`);
-    }
-    
-    // If no insights, add default
-    if (insights.length === 0) {
-        insights.push(`Solid execution across all metrics. Maintain consistency for optimal results.`);
-    }
-    
-    return {
-        overallScore,
-        grade,
-        gradeClass,
-        macroAvg: Math.round(macroAvg),
-        trainingAvg: Math.round(trainingAvg),
-        readinessScore,
-        proScore: Math.round(proScore),
-        carbScore: Math.round(carbScore),
-        fatScore: Math.round(fatScore),
-        fiberScore: Math.round(fiberScore),
-        z2Score: Math.round(z2Score),
-        z5Score: Math.round(z5Score),
-        insights,
-        totalMacros: viewState.pro + viewState.carb + viewState.fat,
-        totalTraining: Math.floor(viewState.z2_time + viewState.z5_time)
-    };
-}
 
-getDaySummaryHTML(summary) {
-    return `
-        <div style="text-align: center; padding: 15px 0;">
-            <div style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">DAILY PERFORMANCE</div>
-            <div class="summary-score">${summary.overallScore}<span style="font-size: 1.5rem;">/100</span></div>
-            <div style="margin-top: -10px;">
-                <span class="summary-grade ${summary.gradeClass}">${summary.grade} GRADE</span>
-            </div>
-        </div>
-
-        <div class="summary-grid">
-            <div class="summary-metric">
-                <div class="summary-metric-label">Nutrition</div>
-                <div class="summary-metric-value ${summary.macroAvg >= 85 ? 'good' : summary.macroAvg >= 70 ? 'warning' : 'alert'}">${summary.macroAvg}%</div>
-                <div class="summary-bar">
-                    <div class="summary-bar-fill" style="width: ${summary.macroAvg}%; background: ${summary.macroAvg >= 85 ? 'var(--acid)' : summary.macroAvg >= 70 ? 'var(--gold)' : 'var(--alert)'};"></div>
-                </div>
-            </div>
-            <div class="summary-metric">
-                <div class="summary-metric-label">Training</div>
-                <div class="summary-metric-value ${summary.trainingAvg >= 85 ? 'good' : summary.trainingAvg >= 70 ? 'warning' : 'alert'}">${summary.trainingAvg}%</div>
-                <div class="summary-bar">
-                    <div class="summary-bar-fill" style="width: ${summary.trainingAvg}%; background: ${summary.trainingAvg >= 85 ? 'var(--cyan)' : summary.trainingAvg >= 70 ? 'var(--gold)' : 'var(--alert)'};"></div>
-                </div>
-            </div>
-            <div class="summary-metric">
-                <div class="summary-metric-label">Protein</div>
-                <div class="summary-metric-value ${summary.proScore >= 90 ? 'good' : summary.proScore >= 75 ? 'warning' : 'alert'}">${summary.proScore}%</div>
-                <div class="summary-bar">
-                    <div class="summary-bar-fill" style="width: ${summary.proScore}%; background: var(--cyan);"></div>
-                </div>
-            </div>
-            <div class="summary-metric">
-                <div class="summary-metric-label">Fiber</div>
-                <div class="summary-metric-value ${summary.fiberScore >= 90 ? 'good' : summary.fiberScore >= 75 ? 'warning' : 'alert'}">${summary.fiberScore}%</div>
-                <div class="summary-bar">
-                    <div class="summary-bar-fill" style="width: ${summary.fiberScore}%; background: var(--cyan);"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="summary-insights">
-            <div style="font-size: 0.55rem; color: var(--cyan); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; font-weight: 900;">📊 KEY INSIGHTS</div>
-            ${summary.insights.map(insight => `<div class="summary-insight">${insight}</div>`).join('')}
-        </div>
-    `;
-}
-
-            // Workout HTML injection
-            let extraHTML = "";
-            let clickAction = `centurion.checkMeal(this, '${slot.id}')`;
-            let cardAction = "";
-
-            if (slot.isWorkout) {
-                cardAction = `onclick="centurion.toggleWorkout(this)"`;
-                clickAction = `event.stopPropagation(); centurion.checkMeal(this, '${slot.id}')`; // Stop expansion when checking
-                
-                extraHTML = `<div class="workout-detail">`;
-                slot.exercises.forEach(ex => {
-                    extraHTML += `<div class="w-row"><span class="w-name">${ex}</span></div>`;
-                });
-                extraHTML += `</div>`;
+            let macroDisplay = "";
+            
+            if (slot.isSummary) {
+                const summary = this.calculateDaySummary(viewState);
+                macroDisplay = this.getDaySummaryHTML(summary);
             }
+            else if (slot.isWorkout) {
+                const wd = slot.workoutData;
+                const z2_pct = wd.target_z2 > 0 ? Math.round((wd.actual_z2 / wd.target_z2) * 100) : 0;
+                const z5_pct = wd.target_z5 > 0 ? Math.round((wd.actual_z5 / wd.target_z5) * 100) : 0;
+                
+                macroDisplay = `<div style="margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.05); font-size:0.6rem;">
+                    <div style="display:inline-block; padding:4px 8px; background:rgba(0,240,255,0.1); border-radius:6px; color:var(--cyan); margin-right:8px;">Z2: ${wd.actual_z2}/${wd.target_z2}min (${z2_pct}%)</div>
+                    ${wd.target_z5 > 0 ? `<div style="display:inline-block; padding:4px 8px; background:rgba(255,69,58,0.1); border-radius:6px; color:var(--alert);">Z5: ${wd.actual_z5}/${wd.target_z5}min (${z5_pct}%)</div>` : ''}
+                </div>`;
+            }
+            else if (slot.meal) {
+                macroDisplay = `<div style="margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.05); font-size:0.6rem; color:var(--text-muted); display:flex; gap:10px; flex-wrap: wrap;">
+                    <span>P: ${slot.meal.p}g</span>
+                    <span>C: ${slot.meal.c}g</span>
+                    <span>F: ${slot.meal.f}g</span>
+                    <span>Fiber: ${slot.meal.fiber}g</span>
+                    ${slot.meal.omega3 ? `<span style="color:var(--gold)">Ω3: ${slot.meal.omega3}g</span>` : ''}
+                </div>`;
+            }
+
+            const cardClass = slot.isWorkout ? 'ts-card' : 
+                             slot.isSummary ? 'ts-card summary-card' : 
+                             'ts-card';
+            const checkBtn = isToday && !slot.isWorkout && !slot.isSummary ? `<button class="check-btn" onclick="centurion.checkMeal('${slot.type}')">${btnTxt}</button>` : '';
 
             html += `
                 <div class="time-slot ${stateClass}">
                     <div class="ts-time">${this.formatTime(slot.t)}</div>
-                    <div class="ts-card" ${cardAction}>
+                    <div class="${cardClass}">
                         <div class="badge-row">${tags}</div>
                         <div class="ts-title">${slot.title}</div>
                         <div class="ts-desc">${slot.desc}</div>
-                        <div class="ts-mech">🔬 ${slot.mech}</div>
-                        ${extraHTML}
-                        <button class="check-btn" onclick="${clickAction}">${btnTxt}</button>
+                        <div class="ts-mech">${slot.mech}</div>
+                        ${macroDisplay}
+                        ${checkBtn}
                     </div>
                 </div>
             `;
