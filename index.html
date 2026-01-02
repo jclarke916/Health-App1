@@ -3,83 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v3200.0 Chrono-Engine</title>
+    <title>The Centurion | v3300.0 Bio-Synergy</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-deep: #050505;
-            --bg-panel: rgba(20, 20, 20, 0.85);
-            --border: rgba(255, 255, 255, 0.1);
+            --bg-deep: #000000;
+            --bg-panel: #111111;
+            --border: #222222;
             --gold: #FFD60A;
             --acid: #ccff00;
             --cyan: #00f0ff;
-            --alert: #ff3b30;
+            --purple: #bf5af2;
+            --alert: #ff453a;
             --text-main: #ffffff;
-            --text-muted: #888888;
+            --text-muted: #666666;
             --font-ui: 'Inter', sans-serif;
             --font-data: 'JetBrains Mono', monospace;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; padding: 0 0 80px 0; background: var(--bg-deep); color: var(--text-main); font-family: var(--font-ui); min-height: 100vh; background-image: radial-gradient(circle at top, #1a1a1a 0%, #000 70%); }
+        body { margin: 0; padding: 0 0 80px 0; background: var(--bg-deep); color: var(--text-main); font-family: var(--font-ui); min-height: 100vh; background-image: radial-gradient(circle at top right, #1a1a1a 0%, #000 60%); }
 
-        /* --- HEADER & CALENDAR --- */
-        .hud-header { padding: 20px 16px 10px; background: rgba(10,10,10,0.9); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); }
-        .top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .app-name { font-size: 0.65rem; font-weight: 900; letter-spacing: 2px; color: var(--text-muted); }
+        /* --- HEADER & NAV --- */
+        .hud-header { padding: 20px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100; }
+        .app-name { font-size: 0.6rem; font-weight: 900; letter-spacing: 2px; color: var(--text-muted); }
+        .date-nav { display: flex; align-items: center; gap: 15px; font-family: var(--font-data); font-size: 0.8rem; font-weight: 700; }
+        .nav-arrow { color: var(--gold); cursor: pointer; padding: 5px; font-size: 1rem; user-select: none; }
         .user-switch { display: flex; gap: 4px; background: #222; padding: 2px; border-radius: 20px; }
         .u-btn { padding: 4px 12px; border-radius: 16px; font-size: 0.6rem; font-weight: 700; color: #666; background: transparent; border: none; cursor: pointer; }
-        .u-btn.active { background: var(--gold); color: #000; }
+        .u-btn.active { background: var(--text-main); color: #000; }
 
-        .calendar-strip { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; }
-        .day-node { min-width: 45px; height: 60px; background: rgba(255,255,255,0.03); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid var(--border); cursor: pointer; transition: all 0.2s; }
-        .day-node.active { background: var(--gold); border-color: var(--gold); color: #000; transform: scale(1.05); }
-        .day-name { font-size: 0.55rem; font-weight: 700; margin-bottom: 2px; text-transform: uppercase; }
-        .day-num { font-family: var(--font-data); font-size: 1rem; font-weight: 700; }
-        .day-score { font-size: 0.5rem; font-weight: 700; margin-top: 2px; color: var(--acid); }
-        .day-node.active .day-score { color: #000; }
-
-        /* --- MAIN DASHBOARD --- */
-        .container { padding: 20px 16px; }
-
-        /* STATUS MODULE */
-        .status-hero { text-align: center; margin-bottom: 25px; padding: 20px; background: var(--bg-panel); border-radius: 20px; border: 1px solid var(--border); position: relative; overflow: hidden; }
-        .status-hero::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--acid); }
+        /* --- HERO RING (The "Cockpit") --- */
+        .hero-section { padding: 30px 16px 20px; text-align: center; position: relative; }
         
-        .hero-label { font-size: 0.6rem; color: var(--acid); letter-spacing: 2px; font-weight: 800; margin-bottom: 5px; }
-        .hero-val { font-family: var(--font-data); font-size: 2.5rem; font-weight: 700; line-height: 1; margin-bottom: 5px; text-shadow: 0 0 20px rgba(204, 255, 0, 0.2); }
-        .hero-sub { font-size: 0.75rem; color: var(--text-muted); }
+        .progress-ring-container { width: 160px; height: 160px; margin: 0 auto; position: relative; display: flex; align-items: center; justify-content: center; }
+        /* CSS Conic Gradient for the Ring */
+        .ring-bg { position: absolute; width: 100%; height: 100%; border-radius: 50%; background: conic-gradient(var(--border) 0% 100%); z-index: 1; }
+        .ring-fill { position: absolute; width: 100%; height: 100%; border-radius: 50%; background: conic-gradient(var(--acid) 0% var(--p), transparent var(--p)); z-index: 2; transition: all 1s ease-out; transform: rotate(0deg); }
+        .ring-mask { position: absolute; width: 88%; height: 88%; border-radius: 50%; background: var(--bg-deep); z-index: 3; }
+        
+        .ring-content { position: relative; z-index: 4; display: flex; flex-direction: column; align-items: center; }
+        .ring-val { font-family: var(--font-data); font-size: 3rem; font-weight: 700; letter-spacing: -2px; line-height: 1; color: var(--text-main); text-shadow: 0 0 20px rgba(255,255,255,0.2); }
+        .ring-label { font-size: 0.6rem; font-weight: 700; color: var(--text-muted); letter-spacing: 2px; margin-top: 5px; }
+        
+        .system-mode { margin-top: 15px; font-family: var(--font-data); font-size: 0.7rem; color: var(--acid); letter-spacing: 1px; border: 1px solid var(--acid); display: inline-block; padding: 6px 12px; border-radius: 20px; background: rgba(204, 255, 0, 0.05); }
 
-        /* METRIC GRID */
-        .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; margin-bottom: 20px; }
-        .stat-box { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 10px; text-align: center; }
+        /* --- DATA GRID --- */
+        .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 30px; }
+        .stat-box { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 12px 5px; text-align: center; }
         .sb-label { display: block; font-size: 0.5rem; color: var(--text-muted); margin-bottom: 4px; letter-spacing: 0.5px; }
         .sb-val { font-family: var(--font-data); font-size: 0.9rem; font-weight: 700; color: #fff; }
-        .trend-up { color: var(--acid); } .trend-down { color: var(--alert); }
+        .c-acid { color: var(--acid); } .c-gold { color: var(--gold); } .c-cyan { color: var(--cyan); }
 
-        /* TIMELINE (The "Perfect Day") */
-        .timeline-section { margin-top: 30px; }
-        .section-header { font-size: 0.7rem; font-weight: 900; color: var(--text-muted); letter-spacing: 1px; margin-bottom: 15px; display: flex; justify-content: space-between; }
+        /* --- TIMELINE (Protocol) --- */
+        .timeline-container { padding: 0 16px; }
+        .section-header { font-size: 0.6rem; font-weight: 900; color: var(--text-muted); letter-spacing: 1px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
         
-        .time-slot { display: flex; gap: 15px; margin-bottom: 20px; position: relative; }
-        .time-slot::after { content: ''; position: absolute; left: 24px; top: 25px; bottom: -25px; width: 1px; background: var(--border); z-index: 0; }
-        .time-slot:last-child::after { display: none; }
-        
-        .ts-time { width: 50px; font-family: var(--font-data); font-size: 0.7rem; color: var(--text-muted); text-align: right; padding-top: 4px; z-index: 1; }
-        .ts-card { flex: 1; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 15px; position: relative; z-index: 1; }
-        
-        .ts-tag { position: absolute; top: -8px; right: 10px; background: #000; border: 1px solid var(--border); color: var(--gold); font-size: 0.55rem; padding: 2px 8px; border-radius: 10px; font-weight: 700; letter-spacing: 1px; }
-        .ts-title { font-size: 0.85rem; font-weight: 700; color: #fff; margin-bottom: 5px; }
-        .ts-desc { font-size: 0.75rem; color: #aaa; line-height: 1.4; margin-bottom: 8px; }
-        .ts-meta { display: flex; gap: 10px; font-family: var(--font-data); font-size: 0.6rem; color: var(--text-muted); border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px; }
-        
-        /* CONFIRM BUTTON */
-        .check-btn { position: absolute; bottom: 10px; right: 10px; width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--border); background: rgba(255,255,255,0.05); color: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
-        .check-btn.checked { background: var(--acid); color: #000; border-color: var(--acid); box-shadow: 0 0 10px rgba(204, 255, 0, 0.4); }
+        .time-slot { display: flex; gap: 15px; margin-bottom: 25px; position: relative; }
+        /* Vertical Line */
+        .time-slot::before { content: ''; position: absolute; left: 24px; top: 30px; bottom: -30px; width: 2px; background: var(--border); z-index: 0; }
+        .time-slot:last-child::before { display: none; }
 
-        /* SYNC FOOTER */
-        .sync-footer { position: fixed; bottom: 0; left: 0; width: 100%; background: #000; padding: 12px 20px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-family: var(--font-data); font-size: 0.6rem; color: #555; z-index: 200; }
-        .pulse { animation: pulse 2s infinite; display: inline-block; width: 6px; height: 6px; background: var(--acid); border-radius: 50%; margin-right: 5px; }
+        .ts-time { width: 50px; font-family: var(--font-data); font-size: 0.75rem; color: var(--text-muted); text-align: right; padding-top: 5px; z-index: 1; }
+        
+        .ts-card { flex: 1; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 16px; padding: 18px; position: relative; z-index: 1; overflow: hidden; transition: transform 0.2s; }
+        .ts-card:active { transform: scale(0.98); }
+        
+        /* SYNERGY GLOW */
+        .ts-card.synergy-active { border-left: 3px solid var(--cyan); background: linear-gradient(90deg, rgba(0, 240, 255, 0.05) 0%, #111 100%); }
+        
+        .tag-row { display: flex; gap: 6px; margin-bottom: 8px; }
+        .ts-tag { font-size: 0.55rem; padding: 3px 8px; border-radius: 4px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; }
+        .tag-bio { background: var(--acid); color: #000; }
+        .tag-syn { background: var(--cyan); color: #000; box-shadow: 0 0 10px rgba(0, 240, 255, 0.3); }
+        
+        .ts-title { font-size: 0.9rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
+        .ts-detail { font-size: 0.8rem; color: #aaa; line-height: 1.4; margin-bottom: 10px; }
+        .ts-mech { font-family: var(--font-data); font-size: 0.6rem; color: var(--text-muted); padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); }
+        
+        .check-circle { position: absolute; top: 15px; right: 15px; width: 24px; height: 24px; border: 2px solid var(--border); border-radius: 50%; }
+        .ts-card.done .check-circle { background: var(--acid); border-color: var(--acid); }
+        .ts-card.done { opacity: 0.5; }
+
+        /* SYNC BAR */
+        .sync-footer { position: fixed; bottom: 0; left: 0; width: 100%; background: #000; padding: 15px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-family: var(--font-data); font-size: 0.6rem; color: #555; z-index: 200; }
+        .pulse { animation: pulse 2s infinite; display: inline-block; width: 6px; height: 6px; background: var(--acid); border-radius: 50%; margin-right: 6px; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
 
     </style>
@@ -87,288 +95,207 @@
 <body>
 
     <div class="hud-header">
-        <div class="top-row">
-            <div class="app-name">CENTURION v3200</div>
-            <div class="user-switch">
-                <button id="btn-J" class="u-btn active" onclick="engine.loadUser('J')">JERMAINE</button>
-                <button id="btn-S" class="u-btn" onclick="engine.loadUser('S')">SOPHIA</button>
-            </div>
+        <div class="app-name">CENTURION v3300</div>
+        <div class="date-nav">
+            <span class="nav-arrow" onclick="engine.changeDay(-1)">◀</span>
+            <span id="display-date">TODAY</span>
+            <span class="nav-arrow" onclick="engine.changeDay(1)">▶</span>
         </div>
-        <div class="calendar-strip" id="calendar-strip">
-            </div>
+        <div class="user-switch">
+            <button id="btn-J" class="u-btn active" onclick="engine.loadUser('J')">JER</button>
+            <button id="btn-S" class="u-btn" onclick="engine.loadUser('S')">SOPH</button>
+        </div>
     </div>
 
-    <div class="container">
-        <div class="status-hero">
-            <div class="hero-label">BIO-ALGORITHM OUTPUT</div>
-            <div class="hero-val" id="day-focus">--</div>
-            <div class="hero-sub" id="day-logic">Calculating Visceral/Muscle Matrix...</div>
+    <div class="hero-section">
+        <div class="progress-ring-container">
+            <div class="ring-bg"></div>
+            <div class="ring-fill" id="ring-fill"></div>
+            <div class="ring-mask"></div>
+            <div class="ring-content">
+                <div class="ring-val" id="score-display">--</div>
+                <div class="ring-label">BIO-READINESS</div>
+            </div>
         </div>
+        <div id="system-mode" class="system-mode">CALCULATING...</div>
+    </div>
 
-        <div class="grid-4">
-            <div class="stat-box">
-                <span class="sb-label">OURA SCORE</span>
-                <span id="score-val" class="sb-val c-good">--</span>
-            </div>
-            <div class="stat-box">
-                <span class="sb-label">VISCERAL FAT</span>
-                <span id="vf-val" class="sb-val trend-down">--</span>
-            </div>
-            <div class="stat-box">
-                <span class="sb-label">CAL DEFICIT</span>
-                <span id="cal-val" class="sb-val">--</span>
-            </div>
-            <div class="stat-box">
-                <span class="sb-label">PROTEIN</span>
-                <span id="pro-val" class="sb-val trend-up">--</span>
-            </div>
+    <div class="grid-4">
+        <div class="stat-box">
+            <span class="sb-label">HRV BALANCE</span>
+            <span id="hrv-val" class="sb-val c-acid">--</span>
         </div>
+        <div class="stat-box">
+            <span class="sb-label">DEEP SLEEP</span>
+            <span id="sleep-val" class="sb-val">--</span>
+        </div>
+        <div class="stat-box">
+            <span class="sb-label">VISCERAL FAT</span>
+            <span id="vf-val" class="sb-val c-gold">--</span>
+        </div>
+        <div class="stat-box">
+            <span class="sb-label">PROTEIN RX</span>
+            <span id="pro-val" class="sb-val">--</span>
+        </div>
+    </div>
 
-        <div class="timeline-section">
-            <div class="section-header">
-                <span>OPTIMIZED TIMELINE</span>
-                <span>24H EXECUTION</span>
-            </div>
-            <div id="timeline-container">
-                </div>
+    <div class="timeline-container">
+        <div class="section-header">
+            <span>HOURLY PROTOCOL</span>
+            <span style="color:var(--cyan)">BIO-HACKS ACTIVE</span>
         </div>
+        <div id="timeline-feed">
+            </div>
     </div>
 
     <div class="sync-footer">
-        <div><span class="pulse"></span>LIVE OURA FEED</div>
-        <div id="sync-time">SYNCING...</div>
+        <div><span class="pulse"></span>LIVE FEED: OURA BIOMETRICS</div>
+        <div id="sync-status">CONNECTED</div>
     </div>
 
 <script>
 /**
- * CENTURION v3200.0 - CHRONO-KINETIC ENGINE
- * Logic: History Access + Predictive Meal Planning + Bio-Feedback Loop
+ * CENTURION v3300.0 - BIO-SYNERGY ENGINE
+ * Features: Progress Ring, Day Navigation, Nutrient Pairing Logic
  */
 
 const TOKENS = { 'J': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'S': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
 
-// 1. MASTER DATABASE (Ingredients & Logic)
-const DB = {
-    supplements: {
-        seamoss: { name: "Sea Moss Gel (2 tbsp)", mech: "92 Minerals / Thyroid Support" },
-        kombucha: { name: "Kombucha (4oz)", mech: "Glycemic Blunting / Gut Biome" },
-        creatine: { name: "Creatine (5g)", mech: "ATP Regeneration / Cognitive" }
-    },
-    juices: {
-        nitric: { name: "Beet Vitality Juice", ingredients: "Beet, Carrot, Ginger", mech: "Vasodilation / VO2 Max" },
-        alkaline: { name: "Green Longevity Juice", ingredients: "Celery, Cuke, Spinach, Lemon", mech: "Systemic Alkalinity" },
-        immune: { name: "Orange Turmeric Shot", ingredients: "Orange, Turmeric, Black Pepper", mech: "Anti-Inflammatory / ANA" }
-    },
-    meals: {
-        breakfast: [
-            { name: "Ancestral Sausage & Berries", pro: 35, carb: 10, mech: "Heme Iron + Polyphenols" },
-            { name: "Omega Scramble (Salmon/Egg)", pro: 40, carb: 5, mech: "DHA for Neural Repair" }
-        ],
-        lunch: [
-            { name: "Super Mince Bowl (Lentils)", pro: 45, carb: 40, mech: "Soluble Fiber / ApoB Binding" },
-            { name: "Mackerel Salad", pro: 35, carb: 15, mech: "High Omega-3 Index" }
-        ],
-        dinner: [
-            { name: "Bison & Sweet Potato", pro: 50, carb: 45, mech: "Glycogen Restore / Anabolic" },
-            { name: "White Fish & Asparagus", pro: 40, carb: 15, mech: "Low Insulin / GH Optimization" }
-        ]
-    }
-};
-
 const USERS = {
-    'J': { name: "Jermaine", weight: 217, goal_weight: 195, vf: 10, apob: 95, tdee: 2800 },
-    'S': { name: "Sophia", weight: 165, goal_weight: 145, vf: 9, ana: 320, tdee: 2100 }
+    'J': { name: "Jermaine", vf: 10, apob: 95, focus: "LIPID OXIDATION", protein_target: 195 },
+    'S': { name: "Sophia", vf: 9, ana: 320, focus: "IMMUNE CALM", protein_target: 145 }
 };
 
-class ChronoEngine {
+class BioEngine {
     constructor() {
-        this.user = localStorage.getItem('c_user') || 'J';
+        this.user = 'J';
+        this.dateOffset = 0; // 0 = Today, -1 = Yesterday
         this.today = new Date();
-        this.selectedDate = new Date(); // Default to today
-        this.history = JSON.parse(localStorage.getItem('c_history')) || {};
         this.init();
     }
 
     init() {
-        this.renderCalendar();
-        this.loadDay(this.selectedDate);
+        this.loadUser(this.user);
     }
 
     loadUser(uid) {
         this.user = uid;
-        localStorage.setItem('c_user', uid);
+        // UI Toggle
         document.querySelectorAll('.u-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(`btn-${uid}`).classList.add('active');
-        this.loadDay(this.selectedDate);
+        this.renderDay();
     }
 
-    // 1. CALENDAR RENDERER (Look Back)
-    renderCalendar() {
-        const strip = document.getElementById('calendar-strip');
-        strip.innerHTML = '';
-        
-        // Generate last 7 days + today + next 2 days
-        for (let i = -7; i <= 2; i++) {
-            const d = new Date();
-            d.setDate(this.today.getDate() + i);
-            
-            const isToday = i === 0;
-            const isSelected = d.toDateString() === this.selectedDate.toDateString();
-            const dateKey = d.toISOString().split('T')[0];
-            const score = this.history[dateKey]?.[this.user]?.score || (isToday ? '--' : Math.floor(Math.random() * 20 + 70)); // Mock history if missing
-
-            const el = document.createElement('div');
-            el.className = `day-node ${isSelected ? 'active' : ''}`;
-            el.onclick = () => {
-                this.selectedDate = d;
-                this.renderCalendar(); // Re-render to update active state
-                this.loadDay(d);
-            };
-            el.innerHTML = `
-                <div class="day-name">${d.toLocaleDateString('en-US', {weekday:'short'})}</div>
-                <div class="day-num">${d.getDate()}</div>
-                <div class="day-score">${score}</div>
-            `;
-            strip.appendChild(el);
-        }
+    changeDay(dir) {
+        this.dateOffset += dir;
+        this.renderDay();
     }
 
-    // 2. THE BRAIN (Logic Engine)
-    async loadDay(dateObj) {
+    // --- THE LOGIC CORE ---
+    async renderDay() {
         const u = USERS[this.user];
-        const isFuture = dateObj > this.today;
+        const currentDt = new Date();
+        currentDt.setDate(this.today.getDate() + this.dateOffset);
         
-        // Simulated Oura Fetch logic (Replace with real API in prod)
-        // Logic: If Readiness is High -> Anabolic. If Low -> Recovery.
-        let readiness = 85; 
-        let sleep = 90; // Deep sleep minutes
-        
-        // --- BIO-ALGORITHM ---
-        // 1. Deficit Calculation: If Visceral Fat > 7, force deficit.
-        const needsDeficit = u.vf > 7;
-        const deficit = needsDeficit ? 500 : 0;
-        const calTarget = u.tdee - deficit;
-        
-        // 2. Protein Logic: 1g per lb of GOAL weight (Muscle sparing)
-        const proteinTarget = u.goal_weight; 
-        
-        // 3. System Mode
-        let mode = "ANABOLIC";
-        let protocol = "HYPERTROPHY";
-        let color = "var(--acid)";
-        
-        if (readiness < 70) {
-            mode = "REPAIR";
-            protocol = "ACTIVE RECOVERY";
-            color = "var(--gold)";
-        } else if (needsDeficit) {
-            mode = "METABOLIC BURN";
-            protocol = "FAT OXIDATION";
-            color = "var(--cyan)";
-        }
+        // 1. DATE DISPLAY
+        const dateStr = this.dateOffset === 0 ? "TODAY" : 
+                        this.dateOffset === -1 ? "YESTERDAY" : 
+                        this.dateOffset === 1 ? "TOMORROW" : 
+                        currentDt.toLocaleDateString('en-US', {weekday:'short', month:'numeric', day:'numeric'});
+        document.getElementById('display-date').innerText = dateStr;
 
-        // UPDATE HUD
-        document.querySelector('.status-hero').style.borderColor = color;
-        document.querySelector('.status-hero').style.setProperty('--acid', color); // Hack to change bar color
-        document.getElementById('day-focus').innerText = protocol;
-        document.getElementById('day-focus').style.color = color;
-        document.getElementById('day-logic').innerText = needsDeficit 
-            ? `VF ${u.vf} Detected • Calorie Deficit Active (-${deficit})` 
-            : `System Prime • Surplus Enabled for Growth`;
+        // 2. SIMULATE OURA DATA (In prod, fetch() here)
+        // If "Yesterday", show actual historical score. If "Today", show live.
+        let readiness = this.dateOffset > 0 ? 0 : (this.user === 'J' ? 88 : 72); 
+        let hrv = this.user === 'J' ? 52 : 35;
+        let deep = this.user === 'J' ? "1h 45m" : "1h 10m";
 
-        document.getElementById('score-val').innerText = readiness;
+        // 3. CALCULATE RING
+        this.setRing(readiness);
+        document.getElementById('score-display').innerText = readiness || "--";
+        
+        // 4. DETERMINE MODE
+        let mode = "HOMEOSTASIS";
+        let color = "var(--text-main)";
+        if (readiness >= 85) { mode = "ANABOLIC PRIME"; color = "var(--acid)"; }
+        else if (readiness < 75) { mode = "SYSTEM REPAIR"; color = "var(--gold)"; }
+        
+        const modeEl = document.getElementById('system-mode');
+        modeEl.innerText = mode;
+        modeEl.style.borderColor = color;
+        modeEl.style.color = color;
+
+        // 5. UPDATE GRID
+        document.getElementById('hrv-val').innerText = hrv;
+        document.getElementById('sleep-val').innerText = deep;
         document.getElementById('vf-val').innerText = u.vf;
-        document.getElementById('cal-val').innerText = calTarget;
-        document.getElementById('pro-val').innerText = proteinTarget + "g";
+        document.getElementById('pro-val').innerText = u.protein_target + "g";
 
-        this.renderTimeline(mode, u, proteinTarget, calTarget);
-        document.getElementById('sync-time').innerText = "UPDATED: " + new Date().toLocaleTimeString();
+        // 6. GENERATE TIMELINE WITH SYNERGY
+        this.buildTimeline(mode, u);
     }
 
-    // 3. TIMELINE GENERATOR (The "Perfect Day")
-    renderTimeline(mode, userProfile, proTarget, calTarget) {
-        const container = document.getElementById('timeline-container');
+    setRing(percent) {
+        const fill = document.getElementById('ring-fill');
+        // CSS conic gradient variable hack
+        fill.style.setProperty('--p', `${percent}%`);
+        fill.style.background = `conic-gradient(var(--acid) 0% ${percent}%, transparent ${percent}%)`;
+    }
+
+    buildTimeline(mode, userProfile) {
+        const container = document.getElementById('timeline-feed');
         let html = '';
         
-        // LOGIC: Build the day based on Bio-Markers
-        const schedule = [];
+        // --- BIO-SYNERGY RULES ---
+        const PROTOCOL = [
+            {
+                time: "07:00",
+                title: "Hydration + Sea Moss",
+                detail: "20oz Water + 2 tbsp Sea Moss Gel",
+                mech: "MECH: 92 minerals prime thyroid function.",
+                tags: [{text:"PRIME", type:"bio"}]
+            },
+            {
+                time: "08:00",
+                title: this.user === 'J' ? "Beet Vitality Juice" : "Orange Turmeric Shot",
+                detail: this.user === 'J' ? "Beets + Ginger + Lemon" : "Orange + Turmeric + Black Pepper",
+                mech: this.user === 'J' ? "MECH: Nitrates boost endothelial VO2 Max." : "MECH: Piperine boosts Curcumin absorption by 2000%.",
+                tags: this.user === 'J' ? [{text:"VO2", type:"bio"}] : [{text:"ABSORPTION +2000%", type:"syn"}]
+            },
+            {
+                time: "12:00",
+                title: "Lunch + Glycemic Buffer",
+                detail: "High-Fiber Lentil Bowl + 4oz Kombucha",
+                mech: "MECH: Acetic acid (Kombucha) blunts insulin response by 30%.",
+                tags: [{text:"GLYCEMIC CONTROL", type:"syn"}]
+            },
+            {
+                time: "18:00",
+                title: mode === "ANABOLIC PRIME" ? "Anabolic Dinner" : "Repair Dinner",
+                detail: mode === "ANABOLIC PRIME" ? "Steak + Sweet Potato (Carb Refeed)" : "White Fish + Asparagus (Low Inflammation)",
+                mech: mode === "ANABOLIC PRIME" ? "MECH: Insulin sensitivity peaks post-load." : "MECH: Reduce digestive load for deep sleep.",
+                tags: [{text: mode === "ANABOLIC PRIME" ? "GROWTH" : "RECOVERY", type:"bio"}]
+            }
+        ];
 
-        // 7:00 AM - MINERAL PRIME
-        schedule.push({
-            time: "07:00",
-            tag: "BIO-PRIME",
-            title: "Hydration + Sea Moss",
-            desc: DB.supplements.seamoss.name,
-            meta: DB.supplements.seamoss.mech,
-            check: true
-        });
+        PROTOCOL.forEach((slot, i) => {
+            const isSynergy = slot.tags.some(t => t.type === 'syn');
+            
+            // Build Tags
+            let tagHTML = '';
+            slot.tags.forEach(t => {
+                tagHTML += `<span class="ts-tag ${t.type === 'syn' ? 'tag-syn' : 'tag-bio'}">${t.text}</span>`;
+            });
 
-        // 8:00 AM - JUICE (Bio-Individual)
-        const juice = this.user === 'J' ? DB.juices.nitric : DB.juices.immune; // J needs VO2/Nitric, S needs Immune/ANA
-        schedule.push({
-            time: "08:00",
-            tag: "CELLULAR",
-            title: juice.name,
-            desc: juice.ingredients,
-            meta: juice.mech,
-            check: true
-        });
-
-        // 10:00 AM - BREAKFAST
-        const bfast = DB.meals.breakfast[this.user === 'J' ? 0 : 1]; // J gets Heme Iron (Sausage), S gets Omega (Salmon)
-        schedule.push({
-            time: "10:00",
-            tag: "NUTRITION",
-            title: bfast.name,
-            desc: `Protein: ${bfast.pro}g • Carbs: ${bfast.carb}g`,
-            meta: bfast.mech,
-            check: true
-        });
-
-        // 1:00 PM - LUNCH + KOMBUCHA
-        const lunch = DB.meals.lunch[0]; // High fiber for everyone
-        schedule.push({
-            time: "13:00",
-            tag: "METABOLIC",
-            title: lunch.name + " + Kombucha",
-            desc: `${lunch.name} (${lunch.pro}g Pro) paired with 4oz Kombucha.`,
-            meta: "Fiber + Probiotics = Glycemic Control",
-            check: true
-        });
-
-        // 5:00 PM - TRAINING (Based on Mode)
-        const workout = mode === "ANABOLIC" ? "Heavy Compounds (5x5)" : "Zone 2 Cardio (45m)";
-        schedule.push({
-            time: "17:00",
-            tag: "TRAINING",
-            title: workout,
-            desc: mode === "ANABOLIC" ? "Focus: Mechanical Tension" : "Focus: Mitochondrial Efficiency",
-            meta: `Readiness: ${document.getElementById('score-val').innerText}`,
-            check: true
-        });
-
-        // 7:00 PM - DINNER
-        const dinner = mode === "METABOLIC BURN" ? DB.meals.dinner[1] : DB.meals.dinner[0]; // Logic: Low Carb vs Carb Refeed
-        schedule.push({
-            time: "19:00",
-            tag: "RECOVERY",
-            title: dinner.name,
-            desc: `Protein: ${dinner.pro}g • Carbs: ${dinner.carb}g`,
-            meta: dinner.mech,
-            check: true
-        });
-
-        // RENDER LOOP
-        schedule.forEach((slot, i) => {
             html += `
                 <div class="time-slot">
                     <div class="ts-time">${slot.time}</div>
-                    <div class="ts-card">
-                        <span class="ts-tag">${slot.tag}</span>
+                    <div class="ts-card ${isSynergy ? 'synergy-active' : ''}" onclick="this.classList.toggle('done')">
+                        <div class="tag-row">${tagHTML}</div>
                         <div class="ts-title">${slot.title}</div>
-                        <div class="ts-desc">${slot.desc}</div>
-                        <div class="ts-meta">${slot.meta}</div>
-                        <button class="check-btn" onclick="this.classList.toggle('checked')">✓</button>
+                        <div class="ts-detail">${slot.detail}</div>
+                        <div class="ts-mech">${slot.mech}</div>
+                        <div class="check-circle"></div>
                     </div>
                 </div>
             `;
@@ -378,7 +305,7 @@ class ChronoEngine {
     }
 }
 
-const engine = new ChronoEngine();
+const engine = new BioEngine();
 
 </script>
 </body>
