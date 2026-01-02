@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v4700.0 AUTONOMIC</title>
+    <title>The Centurion | v4600.0 BULLETPROOF</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -42,13 +42,13 @@
         .ring-val { font-family: var(--font-data); font-size: 1.8rem; font-weight: 700; color: #fff; line-height: 1; }
         .ring-label { font-size: 0.5rem; font-weight: 700; color: var(--text-muted); margin-top: 2px; }
 
-        .tactical-box { flex: 1; margin-left: 20px; background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, transparent 100%); border-left: 3px solid var(--acid); padding: 12px; border-radius: 0 12px 12px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); transition: border-color 0.5s ease; }
+        .tactical-box { flex: 1; margin-left: 20px; background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, transparent 100%); border-left: 3px solid var(--acid); padding: 12px; border-radius: 0 12px 12px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); }
         .tac-label { font-size: 0.55rem; color: var(--acid); font-weight: 900; letter-spacing: 1px; margin-bottom: 4px; text-transform: uppercase; }
-        .tac-cmd { font-size: 0.85rem; font-weight: 700; color: #fff; line-height: 1.3; margin-bottom: 8px; }
+        .tac-cmd { font-size: 0.85rem; font-weight: 700; color: #fff; line-height: 1.3; }
         .tac-meta { font-family: var(--font-data); font-size: 0.55rem; color: var(--text-muted); margin-top: 4px; }
 
         /* GRIDS */
-        .section-label { font-size: 0.55rem; font-weight: 900; color: var(--text-muted); letter-spacing: 1px; margin: 20px 16px 10px; text-transform: uppercase; }
+        .section-label { font-size: 0.55rem; font-weight: 900; color: var(--text-muted); letter-spacing: 1px; margin: 20px 16px 10px; text-transform: uppercase; display: flex; justify-content: space-between; }
         .telemetry-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 10px; }
         .macro-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 30px; }
         
@@ -69,8 +69,6 @@
 
         /* TIMELINE */
         .timeline-container { padding: 0 16px; }
-        .section-header { font-size: 0.6rem; font-weight: 900; color: var(--text-muted); letter-spacing: 1px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
-        
         .time-slot { display: flex; gap: 12px; margin-bottom: 20px; position: relative; transition: opacity 0.3s; }
         .time-slot.past { opacity: 0.4; }
         .time-slot::before { content: ''; position: absolute; left: 22px; top: 25px; bottom: -25px; width: 1px; background: var(--border); z-index: 0; }
@@ -118,8 +116,8 @@
     </svg>
 
     <div class="hud-header">
-        <div class="app-name">CENTURION v4700</div>
-        <div class="live-badge">AUTONOMIC CORE</div>
+        <div class="app-name">CENTURION v4600</div>
+        <div class="live-badge">STABLE CORE</div>
         <div class="user-switch">
             <button id="btn-J" class="u-btn active" onclick="centurion.switchUser('J')">JER</button>
             <button id="btn-S" class="u-btn" onclick="centurion.switchUser('S')">SOPH</button>
@@ -139,9 +137,9 @@
         </div>
 
         <div class="tactical-box" id="tactical-box">
-            <div class="tac-label" id="tac-label">LIVE INTELLIGENCE</div>
+            <div class="tac-label" id="tac-label">COMMAND:</div>
             <div class="tac-cmd" id="tac-cmd">SYSTEMS NOMINAL</div>
-            <div class="tac-meta" id="tac-reason">Tracking autonomic drift...</div>
+            <div class="tac-meta" id="tac-reason">Scanning Zones...</div>
         </div>
     </div>
 
@@ -218,8 +216,8 @@
 
 <script>
 /**
- * CENTURION v4700.0 - AUTONOMIC
- * Logic: Passive "Drift" Simulation (No Button), Persisted State, 1/60s Math.
+ * CENTURION v4600.0 - BULLETPROOF
+ * Fixes: Crash Prevention, Accurate 1/60s Timing, ID-Safe Macros.
  */
 
 const USERS = {
@@ -244,14 +242,20 @@ const MACRO_LOOKUP = {
 class CenturionCore {
     constructor() {
         this.user = localStorage.getItem('c_user') || 'J';
-        // Base State
-        this.state = JSON.parse(localStorage.getItem(`c_state_${this.user}`)) || {
-            hr: 60, z2_time: 12.5, z5_time: 3.2, stress: 85, score: 88, 
-            pro: 0, carb: 0, fat: 0, checked: [],
-            drift_phase: 0 // Used for passive HR waves
-        };
+        
+        // SAFE LOAD: If storage is corrupt, reset it.
+        try {
+            this.state = JSON.parse(localStorage.getItem(`c_state_${this.user}`)) || this.getDefaultState();
+        } catch(e) {
+            this.state = this.getDefaultState();
+        }
+        
         this.circumference = 158; 
         this.init();
+    }
+
+    getDefaultState() {
+        return { hr: 60, z2_time: 15, z5_time: 2, stress: 85, score: 88, pro: 0, carb: 0, fat: 0, checked: [], drift_phase: 0 };
     }
 
     init() {
@@ -263,14 +267,18 @@ class CenturionCore {
     switchUser(uid) {
         this.user = uid;
         localStorage.setItem('c_user', uid);
-        this.state = JSON.parse(localStorage.getItem(`c_state_${uid}`)) || {
-            hr: 60, z2_time: 12.5, z5_time: 3.2, stress: 85, score: 88, 
-            pro: 0, carb: 0, fat: 0, checked: [],
-            drift_phase: 0
-        };
+        
+        try {
+            this.state = JSON.parse(localStorage.getItem(`c_state_${uid}`)) || this.getDefaultState();
+        } catch(e) {
+            this.state = this.getDefaultState();
+        }
 
         document.querySelectorAll('.u-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(`btn-${uid}`).classList.add('active');
+        
+        const color = this.state.score >= 80 ? '#ccff00' : '#FFD60A';
+        document.documentElement.style.setProperty('--acid', color); 
         
         this.updateHUD();
         this.renderTimeline();
@@ -280,40 +288,32 @@ class CenturionCore {
         localStorage.setItem(`c_state_${this.user}`, JSON.stringify(this.state));
     }
 
-    // 1. PASSIVE DRIFT SIMULATION
+    // 1. PRECISION SIMULATION (Drift Logic)
     startLiveSim() {
         setInterval(() => {
             const u = USERS[this.user];
             
-            // Autonomic Drift Logic:
-            // Every 20 seconds (drift_phase), the HR ramps up to simulate movement/activity
-            // Then settles back down to RHR range.
-            this.state.drift_phase = (this.state.drift_phase + 1) % 40; 
+            // "Autonomic Drift" - Cycles high/low every 30s to simulate activity
+            this.state.drift_phase = (this.state.drift_phase + 1) % 60; 
             
-            let targetHR = u.rhr + 10; // Baseline Rest
+            let targetHR = u.rhr + 10; // Baseline
+            if (this.state.drift_phase > 40) targetHR = 135; // Simulated movement
             
-            if (this.state.drift_phase > 25) { 
-                targetHR = 135; // Simulated Activity Burst (Zone 2)
-            } else if (this.state.drift_phase > 20) {
-                targetHR = 100; // Ramping up
-            }
-
-            // Random Noise
             const flutter = Math.floor(Math.random() * 6) - 3;
             this.state.hr = targetHR + flutter;
 
-            // ZONE ACCUMULATION
+            // PRECISE ACCUMULATION: 1 sec = 1/60 min
             if (this.state.hr >= 120 && this.state.hr < 155) {
                 this.state.z2_time += (1 / 60); 
             } else if (this.state.hr >= 155) {
                 this.state.z5_time += (1 / 60);
             }
 
-            // Persist every 5s
+            // Save state occasionally to prevent loss
             if (new Date().getSeconds() % 5 === 0) this.saveState();
 
             this.updateHRRing(this.state.hr);
-            this.updateHUDValues(); 
+            this.updateHUDValues(); // Efficient value update
         }, 1000);
     }
 
@@ -326,11 +326,11 @@ class CenturionCore {
 
     formatTime(h) { const ampm = h >= 12 ? 'PM' : 'AM'; const hour = h % 12 || 12; return `${hour} ${ampm}`; }
 
-    // 2. HUD UPDATE
+    // 2. HUD UPDATER
     updateHUDValues() {
         document.getElementById('val-hr').innerText = this.state.hr;
-        document.getElementById('val-z2').innerText = this.state.z2_time.toFixed(1);
-        document.getElementById('val-z5').innerText = this.state.z5_time.toFixed(1);
+        document.getElementById('val-z2').innerText = Math.floor(this.state.z2_time);
+        document.getElementById('val-z5').innerText = Math.floor(this.state.z5_time);
     }
 
     updateHUD() {
@@ -389,9 +389,8 @@ class CenturionCore {
 
     runTactics(s, u) {
         let cmd = "", reason = "", color = "var(--acid)";
-        // Simple logic updates without buttons
         if (s.z5_time >= u.goals.z5) {
-            cmd = "PEAK REACHED"; reason = "VO2 Max Stimulus Done. Recover."; color = "var(--gold)";
+            cmd = "PEAK REACHED"; reason = "VO2 Max Stimulus Achieved. Recover."; color = "var(--gold)";
         } else if (s.z2_time < (u.goals.z2 * 0.2)) {
             cmd = "BASE BUILDING"; reason = "Aerobic System requires volume."; color = "var(--cyan)";
         } else {
@@ -404,25 +403,29 @@ class CenturionCore {
         document.getElementById('tac-label').style.color = color;
     }
 
-    // 3. MEAL CHECK (Safe ID Logic)
+    // 3. MEAL CHECK (SAFE LOGIC)
     checkMeal(btn, mealID) {
+        // Prevent double checking
         const card = btn.parentElement;
-        if(card.classList.contains('past') || this.state.checked.includes(mealID)) return;
+        if(card.classList.contains('past')) return;
+        if(this.state.checked.includes(mealID)) return;
         
         const macros = MACRO_LOOKUP[mealID];
-        if(!macros) return;
+        if(!macros) return; // Safety check
 
+        // Update State
         this.state.pro += macros.p;
         this.state.carb += macros.c;
         this.state.fat += macros.f;
         this.state.checked.push(mealID);
         this.saveState();
         
-        this.updateHUD();
+        this.updateHUD(); // Animate Rings
 
         card.classList.add('past');
         btn.innerText = "✓";
         
+        // Scan Effect
         const overlay = document.createElement('div');
         overlay.className = 'scan-overlay';
         overlay.style.display = 'block';
