@@ -860,19 +860,37 @@ class CenturionCore {
     }
 
     checkMeal(mealType) {
-        if(this.state.checked.includes(mealType)) return;
-        
-        const meal = this.state.dailyMeals[mealType];
-        if(!meal) {
-            // Handle supplement (no meal object)
-            if (mealType === 'sup') {
-                this.state.checked.push(mealType);
-                this.saveState();
-                this.renderTimeline();
-                return;
-            }
-            return;
-        }
+    if(this.state.checked.includes(mealType)) return;
+    
+    const meal = this.state.dailyMeals[mealType];
+    
+    // Handle supplement (minimal macros, no full meal object)
+    if (mealType === 'sup') {
+        this.state.carb += 2;
+        this.state.fiber += 1;
+        this.state.checked.push(mealType);
+        this.saveState();
+        this.updateHUD();
+        this.renderTimeline();
+        return;
+    }
+    
+    if(!meal) return;
+
+    // Update state with meal macros
+    this.state.pro += meal.p;
+    this.state.carb += meal.c;
+    this.state.fat += meal.f;
+    this.state.fiber += (meal.fiber || 0); // SAFETY: default to 0 if undefined
+    this.state.omega3 += (meal.omega3 || 0);
+    this.state.checked.push(mealType);
+    this.state.lastMealTime = new Date();
+    this.saveState();
+    
+    this.updateHUD();
+    this.renderTimeline();
+}
+
 
         this.state.pro += meal.p;
         this.state.carb += meal.c;
