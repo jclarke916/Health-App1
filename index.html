@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v7600.0 ORIGIN</title>
+    <title>The Centurion | v8000.0 IMMUTABLE-CORE</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -32,11 +32,6 @@
         .u-badge { padding: 6px 14px; border-radius: 16px; font-size: 0.6rem; font-weight: 700; color: #666; background: transparent; border: none; cursor: pointer; transition: all 0.2s; }
         .u-badge.active { background: var(--text-main); color: #000; }
 
-        /* DATE NAV */
-        .date-nav { display: flex; justify-content: center; align-items: center; gap: 20px; font-family: var(--font-data); font-size: 0.8rem; font-weight: 700; color: #fff; padding-top: 5px; }
-        .nav-arrow { color: var(--gold); cursor: pointer; padding: 5px 10px; user-select: none; }
-        .date-display { min-width: 100px; text-align: center; letter-spacing: 1px; }
-
         /* HERO */
         .hero-section { padding: 25px 16px 10px; display: flex; align-items: center; justify-content: space-between; }
         .ring-container { width: 110px; height: 110px; position: relative; display: flex; align-items: center; justify-content: center; }
@@ -56,7 +51,6 @@
         .section-label { font-size: 0.55rem; font-weight: 900; color: var(--text-muted); letter-spacing: 1px; margin: 20px 16px 10px; text-transform: uppercase; }
         .telemetry-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 10px; }
         .sleep-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 20px; }
-        .macro-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 30px; }
         
         .orb-card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 10px 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
         .orb-container { width: 60px; height: 60px; position: relative; display: flex; align-items: center; justify-content: center; margin-bottom: 5px; }
@@ -104,16 +98,11 @@
 
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v7600</div>
+            <div class="app-name">CENTURION v8000</div>
             <div class="user-switch">
                 <button id="btn-J" class="u-badge active" onclick="centurion.switchUser('J')">JER</button>
                 <button id="btn-S" class="u-badge" onclick="centurion.switchUser('S')">SOPH</button>
             </div>
-        </div>
-        <div class="date-nav">
-            <span class="nav-arrow" onclick="centurion.changeDay(-1)">◀</span>
-            <span class="date-display" id="dateDisplay">TODAY</span>
-            <span class="nav-arrow" onclick="centurion.changeDay(1)">▶</span>
         </div>
     </div>
 
@@ -121,12 +110,12 @@
 
     <div class="sync-footer">
         <div><span class="pulse"></span><span id="ouraBar">INIT...</span></div>
-        <div onclick="centurion.init()" style="cursor:pointer">RESET</div>
+        <div onclick="centurion.fetchOuraData()" style="cursor:pointer">FORCE SYNC</div>
     </div>
 
 <script>
 // ==========================================
-// CENTURION v7600: THE ORIGIN PROTOCOL
+// V1300 LOGIC (UNCHANGED)
 // ==========================================
 
 const TOKENS = { 
@@ -134,171 +123,132 @@ const TOKENS = {
     'S': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' 
 };
 
-// Date Utils
+// Required Date Utils from v1300
 function getCaDate() { let d = new Date(); d.setHours(12, 0, 0, 0); return d; }
 function getDateKey(d) { return d.toISOString().split('T')[0]; }
 
 class CenturionCore {
     constructor() {
         this.user = localStorage.getItem('centurion_active_user') || 'J';
-        this.dayOffset = 0;
-        this.cache = {}; // IN-MEMORY CACHE
+        
+        // Load cache exactly as v1300 did
+        try {
+            const saved = localStorage.getItem(`centurion_oura_cache_${this.user}`);
+            this.cache = saved ? JSON.parse(saved) : { history: [] };
+        } catch(e) { this.cache = { history: [] }; }
+
         this.init();
     }
 
     init() {
-        // Load from storage initially
-        try {
-            const saved = localStorage.getItem(`centurion_oura_cache_${this.user}`);
-            if(saved) this.cache = JSON.parse(saved);
-            else this.cache = { history: [] };
-        } catch(e) { this.cache = { history: [] }; }
-
-        this.updateUI(); // Set buttons
-        this.render();   // Show what we have
-        this.fetchData(); // Go get new stuff
+        this.updateUI(); 
+        this.render();   
+        this.fetchOuraData(); 
     }
 
     switchUser(uID) {
         if(this.user === uID) return;
         
-        // 1. SWAP USER ID
         this.user = uID;
         localStorage.setItem('centurion_active_user', uID);
         
-        // 2. NUKE IN-MEMORY CACHE (This is the key fix)
-        this.cache = { history: [] }; 
-        this.dayOffset = 0;
+        // Reset Cache to Empty immediately (ensures no ghost data)
+        this.cache = { history: [] };
         
-        // 3. UPDATE UI IMMEDIATELY
         this.updateUI();
-        this.render(); // Will render empty state because cache is now empty
-        
-        // 4. FETCH NEW
-        this.fetchData();
-    }
-
-    changeDay(delta) {
-        this.dayOffset += delta;
-        // Prevent future
-        if(this.dayOffset > 0) this.dayOffset = 0;
-        this.render();
+        this.render(); // Shows empty state
+        this.fetchOuraData();
     }
 
     updateUI() {
         document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
         document.getElementById(`btn-${this.user}`).classList.add('active');
-        
-        // Update Date Display
-        const d = getCaDate();
-        d.setDate(d.getDate() + this.dayOffset);
-        const dk = getDateKey(d);
-        const today = getDateKey(getCaDate());
-        document.getElementById('dateDisplay').innerText = (dk === today) ? "TODAY" : dk.substring(5); // Show "01-02"
+        document.getElementById('ouraBar').innerHTML = `💍 SWITCHING...`;
     }
 
-    async fetchData() {
-        const fetchID = this.user;
+    // --- V1300 FETCH LOGIC (VERBATIM COPY) ---
+    async fetchOuraData() {
+        const fetchID = this.user; 
         const token = TOKENS[fetchID];
         const range = `start_date=${getDateKey(new Date(Date.now()-864e5*14))}&end_date=${getDateKey(new Date())}`;
         
-        document.getElementById('ouraBar').innerHTML = "💍 SYNCING...";
+        document.getElementById('ouraBar').innerHTML = "💍 HANDSHAKE...";
         
         try {
-            // SEQUENTIAL FETCH (Safer)
-            const rRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const [rRes, aRes] = await Promise.all([
+                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } })
+            ]);
+            
             const rData = await rRes.json();
-            
-            await new Promise(r => setTimeout(r, 100)); // Tiny pause
-            
-            const sRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } });
-            const sData = await sRes.json();
-            
-            await new Promise(r => setTimeout(r, 100));
-            
-            const aRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } });
             const aData = await aRes.json();
-
-            // GUARD: Did user switch while we were waiting?
+            
             if(this.user !== fetchID) return;
-
-            // PROCESS DATA
-            const map = {};
             
-            const ensureDay = (d) => {
-                if(!map[d]) map[d] = { date: d, score:"-", cal:0, high:0, med:0, rhr:0, sleep:0, deep:0, rem:0 };
-                return map[d];
+            if(rData.data) {
+                const hist = rData.data.map(day => {
+                    const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
+                    return { 
+                        date: day.day, 
+                        score: day.score || "-", 
+                        cal: act ? act.active_calories : "-", 
+                        high: act ? Math.round(act.high_activity_time/60) : 0, 
+                        med: act ? Math.round(act.medium_activity_time/60) : 0,
+                        rhr: day.contributors?.resting_heart_rate || "-"
+                    };
+                }).reverse();
+                
+                localStorage.setItem(`centurion_oura_cache_${fetchID}`, JSON.stringify({history: hist, lastFetch: Date.now()}));
+                this.cache = { history: hist };
+                
+                document.getElementById('ouraBar').innerHTML = `💍 SYNCED`;
+                this.render();
             }
-
-            if(rData.data) rData.data.forEach(x => { ensureDay(x.day).score = x.score; ensureDay(x.day).rhr = x.contributors.resting_heart_rate; });
-            if(sData.data) sData.data.forEach(x => { 
-                const d = ensureDay(x.day);
-                d.sleep = (x.total_sleep_duration/3600).toFixed(1);
-                d.deep = Math.round(x.deep_sleep_duration/60);
-                d.rem = Math.round(x.rem_sleep_duration/60);
-            });
-            if(aData.data) aData.data.forEach(x => {
-                const d = ensureDay(x.day);
-                d.cal = x.active_calories;
-                d.high = Math.round(x.high_activity_time/60);
-                d.med = Math.round(x.medium_activity_time/60);
-            });
-
-            const hist = Object.values(map).sort((a,b) => b.date.localeCompare(a.date));
-            
-            // UPDATE IN-MEMORY AND STORAGE
-            this.cache = { history: hist };
-            localStorage.setItem(`centurion_oura_cache_${fetchID}`, JSON.stringify(this.cache));
-            
-            document.getElementById('ouraBar').innerHTML = "💍 LIVE";
-            this.render();
-
-        } catch(e) {
+        } catch(e) { 
             console.error(e);
-            document.getElementById('ouraBar').innerHTML = "💍 ERROR";
+            document.getElementById('ouraBar').innerHTML = "💍 SYNC TIMEOUT"; 
         }
     }
 
+    // --- RENDER (ADAPTED TO CHRONOS UI) ---
     render() {
-        const d = getCaDate();
-        d.setDate(d.getDate() + this.dayOffset);
-        const dk = getDateKey(d);
+        const dk = getDateKey(getCaDate()); // Shows Today
         
-        // Use In-Memory Cache
-        const rawOura = this.cache.history.find(x => x.date === dk) || { 
-            score: "-", cal: "-", high: 0, med: 0, rhr: "-", 
-            sleep: "-", deep: "-", rem: "-" 
+        // Find Data or Default
+        const rawOura = this.cache.history.find(d => d.date === dk) || { 
+            score: "-", cal: "-", high: 0, med: 0, rhr: "-" 
         };
-
-        const sv = parseInt(rawOura.score) || 0;
-        const color = sv >= 80 ? 'var(--acid)' : sv >= 60 ? 'var(--gold)' : 'var(--alert)';
-        const safe = (v) => (v === undefined || v === null || isNaN(v)) ? 0 : v;
-
+        
+        const scoreVal = parseInt(rawOura.score) || 0;
+        const rColor = scoreVal >= 80 ? 'var(--acid)' : scoreVal >= 60 ? 'var(--gold)' : 'var(--alert)';
+        
+        // NOTE: Sleep is missing in v1300, so we hardcode placeholders
+        
         const html = `
         <div class="hero-section">
             <div class="ring-container">
-                <svg class="ring-svg"><circle class="ring-bg" cx="55" cy="55" r="45"></circle><circle class="ring-fg" cx="55" cy="55" r="45" style="stroke:${color}; stroke-dashoffset:${283 - (Math.min(sv,100)/100)*283}"></circle></svg>
+                <svg class="ring-svg"><circle class="ring-bg" cx="55" cy="55" r="45"></circle><circle class="ring-fg" cx="55" cy="55" r="45" style="stroke:${rColor}; stroke-dashoffset:${283 - (Math.min(scoreVal,100)/100)*283}"></circle></svg>
                 <div class="ring-data"><div class="ring-val">${rawOura.score}</div><div class="ring-label">READINESS</div></div>
             </div>
-            <div class="tactical-box" style="border-left-color:${color}">
-                <div class="tac-label" style="color:${color}">USER: ${this.user === 'J' ? 'JERMAINE' : 'SOPHIA'}</div>
-                <div class="tac-cmd">${sv === 0 ? "LOADING..." : sv >= 80 ? "SYSTEMS NOMINAL" : "RECOVERY REQUIRED"}</div>
-                <div class="tac-meta">DATA: ${dk}</div>
+            <div class="tactical-box" style="border-left-color:${rColor}">
+                <div class="tac-label" style="color:${rColor}">USER: ${this.user === 'J' ? 'JERMAINE' : 'SOPHIA'}</div>
+                <div class="tac-cmd">${scoreVal === 0 ? "AWAITING DATA..." : scoreVal >= 80 ? "SYSTEMS NOMINAL" : "RECOVERY REQUIRED"}</div>
+                <div class="tac-meta">FETCH PROTOCOL: V1300</div>
             </div>
         </div>
 
-        <div class="section-label">SLEEP ARCHITECTURE</div>
+        <div class="section-label">SLEEP ARCHITECTURE (OFFLINE)</div>
         <div class="sleep-grid">
-            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-purple); stroke-dashoffset:${158-(Math.min(safe(parseFloat(rawOura.sleep)),9)/9)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.sleep}</div><span class="orb-unit">HRS</span></div></div><div class="orb-label">TOTAL</div></div>
-            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:#007aff; stroke-dashoffset:${158-(Math.min(safe(parseInt(rawOura.deep)),120)/120)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.deep}</div><span class="orb-unit">DEEP</span></div></div><div class="orb-label">DEEP</div></div>
-            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--purple); stroke-dashoffset:${158-(Math.min(safe(parseInt(rawOura.rem)),120)/120)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.rem}</div><span class="orb-unit">REM</span></div></div><div class="orb-label">REM</div></div>
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle></svg><div class="orb-val-box"><div class="orb-val">--</div><span class="orb-unit">HRS</span></div></div><div class="orb-label">TOTAL</div></div>
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle></svg><div class="orb-val-box"><div class="orb-val">--</div><span class="orb-unit">DEEP</span></div></div><div class="orb-label">DEEP</div></div>
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle></svg><div class="orb-val-box"><div class="orb-val">--</div><span class="orb-unit">REM</span></div></div><div class="orb-label">REM</div></div>
         </div>
 
         <div class="section-label">CARDIO-METABOLIC STATUS</div>
         <div class="telemetry-grid">
-            <div class="orb-card live"><div class="live-dot"></div><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--cyan); stroke-dashoffset:${158-(Math.min(safe(parseInt(rawOura.cal)),1000)/1000)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.cal}</div><span class="orb-unit">CAL</span></div></div><div class="orb-label">ACTIVE</div></div>
-            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-zone2); stroke-dashoffset:${158-(Math.min(safe(parseInt(rawOura.med)),60)/60)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.med}</div><span class="orb-unit">Z2 MIN</span></div></div><div class="orb-label">BASE</div></div>
-            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-zone5); stroke-dashoffset:${158-(Math.min(safe(parseInt(rawOura.high)),30)/30)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.high}</div><span class="orb-unit">Z5 MIN</span></div></div><div class="orb-label">PEAK</div></div>
+            <div class="orb-card live"><div class="live-dot"></div><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--cyan); stroke-dashoffset:${158 - (Math.min(parseInt(rawOura.cal)||0, 1000)/1000)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.cal}</div><span class="orb-unit">CAL</span></div></div><div class="orb-label">ACTIVE</div></div>
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-zone2); stroke-dashoffset:${158 - (Math.min(rawOura.med||0, 60)/60)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.med}</div><span class="orb-unit">Z2 MIN</span></div></div><div class="orb-label">BASE</div></div>
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-zone5); stroke-dashoffset:${158 - (Math.min(rawOura.high||0, 30)/30)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.high}</div><span class="orb-unit">Z5 MIN</span></div></div><div class="orb-label">PEAK</div></div>
             <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--acid)"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.rhr}</div><span class="orb-unit">BPM</span></div></div><div class="orb-label">RHR</div></div>
         </div>
 
@@ -308,9 +258,8 @@ class CenturionCore {
             <div class="time-slot"><div class="ts-time">9 AM</div><div class="ts-card"><div class="ts-title">Training</div><div class="ts-desc">Zone 2 / Strength A</div></div></div>
         </div>
         `;
-        
+
         document.getElementById('dayContent').innerHTML = html;
-        this.updateUI();
     }
 }
 
