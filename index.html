@@ -1,161 +1,345 @@
-# ================================================================================
-CENTURION v4700 - OURA API DATA STRUCTURE ANALYSIS
+<!DOCTYPE html>
 
-Date: January 3, 2026
-Issue: Sleep, Activity, and Heart Rate data not displaying correctly
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>The Centurion | v4700.12 DATA DEBUG</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #000000;
+            --bg-panel: #0a0a0a;
+            --border: #222;
+            --acid: #ccff00;
+            --cyan: #00f0ff;
+            --gold: #FFD60A;
+            --alert: #ff453a;
+            --purple: #bf5af2;
+            --text-main: #ffffff;
+            --text-muted: #666;
+            --font-ui: 'Inter', sans-serif;
+            --font-data: 'JetBrains Mono', monospace;
+        }
 
-# ================================================================================
-CURRENT PROBLEMS IDENTIFIED
+```
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { margin: 0; padding: 0 0 100px 0; background: var(--bg-deep); color: var(--text-main); font-family: var(--font-ui); min-height: 100vh; background-image: radial-gradient(circle at top right, #111 0%, #000 70%); }
 
-1. READINESS SCORE
-   Status: ✅ WORKING
-   Current Value: 62
-   Data Path: response.data[].score
-   Notes: This is working perfectly
-1. RESTING HEART RATE (RHR)
-   Status: ❌ BROKEN - Showing contributor score instead of BPM
-   Current Value: 100 (this is a 0-100 score, NOT heart rate!)
-   Current Code: day.contributors?.resting_heart_rate
-   
-   PROBLEM: We’re pulling from “contributors.resting_heart_rate” which is a
-   SCORE (0-100), not the actual heart rate in BPM.
-   
-   SOLUTION NEEDED: Find the actual heart rate field in the API response.
-   Possible locations to check:
-- root level: response.data[].heart_rate
-- root level: response.data[].resting_heart_rate
-- inside metrics: response.data[].metrics?.resting_heart_rate
-   
-   Expected Value: ~48 BPM for Jermaine, ~58 BPM for Sophia
-1. SLEEP DATA
-   Status: ❌ SHOWING NaN
-   Current Values: Sleep=NaN, Deep=null, REM=null
-   Current Code:
-- sleep: slp ? (slp.total_sleep_duration/3600).toFixed(1) : “-”
-- deep: slp ? Math.round(slp.deep_sleep_duration/60) : “-”
-- rem: slp ? Math.round(slp.rem_sleep_duration/60) : “-”
-   
-   PROBLEM: Today’s sleep data (2026-01-03) doesn’t exist yet because the
-   sleep cycle hasn’t completed. This is EXPECTED behavior.
-   
-   SOLUTION: This will auto-populate once tonight’s sleep is complete.
-   For testing, we should look at YESTERDAY’s data instead.
-1. ACTIVITY DATA  
-   Status: ❌ SHOWING “-” or 0
-   Current Values: Cal=-, Z2=0, Z5=0
-   Current Code:
-- cal: act ? act.active_calories : “-”
-- med: act ? Math.round(act.medium_activity_time/60) : 0
-- high: act ? Math.round(act.high_activity_time/60) : 0
-   
-   PROBLEM: Need to see the actual ACTIVITY DATA JSON structure to verify
-   field names are correct.
-   
-   Expected fields in activity response:
-- active_calories (total active calories burned)
-- high_activity_time (seconds in high intensity zones)
-- medium_activity_time (seconds in medium intensity zones)
+    .hud-header { padding: 15px 16px; background: rgba(0,0,0,0.9); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--border); }
+    .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .app-name { font-size: 0.6rem; font-weight: 900; letter-spacing: 2px; color: var(--text-muted); }
+    .user-switch { display: flex; gap: 4px; background: #222; padding: 2px; border-radius: 20px; }
+    .u-badge { padding: 6px 14px; border-radius: 16px; font-size: 0.6rem; font-weight: 700; color: #666; background: transparent; border: none; cursor: pointer; transition: all 0.2s; }
+    .u-badge.active { background: var(--text-main); color: #000; }
 
-# ================================================================================
-READINESS DATA STRUCTURE (FROM DEBUG OUTPUT)
+    .date-nav { display: flex; justify-content: center; align-items: center; gap: 20px; font-family: var(--font-data); font-size: 0.8rem; font-weight: 700; color: #fff; padding-top: 5px; }
+    .date-display { min-width: 100px; text-align: center; letter-spacing: 1px; }
 
-{
-“id”: “983d520b-2422-47ee-9857-ddf4c04b626f”,
-“contributors”: {
-“activity_balance”: 68,
-“body_temperature”: 96,
-“hrv_balance”: 34,
-“previous_day_activity”: 75,
-“previous_night”: 77,
-“recovery_index”: 35,
-“resting_heart_rate”: 100,  ← THIS IS A SCORE (0-100), NOT BPM!
-“sleep_balance”: 47,
-“sleep_regularity”: 57
-},
-“day”: “2026-01-03”,
-“score”: 62,
-“temperature_deviation”: 0.11,
-“temperature_trend_deviation”: 0.41,
-“timestamp”: “2026-01-03T00:00:00.000+00:00”
+    .debug-box { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin: 20px 16px; font-family: var(--font-data); font-size: 0.55rem; color: var(--text-muted); max-height: 400px; overflow-y: auto; }
+    .debug-section { margin: 15px 0; padding: 10px; background: rgba(255,255,255,0.02); border-left: 2px solid var(--acid); }
+    .debug-title { color: var(--acid); font-weight: 900; margin-bottom: 8px; }
+    .debug-line { margin: 3px 0; }
+    .debug-json { color: var(--cyan); white-space: pre-wrap; word-break: break-all; margin-left: 10px; }
+    .debug-success { color: var(--acid); }
+    .debug-error { color: var(--alert); }
+    .debug-warn { color: var(--gold); }
+
+    .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 16px; margin: 20px 0; }
+    .data-card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 15px; }
+    .data-label { font-size: 0.5rem; color: var(--text-muted); font-weight: 900; margin-bottom: 5px; }
+    .data-val { font-family: var(--font-data); font-size: 1.2rem; color: var(--acid); }
+
+    .sync-footer { position: fixed; bottom: 0; left: 0; width: 100%; background: #000; padding: 12px 16px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-family: var(--font-data); font-size: 0.6rem; color: #555; z-index: 200; }
+    .pulse { animation: pulse 2s infinite; display: inline-block; width: 6px; height: 6px; background: var(--acid); border-radius: 50%; margin-right: 6px; }
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } }
+</style>
+```
+
+</head>
+<body>
+
+```
+<div class="hud-header">
+    <div class="top-bar">
+        <div class="app-name">CENTURION v4700.12 DATA DEBUG</div>
+        <div class="user-switch">
+            <button id="btn-J" class="u-badge active" onclick="centurion.switchUser('J')">JER</button>
+            <button id="btn-S" class="u-badge" onclick="centurion.switchUser('S')">SOPH</button>
+        </div>
+    </div>
+    <div class="date-nav">
+        <span class="date-display" id="dateDisplay">TODAY</span>
+    </div>
+</div>
+
+<div class="data-grid">
+    <div class="data-card">
+        <div class="data-label">READINESS</div>
+        <div class="data-val" id="val-readiness">--</div>
+    </div>
+    <div class="data-card">
+        <div class="data-label">RHR</div>
+        <div class="data-val" id="val-rhr">--</div>
+    </div>
+    <div class="data-card">
+        <div class="data-label">SLEEP (hrs)</div>
+        <div class="data-val" id="val-sleep">--</div>
+    </div>
+    <div class="data-card">
+        <div class="data-label">DEEP (min)</div>
+        <div class="data-val" id="val-deep">--</div>
+    </div>
+    <div class="data-card">
+        <div class="data-label">REM (min)</div>
+        <div class="data-val" id="val-rem">--</div>
+    </div>
+    <div class="data-card">
+        <div class="data-label">ACTIVE CAL</div>
+        <div class="data-val" id="val-cal">--</div>
+    </div>
+    <div class="data-card">
+        <div class="data-label">Z2 (min)</div>
+        <div class="data-val" id="val-z2">--</div>
+    </div>
+    <div class="data-card">
+        <div class="data-label">Z5 (min)</div>
+        <div class="data-val" id="val-z5">--</div>
+    </div>
+</div>
+
+<div class="debug-box" id="debugLog">
+    <div class="debug-line">🔍 INITIALIZING DATA INSPECTOR...</div>
+</div>
+
+<div class="sync-footer">
+    <div><span class="pulse"></span><span id="ouraBar">INIT...</span></div>
+    <div onclick="centurion.fetchOuraData()" style="cursor:pointer">FORCE SYNC</div>
+</div>
+```
+
+<script>
+const TOKENS = { 'J': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'S': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
+
+function getCaDate() { let d = new Date(); d.setHours(12, 0, 0, 0); return d; }
+function getDateKey(d) { return d.toISOString().split('T')[0]; }
+
+function log(msg, type = 'info') {
+    const debugLog = document.getElementById('debugLog');
+    const className = type === 'error' ? 'debug-error' : type === 'warn' ? 'debug-warn' : 'debug-success';
+    debugLog.innerHTML += `<div class="debug-line ${className}">${msg}</div>`;
+    debugLog.scrollTop = debugLog.scrollHeight;
+    console.log(msg);
 }
 
-CONTRIBUTORS EXPLAINED:
+function logSection(title, data) {
+    const debugLog = document.getElementById('debugLog');
+    debugLog.innerHTML += `
+        <div class="debug-section">
+            <div class="debug-title">${title}</div>
+            <div class="debug-json">${JSON.stringify(data, null, 2)}</div>
+        </div>
+    `;
+    debugLog.scrollTop = debugLog.scrollHeight;
+}
 
-- All values in “contributors” are SCORES from 0-100
-- They are NOT raw measurements
-- “resting_heart_rate”: 100 means “RHR contributor score is 100/100”
-- This is why we’re seeing “100 BPM” - it’s not BPM at all!
+class CenturionCore {
+    constructor() {
+        this.user = localStorage.getItem('centurion_active_user') || 'J';
+        this.dayOffset = 0;
+        this.cache = JSON.parse(localStorage.getItem(`centurion_oura_cache_${this.user}`)) || { history: [] };
+        this.init();
+    }
 
-# ================================================================================
-NEXT STEPS NEEDED
+    init() {
+        log('✅ System initialized');
+        log(`👤 Active user: ${this.user}`);
+        this.updateUI();
+        this.render();
+        this.fetchOuraData();
+    }
 
-1. SCROLL DOWN in the debug output to see:
-- “📊 ACTIVITY DATA (Today)” section
-- “📊 SLEEP DATA (Most Recent)” section
-1. Once we see those structures, we can identify:
-- Correct field names for activity calories and zone times
-- Where the actual RHR in BPM is located (if available in readiness API)
-- Sleep data structure to verify our field names
-1. Alternative approach for RHR:
-- Oura API might have a separate “heart_rate” endpoint
-- OR the actual BPM might be in the sleep data
-- OR we might need to use the daily_spo2 endpoint which includes HR
+    switchUser(uID) {
+        if(this.user === uID) return;
+        this.user = uID;
+        localStorage.setItem('centurion_active_user', uID);
+        
+        log(`🔄 Switching to ${uID}`);
+        this.cache = { history: [] };
+        localStorage.removeItem(`centurion_oura_cache_${uID}`);
+        
+        this.dayOffset = 0;
+        this.updateUI();
+        this.render();
+        this.fetchOuraData();
+    }
 
-# ================================================================================
-CODE FIXES REQUIRED (PENDING DATA STRUCTURE CONFIRMATION)
+    getCurrentDate() {
+        const d = getCaDate();
+        d.setDate(d.getDate() + this.dayOffset);
+        return d;
+    }
 
-Current problematic code in fetchOuraData():
+    updateUI() {
+        document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
+        document.getElementById(`btn-${this.user}`).classList.add('active');
+    }
 
-const processed = {
-date: day.day,
-score: day.score || “-”,
-cal: act ? act.active_calories : “-”,
-high: act ? Math.round(act.high_activity_time/60) : 0,
-med: act ? Math.round(act.medium_activity_time/60) : 0,
-rhr: day.contributors?.resting_heart_rate || “-”,  ← WRONG FIELD
-sleep: slp ? (slp.total_sleep_duration/3600).toFixed(1) : “-”,
-deep: slp ? Math.round(slp.deep_sleep_duration/60) : “-”,
-rem: slp ? Math.round(slp.rem_sleep_duration/60) : “-”
-};
+    async fetchOuraData() {
+        const fetchID = this.user;
+        const token = TOKENS[fetchID];
+        const range = `start_date=${getDateKey(new Date(Date.now()-864e5*14))}&end_date=${getDateKey(new Date())}`;
+        const cb = `&t=${Date.now()}`;
+        
+        log(`🔗 Starting fetch for ${fetchID}`);
+        document.getElementById('ouraBar').innerHTML = "💍 CONNECTING...";
+        
+        try {
+            // READINESS
+            log('📡 Fetching READINESS...');
+            const rRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}${cb}`)}`, { 
+                headers: { 'Authorization': `Bearer ${token}` } 
+            });
+            const rData = await rRes.json();
+            log(`✅ Readiness: ${rRes.status} - ${rData.data?.length || 0} days`);
+            
+            if(rData.data && rData.data.length > 0) {
+                logSection('📊 READINESS DATA (Today)', rData.data[rData.data.length - 1]);
+            }
+            
+            // ACTIVITY
+            log('📡 Fetching ACTIVITY...');
+            const aRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}${cb}`)}`, { 
+                headers: { 'Authorization': `Bearer ${token}` } 
+            });
+            const aData = await aRes.json();
+            log(`✅ Activity: ${aRes.status} - ${aData.data?.length || 0} days`);
+            
+            if(aData.data && aData.data.length > 0) {
+                logSection('📊 ACTIVITY DATA (Today)', aData.data[aData.data.length - 1]);
+            }
+            
+            // SLEEP
+            log('📡 Fetching SLEEP...');
+            const sRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?${range}${cb}`)}`, { 
+                headers: { 'Authorization': `Bearer ${token}` } 
+            });
+            const sData = await sRes.json();
+            log(`✅ Sleep: ${sRes.status} - ${sData.data?.length || 0} days`);
+            
+            if(sData.data && sData.data.length > 0) {
+                logSection('📊 SLEEP DATA (Most Recent)', sData.data[sData.data.length - 1]);
+            }
+            
+            if(this.user !== fetchID) {
+                log('⚠️ User switched during fetch, aborting', 'warn');
+                return;
+            }
+            
+            if(rData.data) {
+                log('🔨 Processing data...');
+                const todayKey = getDateKey(getCaDate());
+                
+                // Find today's data
+                const todayReadiness = rData.data.find(d => d.day === todayKey);
+                const todayActivity = aData.data?.find(d => d.day === todayKey);
+                const todaySleep = sData.data?.find(d => d.day === todayKey);
+                
+                log('');
+                log('📋 TODAY\'S DATA MAPPING:', 'warn');
+                log(`Date key: ${todayKey}`, 'warn');
+                log('');
+                
+                if(todayReadiness) {
+                    log(`✅ Readiness found for today`);
+                    log(`  - Score: ${todayReadiness.score}`);
+                    log(`  - Contributors: ${JSON.stringify(todayReadiness.contributors)}`);
+                    log(`  - RHR from contributors: ${todayReadiness.contributors?.resting_heart_rate}`);
+                } else {
+                    log(`❌ No readiness data for ${todayKey}`, 'error');
+                }
+                
+                if(todayActivity) {
+                    log(`✅ Activity found for today`);
+                    log(`  - Active calories: ${todayActivity.active_calories}`);
+                    log(`  - High activity time: ${todayActivity.high_activity_time} sec = ${Math.round(todayActivity.high_activity_time/60)} min`);
+                    log(`  - Medium activity time: ${todayActivity.medium_activity_time} sec = ${Math.round(todayActivity.medium_activity_time/60)} min`);
+                } else {
+                    log(`❌ No activity data for ${todayKey}`, 'error');
+                }
+                
+                if(todaySleep) {
+                    log(`✅ Sleep found for today`);
+                    log(`  - Total sleep: ${todaySleep.total_sleep_duration} sec = ${(todaySleep.total_sleep_duration/3600).toFixed(1)} hrs`);
+                    log(`  - Deep sleep: ${todaySleep.deep_sleep_duration} sec = ${Math.round(todaySleep.deep_sleep_duration/60)} min`);
+                    log(`  - REM sleep: ${todaySleep.rem_sleep_duration} sec = ${Math.round(todaySleep.rem_sleep_duration/60)} min`);
+                } else {
+                    log(`❌ No sleep data for ${todayKey}`, 'error');
+                    log(`⚠️ This is EXPECTED if you haven't completed today's sleep yet!`, 'warn');
+                }
+                
+                const hist = rData.data.map(day => {
+                    const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
+                    const slp = sData.data ? sData.data.find(sc => sc.day === day.day) : null;
+                    
+                    const processed = { 
+                        date: day.day, 
+                        score: day.score || "-", 
+                        cal: act ? act.active_calories : "-", 
+                        high: act ? Math.round(act.high_activity_time/60) : 0, 
+                        med: act ? Math.round(act.medium_activity_time/60) : 0,
+                        rhr: day.contributors?.resting_heart_rate || "-",
+                        sleep: slp ? (slp.total_sleep_duration/3600).toFixed(1) : "-",
+                        deep: slp ? Math.round(slp.deep_sleep_duration/60) : "-",
+                        rem: slp ? Math.round(slp.rem_sleep_duration/60) : "-"
+                    };
+                    
+                    return processed;
+                }).reverse();
+                
+                log('');
+                logSection('📊 PROCESSED TODAY DATA', hist[0]);
+                
+                localStorage.setItem(`centurion_oura_cache_${fetchID}`, JSON.stringify({history: hist, lastFetch: Date.now()}));
+                this.cache = { history: hist };
+                document.getElementById('ouraBar').innerHTML = `💍 SYNCED`;
+                log('✅ SYNC COMPLETE!');
+                this.render();
+            }
+        } catch(e) { 
+            log(`❌ ERROR: ${e.message}`, 'error');
+            console.error('Full error:', e);
+            document.getElementById('ouraBar').innerHTML = "💍 SYNC FAILED"; 
+        }
+    }
 
-Potential fixes (need to verify field names):
+    render() {
+        const d = this.getCurrentDate();
+        const dk = getDateKey(d);
+        const today = getDateKey(getCaDate());
+        const displayDate = (dk === today) ? "TODAY" : dk.substring(5);
+        document.getElementById('dateDisplay').innerText = displayDate;
 
-1. RHR Fix Option A - If actual BPM is in readiness response:
-   rhr: day.heart_rate || day.resting_heart_rate || “-”
-1. RHR Fix Option B - If we need to fetch from sleep data:
-   rhr: slp ? slp.average_heart_rate : “-”
-1. RHR Fix Option C - Use a default value from user config:
-   rhr: USERS[this.user].rhr  // 48 for J, 58 for S
-1. Activity Fix - Verify these field names are correct:
-   cal: act ? act.active_calories : “-”
-   high: act ? Math.round(act.high_activity_time/60) : 0
-   med: act ? Math.round(act.medium_activity_time/60) : 0
-1. Sleep Fix - These look correct, just need data:
-   sleep: slp ? (slp.total_sleep_duration/3600).toFixed(1) : “-”
-   deep: slp ? Math.round(slp.deep_sleep_duration/60) : “-”
-   rem: slp ? Math.round(slp.rem_sleep_duration/60) : “-”
+        const rawOura = this.cache.history.find(d => d.date === dk) || { 
+            score: "-", cal: "-", high: 0, med: 0, rhr: "-", sleep: "-", deep: "-", rem: "-" 
+        };
+        
+        log(`📊 Rendering: ${dk}`);
+        log(`  Values: Score=${rawOura.score}, RHR=${rawOura.rhr}, Sleep=${rawOura.sleep}, Deep=${rawOura.deep}, REM=${rawOura.rem}, Cal=${rawOura.cal}, Z2=${rawOura.med}, Z5=${rawOura.high}`);
+        
+        document.getElementById('val-readiness').textContent = rawOura.score;
+        document.getElementById('val-rhr').textContent = rawOura.rhr;
+        document.getElementById('val-sleep').textContent = rawOura.sleep;
+        document.getElementById('val-deep').textContent = rawOura.deep;
+        document.getElementById('val-rem').textContent = rawOura.rem;
+        document.getElementById('val-cal').textContent = rawOura.cal;
+        document.getElementById('val-z2').textContent = rawOura.med;
+        document.getElementById('val-z5').textContent = rawOura.high;
+    }
+}
 
-# ================================================================================
-TESTING STRATEGY
+const centurion = new CenturionCore();
+</script>
 
-1. Look at YESTERDAY’s data (2026-01-02) instead of today
-- This will have complete sleep data
-- Activity should be populated
-- Can verify all fields work correctly
-1. Add date navigation (◀ ▶ buttons) to browse historical data
-- This lets us see days with complete data
-- Currently we only show “TODAY” which has incomplete sleep
-1. Once we see the full JSON structures, update the field mappings
-
-# ================================================================================
-WAITING FOR USER INPUT
-
-Please scroll down in the debug output to show:
-
-1. “📊 ACTIVITY DATA (Today)” JSON section
-1. “📊 SLEEP DATA (Most Recent)” JSON section
-
-This will let us see the exact field names and structure so we can fix
-the data extraction code.
-
-================================================================================
+</body>
+</html>
