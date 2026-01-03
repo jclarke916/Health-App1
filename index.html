@@ -1,717 +1,535 @@
-Claude 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v1300.0 Intelligence Core</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>The Centurion | v5000.3 MASTER-SYNC</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #050505;
-            --glass: rgba(30, 30, 32, 0.75);
-            --border: rgba(255, 255, 255, 0.1);
-            --text-main: #FFFFFF;
-            --text-sub: #8E8E93;
+            --bg-deep: #000000;
+            --bg-panel: #0a0a0a;
+            --border: #222;
+            --acid: #ccff00;
+            --cyan: #00f0ff;
             --gold: #FFD60A;
-            --green: #30D158;
-            --blue: #0A84FF;
-            --red: #FF453A;
-            --purple: #BF5AF2;
-            --radius: 24px;
+            --alert: #ff453a;
+            --purple: #bf5af2;
+            --text-main: #ffffff;
+            --text-muted: #666;
+            --font-ui: 'Inter', sans-serif;
+            --font-data: 'JetBrains Mono', monospace;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text-main); margin: 0; padding: 20px 16px; min-height: 100vh; background-image: radial-gradient(circle at top center, #1a1a1a 0%, #000000 60%); }
-        .container { max-width: 480px; margin: 0 auto; padding-bottom: 60px; }
-        h1 { text-align: center; font-weight: 900; letter-spacing: 3px; text-transform: uppercase; font-size: 0.8rem; margin: 10px 0 20px 0; color: #666; }
+        body { margin: 0; padding: 0 0 100px 0; background: var(--bg-deep); color: var(--text-main); font-family: var(--font-ui); min-height: 100vh; background-image: radial-gradient(circle at top right, #111 0%, #000 70%); }
 
-        .badge-row { display: flex; justify-content: center; background: rgba(255, 255, 255, 0.05); padding: 4px; border-radius: 30px; margin: 0 auto 20px auto; width: fit-content; border: 1px solid var(--border); }
-        .u-badge { padding: 8px 20px; border-radius: 24px; font-size: 0.7rem; font-weight: 700; cursor: pointer; color: var(--text-sub); transition: all 0.3s ease; }
-        .u-badge.active { background: rgba(255, 255, 255, 0.15); color: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+        /* HEADER */
+        .hud-header { padding: 15px 16px; background: rgba(0,0,0,0.9); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--border); }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .app-name { font-size: 0.6rem; font-weight: 900; letter-spacing: 2px; color: var(--text-muted); }
+        .user-switch { display: flex; gap: 4px; background: #222; padding: 2px; border-radius: 20px; }
+        .u-btn { padding: 4px 12px; border-radius: 16px; font-size: 0.6rem; font-weight: 700; color: #666; background: transparent; border: none; cursor: pointer; transition: all 0.2s; }
+        .u-btn.active { background: var(--text-main); color: #000; }
 
-        .status-bar { text-align: center; color: var(--text-sub); font-size: 0.65rem; font-weight: 600; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; }
-        .controls { display: flex; gap: 8px; margin-bottom: 20px; }
-        .nav-btn { background: var(--glass); border: 1px solid var(--border); color: var(--text-sub); padding: 12px; flex: 1; border-radius: 16px; font-size: 0.6rem; font-weight: 700; cursor: pointer; text-transform: uppercase; }
-
-        .tabs { display: flex; gap: 6px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none;}
-        .tab { flex: 1; min-width: 45px; padding: 12px 0; background: transparent; color: #555; border-radius: 16px; font-size: 0.6rem; font-weight: 700; text-align: center; cursor: pointer; transition: all 0.3s; }
-        .tab.active { background: var(--glass); color: #fff; border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
-
-        .premium-card { background: var(--glass); backdrop-filter: blur(20px); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 12px; overflow: hidden; cursor: pointer; }
-        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .card-title { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-sub); }
-        .card-subtitle { font-size: 0.65rem; color: #555; margin-top: 3px; }
-        .card-val-lg { font-size: 1.6rem; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
-
-        .data-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; background: rgba(255,255,255,0.03); border-radius: 16px; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.02); }
-        .data-label { font-size: 0.7rem; font-weight: 700; color: var(--text-sub); text-transform: uppercase; }
-        .data-val { font-size: 0.9rem; font-weight: 700; color: #fff; }
-
-        .bio-section { margin-bottom: 15px; }
-        .bar-label { font-size: 0.65rem; color: var(--text-sub); font-weight: 700; margin-bottom: 8px; display: flex; justify-content: space-between; text-transform: uppercase; }
-        .bar-track { height: 8px; background: rgba(255,255,255,0.08); border-radius: 10px; overflow: hidden; }
-        .bar-fill { height: 100%; border-radius: 10px; transition: width 0.8s ease; }
+        /* DATE NAV */
+        .date-nav { display: flex; justify-content: center; align-items: center; gap: 20px; font-family: var(--font-data); font-size: 0.8rem; font-weight: 700; color: #fff; padding-top: 5px; }
+        .nav-arrow { color: var(--gold); cursor: pointer; padding: 5px 10px; user-select: none; }
         
-        .section-header { margin: 25px 0 10px 0; font-size: 0.6rem; color: #666; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
-        .status-pill { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
-        .pill-win { background: rgba(48, 209, 88, 0.15); color: var(--green); border: 1px solid rgba(48, 209, 88, 0.3); }
-        .pill-rest { background: rgba(255, 69, 58, 0.15); color: var(--red); border: 1px solid rgba(255, 69, 58, 0.3); }
-        .chevron { font-size: 0.8rem; color: #444; transition: transform 0.3s ease; margin-left: 10px; }
-        .premium-card.collapsed .card-body { display: none; }
-        .premium-card.collapsed .chevron { transform: rotate(-90deg); }
+        /* HERO */
+        .hero-section { padding: 25px 16px 10px; display: flex; align-items: center; justify-content: space-between; }
+        .ring-container { width: 110px; height: 110px; position: relative; display: flex; align-items: center; justify-content: center; }
+        .ring-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+        .ring-bg { fill: none; stroke: var(--border); stroke-width: 6; }
+        .ring-fg { fill: none; stroke: var(--acid); stroke-width: 6; stroke-dasharray: 283; stroke-dashoffset: 283; transition: stroke-dashoffset 1s ease; stroke-linecap: round; }
+        .ring-data { position: absolute; text-align: center; }
+        .ring-val { font-family: var(--font-data); font-size: 1.8rem; font-weight: 700; color: #fff; line-height: 1; }
+        .ring-label { font-size: 0.5rem; font-weight: 700; color: var(--text-muted); margin-top: 2px; }
+
+        .tactical-box { flex: 1; margin-left: 20px; background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, transparent 100%); border-left: 3px solid var(--acid); padding: 12px; border-radius: 0 12px 12px 0; border: 1px solid var(--border); border-left-width: 3px; }
+        .tac-label { font-size: 0.55rem; color: var(--acid); font-weight: 900; letter-spacing: 1px; margin-bottom: 4px; text-transform: uppercase; }
+        .tac-cmd { font-size: 0.85rem; font-weight: 700; color: #fff; line-height: 1.3; }
+        .tac-meta { font-family: var(--font-data); font-size: 0.55rem; color: var(--text-muted); margin-top: 4px; }
+
+        /* GRIDS */
+        .section-label { font-size: 0.55rem; font-weight: 900; color: var(--text-muted); letter-spacing: 1px; margin: 20px 16px 10px; text-transform: uppercase; }
+        .telemetry-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 10px; }
+        .orb-card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 10px 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+        .orb-container { width: 60px; height: 60px; position: relative; display: flex; align-items: center; justify-content: center; margin-bottom: 5px; }
+        .orb-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+        .orb-bg { fill: none; stroke: #222; stroke-width: 5; }
+        .orb-fg { fill: none; stroke: var(--cyan); stroke-width: 5; stroke-dasharray: 158; stroke-dashoffset: 158; transition: stroke-dashoffset 1s ease; stroke-linecap: round; }
         
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .orb-val-box { position: absolute; text-align: center; }
+        .orb-val { font-family: var(--font-data); font-size: 0.75rem; font-weight: 700; color: #fff; line-height: 1; }
+        .orb-unit { font-size: 0.4rem; color: var(--text-muted); display: block; margin-top: 2px; }
+        .orb-label { font-size: 0.5rem; font-weight: 700; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; }
+
+        .live-dot { width: 5px; height: 5px; background: var(--alert); border-radius: 50%; position: absolute; top: 8px; right: 8px; box-shadow: 0 0 5px var(--alert); animation: pulse-fast 1s infinite; display: none; }
+        .orb-card.live .live-dot { display: block; }
+        @keyframes pulse-fast { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+
+        /* TIMELINE */
+        .timeline-container { padding: 0 16px; }
+        .section-header { font-size: 0.6rem; font-weight: 900; color: var(--text-muted); letter-spacing: 1px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        
+        .time-slot { display: flex; gap: 12px; margin-bottom: 20px; position: relative; transition: opacity 0.3s; }
+        .time-slot.past { opacity: 0.4; }
+        .time-slot::before { content: ''; position: absolute; left: 22px; top: 25px; bottom: -25px; width: 1px; background: var(--border); z-index: 0; }
+        .time-slot:last-child::before { display: none; }
+
+        .ts-time { width: 45px; font-family: var(--font-data); font-size: 0.75rem; color: var(--text-muted); text-align: right; padding-top: 5px; z-index: 1; }
+        .ts-card { flex: 1; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 15px; position: relative; z-index: 1; overflow: hidden; transition: all 0.3s; }
+        
+        .badge-row { display: flex; gap: 5px; margin-bottom: 8px; flex-wrap: wrap; }
+        .ts-badge { font-size: 0.5rem; padding: 2px 6px; border-radius: 4px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid transparent; }
+        .b-bio { background: rgba(255,255,255,0.1); color: var(--text-muted); border-color: var(--border); }
+        .b-syn { background: rgba(0, 240, 255, 0.1); color: var(--cyan); border-color: rgba(0, 240, 255, 0.3); }
+        .b-alert { background: rgba(255, 69, 58, 0.2); color: var(--alert); border-color: var(--alert); animation: blink 1s infinite; }
+
+        .ts-title { font-size: 0.85rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
+        .ts-desc { font-size: 0.75rem; color: #aaa; line-height: 1.4; margin-bottom: 8px; }
+        .ts-mech { font-family: var(--font-data); font-size: 0.55rem; color: var(--text-muted); padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 5px; }
+        .ts-mech::before { content: '🔬'; font-size: 0.6rem; }
+
+        .check-btn { position: absolute; top: 15px; right: 15px; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border); background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; color: transparent; transition: all 0.2s; color: #000; font-weight: 800; font-size: 0.7rem; }
+        .time-slot.past .check-btn { background: var(--acid); border-color: var(--acid); color: #000; }
+        
+        .macro-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 30px; }
+
+        /* WORKOUT EXPANSION */
+        .workout-detail { margin-top: 10px; background: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px; display: none; }
+        .workout-detail.active { display: block; animation: slideDown 0.3s; }
+        .w-row { display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 6px 0; font-family: var(--font-data); font-size: 0.7rem; }
+        .w-name { color: #ddd; }
+        .w-rep { color: var(--gold); }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+
+        .sync-footer { position: fixed; bottom: 0; left: 0; width: 100%; background: #000; padding: 12px 16px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-family: var(--font-data); font-size: 0.6rem; color: #555; z-index: 200; }
+        .pulse { animation: pulse 2s infinite; display: inline-block; width: 6px; height: 6px; background: var(--acid); border-radius: 50%; margin-right: 6px; }
     </style>
 </head>
 <body>
-<div class="container">
-    <header><h1>THE CENTURION PROTOCOL</h1>
-        <div class="badge-row">
-            <div id="bj" class="u-badge" onclick="switchU('J')">🧔🏾‍♂️ JERMAINE</div>
-            <div id="bs" class="u-badge" onclick="switchU('S')">👩🏾‍🦱 SOPHIA</div>
-        </div>
-    </header>
-    <div id="ouraBar" class="status-bar" onclick="fetchOuraData()">💍 HANDSHAKE REQUIRED...</div>
-    <div id="dateDisplay" class="status-bar" style="margin-bottom: 20px; opacity: 0.7;">...</div>
 
-    <div class="controls">
-        <button class="nav-btn" onclick="changeW(-1)">◀ PREV</button>
-        <button class="nav-btn" onclick="resetD()">TODAY</button>
-        <button class="nav-btn" onclick="changeW(1)">NEXT ▶</button>
+    <svg style="width:0; height:0; position:absolute;" aria-hidden="true" focusable="false">
+      <defs>
+        <linearGradient id="grad-zone2" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" style="stop-color:#00f0ff;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#0080ff;stop-opacity:1" />
+        </linearGradient>
+        <linearGradient id="grad-zone5" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" style="stop-color:#ff453a;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#ff9f0a;stop-opacity:1" />
+        </linearGradient>
+      </defs>
+    </svg>
+
+    <div class="hud-header">
+        <div class="top-bar">
+            <div class="app-name">CENTURION v5000.3</div>
+            <div class="user-switch">
+                <button id="btn-J" class="u-btn active" onclick="centurion.switchUser('J')">JER</button>
+                <button id="btn-S" class="u-btn" onclick="centurion.switchUser('S')">SOPH</button>
+            </div>
+        </div>
+        <div class="date-nav">
+            <span class="nav-arrow" onclick="centurion.changeDay(-1)">◀</span>
+            <span class="date-display" id="date-display">TODAY</span>
+            <span class="nav-arrow" onclick="centurion.changeDay(1)">▶</span>
+        </div>
     </div>
-    
-    <div id="dayTabs" class="tabs"></div>
-    <div id="dayContent"></div>
-    <div style="text-align:center; color:#333; font-size:10px; margin-top:30px; opacity:0.4;">v1300.0 Intelligence Core</div>
-</div>
+
+    <div class="hero-section">
+        <div class="ring-container">
+            <svg class="ring-svg">
+                <circle class="ring-bg" cx="55" cy="55" r="45"></circle>
+                <circle id="activity-ring" class="ring-fg" cx="55" cy="55" r="45" style="stroke: var(--acid)"></circle>
+            </svg>
+            <div class="ring-data">
+                <div class="ring-val" id="score-val">--</div>
+                <div class="ring-label">READINESS</div>
+            </div>
+        </div>
+
+        <div class="tactical-box" id="tactical-box">
+            <div class="tac-label" id="tac-label">STATUS</div>
+            <div class="tac-cmd" id="tac-cmd">INITIALIZING...</div>
+            <div class="tac-meta" id="tac-reason">...</div>
+        </div>
+    </div>
+
+    <div class="section-label">CARDIO-METABOLIC STATUS</div>
+    <div class="telemetry-grid">
+        <div class="orb-card live">
+            <div class="live-dot"></div>
+            <div class="orb-container">
+                <svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-cal" class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--cyan)"></circle></svg>
+                <div class="orb-val-box"><div id="val-cal" class="orb-val">--</div><span class="orb-unit">CAL</span></div>
+            </div>
+            <div class="orb-label">ACTIVE</div>
+        </div>
+        <div class="orb-card">
+            <div class="orb-container">
+                <svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-z2" class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-zone2)"></circle></svg>
+                <div class="orb-val-box"><div id="val-z2" class="orb-val">--</div><span class="orb-unit">Z2 MIN</span></div>
+            </div>
+            <div class="orb-label">BASE</div>
+        </div>
+        <div class="orb-card">
+            <div class="orb-container">
+                <svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-z5" class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-zone5)"></circle></svg>
+                <div class="orb-val-box"><div id="val-z5" class="orb-val">--</div><span class="orb-unit">Z5 MIN</span></div>
+            </div>
+            <div class="orb-label">PEAK</div>
+        </div>
+        <div class="orb-card">
+            <div class="orb-container">
+                <svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-stress" class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--acid)"></circle></svg>
+                <div class="orb-val-box"><div id="val-stress" class="orb-val">--</div><span class="orb-unit">HRV</span></div>
+            </div>
+            <div class="orb-label">BAL</div>
+        </div>
+    </div>
+
+    <div class="section-label">MACRO ADHERENCE</div>
+    <div class="macro-grid">
+        <div class="orb-card">
+            <div class="orb-container">
+                <svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-pro" class="orb-fg" cx="30" cy="30" r="25"></circle></svg>
+                <div class="orb-val-box"><div id="val-pro" class="orb-val">--</div><span class="orb-unit">PRO</span></div>
+            </div>
+            <div class="orb-label">PROTEIN</div>
+        </div>
+        <div class="orb-card">
+            <div class="orb-container">
+                <svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-carb" class="orb-fg" cx="30" cy="30" r="25"></circle></svg>
+                <div class="orb-val-box"><div id="val-carb" class="orb-val">--</div><span class="orb-unit">CARB</span></div>
+            </div>
+            <div class="orb-label">CARBS</div>
+        </div>
+        <div class="orb-card">
+            <div class="orb-container">
+                <svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-fat" class="orb-fg" cx="30" cy="30" r="25"></circle></svg>
+                <div class="orb-val-box"><div id="val-fat" class="orb-val">--</div><span class="orb-unit">FAT</span></div>
+            </div>
+            <div class="orb-label">FATS</div>
+        </div>
+    </div>
+
+    <div class="timeline-container">
+        <div class="section-header">
+            <span>CHRONO-PROTOCOL</span>
+            <span id="current-time" style="color:var(--acid)">--:--</span>
+        </div>
+        <div id="timeline-feed"></div>
+    </div>
+
+    <div class="sync-footer">
+        <div><span class="pulse"></span><span id="sync-status">OURA V2 API</span></div>
+        <div id="sync-time" onclick="centurion.fetchOuraData()">TAP TO SYNC</div>
+    </div>
 
 <script>
-// ==========================================
-// CENTURION v1300.0 INTELLIGENCE CORE
-// ==========================================
+/**
+ * CENTURION v5000.3 - MASTER SYNC
+ * EXACT LOGIC FROM v1300 INTEGRATED
+ */
 
-let user = localStorage.getItem('centurion_active_user') || 'J';
-let offset = 0;
-let selDate = getCaDate(); 
-
-let isPlanCollapsed = false;
-let isWorkoutCollapsed = true;
-let isNutCollapsed = true;
-let isAICollapsed = true;
-let isBioCollapsed = true;
-
-const TOKENS = { 'J': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'S': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
-
-const uH = {
-    'J': {
-        now: {bf:19.0, m:99.0, vf:10}, goal: {bf:15.0, m:105.0, vf:7},
-        labs: { 
-            apob: {val:95, goal:60, name:"ApoB", unit:"mg/dL", low:true}, 
-            hba1c: {val:5.4, goal:5.0, name:"HbA1c", unit:"%", low:true} 
-        },
-        tests: { vo2: {val:45, goal:55, name:"VO2 Max", unit:"ml/kg"} }
-    },
-    'S': {
-        now: {bf:36.1, m:49.2, vf:9}, goal: {bf:22.0, m:60.0, vf:4},
-        labs: {
-            ana: {val:320, goal:40, name:"ANA Titer", unit:"", low:true},
-            hba1c: {val:5.6, goal:5.0, name:"HbA1c", unit:"%", low:true},
-            ferr: {val:75, goal:70, name:"Ferritin", unit:"ng/mL", low:false},
-            glucose: {val:84, goal:85, name:"Glucose", unit:"mg/dL", low:true}
-        },
-        tests: { vo2: {val:32, goal:45, name:"VO2 Max", unit:"ml/kg"} }
-    }
+const TOKENS = {
+    'J': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 
+    'S': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' 
 };
 
-const unifiedSchedule = {
-    1: { focus: "HEAVY LIFT", tasks: "5x5 Compounds | Squat/Deadlift", zT: {h:15, m:30} },
-    2: { focus: "BOXING", tasks: "45m Intervals | Breath Training", zT: {h:30, m:15} },
-    3: { focus: "REFORM", tasks: "Pilates | Stability Work", zT: {h:5, m:40} },
-    4: { focus: "BOXING", tasks: "Technique & Heavy Bag", zT: {h:25, m:20} },
-    5: { focus: "REFORM", tasks: "Core & Recovery Focus", zT: {h:0, m:30} },
-    6: { focus: "CS4 / VO2", tasks: "Max Effort Intervals", zT: {h:25, m:20} },
-    0: { focus: "REST", tasks: "Active Recovery Walk", zT: {h:0, m:0} }
+const USERS = {
+    'J': { name: "Jermaine", rhr: 48, goals: { cal: 700, z2: 60, z5: 20, pro: 180, carb: 200, fat: 80 } },
+    'S': { name: "Sophia", rhr: 58, goals: { cal: 450, z2: 45, z5: 15, pro: 120, carb: 150, fat: 60 } }
 };
 
-const goalTimeline = {
-    'J': {
-        startDate: '2025-01-01',
-        milestones: [
-            { week: 4, target: { bf: 18.0, vo2: 47, apob: 90 } },
-            { week: 8, target: { bf: 17.0, vo2: 50, apob: 80 } },
-            { week: 12, target: { bf: 15.0, vo2: 55, apob: 60 } }
-        ]
-    },
-    'S': {
-        startDate: '2025-01-01',
-        milestones: [
-            { week: 4, target: { bf: 32.0, vo2: 35, ana: 250 } },
-            { week: 8, target: { bf: 28.0, vo2: 40, ana: 150 } },
-            { week: 12, target: { bf: 22.0, vo2: 45, ana: 40 } }
-        ]
-    }
+const MACRO_LOOKUP = {
+    'sup': {p:0, c:2, f:0},
+    'juice_j': {p:2, c:15, f:0},
+    'juice_s': {p:1, c:12, f:0},
+    'b_j': {p:40, c:15, f:22},
+    'b_s': {p:30, c:5, f:18},
+    'l': {p:45, c:40, f:15},
+    'l_trigger': {p:30, c:45, f:12},
+    'snack_pro': {p:20, c:8, f:0},
+    'snack_imm': {p:15, c:0, f:2},
+    'd_ana': {p:50, c:50, f:18},
+    'd_rep': {p:40, c:10, f:12}
 };
 
-const mealDB = {
-    b: [
-        { name: "Ancestral Beef Sausage", pro: 25, carb: 5, fat: 18, cal: 280, profile: "highPro" },
-        { name: "Avocado Egg Toast", pro: 20, carb: 35, fat: 12, cal: 340, profile: "balanced" },
-        { name: "Greek Yogurt Bowl", pro: 30, carb: 25, fat: 8, cal: 290, profile: "highPro" }
-    ],
-    l: [
-        { name: "Super Mince Bowl", pro: 50, carb: 35, fat: 15, cal: 550, profile: "highPro" },
-        { name: "Salmon Power Salad", pro: 40, carb: 20, fat: 25, cal: 480, profile: "highFat" },
-        { name: "Turkey Rice Bowl", pro: 45, carb: 50, fat: 10, cal: 520, profile: "highCarb" }
-    ],
-    d: [
-        { name: "Bison Portobello", pro: 45, carb: 12, fat: 18, cal: 420, profile: "highPro" },
-        { name: "Ribeye & Sweet Potato", pro: 50, carb: 40, fat: 25, cal: 620, profile: "highCarb" },
-        { name: "Halibut White Beans", pro: 42, carb: 30, fat: 12, cal: 420, profile: "balanced" }
-    ]
+const WORKOUTS = {
+    'anabolic_j': { title: "Heavy Compounds", sub: "Hypertrophy A", exercises: ["Deadlifts 5x5", "Bench Press 4x8"] },
+    'repair_j': { title: "Zone 2 Flush", sub: "Active Recovery", exercises: ["Ruck 45m @ 35lbs", "Sauna 20m"] },
+    'anabolic_s': { title: "Glute/Core", sub: "Strength", exercises: ["Hip Thrusts 4x10", "Pallof Press 3x12"] },
+    'repair_s': { title: "Yoga Flow", sub: "Parasympathetic", exercises: ["Vinyasa 45m", "Foam Roll 10m"] }
 };
 
-const juiceDB = ["PINEAPPLE GREEN|Spinach, Pineapple|120", "PLASMA FLUSH|Watermelon, Lime|140", "TITAN RED|Beets, Carrots|185"];
-
-// UTILITIES
-function getCaDate() { let d = new Date(); d.setHours(12, 0, 0, 0); return d; }
+// UTILS
 function getDateKey(d) { return d.toISOString().split('T')[0]; }
-function getMon(o) { let d = getCaDate(); d.setHours(0,0,0,0); let day = d.getDay(); let diff = d.getDate() - day + (day === 0 ? -6 : 1); d.setDate(diff + (o * 7)); return d; }
-function getCurrentWeek(user) { const start = new Date(goalTimeline[user].startDate); const now = new Date(); return Math.floor((now - start) / 604800000); }
 
-function bioBar(label, val, goal, unit, lowerBetter=false) { 
-    if(!val || isNaN(val)) return ""; 
-    const pct = Math.min(lowerBetter ? (goal/val)*100 : (val/goal)*100, 100); 
-    const color = pct >= 100 ? 'var(--green)' : 'var(--gold)'; 
-    return `<div class="bio-section"><div class="bar-label"><span>${label}</span><span>${val}${unit}</span></div><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div></div>`; 
-}
-// ==========================================
-// INTELLIGENCE FUNCTIONS
-// ==========================================
-
-function predictBurnout(ouraHistory) {
-    if (!ouraHistory || ouraHistory.length < 7) return { risk: "LOW", action: "GATHERING DATA", days: 7, trend: "0" };
-    
-    const last7 = ouraHistory.slice(0, 7);
-    const scores = last7.map(d => parseInt(d.score) || 0);
-    const trend = (scores[0] - scores[6]) / 6;
-    const currentScore = scores[0];
-    const avgScore = scores.reduce((a, b) => a + b, 0) / 7;
-    const highIntensityDays = last7.filter(d => d.high > 20).length;
-    
-    let riskScore = 0;
-    if (trend < -2) riskScore += 3;
-    if (currentScore < 70) riskScore += 2;
-    if (avgScore < 75) riskScore += 1;
-    if (highIntensityDays >= 4) riskScore += 2;
-    
-    let risk, action, daysToRest;
-    if (riskScore >= 5) { risk = "CRITICAL"; action = "FORCE REST TODAY"; daysToRest = 0; }
-    else if (riskScore >= 3) { risk = "HIGH"; action = "REST WITHIN 48H"; daysToRest = 2; }
-    else if (riskScore >= 1) { risk = "MODERATE"; action = "MONITOR CLOSELY"; daysToRest = 4; }
-    else { risk = "LOW"; action = "CONTINUE PROTOCOL"; daysToRest = 7; }
-    
-    return { risk, action, daysToRest, trend: trend.toFixed(1), avgScore: avgScore.toFixed(0) };
-}
-
-function adaptSchedule(dayData, burnoutPrediction, currentScore) {
-    if (burnoutPrediction.risk === "CRITICAL" || currentScore < 65) {
-        return {
-            focus: "MANDATORY REST",
-            tasks: "NO TRAINING. Active recovery walk only. Sleep priority.",
-            zT: { h: 0, m: 0 },
-            override: true,
-            reason: burnoutPrediction.action
-        };
-    }
-    
-    if (burnoutPrediction.risk === "HIGH" && (dayData.focus.includes("BOXING") || dayData.focus.includes("LIFT"))) {
-        return {
-            focus: dayData.focus + " (MODIFIED)",
-            tasks: "Reduce volume 40%. No max efforts. Focus technique.",
-            zT: { h: Math.round(dayData.zT.h * 0.5), m: dayData.zT.m },
-            override: true,
-            reason: "Recovery prioritized"
-        };
-    }
-    
-    return { ...dayData, override: false };
-}
-
-function calculateRecoveryIndex(ouraHistory, currentScore) {
-    if (!ouraHistory || ouraHistory.length < 3) return { score: currentScore, trend: "SYNC", advice: "Gathering data...", weekAvg: "-" };
-    
-    const last3 = ouraHistory.slice(0, 3);
-    const avgScore = last3.reduce((sum, d) => sum + (parseInt(d.score) || 0), 0) / 3;
-    const trend = currentScore > avgScore ? "IMPROVING" : currentScore < avgScore - 5 ? "DECLINING" : "STABLE";
-    
-    let advice = "";
-    if (currentScore >= 85) advice = "Peak performance window. Go hard.";
-    else if (currentScore >= 75) advice = "Ready for planned intensity.";
-    else if (currentScore >= 65) advice = "Reduce volume by 20%. Focus quality.";
-    else advice = "REST PROTOCOL: Active recovery only.";
-    
-    return { score: currentScore, trend, advice, weekAvg: avgScore.toFixed(0) };
-}
-
-function getZoneCompliance(actual, target) {
-    if (!target || target === 0) return { pct: 0, status: "NONE", color: "#666" };
-    const pct = Math.round((actual / target) * 100);
-    if (pct >= 90) return { pct, status: "PERFECT", color: "var(--green)" };
-    if (pct >= 70) return { pct, status: "GOOD", color: "var(--gold)" };
-    if (pct >= 50) return { pct, status: "PARTIAL", color: "#FF9800" };
-    return { pct, status: "MISSED", color: "var(--red)" };
-}
-
-function getWeeklySummary(history) {
-    if (!history || history.length < 7) return null;
-    
-    const week = history.slice(0, 7);
-    const avgReady = Math.round(week.reduce((s, d) => s + (parseInt(d.score) || 0), 0) / 7);
-    const totalCal = week.reduce((s, d) => s + (parseInt(d.cal) || 0), 0);
-    const totalHigh = week.reduce((s, d) => s + d.high, 0);
-    const perfectDays = week.filter(d => parseInt(d.score) >= 85).length;
-    
-    return { avgReady, totalCal, totalHigh, perfectDays, consistency: Math.round((perfectDays / 7) * 100) };
-}
-
-function calculateDynamicMacros(user, ouraData, dayType, bodyGoals) {
-    const baseProtein = user === 'J' ? 165 : 100;
-    const baseCarbs = user === 'J' ? 160 : 80;
-    const baseFat = user === 'J' ? 60 : 45;
-    
-    let proteinMod = 1.0;
-    let carbMod = 1.0;
-    
-    const activeCal = ouraData.cal || 0;
-    
-    if (dayType.focus.includes("BOXING") || dayType.focus.includes("LIFT")) {
-        proteinMod += 0.15;
-        if (activeCal > 500) carbMod += 0.25;
-    }
-    
-    if (dayType.focus === "REST" || dayType.focus.includes("MANDATORY")) {
-        carbMod -= 0.20;
-        proteinMod += 0.10;
-    }
-    
-    const readiness = parseInt(ouraData.score) || 75;
-    if (readiness < 70) {
-        proteinMod += 0.10;
-        carbMod -= 0.15;
-    }
-    
-    const currentBF = bodyGoals.now.bf;
-    const goalBF = bodyGoals.goal.bf;
-    
-    if (currentBF > goalBF + 2) {
-        carbMod -= 0.10;
-    } else if (currentBF < goalBF) {
-        carbMod += 0.15;
-        proteinMod += 0.10;
-    }
-    
-    return {
-        protein: Math.round(baseProtein * proteinMod),
-        carbs: Math.round(baseCarbs * carbMod),
-        fat: Math.round(baseFat),
-        calories: Math.round((baseProtein * proteinMod * 4) + (baseCarbs * carbMod * 4) + (baseFat * 9)),
-        mods: {
-            proteinChange: Math.round((proteinMod - 1) * 100),
-            carbChange: Math.round((carbMod - 1) * 100),
-            rationale: activeCal > 500 ? "High burn - carbs boosted" : readiness < 70 ? "Low readiness - recovery focus" : "Standard protocol"
-        }
-    };
-}
-
-function selectOptimalMeals(macroTargets) {
-    const targetProtein = macroTargets.protein / 3;
-    const targetCarbs = macroTargets.carbs / 3;
-    
-    const pickMeal = (meals, mealPro, mealCarb) => {
-        return meals.reduce((best, meal) => {
-            const score = Math.abs(meal.pro - mealPro) + Math.abs(meal.carb - mealCarb);
-            const bestScore = Math.abs(best.pro - mealPro) + Math.abs(best.carb - mealCarb);
-            return score < bestScore ? meal : best;
-        });
-    };
-    
-    return {
-        breakfast: pickMeal(mealDB.b, targetProtein, targetCarbs),
-        lunch: pickMeal(mealDB.l, targetProtein * 1.2, targetCarbs * 1.2),
-        dinner: pickMeal(mealDB.d, targetProtein * 1.1, targetCarbs * 0.8)
-    };
-}
-
-function analyzeStressLoad(ouraHistory) {
-    if (!ouraHistory || ouraHistory.length < 7) return null;
-    
-    const last7 = ouraHistory.slice(0, 7);
-    const avgScore = last7.reduce((s, d) => s + (parseInt(d.score) || 0), 0) / 7;
-    const avgRHR = last7.reduce((s, d) => s + (parseInt(d.rhr) || 60), 0) / 7;
-    
-    const mockHRV = 45 + (avgScore - 70) * 0.8; // Simulated HRV correlation
-    
-    let stressLevel, color, intervention;
-    if (mockHRV > 70 && avgRHR < 55) {
-        stressLevel = "LOW"; color = "var(--green)"; intervention = "Optimal recovery state. Push hard today.";
-    } else if (mockHRV > 55 && avgRHR < 65) {
-        stressLevel = "MODERATE"; color = "var(--gold)"; intervention = "Normal stress load. Maintain protocol.";
-    } else if (mockHRV > 40) {
-        stressLevel = "ELEVATED"; color = "var(--red)"; intervention = "High stress detected. Consider 10min cold exposure.";
-    } else {
-        stressLevel = "CRITICAL"; color = "#FF3B30"; intervention = "Severe stress accumulation. Mandatory deload.";
-    }
-    
-    return { stressLevel, color, intervention, metrics: { hrv: mockHRV.toFixed(0), rhr: avgRHR.toFixed(0) } };
-}
-
-function getProgressToMilestone(user, currentWeek) {
-    const timeline = goalTimeline[user];
-    const nextMilestone = timeline.milestones.find(m => m.week > currentWeek) || timeline.milestones[timeline.milestones.length - 1];
-    const prevMilestone = currentWeek === 0 ? { week: 0, target: uH[user].now } : timeline.milestones.find(m => m.week <= currentWeek) || { week: 0, target: uH[user].now };
-    
-    const weeksInPhase = nextMilestone.week - prevMilestone.week;
-    const weeksComplete = currentWeek - prevMilestone.week;
-    const progressPct = Math.min((weeksComplete / weeksInPhase) * 100, 100);
-    
-    return {
-        current: prevMilestone.target,
-        next: nextMilestone.target,
-        weeksRemaining: nextMilestone.week - currentWeek,
-        progressPct: progressPct.toFixed(0),
-        phase: currentWeek <= 4 ? "PHASE 1: FOUNDATION" : currentWeek <= 8 ? "PHASE 2: ADAPTATION" : "PHASE 3: OPTIMIZATION"
-    };
-}
-
-function calculateLifespan(user, ouraAvg) {
-    const u = uH[user];
-    let base = 78.0;
-    
-    const vo2Delta = u.tests.vo2.val - 35;
-    if (vo2Delta > 0) base += vo2Delta * 0.5;
-    
-    if (u.now.vf <= 7) base += 3.5;
-    else if (u.now.vf > 12) base -= 2.0;
-    
-    if (user === 'J') {
-        if (u.labs.apob.val <= 60) base += 4.0;
-        if (u.labs.hba1c.val <= 5.2) base += 2.5;
-    } else {
-        if (u.labs.hba1c.val <= 5.3) base += 2.0;
-        if (u.labs.ana.val < 80) base += 3.0;
-    }
-    
-    if (ouraAvg >= 80) base += 1.5;
-    else if (ouraAvg < 70) base -= 1.0;
-    
-    return base.toFixed(1);
-}
-// ==========================================
-// RENDER ENGINE
-// ==========================================
-
-function render() {
-    const mon = getMon(offset); const tabs = document.getElementById('dayTabs'); tabs.innerHTML = '';
-    document.getElementById('dateDisplay').innerText = `${mon.toLocaleDateString('en-US',{month:'short',day:'numeric'})} - ${new Date(mon.getTime() + 864e5*6).toLocaleDateString('en-US',{month:'short',day:'numeric'})}`;
-    for(let i=0; i<7; i++){
-        let d = new Date(mon); d.setDate(mon.getDate()+i);
-        let active = getDateKey(d) === getDateKey(selDate);
-        let t = document.createElement('div'); t.className = 'tab' + (active ? ' active' : '');
-        t.innerHTML = `${["M","T","W","T","F","S","S"][i]}<br>${d.getDate()}`;
-        t.onclick = () => { selDate = d; render(); }; tabs.appendChild(t);
-        if(active) showDay(d, i+1 === 7 ? 0 : i+1);
-    }
-}
-
-function showDay(dObj, idx) {
-    const dk = getDateKey(dObj); 
-    const basePlan = unifiedSchedule[idx] || unifiedSchedule[1]; 
-    const cached = JSON.parse(localStorage.getItem(`centurion_oura_cache_${user}`)) || { history: [] };
-    const rawOura = cached.history.find(d => d.date === dk) || { score: "-", cal: "-", high: 0, med: 0, rhr: "-" };
-    const hasData = rawOura.score !== "-";
-    
-    const burnout = predictBurnout(cached.history);
-    const dayData = adaptSchedule(basePlan, burnout, parseInt(rawOura.score) || 0);
-    const recovery = calculateRecoveryIndex(cached.history, parseInt(rawOura.score) || 0);
-    const isActive = hasData && recovery.score >= 75;
-    
-    // BURNOUT ALERT
-    const burnoutAlert = burnout.risk !== "LOW" ? `
-    <div class="premium-card" style="background:linear-gradient(135deg, rgba(255,69,58,0.2), rgba(191,90,242,0.15)); border:1px solid ${burnout.risk==='CRITICAL'?'var(--red)':'var(--gold)'}; margin-bottom:12px; padding:15px;">
-        <div style="display:flex; align-items:center; gap:12px;">
-            <div style="font-size:2rem;">${burnout.risk === 'CRITICAL' ? '🚨' : '⚠️'}</div>
-            <div style="flex:1;">
-                <div style="font-size:0.7rem; font-weight:800; color:${burnout.risk==='CRITICAL'?'var(--red)':'var(--gold)'}; text-transform:uppercase; letter-spacing:1px; margin-bottom:3px;">${burnout.risk} FATIGUE RISK</div>
-                <div style="font-size:0.75rem; color:#fff; line-height:1.4;">${burnout.action} • Trend: ${burnout.trend}/day</div>
-            </div>
-        </div>
-        ${dayData.override ? `<div style="margin-top:10px; padding:10px; background:rgba(0,0,0,0.3); border-radius:8px; font-size:0.7rem; color:var(--gold);">📋 SCHEDULE AUTO-ADJUSTED: ${dayData.reason}</div>` : ''}
-    </div>` : "";
-    
-    // WEEKLY SUMMARY
-    const weekSum = getWeeklySummary(cached.history);
-    const summaryHTML = weekSum ? `
-    <div class="premium-card" style="background:linear-gradient(135deg, rgba(10,132,255,0.15), rgba(191,90,242,0.1)); border-color:rgba(10,132,255,0.3); margin-bottom:12px;">
-        <div style="display:flex; justify-content:space-around; text-align:center;">
-            <div><div style="font-size:1.4rem; font-weight:900; color:#fff">${weekSum.avgReady}</div><div style="font-size:0.55rem; color:#888; margin-top:2px;">AVG READY</div></div>
-            <div><div style="font-size:1.4rem; font-weight:900; color:var(--green)">${weekSum.perfectDays}/7</div><div style="font-size:0.55rem; color:#888; margin-top:2px;">PERFECT</div></div>
-            <div><div style="font-size:1.4rem; font-weight:900; color:var(--red)">${weekSum.totalHigh}m</div><div style="font-size:0.55rem; color:#888; margin-top:2px;">HIGH HR</div></div>
-        </div>
-    </div>` : "";
-    
-    // MILESTONE TRACKER
-    const currentWeek = getCurrentWeek(user);
-    const progress = getProgressToMilestone(user, currentWeek);
-    const milestoneHTML = `
-    <div class="premium-card" style="background:linear-gradient(135deg, rgba(191,90,242,0.15), rgba(10,132,255,0.1)); border-color:rgba(191,90,242,0.3); margin-bottom:12px;">
-        <div style="margin-bottom:15px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                <div class="card-title" style="color:var(--purple)">${progress.phase}</div>
-                <div style="font-size:0.7rem; font-weight:800; color:var(--purple)">WEEK ${currentWeek}/12</div>
-            </div>
-            <div style="height:8px; background:rgba(255,255,255,0.08); border-radius:10px; overflow:hidden; margin-bottom:5px;">
-                <div style="height:100%; width:${progress.progressPct}%; background:linear-gradient(90deg, var(--purple), var(--blue)); border-radius:10px;"></div>
-            </div>
-            <div style="font-size:0.6rem; color:#888; text-align:right;">${progress.progressPct}% • ${progress.weeksRemaining}w to milestone</div>
-        </div>
-        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
-            <div style="padding:10px; background:rgba(255,255,255,0.03); border-radius:10px; text-align:center;">
-                <div style="font-size:1.1rem; font-weight:800; color:#fff">${uH[user].now.bf}%</div>
-                <div style="font-size:0.5rem; color:#888; margin-top:2px;">BF</div>
-                <div style="font-size:0.55rem; color:var(--purple); margin-top:3px; font-weight:700;">→ ${progress.next.bf}%</div>
-            </div>
-            <div style="padding:10px; background:rgba(255,255,255,0.03); border-radius:10px; text-align:center;">
-                <div style="font-size:1.1rem; font-weight:800; color:#fff">${uH[user].tests.vo2.val}</div>
-                <div style="font-size:0.5rem; color:#888; margin-top:2px;">VO2</div>
-                <div style="font-size:0.55rem; color:var(--purple); margin-top:3px; font-weight:700;">→ ${progress.next.vo2}</div>
-            </div>
-            <div style="padding:10px; background:rgba(255,255,255,0.03); border-radius:10px; text-align:center;">
-                <div style="font-size:1.1rem; font-weight:800; color:#fff">${user==='J' ? uH[user].labs.apob.val : uH[user].labs.ana.val}</div>
-                <div style="font-size:0.5rem; color:#888; margin-top:2px;">${user==='J' ? 'APOB' : 'ANA'}</div>
-                <div style="font-size:0.55rem; color:var(--purple); margin-top:3px; font-weight:700;">→ ${user==='J' ? progress.next.apob : progress.next.ana}</div>
-            </div>
-        </div>
-    </div>`;
-    
-    // PROTOCOL CARD
-    const protocolHTML = `
-    <div class="premium-card ${isPlanCollapsed?'collapsed':''}" onclick="isPlanCollapsed=!isPlanCollapsed;render()">
-        <div class="card-header">
-            <div>
-                <div class="card-title" style="color:${recovery.trend==='IMPROVING'?'var(--green)':recovery.trend==='DECLINING'?'var(--red)':'var(--gold)'}">DAILY PROTOCOL</div>
-                <div class="card-subtitle">${dayData.focus} • ${recovery.trend}</div>
-            </div>
-            <div class="card-val-lg">${recovery.score} <span style="font-size:0.7rem; opacity:0.6">/${recovery.weekAvg}avg</span> <span class="chevron">▼</span></div>
-        </div>
-        <div class="card-body">
-            <div style="padding:12px; background:rgba(255,255,255,0.04); border-radius:12px; margin-bottom:12px; border-left:3px solid ${isActive?'var(--green)':'var(--red)'}">
-                <div style="font-size:0.65rem; color:#888; margin-bottom:5px; text-transform:uppercase; letter-spacing:1px;">AI COACH</div>
-                <div style="font-size:0.8rem; color:#fff; line-height:1.5;">${recovery.advice}</div>
-            </div>
-            <div style="font-size:0.8rem; color:#ddd; line-height:1.5;">${dayData.tasks}</div>
-        </div>
-    </div>`;
-    
-    // WORKOUT CARD
-    const highComp = getZoneCompliance(rawOura.high, dayData.zT.h);
-    const medComp = getZoneCompliance(rawOura.med, dayData.zT.m);
-    const totalComp = Math.round((highComp.pct + medComp.pct) / 2);
-    
-    const workoutHTML = `
-    <div class="premium-card ${isWorkoutCollapsed?'collapsed':''}" onclick="isWorkoutCollapsed=!isWorkoutCollapsed;render()">
-        <div class="card-header">
-            <div>
-                <div class="card-title accent-red">TRAINING</div>
-                <div class="card-subtitle">COMPLIANCE: ${totalComp}%</div>
-            </div>
-            <div class="card-val-lg">${rawOura.cal} <span style="font-size:0.9rem; opacity:0.7">CAL</span> <span class="chevron">▼</span></div>
-        </div>
-        <div class="card-body">
-            <div style="display:flex; gap:8px; margin-bottom:15px;">
-                <div style="flex:1; padding:10px; background:rgba(255,255,255,0.03); border-radius:12px; text-align:center; border:1px solid ${highComp.color}">
-                    <div style="font-size:0.55rem; color:#888; margin-bottom:3px;">HIGH</div>
-                    <div style="font-size:1.2rem; font-weight:800; color:${highComp.color}">${highComp.pct}%</div>
-                    <div style="font-size:0.5rem; color:#666; margin-top:2px;">${highComp.status}</div>
-                </div>
-                <div style="flex:1; padding:10px; background:rgba(255,255,255,0.03); border-radius:12px; text-align:center; border:1px solid ${medComp.color}">
-                    <div style="font-size:0.55rem; color:#888; margin-bottom:3px;">MED</div>
-                    <div style="font-size:1.2rem; font-weight:800; color:${medComp.color}">${medComp.pct}%</div>
-                    <div style="font-size:0.5rem; color:#666; margin-top:2px;">${medComp.status}</div>
-                </div>
-            </div>
-            ${bioBar("High Intensity", rawOura.high, dayData.zT.h, "m")}
-            ${bioBar("Zone 2 Volume", rawOura.med, dayData.zT.m, "m")}
-        </div>
-    </div>`;
-    
-    // NUTRITION CARD
-    const macros = calculateDynamicMacros(user, rawOura, dayData, uH[user]);
-    const meals = selectOptimalMeals(macros);
-    const id = Math.floor(dObj.getTime()/864e5);
-    const j = juiceDB[Math.abs(id)%juiceDB.length].split('|');
-    
-    const nutHTML = `
-    <div class="premium-card ${isNutCollapsed?'collapsed':''}" onclick="isNutCollapsed=!isNutCollapsed;render()">
-        <div class="card-header">
-            <div>
-                <div class="card-title accent-green">NUTRITION</div>
-                <div class="card-subtitle">${macros.calories} CAL • ${macros.mods.rationale}</div>
-            </div>
-            <div class="card-val-lg">${macros.protein} <span style="font-size:0.9rem; opacity:0.7">PRO</span> <span class="chevron">▼</span></div>
-        </div>
-        <div class="card-body">
-            <div style="display:flex; gap:8px; margin-bottom:15px;">
-                <div style="flex:1; text-align:center; padding:8px; background:rgba(255,255,255,0.03); border-radius:10px;">
-                    <div style="font-size:1.1rem; font-weight:800; color:${macros.mods.proteinChange > 0 ? 'var(--green)' : 'var(--red)'}">${macros.mods.proteinChange > 0 ? '+' : ''}${macros.mods.proteinChange}%</div>
-                    <div style="font-size:0.55rem; color:#888; margin-top:2px;">PRO</div>
-                </div>
-                <div style="flex:1; text-align:center; padding:8px; background:rgba(255,255,255,0.03); border-radius:10px;">
-                    <div style="font-size:1.1rem; font-weight:800; color:${macros.mods.carbChange > 0 ? 'var(--blue)' : 'var(--gold)'}">${macros.mods.carbChange > 0 ? '+' : ''}${macros.mods.carbChange}%</div>
-                    <div style="font-size:0.55rem; color:#888; margin-top:2px;">CARB</div>
-                </div>
-            </div>
-            <div class="section-header">ADAPTIVE MEALS</div>
-            <div class="data-row"><div class="data-label">${meals.breakfast.name}</div><div class="data-val">${meals.breakfast.pro}P</div></div>
-            <div class="data-row"><div class="data-label">${meals.lunch.name}</div><div class="data-val">${meals.lunch.pro}P</div></div>
-            <div class="data-row"><div class="data-label">${meals.dinner.name}</div><div class="data-val">${meals.dinner.pro}P</div></div>
-            <div class="section-header">ESSENTIALS</div>
-            <div class="data-row"><div class="data-label">SEA MOSS</div><div class="data-val">2 TBSP</div></div>
-            <div class="data-row"><div class="data-label">${j[0]}</div><div class="data-val" style="font-size:0.6rem; color:#888;">${j[1]}</div></div>
-        </div>
-    </div>`;
-    
-    // STRESS CARD
-    const stress = analyzeStressLoad(cached.history);
-    const stressHTML = stress ? `
-    <div class="premium-card" style="border-color:${stress.color}; margin-bottom:12px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-            <div>
-                <div class="card-title" style="color:${stress.color}">STRESS LOAD</div>
-                <div class="card-subtitle">HRV & Autonomic Balance</div>
-            </div>
-            <div style="font-size:1.4rem; font-weight:800; color:${stress.color}">${stress.stressLevel}</div>
-        </div>
-        <div style="display:flex; gap:10px; margin-bottom:12px;">
-            <div style="flex:1; padding:10px; background:rgba(255,255,255,0.03); border-radius:10px; text-align:center;">
-                <div style="font-size:1.2rem; font-weight:800; color:#fff">${stress.metrics.hrv}ms</div>
-                <div style="font-size:0.55rem; color:#888; margin-top:2px;">HRV</div>
-            </div>
-            <div style="flex:1; padding:10px; background:rgba(255,255,255,0.03); border-radius:10px; text-align:center;">
-                <div style="font-size:1.2rem; font-weight:800; color:#fff">${stress.metrics.rhr}</div>
-                <div style="font-size:0.55rem; color:#888; margin-top:2px;">RHR</div>
-            </div>
-        </div>
-        <div style="padding:12px; background:rgba(255,255,255,0.04); border-radius:10px; border-left:3px solid ${stress.color}; font-size:0.75rem; color:#ddd; line-height:1.5;">${stress.intervention}</div>
-    </div>` : "";
-    
-    // AI LIFESPAN
-    const projectedAge = calculateLifespan(user, weekSum ? weekSum.avgReady : 75);
-    const aiHTML = `
-    <div class="premium-card ${isAICollapsed?'collapsed':''}" onclick="isAICollapsed=!isAICollapsed;render()">
-        <div class="card-header">
-            <div>
-                <div class="card-title accent-blue">AI LIFESPAN</div>
-                <div class="card-subtitle">LIVE PROJECTION</div>
-            </div>
-            <div class="card-val-lg">${projectedAge} <span style="font-size:0.9rem; opacity:0.7">YRS</span> <span class="chevron">▼</span></div>
-        </div>
-        <div class="card-body">
-            <div class="data-row"><div class="data-label">VO2 BONUS</div><div class="data-val accent-green">+${((uH[user].tests.vo2.val - 35) * 0.5).toFixed(1)} YRS</div></div>
-            <div class="data-row"><div class="data-label">RECOVERY</div><div class="data-val">${weekSum ? (weekSum.avgReady >= 80 ? '+1.5' : '-1.0') : '±0'} YRS</div></div>
-        </div>
-    </div>`;
-    
-    // BIO DASHBOARD
-    let labsHTML = "";
-    Object.keys(uH[user].labs).forEach(k => { labsHTML += bioBar(uH[user].labs[k].name, uH[user].labs[k].val, uH[user].labs[k].goal, " "+(uH[user].labs[k].unit||""), uH[user].labs[k].low); });
-    
-    const bioHTML = `
-    <div class="premium-card ${isBioCollapsed?'collapsed':''}" onclick="isBioCollapsed=!isBioCollapsed;render()">
-        <div class="card-header">
-            <div>
-                <div class="card-title accent-purple">BIOMETRICS</div>
-                <div class="card-subtitle">Full Panel</div>
-            </div>
-            <div class="card-val-lg">${uH[user].now.bf}% <span style="font-size:0.9rem; opacity:0.7">BF</span> <span class="chevron">▼</span></div>
-        </div>
-        <div class="card-body">
-            ${bioBar("Visceral Fat", uH[user].now.vf, uH[user].goal.vf, "", true)}
-            ${bioBar("VO2 Max", uH[user].tests.vo2.val, uH[user].tests.vo2.goal, " ml/kg")}
-            <div class="section-header">Labs</div>
-            ${labsHTML}
-        </div>
-    </div>`;
-    
-    document.getElementById('dayContent').innerHTML = burnoutAlert + summaryHTML + milestoneHTML + protocolHTML + workoutHTML + stressHTML + nutHTML + aiHTML + bioHTML;
-}
-
-// ==========================================
-// API INTEGRATION
-// ==========================================
-
-function switchU(uID) {
-    user = uID;
-    localStorage.setItem('centurion_active_user', uID);
-    document.getElementById('dayContent').innerHTML = `<div style="text-align:center; padding:50px; color:#444; font-size:0.7rem;">AUTHENTICATING...</div>`;
-    document.getElementById('ouraBar').innerHTML = "💍 SHAKING HANDS...";
-    document.querySelectorAll('.u-badge').forEach(b => b.classList.toggle('active', b.id === 'b' + uID.toLowerCase()));
-    
-    const cached = JSON.parse(localStorage.getItem(`centurion_oura_cache_${uID}`)) || {};
-    if (cached.history && Date.now() - (cached.lastFetch || 0) < 1800000) {
-        render();
-        document.getElementById('ouraBar').innerHTML = `💍 ${uID === 'J' ? 'JERMAINE' : 'SOPHIA'} CACHED`;
-    }
-    
-    fetchOuraData();
-}
-
-async function fetchOuraData() {
-    const fetchID = user; const token = TOKENS[fetchID];
-    const range = `start_date=${getDateKey(new Date(Date.now()-864e5*14))}&end_date=${getDateKey(new Date())}`;
-    
-    document.getElementById('ouraBar').style.animation = 'pulse 1.5s infinite';
-    
-    try {
-        const [rRes, aRes] = await Promise.all([
-            fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
-            fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } })
-        ]);
+class CenturionCore {
+    constructor() {
+        this.user = localStorage.getItem('centurion_active_user') || 'J'; // Using v1300 key name
+        this.dayOffset = 0; 
+        this.circumference = 158;
         
-        const rData = await rRes.json();
-        const aData = await aRes.json();
+        // Base State
+        this.state = { hr: 60, z2_time: 0, z5_time: 0, stress: 0, score: 0, pro: 0, carb: 0, fat: 0, checked: [] };
         
-        if(user !== fetchID) return;
+        this.init();
+    }
+
+    init() {
+        this.switchUser(this.user);
+        this.startClock();
+        // Trigger Async Handshake immediately
+        this.fetchOuraData();
+        // Background refresh every 30 min
+        setInterval(() => this.fetchOuraData(), 1800000); 
+    }
+
+    switchUser(uid) {
+        this.user = uid;
+        localStorage.setItem('centurion_active_user', uid);
+        document.querySelectorAll('.u-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(`btn-${uid}`).classList.add('active');
         
-        if(rData.data) {
-            const hist = rData.data.map(day => {
-                const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
-                return { 
-                    date: day.day, 
-                    score: day.score || "-", 
-                    cal: act ? act.active_calories : "-", 
-                    high: act ? Math.round(act.high_activity_time/60) : 0, 
-                    med: act ? Math.round(act.medium_activity_time/60) : 0,
-                    rhr: day.contributors?.resting_heart_rate || "-"
-                };
-            }).reverse();
+        this.dayOffset = 0;
+        this.render(); // Initial Render
+        this.fetchOuraData(); // Fetch
+    }
+
+    changeDay(delta) {
+        this.dayOffset += delta;
+        this.render();
+    }
+
+    // --- EXACT FETCH FUNCTION FROM v1300 ---
+    async fetchOuraData() {
+        const fetchID = this.user; 
+        const token = TOKENS[fetchID];
+        // Dynamic Range (14 days) to ensure we get data
+        const range = `start_date=${getDateKey(new Date(Date.now()-864e5*14))}&end_date=${getDateKey(new Date())}`;
+        
+        document.getElementById('sync-time').innerText = "HANDSHAKE...";
+        
+        try {
+            const [rRes, aRes] = await Promise.all([
+                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } })
+            ]);
             
-            localStorage.setItem(`centurion_oura_cache_${fetchID}`, JSON.stringify({history: hist, lastFetch: Date.now()}));
-            document.getElementById('ouraBar').style.animation = '';
-            document.getElementById('ouraBar').innerHTML = `💍 ${fetchID === 'J' ? 'JERMAINE' : 'SOPHIA'} READY: <span style="color:${hist[0]?.score >= 75 ? 'var(--green)' : 'var(--red)'}; font-weight:900">${hist[0]?.score || "-"}</span>`;
-            render();
+            const rData = await rRes.json();
+            const aData = await aRes.json();
+            
+            if(this.user !== fetchID) return;
+            
+            if(rData.data) {
+                const hist = rData.data.map(day => {
+                    const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
+                    return { 
+                        date: day.day, 
+                        score: day.score || "-", 
+                        cal: act ? act.active_calories : "-", 
+                        high: act ? Math.round(act.high_activity_time/60) : 0, 
+                        med: act ? Math.round(act.medium_activity_time/60) : 0,
+                        hrv: day.contributors ? day.contributors.hrv_balance_days : 0
+                    };
+                }).reverse();
+                
+                // Save to v1300 key
+                localStorage.setItem(`centurion_oura_cache_${fetchID}`, JSON.stringify({history: hist, lastFetch: Date.now()}));
+                
+                document.getElementById('sync-time').innerText = "SYNCED: " + new Date().toLocaleTimeString();
+                document.getElementById('tac-cmd').innerText = "OURA CONNECTION ESTABLISHED";
+                document.getElementById('tac-reason').innerText = "Telemetry Validated.";
+                
+                this.render(); // Refresh UI
+            }
+        } catch(e) { 
+            document.getElementById('sync-time').innerText = "SYNC FAILED";
+            console.error(e);
         }
-    } catch(e) { 
-        document.getElementById('ouraBar').style.animation = '';
-        if(user === fetchID) document.getElementById('ouraBar').innerHTML = "💍 SYNC TIMEOUT"; 
-        render();
+    }
+
+    render() {
+        // Calculate Date
+        const d = new Date();
+        d.setDate(d.getDate() + this.dayOffset);
+        const dateKey = getDateKey(d);
+        
+        // Load Cache
+        const cached = JSON.parse(localStorage.getItem(`centurion_oura_cache_${this.user}`)) || { history: [] };
+        
+        // Find Data or Default
+        const dayData = cached.history.find(r => r.date === dateKey) || { score: "-", cal: "-", high: 0, med: 0, hrv: "-" };
+        
+        // UI Text
+        const label = this.dayOffset === 0 ? "TODAY" : this.dayOffset === -1 ? "YESTERDAY" : dateKey;
+        document.getElementById('date-display').innerText = label;
+        
+        this.updateHUD(dayData);
+        this.renderTimeline(dayData);
+    }
+
+    updateHUD(d) {
+        const u = USERS[this.user];
+        
+        // Values
+        document.getElementById('score-val').innerText = d.score;
+        document.getElementById('val-cal').innerText = d.cal;
+        document.getElementById('val-z2').innerText = d.med; 
+        document.getElementById('val-z5').innerText = d.high;
+        document.getElementById('val-stress').innerText = d.hrv;
+        
+        // Rings
+        const scoreNum = parseInt(d.score) || 0;
+        const calNum = parseInt(d.cal) || 0;
+        
+        this.updateRing('activity', scoreNum, 100);
+        this.updateRing('cal', calNum, u.goals.cal);
+        this.updateRing('z2', d.med, u.goals.z2);
+        this.updateRing('z5', d.high, u.goals.z5);
+        this.updateRing('stress', d.hrv || 0, 100);
+        
+        // Macros (Simulated Local State)
+        this.updateMacroRing('pro', this.state.pro, u.goals.pro);
+        this.updateMacroRing('carb', this.state.carb, u.goals.carb);
+        this.updateMacroRing('fat', this.state.fat, u.goals.fat);
+
+        document.getElementById('val-pro').innerText = this.state.pro + "g";
+        document.getElementById('val-carb').innerText = this.state.carb + "g";
+        document.getElementById('val-fat').innerText = this.state.fat + "g";
+        document.getElementById('vo2-val').innerText = u.vo2;
+
+        // Tactical Logic
+        let cmd = "SYSTEMS NOMINAL", reason = "Biometrics Stable", color = "var(--acid)";
+        if(scoreNum > 0 && scoreNum < 70) { 
+            cmd = "RECOVERY REQUIRED"; reason = "Readiness Low. Prioritize Sleep."; color = "var(--gold)";
+        }
+        
+        // Only update text if not showing connection status
+        if(document.getElementById('tac-cmd').innerText.includes("SYSTEMS") || document.getElementById('tac-cmd').innerText.includes("RECOVERY")) {
+             document.getElementById('tac-cmd').innerText = cmd;
+             document.getElementById('tac-cmd').style.color = color;
+             document.getElementById('tac-reason').innerText = reason;
+             document.getElementById('tactical-box').style.borderLeftColor = color;
+        }
+    }
+
+    updateRing(id, val, max) {
+        const circ = id === 'activity' ? 283 : 158;
+        const pct = Math.min((val || 0) / max, 1);
+        const offset = circ - (pct * circ);
+        const el = document.getElementById(`ring-${id}`);
+        if(el) el.style.strokeDashoffset = offset;
+    }
+
+    updateMacroRing(id, val, max) {
+        const pct = (val || 0) / max;
+        const offset = 158 - (Math.min(pct, 1) * 158);
+        const el = document.getElementById(`ring-${id}`);
+        if(el) {
+            el.style.strokeDashoffset = offset;
+            if (pct > 1.1) el.style.stroke = "var(--alert)";
+            else if (pct >= 0.9) el.style.stroke = "var(--acid)";
+            else el.style.stroke = "var(--cyan)";
+        }
+    }
+
+    // TOGGLE WORKOUT DETAILS
+    toggleWorkout(card) {
+        const details = card.querySelector('.workout-detail');
+        if (details) details.classList.toggle('active');
+    }
+
+    checkMeal(btn, mealID) {
+        const card = btn.parentElement;
+        if(card.classList.contains('past')) return;
+        
+        const macros = MACRO_LOOKUP[mealID];
+        if(macros) {
+            this.state.pro += macros.p;
+            this.state.carb += macros.c;
+            this.state.fat += macros.f;
+            // Force re-render of HUD
+            const cached = JSON.parse(localStorage.getItem(`centurion_oura_cache_${this.user}`)) || { history: [] };
+            const d = new Date(); d.setDate(d.getDate() + this.dayOffset);
+            const dateKey = getDateKey(d);
+            const dayData = cached.history.find(r => r.date === dateKey) || {};
+            this.updateHUD(dayData);
+        }
+        card.classList.add('past');
+        btn.innerText = "✓";
+    }
+
+    startClock() {
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('current-time').innerText = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        }, 1000);
+    }
+
+    formatTime(h) { const ampm = h >= 12 ? 'PM' : 'AM'; const hour = h % 12 || 12; return `${hour} ${ampm}`; }
+
+    renderTimeline(dayData) {
+        const container = document.getElementById('timeline-feed');
+        
+        const score = dayData && dayData.score !== "-" ? parseInt(dayData.score) : 80;
+        const mode = score >= 80 ? "anabolic" : "repair";
+        const wKey = `${mode}_${this.user.toLowerCase()}`;
+        const workout = WORKOUTS[wKey];
+
+        const schedule = [
+            { t: 7, title: "Hydration", desc: "Sea Moss Gel (2 tbsp)", mech: "Thyroid Prime", id:'sup', tags: [{t:"PRIME",c:"bio"}] },
+            { t: 8, title: "Juice Protocol", desc: this.user==='J'?"Beet Vitality":"Orange Immune", mech: "Immune/VO2 Boost", id:'juice', tags: [{t:"BIO-ACTIVE",c:"syn"}] },
+            { t: 17, title: workout.title, desc: workout.sub, mech: "Training Block", id:'workout', isWorkout:true, exercises: workout.exercises, tags: [{t:"TRAINING",c:"bio"}] },
+            { t: 19, title: "Dinner", desc: mode==='anabolic'?"Steak & Potato":"White Fish & Greens", mech: "Recovery", id:'d', tags: [{t:"GROWTH",c:"bio"}] }
+        ];
+
+        let html = '';
+        schedule.forEach(slot => {
+            let extraHTML = "";
+            let cardAction = "";
+            let clickAction = `centurion.checkMeal(this, '${slot.id}')`;
+            
+            if (slot.isWorkout) {
+                cardAction = `onclick="centurion.toggleWorkout(this)"`;
+                clickAction = `event.stopPropagation(); centurion.checkMeal(this, '${slot.id}')`;
+                extraHTML = `<div class="workout-detail">`;
+                slot.exercises.forEach(ex => {
+                    extraHTML += `<div class="w-row"><span class="w-name">${ex}</span></div>`;
+                });
+                extraHTML += `</div>`;
+            }
+
+            let tags = "";
+            slot.tags.forEach(tag => {
+                const cls = tag.c === 'syn' ? 'b-syn' : 'b-bio';
+                tags += `<span class="ts-badge ${cls}">${tag.t}</span>`;
+            });
+
+            html += `
+                <div class="time-slot">
+                    <div class="ts-time">${slot.t}:00</div>
+                    <div class="ts-card" ${cardAction}>
+                        <div class="badge-row">${tags}</div>
+                        <div class="ts-title">${slot.title}</div>
+                        <div class="ts-desc">${slot.desc}</div>
+                        <div class="ts-mech">🔬 ${slot.mech}</div>
+                        ${extraHTML}
+                        <button class="check-btn" onclick="${clickAction}">○</button>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
     }
 }
 
-function changeW(d) { offset += d; render(); }
-function resetD() { offset = 0; selDate = getCaDate(); render(); }
-window.onload = () => { switchU(user); };
+const centurion = new CenturionCore();
 </script>
 </body>
 </html>
