@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v7000.0 NUCLEAR-PORT</title>
+    <title>The Centurion | v7200.0 COMPLETE-DATA</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -32,11 +32,6 @@
         .u-badge { padding: 6px 14px; border-radius: 16px; font-size: 0.6rem; font-weight: 700; color: #666; background: transparent; border: none; cursor: pointer; transition: all 0.2s; }
         .u-badge.active { background: var(--text-main); color: #000; }
 
-        /* DATE NAV */
-        .date-nav { display: flex; justify-content: center; align-items: center; gap: 20px; font-family: var(--font-data); font-size: 0.8rem; font-weight: 700; color: #fff; padding-top: 5px; }
-        .nav-btn { background: transparent; border: 1px solid var(--border); color: var(--gold); padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 0.6rem; }
-        .date-display { min-width: 100px; text-align: center; letter-spacing: 1px; }
-
         /* HERO */
         .hero-section { padding: 25px 16px 10px; display: flex; align-items: center; justify-content: space-between; }
         .ring-container { width: 110px; height: 110px; position: relative; display: flex; align-items: center; justify-content: center; }
@@ -55,6 +50,8 @@
         /* GRIDS */
         .section-label { font-size: 0.55rem; font-weight: 900; color: var(--text-muted); letter-spacing: 1px; margin: 20px 16px 10px; text-transform: uppercase; }
         .telemetry-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 10px; }
+        .sleep-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 20px; }
+        
         .orb-card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 10px 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
         .orb-container { width: 60px; height: 60px; position: relative; display: flex; align-items: center; justify-content: center; margin-bottom: 5px; }
         .orb-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
@@ -75,6 +72,7 @@
         .ts-title { font-size: 0.85rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
         .ts-desc { font-size: 0.75rem; color: #aaa; line-height: 1.4; }
         
+        /* FOOTER */
         .sync-footer { position: fixed; bottom: 0; left: 0; width: 100%; background: #000; padding: 12px 16px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-family: var(--font-data); font-size: 0.6rem; color: #555; z-index: 200; }
         .pulse { animation: pulse 2s infinite; display: inline-block; width: 6px; height: 6px; background: var(--acid); border-radius: 50%; margin-right: 6px; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } }
@@ -92,21 +90,20 @@
           <stop offset="0%" style="stop-color:#ff453a;stop-opacity:1" />
           <stop offset="100%" style="stop-color:#ff9f0a;stop-opacity:1" />
         </linearGradient>
+        <linearGradient id="grad-purple" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" style="stop-color:#bf5af2;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#9d4edd;stop-opacity:1" />
+        </linearGradient>
       </defs>
     </svg>
 
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v7000</div>
+            <div class="app-name">CENTURION v7200</div>
             <div class="user-switch">
                 <button id="btn-J" class="u-badge active" onclick="switchU('J')">JER</button>
                 <button id="btn-S" class="u-badge" onclick="switchU('S')">SOPH</button>
             </div>
-        </div>
-        <div class="date-nav">
-            <button class="nav-btn" onclick="changeW(-1)">◀</button>
-            <span class="date-display" id="dateDisplay">TODAY</span>
-            <button class="nav-btn" onclick="changeW(1)">▶</button>
         </div>
     </div>
 
@@ -114,46 +111,37 @@
 
     <div class="sync-footer">
         <div><span class="pulse"></span><span id="ouraBar">INIT...</span></div>
-        <div onclick="resetD()">RESET</div>
+        <div onclick="switchU(user)" style="cursor:pointer">FORCE SYNC</div>
     </div>
 
 <script>
 // ==========================================
-// V1300 LOGIC CORE (RAW COPY)
+// V7200 LOGIC CORE (V1300 + SLEEP FETCH)
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
-let offset = 0;
 let selDate = getCaDate(); 
 
 const TOKENS = { 'J': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'S': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
 
-const uH = {
-    'J': { now: {bf:19.0, m:99.0, vf:10}, goal: {bf:15.0, m:105.0, vf:7}, labs: { apob: {val:95, goal:60}, hba1c: {val:5.4, goal:5.0} }, tests: { vo2: {val:45, goal:55} } },
-    'S': { now: {bf:36.1, m:49.2, vf:9}, goal: {bf:22.0, m:60.0, vf:4}, labs: { ana: {val:320, goal:40}, hba1c: {val:5.6, goal:5.0}, ferr: {val:75, goal:70}, glucose: {val:84, goal:85} }, tests: { vo2: {val:32, goal:45} } }
-};
-
-// V1300 UTILITIES
 function getCaDate() { let d = new Date(); d.setHours(12, 0, 0, 0); return d; }
 function getDateKey(d) { return d.toISOString().split('T')[0]; }
-function getMon(o) { let d = getCaDate(); d.setHours(0,0,0,0); let day = d.getDay(); let diff = d.getDate() - day + (day === 0 ? -6 : 1); d.setDate(diff + (o * 7)); return d; }
 
-// --- RENDER ENGINE (RE-SKINNED TO CHRONOS) ---
+// --- RENDER ENGINE (CHRONOS SKIN) ---
 function render() {
     const dk = getDateKey(selDate);
-    document.getElementById('dateDisplay').innerText = (offset === 0) ? "TODAY" : dk;
-
-    // Load Cache
     const cached = JSON.parse(localStorage.getItem(`centurion_oura_cache_${user}`)) || { history: [] };
     
-    // Find Data (v1300 logic: look for date, else defaults)
-    const rawOura = cached.history.find(d => d.date === dk) || { score: "-", cal: "-", high: 0, med: 0, rhr: "-" };
-    const scoreVal = rawOura.score !== "-" ? parseInt(rawOura.score) : 0;
+    // Find Data or Default
+    const rawOura = cached.history.find(d => d.date === dk) || { 
+        score: "-", cal: "-", high: 0, med: 0, rhr: "-", 
+        sleep: "-", deep: "-", rem: "-" 
+    };
     
-    // Color Logic
+    const scoreVal = parseInt(rawOura.score) || 0;
     const rColor = scoreVal >= 80 ? 'var(--acid)' : scoreVal >= 60 ? 'var(--gold)' : 'var(--alert)';
     
-    // Build HTML (Chronos Skin)
+    // Build HTML
     const html = `
     <div class="hero-section">
         <div class="ring-container">
@@ -162,8 +150,24 @@ function render() {
         </div>
         <div class="tactical-box" style="border-left-color:${rColor}">
             <div class="tac-label" style="color:${rColor}">STATUS</div>
-            <div class="tac-cmd">${scoreVal === 0 ? "AWAITING SYNC..." : scoreVal >= 80 ? "SYSTEMS NOMINAL" : "RECOVERY REQUIRED"}</div>
-            <div class="tac-meta">Last Sync: ${new Date().toLocaleTimeString()}</div>
+            <div class="tac-cmd">${scoreVal === 0 ? "NO DATA FOUND" : scoreVal >= 80 ? "SYSTEMS NOMINAL" : "RECOVERY REQUIRED"}</div>
+            <div class="tac-meta">USER: ${user === 'J' ? 'JERMAINE' : 'SOPHIA'} | ${dk}</div>
+        </div>
+    </div>
+
+    <div class="section-label">SLEEP ARCHITECTURE</div>
+    <div class="sleep-grid">
+        <div class="orb-card">
+            <div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-purple); stroke-dashoffset:${158 - (Math.min(parseFloat(rawOura.sleep)||0, 9)/9)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.sleep}</div><span class="orb-unit">HRS</span></div></div>
+            <div class="orb-label">TOTAL</div>
+        </div>
+        <div class="orb-card">
+            <div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:#007aff; stroke-dashoffset:${158 - (Math.min(parseInt(rawOura.deep)||0, 120)/120)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.deep}</div><span class="orb-unit">DEEP</span></div></div>
+            <div class="orb-label">DEEP</div>
+        </div>
+        <div class="orb-card">
+            <div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--purple); stroke-dashoffset:${158 - (Math.min(parseInt(rawOura.rem)||0, 120)/120)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.rem}</div><span class="orb-unit">REM</span></div></div>
+            <div class="orb-label">REM</div>
         </div>
     </div>
 
@@ -174,11 +178,11 @@ function render() {
             <div class="orb-label">ACTIVE</div>
         </div>
         <div class="orb-card">
-            <div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-zone2); stroke-dashoffset:${158 - (Math.min(rawOura.med, 60)/60)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.med}</div><span class="orb-unit">Z2 MIN</span></div></div>
+            <div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-zone2); stroke-dashoffset:${158 - (Math.min(rawOura.med||0, 60)/60)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.med}</div><span class="orb-unit">Z2 MIN</span></div></div>
             <div class="orb-label">BASE</div>
         </div>
         <div class="orb-card">
-            <div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-zone5); stroke-dashoffset:${158 - (Math.min(rawOura.high, 30)/30)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.high}</div><span class="orb-unit">Z5 MIN</span></div></div>
+            <div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-zone5); stroke-dashoffset:${158 - (Math.min(rawOura.high||0, 30)/30)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.high}</div><span class="orb-unit">Z5 MIN</span></div></div>
             <div class="orb-label">PEAK</div>
         </div>
         <div class="orb-card">
@@ -198,24 +202,24 @@ function render() {
 }
 
 // ==========================================
-// V1300 LOGIC FUNCTIONS
+// API LOGIC (WITH ADDED SLEEP FETCH)
 // ==========================================
 
 function switchU(uID) {
     user = uID;
     localStorage.setItem('centurion_active_user', uID);
     
-    // UI Update
+    // UPDATE UI
     document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
-    document.getElementById(`btn-${uID}`).classList.add('active'); // Mapped to correct ID
+    document.getElementById(`btn-${uID}`).classList.add('active');
+    document.getElementById('ouraBar').innerHTML = `💍 SWITCHING TO ${uID}...`;
     
-    document.getElementById('ouraBar').innerHTML = "💍 SWITCHING...";
-    
-    // WIPE CACHE (Nuclear)
+    // 1. CLEAR CONTENT & CACHE
+    document.getElementById('dayContent').innerHTML = '<div style="padding:50px; text-align:center; color:#666;">LOADING...</div>';
     localStorage.removeItem(`centurion_oura_cache_${uID}`);
     
-    render(); // Render Empty
-    fetchOuraData(); // Fetch New
+    // 2. FETCH NEW DATA
+    fetchOuraData(); 
 }
 
 async function fetchOuraData() {
@@ -226,52 +230,55 @@ async function fetchOuraData() {
     document.getElementById('ouraBar').innerHTML = "💍 HANDSHAKE...";
     
     try {
-        const [rRes, aRes] = await Promise.all([
+        // ADDED SLEEP ENDPOINT HERE
+        const [rRes, aRes, sRes] = await Promise.all([
             fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
-            fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } })
+            fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
+            fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } })
         ]);
         
         const rData = await rRes.json();
         const aData = await aRes.json();
+        const sData = await sRes.json();
         
         if(user !== fetchID) return;
         
         if(rData.data) {
             const hist = rData.data.map(day => {
+                // MATCHING DATA BY DAY
                 const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
+                const slp = sData.data ? sData.data.find(sc => sc.day === day.day) : null;
+                
                 return { 
                     date: day.day, 
                     score: day.score || "-", 
                     cal: act ? act.active_calories : "-", 
                     high: act ? Math.round(act.high_activity_time/60) : 0, 
                     med: act ? Math.round(act.medium_activity_time/60) : 0,
-                    rhr: day.contributors?.resting_heart_rate || "-"
+                    rhr: day.contributors?.resting_heart_rate || "-",
+                    // SLEEP DATA PARSING
+                    sleep: slp ? (slp.total_sleep_duration/3600).toFixed(1) : "-",
+                    deep: slp ? Math.round(slp.deep_sleep_duration/60) : "-",
+                    rem: slp ? Math.round(slp.rem_sleep_duration/60) : "-"
                 };
             }).reverse();
             
             localStorage.setItem(`centurion_oura_cache_${fetchID}`, JSON.stringify({history: hist, lastFetch: Date.now()}));
             document.getElementById('ouraBar').innerHTML = `💍 SYNCED`;
             render();
+        } else {
+            console.log("No data found for " + fetchID);
+            localStorage.setItem(`centurion_oura_cache_${fetchID}`, JSON.stringify({history: [], lastFetch: Date.now()}));
+            render();
         }
     } catch(e) { 
+        console.error(e);
         document.getElementById('ouraBar').innerHTML = "💍 SYNC TIMEOUT"; 
         render();
     }
 }
 
-function changeW(d) { 
-    selDate.setDate(selDate.getDate() + d);
-    render();
-}
-
-function resetD() { 
-    selDate = getCaDate(); 
-    render(); 
-}
-
-// INIT
 window.onload = () => { 
-    // Set initial active button
     document.getElementById(`btn-${user}`).classList.add('active');
     switchU(user); 
 };
