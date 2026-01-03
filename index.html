@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v5000.1 OURA-PRECISION</title>
+    <title>The Centurion | v5000.1 PATCH</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -35,7 +35,9 @@
         /* DATE NAV */
         .date-nav { display: flex; justify-content: center; align-items: center; gap: 20px; font-family: var(--font-data); font-size: 0.8rem; font-weight: 700; color: #fff; padding-top: 5px; }
         .nav-arrow { color: var(--gold); cursor: pointer; padding: 5px 10px; user-select: none; }
-        
+        .nav-arrow:active { transform: scale(0.9); }
+        .date-display { min-width: 100px; text-align: center; letter-spacing: 1px; }
+
         /* HERO */
         .hero-section { padding: 25px 16px 10px; display: flex; align-items: center; justify-content: space-between; }
         .ring-container { width: 110px; height: 110px; position: relative; display: flex; align-items: center; justify-content: center; }
@@ -94,14 +96,8 @@
 
         .check-btn { position: absolute; top: 15px; right: 15px; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border); background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; color: transparent; transition: all 0.2s; color: #000; font-weight: 800; font-size: 0.7rem; }
         .time-slot.past .check-btn { background: var(--acid); border-color: var(--acid); color: #000; }
-
-        /* WORKOUT EXPANSION */
-        .workout-detail { margin-top: 10px; background: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px; display: none; }
-        .workout-detail.active { display: block; animation: slideDown 0.3s; }
-        .w-row { display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 6px 0; font-family: var(--font-data); font-size: 0.7rem; }
-        .w-name { color: #ddd; }
-        .w-rep { color: var(--gold); }
-        @keyframes slideDown { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .macro-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 30px; }
 
         .sync-footer { position: fixed; bottom: 0; left: 0; width: 100%; background: #000; padding: 12px 16px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-family: var(--font-data); font-size: 0.6rem; color: #555; z-index: 200; }
         .pulse { animation: pulse 2s infinite; display: inline-block; width: 6px; height: 6px; background: var(--acid); border-radius: 50%; margin-right: 6px; }
@@ -229,13 +225,14 @@
 
 <script>
 /**
- * CENTURION v5000.0 - MASTER
- * Logic: Exact v510 Handshake Protocol + v4900 Chrono Interface
+ * CENTURION v5000.1 - PRECISION PATCH
+ * Logic: Exact v510 Handshake Protocol + Empty Data Fallback
  */
 
+// REPLACE THESE WITH YOUR REAL OURA TOKENS
 const TOKENS = {
-    'J': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y',
-    'S': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4'
+    'J': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 
+    'S': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' 
 };
 
 const USERS = {
@@ -258,23 +255,23 @@ const MACRO_LOOKUP = {
 };
 
 const WORKOUTS = {
-    'anabolic_j': { title: "Heavy Compounds", sub: "Hypertrophy A", exercises: ["Deadlifts 5x5", "Bench Press 4x8", "Pullups 3x8"] },
-    'repair_j': { title: "Zone 2 Flush", sub: "Active Recovery", exercises: ["Ruck 45m @ 35lbs", "Sauna 20m", "Cold Plunge 3m"] },
-    'anabolic_s': { title: "Glute/Core", sub: "Strength", exercises: ["Hip Thrusts 4x10", "Pallof Press 3x12", "KB Swings 4x15"] },
-    'repair_s': { title: "Yoga Flow", sub: "Parasympathetic", exercises: ["Vinyasa 45m", "Foam Roll 10m", "Breathwork 5m"] }
+    'anabolic_j': { title: "Heavy Compounds", sub: "Hypertrophy A", exercises: ["Deadlifts 5x5", "Bench Press 4x8"] },
+    'repair_j': { title: "Zone 2 Flush", sub: "Active Recovery", exercises: ["Ruck 45m @ 35lbs", "Sauna 20m"] },
+    'anabolic_s': { title: "Glute/Core", sub: "Strength", exercises: ["Hip Thrusts 4x10", "Pallof Press 3x12"] },
+    'repair_s': { title: "Yoga Flow", sub: "Parasympathetic", exercises: ["Vinyasa 45m", "Foam Roll 10m"] }
 };
 
 class CenturionCore {
     constructor() {
         this.user = localStorage.getItem('c_active_user') || 'J';
-        this.dayOffset = 0; // 0 = Today
+        this.dayOffset = 0; 
         this.circumference = 158;
         
         // Load v510-style Cache
         this.cache = JSON.parse(localStorage.getItem(`centurion_oura_cache_${this.user}`)) || { history: [] };
         
-        // Base State
-        this.state = { hr: 60, z2_time: 0, z5_time: 0, stress: 0, score: 80, pro: 0, carb: 0, fat: 0, checked: [] };
+        // Base State for UI
+        this.state = { hr: 60, z2_time: 0, z5_time: 0, stress: 0, score: 0, pro: 0, carb: 0, fat: 0, checked: [] };
         
         this.init();
     }
@@ -288,9 +285,9 @@ class CenturionCore {
     init() {
         this.switchUser(this.user);
         this.startClock();
-        // Immediate Async Handshake (v510 Method)
+        // Trigger Async Handshake immediately
         this.fetchOuraData();
-        // Background Refresh
+        // Background refresh every 10 min
         setInterval(() => this.fetchOuraData(), 600000); 
     }
 
@@ -304,7 +301,7 @@ class CenturionCore {
         
         this.dayOffset = 0;
         this.loadDay();
-        this.fetchOuraData(); // Trigger Handshake on switch
+        this.fetchOuraData(); 
     }
 
     changeDay(delta) {
@@ -312,12 +309,13 @@ class CenturionCore {
         this.loadDay();
     }
 
-    // --- THE v510 HANDSHAKE PROTOCOL (EXACT COPY) ---
+    // --- EXACT v510 HANDSHAKE PROTOCOL ---
     async fetchOuraData() {
         const fetchID = this.user;
         const token = TOKENS[fetchID];
-        // Dynamic Range (14 days)
-        const range = `start_date=${this.getDateString(-14)}&end_date=${this.getDateString(0)}`;
+        
+        // v510 Logic: Fetch last 14 days to ensure we capture today
+        const range = `start_date=${this.getDateString(-14)}&end_date=${this.getDateString(1)}`;
 
         document.getElementById('sync-time').innerText = "HANDSHAKE...";
         
@@ -334,12 +332,12 @@ class CenturionCore {
             });
             const aData = await aRes.json();
 
-            // Guard: User Switch
             if(this.user !== fetchID) return;
 
             // 3. Map & Cache
             if(rData.data) {
                 const hist = rData.data.map(day => {
+                    // Match activity by date
                     const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
                     return { 
                         date: day.day, 
@@ -349,18 +347,19 @@ class CenturionCore {
                         med: act ? Math.round(act.medium_activity_time/60) : 0,
                         hrv: day.contributors ? day.contributors.hrv_balance_days : 0
                     };
-                }).reverse();
+                }).reverse(); // Newest first
 
                 localStorage.setItem(`centurion_oura_cache_${fetchID}`, JSON.stringify({history: hist, lastSync: new Date().toISOString()}));
                 this.cache = { history: hist };
                 
-                this.loadDay(); // Refresh UI with new data
+                this.loadDay(); 
                 document.getElementById('sync-time').innerText = "SYNCED: " + new Date().toLocaleTimeString();
                 document.getElementById('tac-cmd').innerText = "OURA CONNECTION ESTABLISHED";
             }
         } catch(e) {
             console.error('Oura sync error:', e);
             document.getElementById('sync-time').innerText = "SYNC FAILED";
+            document.getElementById('tac-cmd').innerText = "OFFLINE MODE";
         }
     }
 
@@ -374,54 +373,55 @@ class CenturionCore {
         const dateKey = this.dateKey;
         
         // Find data in history
-        const dayData = this.cache.history.find(d => d.date === dateKey) || { score: 0, cal: 0, high: 0, med: 0, hrv: 0 };
+        let dayData = this.cache.history.find(d => d.date === dateKey);
         
-        // Update Local State for Rendering
-        this.state.score = dayData.score;
-        this.state.cal = dayData.cal;
-        this.state.z5_time = dayData.high;
-        this.state.z2_time = dayData.med;
-        this.state.stress = dayData.hrv;
-
+        // FALLBACK: If today is missing (0 scores), show the most recent available data
+        if (!dayData && this.dayOffset === 0 && this.cache.history.length > 0) {
+             dayData = this.cache.history[0]; // Grab newest available
+             document.getElementById('tac-cmd').innerText = "SHOWING LAST SYNC";
+        }
+        
+        // Default empty if truly no data
+        if (!dayData) dayData = { score: 0, cal: 0, high: 0, med: 0, hrv: 0 };
+        
         // UI Text
         const label = this.dayOffset === 0 ? "TODAY" : this.dayOffset === -1 ? "YESTERDAY" : dateKey;
         document.getElementById('date-display').innerText = label;
         
-        // Render HUD
-        this.updateHUD();
-        this.renderTimeline();
+        this.updateHUD(dayData);
+        this.renderTimeline(dayData);
     }
 
-    updateHUD() {
+    updateHUD(d) {
         const u = USERS[this.user];
-        const s = this.state;
         
-        // Values
-        document.getElementById('score-val').innerText = s.score;
-        document.getElementById('val-cal').innerText = s.cal;
-        document.getElementById('val-z2').innerText = s.z2_time;
-        document.getElementById('val-z5').innerText = s.z5_time;
-        document.getElementById('val-stress').innerText = s.stress;
+        // Update Ring State from API Data
+        this.state.score = d.score;
+        
+        document.getElementById('score-val').innerText = d.score;
+        document.getElementById('val-cal').innerText = d.cal;
+        document.getElementById('val-z2').innerText = d.med; // Oura Medium -> Z2
+        document.getElementById('val-z5').innerText = d.high; // Oura High -> Z5
+        document.getElementById('val-stress').innerText = d.hrv;
         
         // Rings
-        this.updateRing('activity', s.score, 100);
-        this.updateRing('cal', s.cal, u.goals.cal);
-        this.updateRing('z2', s.z2_time, u.goals.z2);
-        this.updateRing('z5', s.z5_time, u.goals.z5);
-        this.updateRing('stress', s.stress, 100);
+        this.updateRing('activity', d.score, 100);
+        this.updateRing('cal', d.cal, u.goals.cal);
+        this.updateRing('z2', d.med, u.goals.z2);
+        this.updateRing('z5', d.high, u.goals.z5);
+        this.updateRing('stress', d.hrv, 100);
         
-        // Tactical Logic
-        let cmd = "SYSTEMS NOMINAL", reason = "Biometrics Stable", color = "var(--acid)";
-        if(s.score < 70) { 
-            cmd = "RECOVERY REQUIRED"; reason = "Readiness Low. Prioritize Sleep."; color = "var(--gold)";
-        } else if(s.cal < u.goals.cal * 0.5 && new Date().getHours() > 16) {
-            cmd = "METABOLIC GAP"; reason = "Calorie Target Risk. Execute Ruck."; color = "var(--alert)";
-        }
-        
-        document.getElementById('tac-cmd').innerText = cmd;
-        document.getElementById('tac-cmd').style.color = color;
-        document.getElementById('tac-reason').innerText = reason;
-        document.getElementById('tactical-box').style.borderLeftColor = color;
+        // Macros (Local)
+        this.updateMacroRing('pro', this.state.pro, u.goals.pro);
+        this.updateMacroRing('carb', this.state.carb, u.goals.carb);
+        this.updateMacroRing('fat', this.state.fat, u.goals.fat);
+
+        document.getElementById('val-pro').innerText = this.state.pro + "g";
+        document.getElementById('val-carb').innerText = this.state.carb + "g";
+        document.getElementById('val-fat').innerText = this.state.fat + "g";
+        document.getElementById('vo2-val').innerText = u.vo2;
+
+        this.runTactics(d, u);
     }
 
     updateRing(id, val, max) {
@@ -432,13 +432,42 @@ class CenturionCore {
         if(el) el.style.strokeDashoffset = offset;
     }
 
-    // TOGGLE WORKOUT
+    updateMacroRing(id, val, max) {
+        const pct = (val || 0) / max;
+        const offset = 158 - (Math.min(pct, 1) * 158);
+        const el = document.getElementById(`ring-${id}`);
+        if(el) {
+            el.style.strokeDashoffset = offset;
+            if (pct > 1.1) el.style.stroke = "var(--alert)";
+            else if (pct >= 0.9) el.style.stroke = "var(--acid)";
+            else el.style.stroke = "var(--cyan)";
+        }
+    }
+
+    runTactics(d, u) {
+        let cmd = "SYSTEMS NOMINAL", reason = "Biometrics Stable", color = "var(--acid)";
+        
+        if(d.score > 0 && d.score < 70) { 
+            cmd = "RECOVERY REQUIRED"; reason = "Readiness Low. Prioritize Sleep."; color = "var(--gold)";
+        } else if(d.cal < u.goals.cal * 0.5 && new Date().getHours() > 16) {
+            cmd = "METABOLIC GAP"; reason = "Calorie Target Risk. Execute Ruck."; color = "var(--alert)";
+        }
+        
+        // Only update if we aren't showing connection status
+        if(document.getElementById('tac-cmd').innerText.includes("SYSTEMS")) {
+             document.getElementById('tac-cmd').innerText = cmd;
+             document.getElementById('tac-cmd').style.color = color;
+             document.getElementById('tac-reason').innerText = reason;
+             document.getElementById('tactical-box').style.borderLeftColor = color;
+        }
+    }
+
+    // TOGGLE WORKOUT DETAILS
     toggleWorkout(card) {
         const details = card.querySelector('.workout-detail');
         if (details) details.classList.toggle('active');
     }
 
-    // MEAL CHECK (Simple Logic for now)
     checkMeal(btn, mealID) {
         const card = btn.parentElement;
         if(card.classList.contains('past')) return;
@@ -448,9 +477,9 @@ class CenturionCore {
             this.state.pro += macros.p;
             this.state.carb += macros.c;
             this.state.fat += macros.f;
-            this.updateHUD(); // Re-render rings
+            // Force Update rings immediately
+            this.updateHUD(this.cache.history[0] || {score:0}); 
         }
-        
         card.classList.add('past');
         btn.innerText = "✓";
     }
@@ -464,46 +493,31 @@ class CenturionCore {
 
     formatTime(h) { const ampm = h >= 12 ? 'PM' : 'AM'; const hour = h % 12 || 12; return `${hour} ${ampm}`; }
 
-    renderTimeline() {
+    renderTimeline(dayData) {
         const container = document.getElementById('timeline-feed');
-        const nowHour = new Date().getHours();
         
         // Mode Selection
-        const mode = this.state.score >= 80 ? "anabolic" : "repair";
+        const score = dayData ? dayData.score : 80;
+        const mode = score >= 80 ? "anabolic" : "repair";
         const wKey = `${mode}_${this.user.toLowerCase()}`;
         const workout = WORKOUTS[wKey];
 
         const schedule = [
             { t: 7, title: "Hydration", desc: "Sea Moss Gel (2 tbsp)", mech: "Thyroid Prime", id:'sup', tags: [{t:"PRIME",c:"bio"}] },
-            { t: 8, title: "Juice Protocol", desc: this.user==='J'?"Beet Vitality":"Orange Immune", id:'juice', mech: "Immune/VO2 Boost", tags: [{t:"BIO-ACTIVE",c:"syn"}] },
+            { t: 8, title: "Juice Protocol", desc: this.user==='J'?"Beet Vitality":"Orange Immune", mech: "Immune/VO2 Boost", id:'juice', tags: [{t:"BIO-ACTIVE",c:"syn"}] },
             { t: 17, title: workout.title, desc: workout.sub, mech: "Training Block", id:'workout', isWorkout:true, exercises: workout.exercises, tags: [{t:"TRAINING",c:"bio"}] },
-            { t: 19, title: "Dinner", desc: mode==='anabolic'?"Steak & Potato":"White Fish & Greens", id:'d', mech: "Recovery", tags: [{t:"GROWTH",c:"bio"}] }
+            { t: 19, title: "Dinner", desc: mode==='anabolic'?"Steak & Potato":"White Fish & Greens", mech: "Recovery", id:'d', tags: [{t:"GROWTH",c:"bio"}] }
         ];
 
         let html = '';
         schedule.forEach(slot => {
-            const isChecked = this.state.checked.includes(slot.id);
-            let stateClass = isChecked ? "past" : "";
-            let btnTxt = isChecked ? "✓" : "○";
-            
-            // Auto-highlight current
-            if (!isChecked && this.dayOffset === 0 && nowHour >= slot.t && nowHour < slot.t + 2) stateClass = "active";
-
-            let tags = "";
-            slot.tags.forEach(tag => {
-                const cls = tag.c === 'syn' ? 'b-syn' : 'b-bio';
-                tags += `<span class="ts-badge ${cls}">${tag.t}</span>`;
-            });
-
-            // Workout HTML injection
             let extraHTML = "";
-            let clickAction = `centurion.checkMeal(this, '${slot.id}')`;
             let cardAction = "";
-
+            let clickAction = `centurion.checkMeal(this, '${slot.id}')`;
+            
             if (slot.isWorkout) {
                 cardAction = `onclick="centurion.toggleWorkout(this)"`;
-                clickAction = `event.stopPropagation(); centurion.checkMeal(this, '${slot.id}')`; 
-                
+                clickAction = `event.stopPropagation(); centurion.checkMeal(this, '${slot.id}')`;
                 extraHTML = `<div class="workout-detail">`;
                 slot.exercises.forEach(ex => {
                     extraHTML += `<div class="w-row"><span class="w-name">${ex}</span></div>`;
@@ -511,16 +525,22 @@ class CenturionCore {
                 extraHTML += `</div>`;
             }
 
+            let tags = "";
+            slot.tags.forEach(tag => {
+                const cls = tag.c === 'syn' ? 'b-syn' : 'b-bio';
+                tags += `<span class="ts-badge ${cls}">${tag.t}</span>`;
+            });
+
             html += `
-                <div class="time-slot ${stateClass}">
-                    <div class="ts-time">${this.formatTime(slot.t)}</div>
+                <div class="time-slot">
+                    <div class="ts-time">${slot.t}:00</div>
                     <div class="ts-card" ${cardAction}>
                         <div class="badge-row">${tags}</div>
                         <div class="ts-title">${slot.title}</div>
                         <div class="ts-desc">${slot.desc}</div>
                         <div class="ts-mech">🔬 ${slot.mech}</div>
                         ${extraHTML}
-                        <button class="check-btn" onclick="${clickAction}">${btnTxt}</button>
+                        <button class="check-btn" onclick="${clickAction}">○</button>
                     </div>
                 </div>
             `;
