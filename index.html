@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v6600.0 SEQUENTIAL</title>
+    <title>The Centurion | v6700.0 ATOMIC-LOAD</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -129,7 +129,7 @@
 
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v6600</div>
+            <div class="app-name">CENTURION v6700</div>
             <div>
                 <button class="bio-btn">BIO</button>
                 <div class="user-switch">
@@ -221,8 +221,8 @@
 
 <script>
 /**
- * CENTURION v6600.0 - SEQUENTIAL SAFEGUARD
- * Logic: Fetch Readiness -> Wait -> Sleep -> Wait -> Activity
+ * CENTURION v6700.0 - ATOMIC LOADER
+ * Fix: Sequential Fetch + Immediate UI Updates per metric
  */
 
 const TOKENS = {
@@ -271,6 +271,7 @@ class CenturionCore {
             this.cache = { history: [] };
         }
         
+        // Base State
         this.state = { 
             score: 0, cal: 0, med: 0, high: 0, rhr: 0, 
             sleep: 0, deep: 0, rem: 0,
@@ -290,6 +291,7 @@ class CenturionCore {
         this.user = uid;
         localStorage.setItem('centurion_active_user', uid);
         
+        // Wipe old data first
         localStorage.removeItem(`centurion_oura_cache_${uid}`);
         this.cache = { history: [] };
         
@@ -310,7 +312,7 @@ class CenturionCore {
         this.loadDay();
     }
 
-    // --- SEQUENTIAL FETCHING ---
+    // --- ATOMIC FETCH: LOADS ONE BY ONE ---
     async fetchOuraData() {
         const fetchID = this.user; 
         const token = TOKENS[fetchID];
@@ -321,70 +323,66 @@ class CenturionCore {
         
         const cmd = document.getElementById('tac-cmd');
         
+        // HELPER: Merge new data into cache
+        const mergeData = (newData, type) => {
+            if(!this.cache.history) this.cache.history = [];
+            
+            // Map existing cache by date
+            const map = {};
+            this.cache.history.forEach(d => map[d.date] = d);
+            
+            // Merge new items
+            newData.forEach(item => {
+                if(!map[item.day]) map[item.day] = { date: item.day };
+                const entry = map[item.day];
+                
+                if(type === 'readiness') {
+                    entry.score = item.score;
+                    entry.rhr = item.contributors?.resting_heart_rate;
+                }
+                if(type === 'sleep') {
+                    entry.sleep = (item.total_sleep_duration/3600).toFixed(1);
+                    entry.deep = Math.round(item.deep_sleep_duration/60);
+                    entry.rem = Math.round(item.rem_sleep_duration/60);
+                }
+                if(type === 'activity') {
+                    entry.cal = item.active_calories;
+                    entry.high = Math.round(item.high_activity_time/60);
+                    entry.med = Math.round(item.medium_activity_time/60);
+                }
+            });
+            
+            // Convert back to array & sort
+            this.cache.history = Object.values(map).sort((a,b) => b.date.localeCompare(a.date));
+            localStorage.setItem(`centurion_oura_cache_${fetchID}`, JSON.stringify(this.cache));
+            this.loadDay(); // Refresh UI immediately
+        };
+
         try {
             // 1. READINESS
             if(cmd) cmd.innerText = "GETTING READINESS...";
             const rRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } });
             const rData = await rRes.json();
+            if(rData.data) mergeData(rData.data, 'readiness');
             
-            // 2. SLEEP (Wait 200ms)
-            await new Promise(r => setTimeout(r, 200));
-            if(cmd) cmd.innerText = "GETTING SLEEP...";
-            const sRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } });
-            const sData = await sRes.json();
-
-            // 3. ACTIVITY (Wait 200ms)
-            await new Promise(r => setTimeout(r, 200));
+            // 2. ACTIVITY
             if(cmd) cmd.innerText = "GETTING ACTIVITY...";
             const aRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } });
             const aData = await aRes.json();
-            
-            if(this.user !== fetchID) return;
-            
-            // MERGE LOGIC (Based on Dates)
-            const map = {};
-            
-            // Helper to init date obj
-            const getDayObj = (d) => {
-                if(!map[d]) map[d] = { date: d, score: "-", cal: 0, high: 0, med: 0, rhr: 0, sleep: 0, deep: 0, rem: 0 };
-                return map[d];
-            }
+            if(aData.data) mergeData(aData.data, 'activity');
 
-            if(rData.data) rData.data.forEach(r => {
-                const obj = getDayObj(r.day);
-                obj.score = r.score || "-";
-                obj.rhr = r.contributors?.resting_heart_rate || 0;
-            });
-
-            if(sData.data) sData.data.forEach(s => {
-                const obj = getDayObj(s.day);
-                obj.sleep = (s.total_sleep_duration/3600).toFixed(1);
-                obj.deep = Math.round(s.deep_sleep_duration/60);
-                obj.rem = Math.round(s.rem_sleep_duration/60);
-            });
-
-            if(aData.data) aData.data.forEach(a => {
-                const obj = getDayObj(a.day);
-                obj.cal = a.active_calories;
-                obj.high = Math.round(a.high_activity_time/60);
-                obj.med = Math.round(a.medium_activity_time/60);
-            });
-
-            // Convert map to sorted array
-            const hist = Object.values(map).sort((a,b) => b.date.localeCompare(a.date));
+            // 3. SLEEP
+            if(cmd) cmd.innerText = "GETTING SLEEP...";
+            const sRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const sData = await sRes.json();
+            if(sData.data) mergeData(sData.data, 'sleep');
             
-            localStorage.setItem(`centurion_oura_cache_${fetchID}`, JSON.stringify({history: hist, lastFetch: Date.now()}));
-            this.cache = { history: hist };
-            
+            if(cmd) cmd.innerText = "SYSTEMS ONLINE";
             document.getElementById('sync-time').innerText = "SYNCED: " + new Date().toLocaleTimeString();
-            if(cmd) cmd.innerText = "OURA CONNECTION ESTABLISHED";
-            
-            this.loadDay(); 
             
         } catch(e) { 
-            document.getElementById('sync-time').innerText = "SYNC FAILED";
-            if(cmd) cmd.innerText = "CONNECTION ERROR";
             console.error(e);
+            if(cmd) cmd.innerText = "PARTIAL SYNC ERROR";
         }
     }
 
@@ -395,6 +393,7 @@ class CenturionCore {
         
         let dayData;
         
+        // Show Latest if Today
         if (this.dayOffset === 0 && this.cache.history && this.cache.history.length > 0) {
             dayData = this.cache.history[0]; 
             document.getElementById('date-display').innerText = "LATEST SYNC";
@@ -404,7 +403,8 @@ class CenturionCore {
             document.getElementById('date-display').innerText = label;
         }
         
-        if (!dayData) dayData = { score: 0, cal: 0, high: 0, med: 0, rhr: 0, sleep: 0, deep: 0, rem: 0 };
+        // Defaults
+        if (!dayData) dayData = {};
         
         this.updateHUD(dayData);
         this.renderTimeline(dayData);
@@ -412,40 +412,33 @@ class CenturionCore {
 
     updateHUD(d) {
         const u = USERS[this.user];
-        this.state.score = d.score;
+        
+        const safeVal = (v, suffix="") => (v !== undefined && v !== "-") ? v + suffix : "--";
+        const safeNum = (v) => (v && v !== "-") ? parseFloat(v) : 0;
 
         // Visuals
-        document.getElementById('score-val').innerText = d.score;
-        document.getElementById('val-cal').innerText = d.cal || "--";
-        document.getElementById('val-z2').innerText = d.med || 0; 
-        document.getElementById('val-z5').innerText = d.high || 0;
-        document.getElementById('val-rhr').innerText = d.rhr || "--"; 
+        document.getElementById('score-val').innerText = safeVal(d.score);
+        document.getElementById('val-cal').innerText = safeVal(d.cal);
+        document.getElementById('val-z2').innerText = safeVal(d.med); 
+        document.getElementById('val-z5').innerText = safeVal(d.high);
+        document.getElementById('val-rhr').innerText = safeVal(d.rhr); 
         
-        document.getElementById('val-sleep').innerText = d.sleep || "--";
-        document.getElementById('val-deep').innerText = d.deep || "--";
-        document.getElementById('val-rem').innerText = d.rem || "--";
+        document.getElementById('val-sleep').innerText = safeVal(d.sleep);
+        document.getElementById('val-deep').innerText = safeVal(d.deep);
+        document.getElementById('val-rem').innerText = safeVal(d.rem);
 
-        // SANITIZE INPUTS
-        const scoreNum = parseInt(d.score) || 0;
-        const calNum = d.cal === "-" ? 0 : parseInt(d.cal);
-        const z2Num = d.med === "-" ? 0 : parseInt(d.med);
-        const z5Num = d.high === "-" ? 0 : parseInt(d.high);
-        const rhrNum = d.rhr === "-" ? 0 : parseInt(d.rhr);
+        // Rings
+        this.updateRing('activity', safeNum(d.score), 100);
+        this.updateRing('cal', safeNum(d.cal), u.goals.cal);
+        this.updateRing('z2', safeNum(d.med), u.goals.z2);
+        this.updateRing('z5', safeNum(d.high), u.goals.z5);
+        this.updateRing('rhr', safeNum(d.rhr), 100); 
         
-        const sleepNum = d.sleep === "-" ? 0 : parseFloat(d.sleep);
-        const deepNum = d.deep === "-" ? 0 : parseInt(d.deep);
-        const remNum = d.rem === "-" ? 0 : parseInt(d.rem);
-
-        this.updateRing('activity', scoreNum, 100);
-        this.updateRing('cal', calNum, u.goals.cal);
-        this.updateRing('z2', z2Num, u.goals.z2);
-        this.updateRing('z5', z5Num, u.goals.z5);
-        this.updateRing('rhr', rhrNum, 100); 
+        this.updateRing('sleep', safeNum(d.sleep), 8);
+        this.updateRing('deep', safeNum(d.deep), 90);
+        this.updateRing('rem', safeNum(d.rem), 90);
         
-        this.updateRing('sleep', sleepNum, 8);
-        this.updateRing('deep', deepNum, 90);
-        this.updateRing('rem', remNum, 90);
-        
+        // Macros (Local State)
         this.updateMacroRing('pro', this.state.pro, u.goals.pro);
         this.updateMacroRing('carb', this.state.carb, u.goals.carb);
         this.updateMacroRing('fat', this.state.fat, u.goals.fat);
@@ -455,18 +448,6 @@ class CenturionCore {
         document.getElementById('val-carb').innerText = this.state.carb + "g";
         document.getElementById('val-fat').innerText = this.state.fat + "g";
         document.getElementById('val-fib').innerText = this.state.fib + "g";
-
-        let cmd = "SYSTEMS NOMINAL", reason = "Biometrics Stable", color = "var(--acid)";
-        if(scoreNum > 0 && scoreNum < 70) { 
-            cmd = "RECOVERY REQUIRED"; reason = "Readiness Low. Prioritize Sleep."; color = "var(--gold)";
-        }
-        
-        if(document.getElementById('tac-cmd').innerText.includes("SYSTEMS") || document.getElementById('tac-cmd').innerText.includes("RECOVERY")) {
-             document.getElementById('tac-cmd').innerText = cmd;
-             document.getElementById('tac-cmd').style.color = color;
-             document.getElementById('tac-reason').innerText = reason;
-             document.getElementById('tactical-box').style.borderLeftColor = color;
-        }
     }
 
     updateRing(id, val, max) {
@@ -504,8 +485,7 @@ class CenturionCore {
             this.state.carb += macros.c;
             this.state.fat += macros.f;
             this.state.fib += (macros.fiber || 0); 
-            const dayData = this.cache.history[0] || {};
-            this.updateHUD(dayData);
+            this.updateHUD(this.cache.history[0] || {});
         }
         card.classList.add('past');
         btn.innerText = "✓";
