@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v8600.0 STABLE-CLEAN</title>
+    <title>The Centurion | v8700.0 NIGHT-WATCHMAN</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -108,7 +108,7 @@
 
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v8600</div>
+            <div class="app-name">CENTURION v8700</div>
             <div class="user-switch">
                 <button id="btn-J" class="u-badge active" onclick="centurion.switchUser('J')">JER</button>
                 <button id="btn-S" class="u-badge" onclick="centurion.switchUser('S')">SOPH</button>
@@ -130,7 +130,7 @@
 
 <script>
 // ==========================================
-// V8600 LOGIC: STABLE FETCH + INTERACTIVE UI
+// V8700: SAFE REQUEST PROTOCOL
 // ==========================================
 
 const TOKENS = { 
@@ -158,15 +158,12 @@ class CenturionCore {
 
     switchUser(uID) {
         if(this.user === uID) return;
-        
         this.user = uID;
         localStorage.setItem('centurion_active_user', uID);
         
-        // Wipe local cache & storage to force fresh state
+        // Wipe local cache & storage
         this.cache = { history: [] };
         localStorage.removeItem(`centurion_oura_cache_${uID}`);
-        
-        // Load checked items for new user
         this.checkedItems = JSON.parse(localStorage.getItem(`centurion_checked_${uID}`)) || {};
         
         this.dayOffset = 0;
@@ -184,11 +181,9 @@ class CenturionCore {
     toggleItem(id) {
         const dk = getDateKey(this.getCurrentDate());
         if(!this.checkedItems[dk]) this.checkedItems[dk] = [];
-        
         const idx = this.checkedItems[dk].indexOf(id);
         if(idx > -1) this.checkedItems[dk].splice(idx, 1);
         else this.checkedItems[dk].push(id);
-        
         localStorage.setItem(`centurion_checked_${this.user}`, JSON.stringify(this.checkedItems));
         this.render();
     }
@@ -209,51 +204,50 @@ class CenturionCore {
         const fetchID = this.user; 
         const token = TOKENS[fetchID];
         const range = `start_date=${getDateKey(new Date(Date.now()-864e5*14))}&end_date=${getDateKey(new Date())}`;
-        
-        // CACHE BUSTER: Prevents proxy from serving old user data
         const cb = `&t=${Date.now()}`;
         
         document.getElementById('ouraBar').innerHTML = "💍 HANDSHAKE...";
         
         try {
-            const [rRes, aRes, sRes] = await Promise.all([
+            // SAFE REQUEST: Promise.allSettled allows partial failure (e.g., if sleep data is missing)
+            const results = await Promise.allSettled([
                 fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}${cb}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}${cb}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?${range}${cb}`)}`, { headers: { 'Authorization': `Bearer ${token}` } })
             ]);
+
+            const rData = results[0].status === 'fulfilled' ? await results[0].value.json() : { data: [] };
+            const aData = results[1].status === 'fulfilled' ? await results[1].value.json() : { data: [] };
+            const sData = results[2].status === 'fulfilled' ? await results[2].value.json() : { data: [] };
             
-            const rData = await rRes.json();
-            const aData = await aRes.json();
-            const sData = await sRes.json();
-            
-            // GUARD
             if(this.user !== fetchID) return;
             
-            if(rData.data) {
-                const hist = rData.data.map(day => {
-                    const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
-                    const slp = sData.data ? sData.data.find(sc => sc.day === day.day) : null;
-                    
-                    return { 
-                        date: day.day, 
-                        score: day.score || "-", 
-                        cal: act ? act.active_calories : "-", 
-                        high: act ? Math.round(act.high_activity_time/60) : 0, 
-                        med: act ? Math.round(act.medium_activity_time/60) : 0,
-                        rhr: day.contributors?.resting_heart_rate || "-",
-                        // SAFE DATA MAPPING (Prevents NaN)
-                        sleep: slp ? (slp.total_sleep_duration/3600).toFixed(1) : "-",
-                        deep: slp ? Math.round(slp.deep_sleep_duration/60) : "-",
-                        rem: slp ? Math.round(slp.rem_sleep_duration/60) : "-"
-                    };
-                }).reverse();
-                
-                localStorage.setItem(`centurion_oura_cache_${fetchID}`, JSON.stringify({history: hist, lastFetch: Date.now()}));
-                this.cache = { history: hist };
-                
-                document.getElementById('ouraBar').innerHTML = `💍 SYNCED`;
-                this.render();
-            }
+            // MAP & MERGE
+            const map = {};
+            const ensureDay = (d) => { if(!map[d]) map[d] = { date: d, score: "-", cal: "-", high: 0, med: 0, rhr: "-", sleep: "-", deep: "-", rem: "-" }; return map[d]; };
+
+            if(rData.data) rData.data.forEach(x => { 
+                const d = ensureDay(x.day); d.score = x.score; d.rhr = x.contributors.resting_heart_rate; 
+            });
+            
+            if(aData.data) aData.data.forEach(x => { 
+                const d = ensureDay(x.day); d.cal = x.active_calories; d.high = Math.round(x.high_activity_time/60); d.med = Math.round(x.medium_activity_time/60); 
+            });
+
+            if(sData.data) sData.data.forEach(x => { 
+                const d = ensureDay(x.day); 
+                d.sleep = (x.total_sleep_duration/3600).toFixed(1);
+                d.deep = Math.round(x.deep_sleep_duration/60);
+                d.rem = Math.round(x.rem_sleep_duration/60);
+            });
+
+            const hist = Object.values(map).sort((a,b) => b.date.localeCompare(a.date));
+            localStorage.setItem(`centurion_oura_cache_${fetchID}`, JSON.stringify({history: hist, lastFetch: Date.now()}));
+            this.cache = { history: hist };
+            
+            document.getElementById('ouraBar').innerHTML = `💍 SYNCED`;
+            this.render();
+            
         } catch(e) { 
             console.error(e);
             document.getElementById('ouraBar').innerHTML = "💍 SYNC TIMEOUT"; 
@@ -264,13 +258,11 @@ class CenturionCore {
         const d = this.getCurrentDate();
         const dk = getDateKey(d);
         
-        // Update Date Header
         const today = getDateKey(getCaDate());
         const displayDate = (dk === today) ? "TODAY" : dk.substring(5);
         document.getElementById('dateDisplay').innerText = displayDate;
         document.getElementById('btn-next').classList.toggle('disabled', dk === today);
 
-        // Find Data
         const rawOura = this.cache.history.find(d => d.date === dk) || { 
             score: "-", cal: "-", high: 0, med: 0, rhr: "-", 
             sleep: "-", deep: "-", rem: "-" 
@@ -280,7 +272,9 @@ class CenturionCore {
         const rColor = scoreVal >= 80 ? 'var(--acid)' : scoreVal >= 60 ? 'var(--gold)' : 'var(--alert)';
         const safeNum = (v) => (v === "-" || v === undefined) ? 0 : parseFloat(v);
 
-        // Timeline Setup
+        // Logic for Sleep Status Text
+        const sleepStatus = rawOura.sleep === "-" ? "AWAITING SLEEP DATA" : "SLEEP SYNCED";
+
         const checks = this.checkedItems[dk] || [];
         const isChecked = (id) => checks.includes(id) ? 'checked' : '';
         const btnTxt = (id) => checks.includes(id) ? '✓' : '○';
@@ -294,7 +288,7 @@ class CenturionCore {
             <div class="tactical-box" style="border-left-color:${rColor}">
                 <div class="tac-label" style="color:${rColor}">USER: ${this.user === 'J' ? 'JERMAINE' : 'SOPHIA'}</div>
                 <div class="tac-cmd">${scoreVal === 0 ? "LOADING DATA..." : scoreVal >= 80 ? "SYSTEMS NOMINAL" : "RECOVERY REQUIRED"}</div>
-                <div class="tac-meta">VIEWING: ${dk}</div>
+                <div class="tac-meta">${sleepStatus}</div>
             </div>
         </div>
 
