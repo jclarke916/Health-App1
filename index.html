@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v6000.0 SKINWALKER</title>
+    <title>The Centurion | v6100.0 FRESH-CYCLE</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -114,7 +114,7 @@
     </svg>
 
     <div class="hud-header">
-        <div class="app-name">CENTURION v6000</div>
+        <div class="app-name">CENTURION v6100</div>
         <div class="user-switch">
             <div id="bJ" class="u-badge active" onclick="switchU('J')">JER</div>
             <div id="bS" class="u-badge" onclick="switchU('S')">SOPH</div>
@@ -136,7 +136,7 @@
 
 <script>
 // ==========================================
-// LOGIC ENGINE: v1300 (EXACT COPY)
+// LOGIC ENGINE: v1300 + CACHE BUSTER
 // ==========================================
 
 let user = localStorage.getItem('centurion_active_user') || 'J';
@@ -180,14 +180,13 @@ function render() {
     const rawOura = cached.history.find(d => d.date === dk) || { score: "-", cal: "-", high: 0, med: 0, rhr: "-" };
     
     // 2. Logic (Burnout/Recovery)
-    // Simplified for Cockpit view
     let readiness = parseInt(rawOura.score) || 0;
     let rColor = readiness >= 80 ? 'var(--acid)' : readiness >= 60 ? 'var(--gold)' : 'var(--alert)';
     
     // 3. Macros
-    const macros = { p: user==='J'?180:120, c: user==='J'?200:150, f: user==='J'?80:60 }; // Simple defaults
+    const macros = { p: user==='J'?180:120, c: user==='J'?200:150, f: user==='J'?80:60 }; 
     
-    // 4. Build HTML String (Cockpit Style)
+    // 4. Build HTML
     let html = `
     <div class="hero-section">
         <div class="ring-container">
@@ -196,7 +195,7 @@ function render() {
         </div>
         <div class="tactical-box" style="border-left-color:${rColor}">
             <div class="tac-label" style="color:${rColor}">STATUS</div>
-            <div class="tac-cmd">${readiness >= 80 ? "SYSTEMS NOMINAL" : "RECOVERY REQUIRED"}</div>
+            <div class="tac-cmd">${readiness === 0 ? "NO DATA FOUND" : readiness >= 80 ? "SYSTEMS NOMINAL" : "RECOVERY REQUIRED"}</div>
             <div class="tac-meta">${selDate.toDateString()}</div>
         </div>
     </div>
@@ -273,22 +272,26 @@ function render() {
 }
 
 // ==========================================
-// API LOGIC (EXACT V1300)
+// API LOGIC (WITH CACHE BUSTER)
 // ==========================================
 
 function switchU(uID) {
     user = uID;
     localStorage.setItem('centurion_active_user', uID);
     
-    // 1. WIPE CACHE (Your exact requirement)
+    // 1. NUKE CACHE
     localStorage.removeItem(`centurion_oura_cache_${uID}`);
     
-    // 2. UPDATE UI
-    document.querySelectorAll('.u-badge').forEach(b => b.classList.toggle('active', b.id === 'b' + uID));
-    document.getElementById('ouraBar').innerHTML = "💍 SWITCHING & WIPING CACHE...";
-    render(); // Will render empty/loading state initially
+    // 2. RESET DATE TO TODAY
+    selDate = getCaDate();
+    offset = 0;
     
-    // 3. FETCH FRESH
+    // 3. UPDATE UI
+    document.querySelectorAll('.u-badge').forEach(b => b.classList.toggle('active', b.id === 'b' + uID));
+    document.getElementById('ouraBar').innerHTML = "💍 LOADING NEW USER...";
+    render(); 
+    
+    // 4. FORCE FRESH FETCH
     fetchOuraData();
 }
 
@@ -296,12 +299,15 @@ async function fetchOuraData() {
     const fetchID = user; const token = TOKENS[fetchID];
     const range = `start_date=${getDateKey(new Date(Date.now()-864e5*14))}&end_date=${getDateKey(new Date())}`;
     
+    // CACHE BUSTER TIMESTAMP
+    const ts = Date.now();
+    
     document.getElementById('ouraBar').innerHTML = "💍 HANDSHAKE...";
     
     try {
         const [rRes, aRes] = await Promise.all([
-            fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
-            fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } })
+            fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}&t=${ts}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
+            fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}&t=${ts}`)}`, { headers: { 'Authorization': `Bearer ${token}` } })
         ]);
         
         const rData = await rRes.json();
@@ -332,9 +338,9 @@ async function fetchOuraData() {
     }
 }
 
-function changeW(d) { offset += d; render(); }
+function changeW(d) { offset += d; selDate = getMon(offset); render(); }
 function resetD() { offset = 0; selDate = getCaDate(); render(); }
-window.onload = () => { switchU(user); }; // Initial load behaves like a switch
+window.onload = () => { switchU(user); }; 
 </script>
 </body>
 </html>
