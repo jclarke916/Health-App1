@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v4700.3 CHRONOS-OURA</title>
+    <title>The Centurion | v4700.3 OURA-LINK</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -14,7 +14,6 @@
             --cyan: #00f0ff;
             --gold: #FFD60A;
             --alert: #ff453a;
-            --purple: #bf5af2;
             --text-main: #ffffff;
             --text-muted: #666;
             --font-ui: 'Inter', sans-serif;
@@ -100,11 +99,6 @@
         .check-btn { position: absolute; top: 15px; right: 15px; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border); background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; color: transparent; transition: all 0.2s; color: #000; font-weight: 800; font-size: 0.7rem; }
         .time-slot.past .check-btn { background: var(--acid); border-color: var(--acid); color: #000; }
         
-        .scan-overlay { display: none; margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px; font-family: var(--font-data); font-size: 0.6rem; color: #aaa; border: 1px dashed var(--border); }
-        .scan-line { margin-bottom: 4px; display: flex; justify-content: space-between; }
-        .scan-result { font-weight: 700; color: var(--acid); }
-        .scan-fail { color: var(--alert); }
-
         /* WORKOUT EXPANSION */
         .workout-detail { margin-top: 10px; background: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px; display: none; }
         .workout-detail.active { display: block; animation: slideDown 0.3s; }
@@ -162,7 +156,7 @@
         <div class="tactical-box" id="tactical-box">
             <div class="tac-label" id="tac-label">COMMAND:</div>
             <div class="tac-cmd" id="tac-cmd">SYSTEMS NOMINAL</div>
-            <div class="tac-meta" id="tac-reason">Initializing Oura Handshake...</div>
+            <div class="tac-meta" id="tac-reason">Tracking autonomic drift...</div>
         </div>
     </div>
 
@@ -233,7 +227,7 @@
     </div>
 
     <div class="sync-footer">
-        <div><span class="pulse"></span><span id="sync-status">OURA API LINK</span></div>
+        <div><span class="pulse"></span><span id="sync-status">OURA API V2</span></div>
         <div id="sync-time">CONNECTING...</div>
     </div>
 
@@ -423,17 +417,27 @@ class CenturionCore {
     formatTime(h) { const ampm = h >= 12 ? 'PM' : 'AM'; const hour = h % 12 || 12; return `${hour} ${ampm}`; }
 
     // HUD UPDATER
+    updateHUDValues() {
+        if(this.dayOffset !== 0) return;
+        document.getElementById('val-hr').innerText = this.state.hr;
+        document.getElementById('val-z2').innerText = Math.floor(this.state.z2_time || 0);
+        document.getElementById('val-z5').innerText = Math.floor(this.state.z5_time || 0);
+    }
+
     updateHUD() {
         const u = USERS[this.user];
         const s = this.state;
         
-        document.getElementById('val-hr').innerText = s.hr || "--"; // Shows Calorie burn from API or Sim HR
+        // Use HR slot for Calories if API sync happened, else Sim
+        const hrDisplay = s.hr > 200 ? s.hr : s.hr; 
+        document.getElementById('val-hr').innerText = hrDisplay; 
+        
         document.getElementById('val-z2').innerText = Math.floor(s.z2_time || 0);
         document.getElementById('val-z5').innerText = Math.floor(s.z5_time || 0);
 
         this.updateRing('z2', s.z2_time, u.goals.z2);
         this.updateRing('z5', s.z5_time, u.goals.z5);
-        this.updateRing('stress', s.stress, 100); // Using HRV Balance
+        this.updateRing('stress', s.stress, 100);
         
         this.updateMacroRing('pro', s.pro, u.goals.pro);
         this.updateMacroRing('carb', s.carb, u.goals.carb);
@@ -449,6 +453,19 @@ class CenturionCore {
         this.updateRing('activity', s.score, 100);
         
         this.runTactics(s, u);
+    }
+
+    updateHRRing(hr) {
+        const u = USERS[this.user];
+        const pct = Math.min(hr / u.max_hr, 1);
+        const offset = 158 - (pct * 158);
+        const ring = document.getElementById('ring-hr');
+        if(ring) {
+            ring.style.strokeDashoffset = offset;
+            if (hr > 155) ring.style.stroke = "var(--alert)";
+            else if (hr > 120) ring.style.stroke = "var(--cyan)";
+            else ring.style.stroke = "#444";
+        }
     }
 
     updateRing(id, val, max) {
@@ -545,7 +562,7 @@ class CenturionCore {
         document.documentElement.style.setProperty('--acid', '#ff453a');
     }
 
-    // 4. TOGGLE WORKOUT
+    // 4. TOGGLE WORKOUT DETAILS
     toggleWorkout(card) {
         const details = card.querySelector('.workout-detail');
         if (details) details.classList.toggle('active');
