@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v7200.0 COMPLETE-DATA</title>
+    <title>The Centurion | v7300.0 EXPLICIT</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -51,6 +51,7 @@
         .section-label { font-size: 0.55rem; font-weight: 900; color: var(--text-muted); letter-spacing: 1px; margin: 20px 16px 10px; text-transform: uppercase; }
         .telemetry-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 10px; }
         .sleep-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 20px; }
+        .macro-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 30px; }
         
         .orb-card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 10px 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
         .orb-container { width: 60px; height: 60px; position: relative; display: flex; align-items: center; justify-content: center; margin-bottom: 5px; }
@@ -72,7 +73,6 @@
         .ts-title { font-size: 0.85rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
         .ts-desc { font-size: 0.75rem; color: #aaa; line-height: 1.4; }
         
-        /* FOOTER */
         .sync-footer { position: fixed; bottom: 0; left: 0; width: 100%; background: #000; padding: 12px 16px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-family: var(--font-data); font-size: 0.6rem; color: #555; z-index: 200; }
         .pulse { animation: pulse 2s infinite; display: inline-block; width: 6px; height: 6px; background: var(--acid); border-radius: 50%; margin-right: 6px; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } }
@@ -99,7 +99,7 @@
 
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v7200</div>
+            <div class="app-name">CENTURION v7300</div>
             <div class="user-switch">
                 <button id="btn-J" class="u-badge active" onclick="switchU('J')">JER</button>
                 <button id="btn-S" class="u-badge" onclick="switchU('S')">SOPH</button>
@@ -111,15 +111,15 @@
 
     <div class="sync-footer">
         <div><span class="pulse"></span><span id="ouraBar">INIT...</span></div>
-        <div onclick="switchU(user)" style="cursor:pointer">FORCE SYNC</div>
+        <div id="syncTime">--:--</div>
     </div>
 
 <script>
 // ==========================================
-// V7200 LOGIC CORE (V1300 + SLEEP FETCH)
+// V7300 LOGIC: EXPLICIT SWITCHING
 // ==========================================
 
-let user = localStorage.getItem('centurion_active_user') || 'J';
+let activeUser = localStorage.getItem('centurion_active_user') || 'J';
 let selDate = getCaDate(); 
 
 const TOKENS = { 'J': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'S': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
@@ -127,12 +127,15 @@ const TOKENS = { 'J': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'S': '4QSDWYJJUZFHRWRH
 function getCaDate() { let d = new Date(); d.setHours(12, 0, 0, 0); return d; }
 function getDateKey(d) { return d.toISOString().split('T')[0]; }
 
-// --- RENDER ENGINE (CHRONOS SKIN) ---
-function render() {
+// --- RENDER ENGINE (MUST RECEIVE UID) ---
+function render(uID) {
     const dk = getDateKey(selDate);
-    const cached = JSON.parse(localStorage.getItem(`centurion_oura_cache_${user}`)) || { history: [] };
     
-    // Find Data or Default
+    // Explicitly load cache for the passed uID, NOT global var
+    const cacheKey = `centurion_oura_cache_${uID}`;
+    const cached = JSON.parse(localStorage.getItem(cacheKey)) || { history: [] };
+    
+    // Find Data
     const rawOura = cached.history.find(d => d.date === dk) || { 
         score: "-", cal: "-", high: 0, med: 0, rhr: "-", 
         sleep: "-", deep: "-", rem: "-" 
@@ -141,7 +144,7 @@ function render() {
     const scoreVal = parseInt(rawOura.score) || 0;
     const rColor = scoreVal >= 80 ? 'var(--acid)' : scoreVal >= 60 ? 'var(--gold)' : 'var(--alert)';
     
-    // Build HTML
+    // UI BUILD
     const html = `
     <div class="hero-section">
         <div class="ring-container">
@@ -149,9 +152,9 @@ function render() {
             <div class="ring-data"><div class="ring-val">${rawOura.score}</div><div class="ring-label">READINESS</div></div>
         </div>
         <div class="tactical-box" style="border-left-color:${rColor}">
-            <div class="tac-label" style="color:${rColor}">STATUS</div>
-            <div class="tac-cmd">${scoreVal === 0 ? "NO DATA FOUND" : scoreVal >= 80 ? "SYSTEMS NOMINAL" : "RECOVERY REQUIRED"}</div>
-            <div class="tac-meta">USER: ${user === 'J' ? 'JERMAINE' : 'SOPHIA'} | ${dk}</div>
+            <div class="tac-label" style="color:${rColor}">USER: ${uID === 'J' ? 'JERMAINE' : 'SOPHIA'}</div>
+            <div class="tac-cmd">${scoreVal === 0 ? "LOADING DATA..." : scoreVal >= 80 ? "SYSTEMS NOMINAL" : "RECOVERY REQUIRED"}</div>
+            <div class="tac-meta">DATE: ${dk}</div>
         </div>
     </div>
 
@@ -202,35 +205,39 @@ function render() {
 }
 
 // ==========================================
-// API LOGIC (WITH ADDED SLEEP FETCH)
+// EXPLICIT SWITCHING & FETCHING
 // ==========================================
 
 function switchU(uID) {
-    user = uID;
+    activeUser = uID;
     localStorage.setItem('centurion_active_user', uID);
     
-    // UPDATE UI
+    // UI Update
     document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
     document.getElementById(`btn-${uID}`).classList.add('active');
+    
     document.getElementById('ouraBar').innerHTML = `💍 SWITCHING TO ${uID}...`;
     
-    // 1. CLEAR CONTENT & CACHE
-    document.getElementById('dayContent').innerHTML = '<div style="padding:50px; text-align:center; color:#666;">LOADING...</div>';
+    // 1. WIPE CACHE
     localStorage.removeItem(`centurion_oura_cache_${uID}`);
     
-    // 2. FETCH NEW DATA
-    fetchOuraData(); 
+    // 2. RENDER LOADING STATE (Explicitly passing uID)
+    render(uID);
+    
+    // 3. FETCH (Passing uID explicitly)
+    fetchOuraData(uID); 
 }
 
-async function fetchOuraData() {
-    const fetchID = user; 
+async function fetchOuraData(fetchID) {
+    // If no ID passed, use active
+    if(!fetchID) fetchID = activeUser;
+    
     const token = TOKENS[fetchID];
     const range = `start_date=${getDateKey(new Date(Date.now()-864e5*14))}&end_date=${getDateKey(new Date())}`;
     
     document.getElementById('ouraBar').innerHTML = "💍 HANDSHAKE...";
     
     try {
-        // ADDED SLEEP ENDPOINT HERE
         const [rRes, aRes, sRes] = await Promise.all([
             fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
             fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
@@ -241,11 +248,11 @@ async function fetchOuraData() {
         const aData = await aRes.json();
         const sData = await sRes.json();
         
-        if(user !== fetchID) return;
+        // GUARD: If user switched while fetching, abort
+        if(activeUser !== fetchID) return;
         
         if(rData.data) {
             const hist = rData.data.map(day => {
-                // MATCHING DATA BY DAY
                 const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
                 const slp = sData.data ? sData.data.find(sc => sc.day === day.day) : null;
                 
@@ -256,7 +263,6 @@ async function fetchOuraData() {
                     high: act ? Math.round(act.high_activity_time/60) : 0, 
                     med: act ? Math.round(act.medium_activity_time/60) : 0,
                     rhr: day.contributors?.resting_heart_rate || "-",
-                    // SLEEP DATA PARSING
                     sleep: slp ? (slp.total_sleep_duration/3600).toFixed(1) : "-",
                     deep: slp ? Math.round(slp.deep_sleep_duration/60) : "-",
                     rem: slp ? Math.round(slp.rem_sleep_duration/60) : "-"
@@ -265,22 +271,21 @@ async function fetchOuraData() {
             
             localStorage.setItem(`centurion_oura_cache_${fetchID}`, JSON.stringify({history: hist, lastFetch: Date.now()}));
             document.getElementById('ouraBar').innerHTML = `💍 SYNCED`;
-            render();
-        } else {
-            console.log("No data found for " + fetchID);
-            localStorage.setItem(`centurion_oura_cache_${fetchID}`, JSON.stringify({history: [], lastFetch: Date.now()}));
-            render();
+            
+            // Re-render explicitly with the ID we just fetched
+            render(fetchID);
         }
     } catch(e) { 
         console.error(e);
         document.getElementById('ouraBar').innerHTML = "💍 SYNC TIMEOUT"; 
-        render();
+        render(fetchID);
     }
 }
 
+// INIT
 window.onload = () => { 
-    document.getElementById(`btn-${user}`).classList.add('active');
-    switchU(user); 
+    document.getElementById(`btn-${activeUser}`).classList.add('active');
+    switchU(activeUser); 
 };
 </script>
 </body>
