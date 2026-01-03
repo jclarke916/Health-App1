@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v6800.0 TOGGLE-GUARD</title>
+    <title>The Centurion | v6900.0 IRONCLAD</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -129,7 +129,7 @@
 
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v6800</div>
+            <div class="app-name">CENTURION v6900</div>
             <div>
                 <button class="bio-btn">BIO</button>
                 <div class="user-switch">
@@ -221,8 +221,8 @@
 
 <script>
 /**
- * CENTURION v6800.0 - TOGGLE GUARD
- * Logic: Sequential Fetch + Guard Rails on User Switch
+ * CENTURION v6900.0 - IRONCLAD PARSING
+ * Logic: Sequential Fetch + Defensive Math + Strict UI Sanitization
  */
 
 const TOKENS = {
@@ -256,7 +256,6 @@ const WORKOUTS = {
     'repair_s': { title: "Yoga Flow", sub: "Parasympathetic", exercises: ["Vinyasa 45m", "Foam Roll 10m"] }
 };
 
-// DATE HELPERS
 function getCaDate() { let d = new Date(); d.setHours(12, 0, 0, 0); return d; }
 function getDateKey(d) { return d.toISOString().split('T')[0]; }
 
@@ -264,21 +263,19 @@ class CenturionCore {
     constructor() {
         this.user = localStorage.getItem('centurion_active_user') || 'J';
         this.dayOffset = 0; 
-        this.resetState();
         try {
             this.cache = JSON.parse(localStorage.getItem(`centurion_oura_cache_${this.user}`)) || { history: [] };
         } catch(e) {
             this.cache = { history: [] };
         }
-        this.init();
-    }
-
-    resetState() {
+        
         this.state = { 
             score: 0, cal: 0, med: 0, high: 0, rhr: 0, 
             sleep: 0, deep: 0, rem: 0,
             pro: 0, carb: 0, fat: 0, fib: 0, checked: [] 
         };
+        
+        try { this.init(); } catch(e) { console.error("Init Error:", e); }
     }
 
     init() {
@@ -291,10 +288,9 @@ class CenturionCore {
         this.user = uid;
         localStorage.setItem('centurion_active_user', uid);
         
-        // 1. HARD WIPE
+        // 1. WIPE CACHE
         localStorage.removeItem(`centurion_oura_cache_${uid}`);
         this.cache = { history: [] };
-        this.resetState();
         
         document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
         const btn = document.getElementById(`btn-${uid}`);
@@ -302,9 +298,10 @@ class CenturionCore {
         
         this.dayOffset = 0;
         
-        // 2. IMMEDIATE VISUAL RESET
+        // 2. SHOW LOADING
         this.updateHUD({ score: "-", cal: "-", med: 0, high: 0, rhr: "-", sleep: 0, deep: 0, rem: 0 });
-        document.getElementById('tac-cmd').innerText = `SWITCHING TO ${USERS[uid].name.toUpperCase()}...`;
+        const cmdEl = document.getElementById('tac-cmd');
+        if(cmdEl) cmdEl.innerText = "SWITCHING USER...";
         
         // 3. FETCH
         this.fetchOuraData(); 
@@ -315,7 +312,7 @@ class CenturionCore {
         this.loadDay();
     }
 
-    // --- SEQUENTIAL FETCH WITH GUARDS ---
+    // --- SEQUENTIAL FETCH WITH SAFETY MATH ---
     async fetchOuraData() {
         const fetchID = this.user; 
         const token = TOKENS[fetchID];
@@ -326,9 +323,8 @@ class CenturionCore {
         
         const cmd = document.getElementById('tac-cmd');
         
-        // HELPER: Merge with guard check
         const mergeData = (newData, type) => {
-            if(this.user !== fetchID) return; // STOP IF USER CHANGED
+            if(this.user !== fetchID) return;
 
             if(!this.cache.history) this.cache.history = [];
             const map = {};
@@ -338,19 +334,20 @@ class CenturionCore {
                 if(!map[item.day]) map[item.day] = { date: item.day };
                 const entry = map[item.day];
                 
+                // SAFETY PARSING: Default to 0 if undefined/null
                 if(type === 'readiness') {
                     entry.score = item.score;
                     entry.rhr = item.contributors?.resting_heart_rate;
                 }
                 if(type === 'sleep') {
-                    entry.sleep = (item.total_sleep_duration/3600).toFixed(1);
-                    entry.deep = Math.round(item.deep_sleep_duration/60);
-                    entry.rem = Math.round(item.rem_sleep_duration/60);
+                    entry.sleep = ((item.total_sleep_duration || 0) / 3600).toFixed(1);
+                    entry.deep = Math.round((item.deep_sleep_duration || 0) / 60);
+                    entry.rem = Math.round((item.rem_sleep_duration || 0) / 60);
                 }
                 if(type === 'activity') {
                     entry.cal = item.active_calories;
-                    entry.high = Math.round(item.high_activity_time/60);
-                    entry.med = Math.round(item.medium_activity_time/60);
+                    entry.high = Math.round((item.high_activity_time || 0) / 60);
+                    entry.med = Math.round((item.medium_activity_time || 0) / 60);
                 }
             });
             
@@ -366,14 +363,14 @@ class CenturionCore {
             const rData = await rRes.json();
             if(rData.data) mergeData(rData.data, 'readiness');
             
-            // 2. SLEEP (Guard check)
+            // 2. SLEEP
             if(this.user !== fetchID) return;
             if(cmd) cmd.innerText = "GETTING SLEEP...";
             const sRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } });
             const sData = await sRes.json();
             if(sData.data) mergeData(sData.data, 'sleep');
 
-            // 3. ACTIVITY (Guard check)
+            // 3. ACTIVITY
             if(this.user !== fetchID) return;
             if(cmd) cmd.innerText = "GETTING ACTIVITY...";
             const aRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } });
@@ -414,8 +411,15 @@ class CenturionCore {
     updateHUD(d) {
         const u = USERS[this.user];
         
-        const safeVal = (v, suffix="") => (v !== undefined && v !== "-") ? v + suffix : "--";
-        const safeNum = (v) => (v && v !== "-") ? parseFloat(v) : 0;
+        // --- STRICT UI SANITIZATION ---
+        const safeVal = (v, suffix="") => {
+            if (v === undefined || v === null || v === "-" || isNaN(v)) return "--";
+            return v + suffix;
+        };
+        const safeNum = (v) => {
+            if (v === undefined || v === null || v === "-" || isNaN(parseFloat(v))) return 0;
+            return parseFloat(v);
+        };
 
         document.getElementById('score-val').innerText = safeVal(d.score);
         document.getElementById('val-cal').innerText = safeVal(d.cal);
@@ -446,6 +450,19 @@ class CenturionCore {
         document.getElementById('val-carb').innerText = this.state.carb + "g";
         document.getElementById('val-fat').innerText = this.state.fat + "g";
         document.getElementById('val-fib').innerText = this.state.fib + "g";
+
+        let cmd = "SYSTEMS NOMINAL", reason = "Biometrics Stable", color = "var(--acid)";
+        const scoreNum = safeNum(d.score);
+        if(scoreNum > 0 && scoreNum < 70) { 
+            cmd = "RECOVERY REQUIRED"; reason = "Readiness Low. Prioritize Sleep."; color = "var(--gold)";
+        }
+        
+        if(document.getElementById('tac-cmd').innerText.includes("SYSTEMS") || document.getElementById('tac-cmd').innerText.includes("RECOVERY")) {
+             document.getElementById('tac-cmd').innerText = cmd;
+             document.getElementById('tac-cmd').style.color = color;
+             document.getElementById('tac-reason').innerText = reason;
+             document.getElementById('tactical-box').style.borderLeftColor = color;
+        }
     }
 
     updateRing(id, val, max) {
