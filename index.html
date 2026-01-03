@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v7400.0 NAVIGATOR</title>
+    <title>The Centurion | v7500.0 STRICT-PURGE</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -58,7 +58,6 @@
         .section-label { font-size: 0.55rem; font-weight: 900; color: var(--text-muted); letter-spacing: 1px; margin: 20px 16px 10px; text-transform: uppercase; }
         .telemetry-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 10px; }
         .sleep-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 20px; }
-        .macro-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 30px; }
         
         .orb-card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 10px 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
         .orb-container { width: 60px; height: 60px; position: relative; display: flex; align-items: center; justify-content: center; margin-bottom: 5px; }
@@ -106,7 +105,7 @@
 
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v7400</div>
+            <div class="app-name">CENTURION v7500</div>
             <div class="user-switch">
                 <button id="btn-J" class="u-badge active" onclick="switchU('J')">JER</button>
                 <button id="btn-S" class="u-badge" onclick="switchU('S')">SOPH</button>
@@ -128,19 +127,21 @@
 
 <script>
 // ==========================================
-// V7400 LOGIC CORE: NAVIGATION & DATES
+// V7500 LOGIC: STRICT PURGE & NAVIGATION
 // ==========================================
 
 let activeUser = localStorage.getItem('centurion_active_user') || 'J';
-let currentDate = getCaDate(); // Start at Today Noon
+let currentDate = getCaDate(); 
 
 const TOKENS = { 'J': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'S': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
 
 function getCaDate() { let d = new Date(); d.setHours(12, 0, 0, 0); return d; }
 function getDateKey(d) { return d.toISOString().split('T')[0]; }
 
-// --- RENDER ENGINE ---
+// --- RENDER ENGINE (GUARDED) ---
 function render(uID) {
+    if (uID !== activeUser) return; // RENDER GUARD
+
     const dk = getDateKey(currentDate);
     const todayKey = getDateKey(getCaDate());
     const isToday = (dk === todayKey);
@@ -150,18 +151,17 @@ function render(uID) {
         document.getElementById('dateDisplay').innerText = "TODAY";
         document.getElementById('btn-next').classList.add('disabled');
     } else {
-        // Format: "JAN 2"
         const month = currentDate.toLocaleString('default', { month: 'short' }).toUpperCase();
         const day = currentDate.getDate();
         document.getElementById('dateDisplay').innerText = `${month} ${day}`;
         document.getElementById('btn-next').classList.remove('disabled');
     }
 
-    // Load Cache
-    const cacheKey = `centurion_oura_cache_${uID}`;
+    // Load Specific User Cache
+    const cacheKey = `centurion_cache_${uID}`; // Unique Key
     const cached = JSON.parse(localStorage.getItem(cacheKey)) || { history: [] };
     
-    // Find Data Match
+    // Find Data
     const rawOura = cached.history.find(d => d.date === dk) || { 
         score: "-", cal: "-", high: 0, med: 0, rhr: "-", 
         sleep: "-", deep: "-", rem: "-" 
@@ -231,7 +231,7 @@ function render(uID) {
 }
 
 // ==========================================
-// NAVIGATION & API
+// API & SWITCHING LOGIC
 // ==========================================
 
 function switchU(uID) {
@@ -240,14 +240,18 @@ function switchU(uID) {
     
     // UI Update
     document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
-    document.getElementById(`btn-${uID}`).classList.add('active'); 
+    document.getElementById(`btn-${uID}`).classList.add('active');
     
-    document.getElementById('ouraBar').innerHTML = `💍 SWITCHING...`;
+    document.getElementById('ouraBar').innerHTML = `💍 SWITCHING TO ${uID}...`;
     
-    // Clear & Reload
-    resetToToday();
-    localStorage.removeItem(`centurion_oura_cache_${uID}`);
-    render(uID); 
+    // NUCLEAR WIPE: Overwrite cache with empty shell
+    const cacheKey = `centurion_cache_${uID}`;
+    localStorage.setItem(cacheKey, JSON.stringify({ history: [] })); 
+    
+    // Render Empty
+    render(uID);
+    
+    // Fetch Fresh
     fetchOuraData(uID); 
 }
 
@@ -255,7 +259,6 @@ function changeDate(days) {
     const nextDate = new Date(currentDate);
     nextDate.setDate(currentDate.getDate() + days);
     
-    // Prevent Future Travel
     if (nextDate > getCaDate()) return;
     
     currentDate = nextDate;
@@ -272,6 +275,7 @@ async function fetchOuraData(fetchID) {
     
     const token = TOKENS[fetchID];
     const range = `start_date=${getDateKey(new Date(Date.now()-864e5*14))}&end_date=${getDateKey(new Date())}`;
+    const cacheKey = `centurion_cache_${fetchID}`;
     
     document.getElementById('ouraBar').innerHTML = "💍 HANDSHAKE...";
     
@@ -286,6 +290,7 @@ async function fetchOuraData(fetchID) {
         const aData = await aRes.json();
         const sData = await sRes.json();
         
+        // GUARD: Abort if user switched during fetch
         if(activeUser !== fetchID) return;
         
         if(rData.data) {
@@ -306,12 +311,14 @@ async function fetchOuraData(fetchID) {
                 };
             }).reverse();
             
-            localStorage.setItem(`centurion_oura_cache_${fetchID}`, JSON.stringify({history: hist, lastFetch: Date.now()}));
+            localStorage.setItem(cacheKey, JSON.stringify({history: hist, lastFetch: Date.now()}));
             document.getElementById('ouraBar').innerHTML = `💍 SYNCED`;
             
+            // Explicit Render Call
             render(fetchID);
         }
     } catch(e) { 
+        console.error(e);
         document.getElementById('ouraBar').innerHTML = "💍 SYNC TIMEOUT"; 
         render(fetchID);
     }
