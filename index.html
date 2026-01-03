@@ -1366,6 +1366,89 @@ class CenturionCore {
 
 const centurion = new CenturionCore();
 </script>
+// ADD THIS TO THE CenturionCore CLASS
+
+async syncOuraData() {
+    const ouraToken = localStorage.getItem('oura_access_token');
+    
+    if (!ouraToken) {
+        console.log('Oura not connected - user needs to enable via settings toggle');
+        return;
+    }
+
+    try {
+        // Fetch sleep data for today
+        const today = new Date().toISOString().split('T')[0];
+        
+        const sleepResponse = await fetch(
+            `https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${today}&end_date=${today}`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${ouraToken}`
+                }
+            }
+        );
+
+        if (!sleepResponse.ok) {
+            throw new Error('Oura API error');
+        }
+
+        const sleepData = await sleepResponse.json();
+        
+        if (sleepData.data && sleepData.data.length > 0) {
+            const sleep = sleepData.data[0];
+            
+            // Update state with Oura data
+            this.state.totalSleep = sleep.contributors.total_sleep / 3600; // Convert seconds to hours
+            this.state.deepSleep = sleep.contributors.deep_sleep / 60; // Convert seconds to minutes
+            this.state.remSleep = sleep.contributors.rem_sleep / 60;
+            this.state.hrv = sleep.contributors.hrv_balance || 0;
+            
+            // Calculate sleep score (Oura's score is 0-100)
+            const sleepScore = sleep.score || 0;
+            
+            this.saveState();
+            this.updateSleepRings();
+            this.updateHUD();
+            
+            console.log('✅ Oura sync complete:', {
+                total: this.state.totalSleep.toFixed(1) + 'h',
+                deep: Math.floor(this.state.deepSleep) + 'min',
+                rem: Math.floor(this.state.remSleep) + 'min',
+                score: sleepScore
+            });
+            
+            // Update tactical command
+            document.getElementById('tac-cmd').innerText = 'OURA SYNC COMPLETE';
+            document.getElementById('tac-cmd').style.color = 'var(--purple)';
+            
+            setTimeout(() => {
+                this.runTactics(this.state, USERS[this.user]);
+            }, 2000);
+        }
+        
+    } catch (error) {
+        console.error('Oura sync failed:', error);
+        document.getElementById('sync-status').innerText = 'OURA SYNC FAILED';
+    }
+}
+
+// Auto-sync on startup if token exists
+async checkOuraConnection() {
+    const ouraToken = localStorage.getItem('oura_access_token');
+    
+    if (ouraToken) {
+        console.log('🔵 Oura connected - syncing sleep data...');
+        await this.syncOuraData();
+        
+        // Auto-sync every 30 minutes
+        setInterval(() => {
+            this.syncOuraData();
+        }, 30 * 60 * 1000);
+    } else {
+        console.log('⚪ Oura not connected - enable in settings');
+    }
+}
 
 <!-- BIOMETRICS PANEL -->
 <div id="bioPanel" class="bio-modal">
