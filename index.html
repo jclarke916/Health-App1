@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v5300.0 EXACT-REP</title>
+    <title>The Centurion | v5400.0 DEEP-FIX</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -128,7 +128,7 @@
 
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v5200</div>
+            <div class="app-name">CENTURION v5400</div>
             <div class="user-switch">
                 <button id="btn-J" class="u-btn active" onclick="centurion.switchUser('J')">JER</button>
                 <button id="btn-S" class="u-btn" onclick="centurion.switchUser('S')">SOPH</button>
@@ -233,8 +233,8 @@
 
 <script>
 /**
- * CENTURION v5200.0 - PROTOCOL MIRROR
- * Logic: Exact code from v1300 + Toggle Wipe
+ * CENTURION v5400.0 - DEEP FIX
+ * Logic: v1300 Fetch + Timezone Noon Logic + Cache Nuke
  */
 
 const TOKENS = {
@@ -268,7 +268,8 @@ const WORKOUTS = {
     'repair_s': { title: "Yoga Flow", sub: "Parasympathetic", exercises: ["Vinyasa 45m", "Foam Roll 10m"] }
 };
 
-// HELPER: EXACT DATE LOGIC FROM v1300
+// CRITICAL UTILITIES FROM v1300
+function getCaDate() { let d = new Date(); d.setHours(12, 0, 0, 0); return d; } // Forces Noon to Fix TZ
 function getDateKey(d) { return d.toISOString().split('T')[0]; }
 
 class CenturionCore {
@@ -276,8 +277,6 @@ class CenturionCore {
         this.user = localStorage.getItem('centurion_active_user') || 'J';
         this.dayOffset = 0; 
         this.circumference = 158;
-        
-        // Load v1300 Cache
         this.cache = JSON.parse(localStorage.getItem(`centurion_oura_cache_${this.user}`)) || { history: [] };
         
         // Base State
@@ -296,22 +295,21 @@ class CenturionCore {
         this.user = uid;
         localStorage.setItem('centurion_active_user', uid);
         
-        // *** TOGGLE WIPE PROTOCOL ***
-        // 1. Wipe Cache
-        this.cache = { history: [] };
-        // 2. Wipe Storage
+        // 1. NUKE CACHE
+        this.cache = { history: [] }; 
         localStorage.removeItem(`centurion_oura_cache_${uid}`);
+        
+        // 2. RESET STATE
+        this.state = { hr: 60, z2_time: 0, z5_time: 0, stress: 0, score: 0, pro: 0, carb: 0, fat: 0, checked: [] };
         
         document.querySelectorAll('.u-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(`btn-${uid}`).classList.add('active');
         
         this.dayOffset = 0;
-        
-        // 3. Reset UI to Loading State
         this.updateHUD({ score: "-", cal: "-", med: 0, high: 0, rhr: "-" });
-        document.getElementById('tac-cmd').innerText = "SWITCHING & SYNCING...";
+        document.getElementById('tac-cmd').innerText = "SWITCHING...";
         
-        // 4. Re-Pull Fresh
+        // 3. FETCH
         this.fetchOuraData(); 
     }
 
@@ -324,8 +322,12 @@ class CenturionCore {
     async fetchOuraData() {
         const fetchID = this.user; 
         const token = TOKENS[fetchID];
-        // v1300 uses Date.now()-864e5*14
-        const range = `start_date=${getDateKey(new Date(Date.now()-864e5*14))}&end_date=${getDateKey(new Date())}`;
+        
+        // Uses getCaDate() logic from v1300
+        const start = new Date(); start.setDate(start.getDate()-14); start.setHours(12,0,0,0);
+        const end = new Date(); end.setHours(12,0,0,0);
+        
+        const range = `start_date=${getDateKey(start)}&end_date=${getDateKey(end)}`;
         
         document.getElementById('sync-time').innerText = "HANDSHAKE...";
         
@@ -353,7 +355,6 @@ class CenturionCore {
                     };
                 }).reverse();
                 
-                // Save to v1300 key
                 localStorage.setItem(`centurion_oura_cache_${fetchID}`, JSON.stringify({history: hist, lastFetch: Date.now()}));
                 this.cache = { history: hist }; 
                 
@@ -371,13 +372,16 @@ class CenturionCore {
     }
 
     loadDay() {
-        const d = new Date(); 
+        // Use v1300 Logic for Date Calculation
+        let d = getCaDate(); 
         d.setDate(d.getDate() + this.dayOffset);
         const dateKey = getDateKey(d);
+        
         let dayData;
         
+        // Priority: If today/no offset, try to just show index 0 (Latest) if specific date fails
         if (this.dayOffset === 0 && this.cache.history && this.cache.history.length > 0) {
-            dayData = this.cache.history[0]; // Show Latest
+            dayData = this.cache.history[0]; 
             document.getElementById('date-display').innerText = "LATEST SYNC";
         } else {
             dayData = this.cache.history.find(d => d.date === dateKey);
@@ -394,14 +398,12 @@ class CenturionCore {
     updateHUD(d) {
         const u = USERS[this.user];
         
-        // Internal state
         this.state.score = d.score;
         this.state.cal = d.cal;
         this.state.z5_time = d.high;
         this.state.z2_time = d.med;
         this.state.stress = d.rhr;
 
-        // Visuals
         document.getElementById('score-val').innerText = d.score;
         document.getElementById('val-cal').innerText = d.cal;
         document.getElementById('val-z2').innerText = d.med; 
@@ -415,9 +417,8 @@ class CenturionCore {
         this.updateRing('cal', calNum, u.goals.cal);
         this.updateRing('z2', d.med, u.goals.z2);
         this.updateRing('z5', d.high, u.goals.z5);
-        this.updateRing('stress', parseInt(d.rhr) || 0, 100); // Inverse logic not needed for simple visual here
+        this.updateRing('stress', parseInt(d.rhr) || 0, 100); 
         
-        // Macros
         this.updateMacroRing('pro', this.state.pro, u.goals.pro);
         this.updateMacroRing('carb', this.state.carb, u.goals.carb);
         this.updateMacroRing('fat', this.state.fat, u.goals.fat);
@@ -491,7 +492,6 @@ class CenturionCore {
 
     renderTimeline(dayData) {
         const container = document.getElementById('timeline-feed');
-        
         const score = dayData && dayData.score !== "-" ? parseInt(dayData.score) : 80;
         const mode = score >= 80 ? "anabolic" : "repair";
         const wKey = `${mode}_${this.user.toLowerCase()}`;
@@ -528,7 +528,7 @@ class CenturionCore {
 
             html += `
                 <div class="time-slot">
-                    <div class="ts-time">${slot.t}:00</div>
+                    <div class="ts-time">${this.formatTime(slot.t)}</div>
                     <div class="ts-card" ${cardAction}>
                         <div class="badge-row">${tags}</div>
                         <div class="ts-title">${slot.title}</div>
