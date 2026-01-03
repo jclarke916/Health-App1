@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v8500.0 STABLE</title>
+    <title>The Centurion | v6200.1 RESTORED-PRIME</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -31,11 +31,11 @@
         .user-switch { display: flex; gap: 4px; background: #222; padding: 2px; border-radius: 20px; }
         .u-badge { padding: 6px 14px; border-radius: 16px; font-size: 0.6rem; font-weight: 700; color: #666; background: transparent; border: none; cursor: pointer; transition: all 0.2s; }
         .u-badge.active { background: var(--text-main); color: #000; }
+        .bio-btn { background: rgba(255,255,255,0.1); border: 1px solid var(--border); color: var(--text-muted); padding: 4px 8px; border-radius: 8px; font-size: 0.55rem; font-weight: 700; cursor: pointer; margin-right: 10px; }
 
         /* DATE NAV */
         .date-nav { display: flex; justify-content: center; align-items: center; gap: 20px; font-family: var(--font-data); font-size: 0.8rem; font-weight: 700; color: #fff; padding-top: 5px; }
-        .nav-btn { background: transparent; border: 1px solid var(--border); color: var(--gold); padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 0.6rem; font-weight: 900; }
-        .nav-btn.disabled { opacity: 0.3; cursor: default; }
+        .nav-arrow { color: var(--gold); cursor: pointer; padding: 5px 10px; user-select: none; }
         .date-display { min-width: 100px; text-align: center; letter-spacing: 1px; }
 
         /* HERO */
@@ -57,30 +57,55 @@
         .section-label { font-size: 0.55rem; font-weight: 900; color: var(--text-muted); letter-spacing: 1px; margin: 20px 16px 10px; text-transform: uppercase; }
         .telemetry-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 10px; }
         .sleep-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 20px; }
+        .macro-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 30px; }
         
         .orb-card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 10px 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
         .orb-container { width: 60px; height: 60px; position: relative; display: flex; align-items: center; justify-content: center; margin-bottom: 5px; }
         .orb-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
         .orb-bg { fill: none; stroke: #222; stroke-width: 5; }
         .orb-fg { fill: none; stroke: var(--cyan); stroke-width: 5; stroke-dasharray: 158; stroke-dashoffset: 158; transition: stroke-dashoffset 1s ease; stroke-linecap: round; }
+        
         .orb-val-box { position: absolute; text-align: center; }
         .orb-val { font-family: var(--font-data); font-size: 0.75rem; font-weight: 700; color: #fff; line-height: 1; }
         .orb-unit { font-size: 0.4rem; color: var(--text-muted); display: block; margin-top: 2px; }
         .orb-label { font-size: 0.5rem; font-weight: 700; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; }
+
         .live-dot { width: 5px; height: 5px; background: var(--alert); border-radius: 50%; position: absolute; top: 8px; right: 8px; box-shadow: 0 0 5px var(--alert); animation: pulse-fast 1s infinite; display: none; }
         .orb-card.live .live-dot { display: block; }
+        @keyframes pulse-fast { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
 
         /* TIMELINE */
         .timeline-container { padding: 0 16px; }
-        .time-slot { display: flex; gap: 12px; margin-bottom: 20px; position: relative; }
-        .ts-time { width: 45px; font-family: var(--font-data); font-size: 0.75rem; color: var(--text-muted); text-align: right; padding-top: 5px; }
-        .ts-card { flex: 1; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 15px; }
-        .ts-title { font-size: 0.85rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
-        .ts-desc { font-size: 0.75rem; color: #aaa; line-height: 1.4; }
+        .section-header { font-size: 0.6rem; font-weight: 900; color: var(--text-muted); letter-spacing: 1px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
         
+        .time-slot { display: flex; gap: 12px; margin-bottom: 20px; position: relative; transition: opacity 0.3s; }
+        .time-slot.past { opacity: 0.4; }
+        .time-slot::before { content: ''; position: absolute; left: 22px; top: 25px; bottom: -25px; width: 1px; background: var(--border); z-index: 0; }
+        .time-slot:last-child::before { display: none; }
+
+        .ts-time { width: 45px; font-family: var(--font-data); font-size: 0.75rem; color: var(--text-muted); text-align: right; padding-top: 5px; z-index: 1; }
+        .ts-card { flex: 1; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 15px; position: relative; z-index: 1; overflow: hidden; transition: all 0.3s; }
+        
+        .ts-title { font-size: 0.85rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
+        .ts-desc { font-size: 0.75rem; color: #aaa; line-height: 1.4; margin-bottom: 8px; }
+        .ts-mech { font-family: var(--font-data); font-size: 0.55rem; color: var(--text-muted); padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 5px; }
+        .ts-mech::before { content: '🔬'; font-size: 0.6rem; }
+
+        .badge-row { display: flex; gap: 5px; margin-bottom: 8px; flex-wrap: wrap; }
+        .ts-badge { font-size: 0.5rem; padding: 2px 6px; border-radius: 4px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid transparent; }
+        .b-bio { background: rgba(255,255,255,0.1); color: var(--text-muted); border-color: var(--border); }
+        .b-syn { background: rgba(0, 240, 255, 0.1); color: var(--cyan); border-color: rgba(0, 240, 255, 0.3); }
+
+        .check-btn { position: absolute; top: 15px; right: 15px; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border); background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; color: transparent; transition: all 0.2s; color: #000; font-weight: 800; font-size: 0.7rem; }
+        .time-slot.past .check-btn { background: var(--acid); border-color: var(--acid); color: #000; }
+        
+        .workout-detail { margin-top: 10px; background: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px; display: none; }
+        .workout-detail.active { display: block; animation: slideDown 0.3s; }
+        .w-row { display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 6px 0; font-family: var(--font-data); font-size: 0.7rem; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+
         .sync-footer { position: fixed; bottom: 0; left: 0; width: 100%; background: #000; padding: 12px 16px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-family: var(--font-data); font-size: 0.6rem; color: #555; z-index: 200; }
         .pulse { animation: pulse 2s infinite; display: inline-block; width: 6px; height: 6px; background: var(--acid); border-radius: 50%; margin-right: 6px; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } }
     </style>
 </head>
 <body>
@@ -104,104 +129,214 @@
 
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v8500</div>
-            <div class="user-switch">
-                <button id="btn-J" class="u-badge active" onclick="centurion.switchUser('J')">JER</button>
-                <button id="btn-S" class="u-badge" onclick="centurion.switchUser('S')">SOPH</button>
+            <div class="app-name">CENTURION v6200.1</div>
+            <div>
+                <button class="bio-btn">BIO</button>
+                <div class="user-switch">
+                    <button id="btn-J" class="u-badge active" onclick="centurion.switchUser('J')">JER</button>
+                    <button id="btn-S" class="u-badge" onclick="centurion.switchUser('S')">SOPH</button>
+                </div>
             </div>
         </div>
         <div class="date-nav">
-            <button id="btn-prev" class="nav-btn" onclick="centurion.changeDate(-1)">◀</button>
-            <span class="date-display" id="dateDisplay">TODAY</span>
-            <button id="btn-next" class="nav-btn disabled" onclick="centurion.changeDate(1)">▶</button>
+            <span class="nav-arrow" onclick="centurion.changeDay(-1)">◀</span>
+            <span class="date-display" id="date-display">TODAY</span>
+            <span class="nav-arrow" onclick="centurion.changeDay(1)">▶</span>
         </div>
     </div>
 
-    <div id="dayContent"></div>
+    <div class="hero-section">
+        <div class="ring-container">
+            <svg class="ring-svg">
+                <circle class="ring-bg" cx="55" cy="55" r="45"></circle>
+                <circle id="activity-ring" class="ring-fg" cx="55" cy="55" r="45" style="stroke: var(--acid)"></circle>
+            </svg>
+            <div class="ring-data">
+                <div class="ring-val" id="score-val">--</div>
+                <div class="ring-label">READINESS</div>
+            </div>
+        </div>
+
+        <div class="tactical-box" id="tactical-box">
+            <div class="tac-label" id="tac-label">STATUS</div>
+            <div class="tac-cmd" id="tac-cmd">AWAITING HANDSHAKE...</div>
+            <div class="tac-meta" id="tac-reason">...</div>
+        </div>
+    </div>
+
+    <div class="section-label">SLEEP ARCHITECTURE</div>
+    <div class="sleep-grid">
+        <div class="orb-card">
+            <div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-sleep" class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-purple)"></circle></svg><div class="orb-val-box"><div id="val-sleep" class="orb-val">--</div><span class="orb-unit">HRS</span></div></div>
+            <div class="orb-label">TOTAL</div>
+        </div>
+        <div class="orb-card">
+            <div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-deep" class="orb-fg" cx="30" cy="30" r="25" style="stroke:#007aff"></circle></svg><div class="orb-val-box"><div id="val-deep" class="orb-val">--</div><span class="orb-unit">DEEP</span></div></div>
+            <div class="orb-label">DEEP</div>
+        </div>
+        <div class="orb-card">
+            <div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-rem" class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--purple)"></circle></svg><div class="orb-val-box"><div id="val-rem" class="orb-val">--</div><span class="orb-unit">REM</span></div></div>
+            <div class="orb-label">REM</div>
+        </div>
+    </div>
+
+    <div class="section-label">CARDIO-METABOLIC STATUS</div>
+    <div class="telemetry-grid">
+        <div class="orb-card live">
+            <div class="live-dot"></div>
+            <div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-cal" class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--cyan)"></circle></svg><div class="orb-val-box"><div id="val-cal" class="orb-val">--</div><span class="orb-unit">CAL</span></div></div>
+            <div class="orb-label">ACTIVE</div>
+        </div>
+        <div class="orb-card">
+            <div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-z2" class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-zone2)"></circle></svg><div class="orb-val-box"><div id="val-z2" class="orb-val">--</div><span class="orb-unit">Z2 MIN</span></div></div>
+            <div class="orb-label">BASE</div>
+        </div>
+        <div class="orb-card">
+            <div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-z5" class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-zone5)"></circle></svg><div class="orb-val-box"><div id="val-z5" class="orb-val">--</div><span class="orb-unit">Z5 MIN</span></div></div>
+            <div class="orb-label">PEAK</div>
+        </div>
+        <div class="orb-card">
+            <div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-rhr" class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--acid)"></circle></svg><div class="orb-val-box"><div id="val-rhr" class="orb-val">--</div><span class="orb-unit">RHR</span></div></div>
+            <div class="orb-label">RHR</div>
+        </div>
+    </div>
+
+    <div class="section-label">MACRO ADHERENCE</div>
+    <div class="macro-grid">
+        <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-pro" class="orb-fg" cx="30" cy="30" r="25"></circle></svg><div class="orb-val-box"><div id="val-pro" class="orb-val">--</div><span class="orb-unit">PRO</span></div></div><div class="orb-label">PROTEIN</div></div>
+        <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-carb" class="orb-fg" cx="30" cy="30" r="25"></circle></svg><div class="orb-val-box"><div id="val-carb" class="orb-val">--</div><span class="orb-unit">CARB</span></div></div><div class="orb-label">CARBS</div></div>
+        <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-fat" class="orb-fg" cx="30" cy="30" r="25"></circle></svg><div class="orb-val-box"><div id="val-fat" class="orb-val">--</div><span class="orb-unit">FAT</span></div></div><div class="orb-label">FATS</div></div>
+        <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-fib" class="orb-fg" cx="30" cy="30" r="25"></circle></svg><div class="orb-val-box"><div id="val-fib" class="orb-val">--</div><span class="orb-unit">FIB</span></div></div><div class="orb-label">FIBER</div></div>
+    </div>
+
+    <div class="timeline-container">
+        <div class="section-header"><span>CHRONO-PROTOCOL</span><span id="current-time" style="color:var(--acid)">--:--</span></div>
+        <div id="timeline-feed"></div>
+    </div>
 
     <div class="sync-footer">
-        <div><span class="pulse"></span><span id="ouraBar">INIT...</span></div>
-        <div onclick="centurion.fetchOuraData()" style="cursor:pointer">FORCE SYNC</div>
+        <div><span class="pulse"></span><span id="sync-status">OURA V2 API</span></div>
+        <div id="sync-time" onclick="centurion.fetchOuraData()">TAP TO SYNC</div>
     </div>
 
 <script>
-// ==========================================
-// V1300 LOGIC + STABILITY PATCH
-// ==========================================
+/**
+ * CENTURION v6200.1 - RESTORED PRIME
+ * Key Logic: 3 Endpoints (Readiness, Activity, Sleep) + Timestamp Cache Buster
+ */
 
-const TOKENS = { 
+const TOKENS = {
     'J': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 
     'S': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' 
 };
 
+const USERS = {
+    'J': { name: "Jermaine", rhr: 48, goals: { cal: 700, z2: 60, z5: 20, pro: 180, carb: 200, fat: 80, fib: 40 } },
+    'S': { name: "Sophia", rhr: 58, goals: { cal: 450, z2: 45, z5: 15, pro: 120, carb: 150, fat: 60, fib: 35 } }
+};
+
+const MACRO_LOOKUP = {
+    'sup': {p:0, c:2, f:0},
+    'juice_j': {p:2, c:15, f:0},
+    'juice_s': {p:1, c:12, f:0},
+    'b_j': {p:40, c:15, f:22},
+    'b_s': {p:30, c:5, f:18},
+    'l': {p:45, c:40, f:15},
+    'l_trigger': {p:30, c:45, f:12},
+    'snack_pro': {p:20, c:8, f:0},
+    'snack_imm': {p:15, c:0, f:2},
+    'd_ana': {p:50, c:50, f:18},
+    'd_rep': {p:40, c:10, f:12}
+};
+
+const WORKOUTS = {
+    'anabolic_j': { title: "Heavy Compounds", sub: "Hypertrophy A", exercises: ["Deadlifts 5x5", "Bench Press 4x8"] },
+    'repair_j': { title: "Zone 2 Flush", sub: "Active Recovery", exercises: ["Ruck 45m @ 35lbs", "Sauna 20m"] },
+    'anabolic_s': { title: "Glute/Core", sub: "Strength", exercises: ["Hip Thrusts 4x10", "Pallof Press 3x12"] },
+    'repair_s': { title: "Yoga Flow", sub: "Parasympathetic", exercises: ["Vinyasa 45m", "Foam Roll 10m"] }
+};
+
+// DATE HELPERS
 function getCaDate() { let d = new Date(); d.setHours(12, 0, 0, 0); return d; }
 function getDateKey(d) { return d.toISOString().split('T')[0]; }
 
 class CenturionCore {
     constructor() {
         this.user = localStorage.getItem('centurion_active_user') || 'J';
-        this.dayOffset = 0;
-        this.cache = JSON.parse(localStorage.getItem(`centurion_oura_cache_${this.user}`)) || { history: [] };
-        this.init();
+        this.dayOffset = 0; 
+        
+        try {
+            this.cache = JSON.parse(localStorage.getItem(`centurion_oura_cache_${this.user}`)) || { history: [] };
+        } catch(e) {
+            this.cache = { history: [] };
+        }
+        
+        // Base State with safe defaults
+        this.state = { 
+            score: 0, cal: 0, med: 0, high: 0, rhr: 0, 
+            sleep: 0, deep: 0, rem: 0,
+            pro: 0, carb: 0, fat: 0, fib: 0, checked: [] 
+        };
+        
+        try { this.init(); } catch(e) { console.error("Init Error:", e); }
     }
 
     init() {
-        this.updateUI(); 
-        this.render();   
+        this.switchUser(this.user);
+        this.startClock();
+        setInterval(() => this.fetchOuraData(), 600000); 
+    }
+
+    switchUser(uid) {
+        this.user = uid;
+        localStorage.setItem('centurion_active_user', uid);
+        
+        // 1. WIPE CACHE ON TOGGLE
+        localStorage.removeItem(`centurion_oura_cache_${uid}`);
+        this.cache = { history: [] };
+        
+        document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
+        const btn = document.getElementById(`b${uid}`);
+        if(btn) btn.classList.add('active');
+        
+        this.dayOffset = 0;
+        
+        // 2. SHOW LOADING
+        this.updateHUD({ score: "-", cal: "-", med: 0, high: 0, rhr: "-", sleep: 0, deep: 0, rem: 0 });
+        document.getElementById('tac-cmd').innerText = `SWITCHING TO ${USERS[uid].name.toUpperCase()}...`;
+        
+        // 3. FETCH
         this.fetchOuraData(); 
     }
 
-    switchUser(uID) {
-        if(this.user === uID) return;
-        
-        this.user = uID;
-        localStorage.setItem('centurion_active_user', uID);
-        
-        // 1. WIPE CACHE (Prevents ghost data)
-        this.cache = { history: [] };
-        localStorage.removeItem(`centurion_oura_cache_${uID}`);
-        this.dayOffset = 0;
-        
-        this.updateUI();
-        this.render(); 
-        this.fetchOuraData();
+    changeDay(delta) {
+        this.dayOffset += delta;
+        this.loadDay();
     }
 
-    changeDate(d) {
-        this.dayOffset += d;
-        if(this.dayOffset > 0) this.dayOffset = 0;
-        this.render();
-    }
-
-    updateUI() {
-        document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
-        document.getElementById(`btn-${this.user}`).classList.add('active');
-        document.getElementById('ouraBar').innerHTML = `💍 SWITCHING...`;
-    }
-
+    // --- ENHANCED FETCH (3 CALLS + TIMESTAMP) ---
     async fetchOuraData() {
         const fetchID = this.user; 
         const token = TOKENS[fetchID];
-        const range = `start_date=${getDateKey(new Date(Date.now()-864e5*14))}&end_date=${getDateKey(new Date())}`;
         
-        // CACHE BUSTER: This fixes the toggle issue by forcing a fresh request
-        const cb = `&t=${Date.now()}`;
+        const start = getCaDate(); start.setDate(start.getDate()-14);
+        const end = getCaDate(); 
+        const range = `start_date=${getDateKey(start)}&end_date=${getDateKey(end)}`;
+        const ts = Date.now(); // THE CACHE BUSTER
         
-        document.getElementById('ouraBar').innerHTML = "💍 HANDSHAKE...";
+        document.getElementById('sync-time').innerText = "HANDSHAKE...";
         
         try {
-            // Added Sleep Endpoint
             const [rRes, aRes, sRes] = await Promise.all([
-                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}${cb}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}${cb}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?${range}${cb}`)}`, { headers: { 'Authorization': `Bearer ${token}` } })
+                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}&t=${ts}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}&t=${ts}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?${range}&t=${ts}`)}`, { headers: { 'Authorization': `Bearer ${token}` } })
             ]);
             
             const rData = await rRes.json();
             const aData = await aRes.json();
             const sData = await sRes.json();
             
-            // GUARD
             if(this.user !== fetchID) return;
             
             if(rData.data) {
@@ -212,90 +347,215 @@ class CenturionCore {
                     return { 
                         date: day.day, 
                         score: day.score || "-", 
-                        cal: act ? act.active_calories : "-", 
+                        cal: act ? act.active_calories : 0, 
                         high: act ? Math.round(act.high_activity_time/60) : 0, 
                         med: act ? Math.round(act.medium_activity_time/60) : 0,
-                        rhr: day.contributors?.resting_heart_rate || "-",
-                        // SAFE DATA MAPPING
-                        sleep: slp ? (slp.total_sleep_duration/3600).toFixed(1) : "-",
-                        deep: slp ? Math.round(slp.deep_sleep_duration/60) : "-",
-                        rem: slp ? Math.round(slp.rem_sleep_duration/60) : "-"
+                        rhr: day.contributors?.resting_heart_rate || 0,
+                        sleep: slp ? (slp.total_sleep_duration/3600).toFixed(1) : 0,
+                        deep: slp ? Math.round(slp.deep_sleep_duration/60) : 0,
+                        rem: slp ? Math.round(slp.rem_sleep_duration/60) : 0
                     };
                 }).reverse();
                 
                 localStorage.setItem(`centurion_oura_cache_${fetchID}`, JSON.stringify({history: hist, lastFetch: Date.now()}));
                 this.cache = { history: hist };
                 
-                document.getElementById('ouraBar').innerHTML = `💍 SYNCED`;
-                this.render();
+                document.getElementById('sync-time').innerText = "SYNCED: " + new Date().toLocaleTimeString();
+                document.getElementById('tac-cmd').innerText = "OURA CONNECTION ESTABLISHED";
+                document.getElementById('tac-reason').innerText = "Telemetry Validated.";
+                
+                this.loadDay(); 
             }
         } catch(e) { 
+            document.getElementById('sync-time').innerText = "SYNC FAILED";
+            document.getElementById('tac-cmd').innerText = "OFFLINE MODE";
             console.error(e);
-            document.getElementById('ouraBar').innerHTML = "💍 SYNC TIMEOUT"; 
         }
     }
 
-    render() {
-        const d = getCaDate();
+    loadDay() {
+        let d = getCaDate(); 
         d.setDate(d.getDate() + this.dayOffset);
-        const dk = getDateKey(d);
+        const dateKey = getDateKey(d);
         
-        // Update Date Header
-        const today = getDateKey(getCaDate());
-        const displayDate = (dk === today) ? "TODAY" : dk.substring(5);
-        document.getElementById('dateDisplay').innerText = displayDate;
+        let dayData;
         
-        const isFuture = (dk === today);
-        document.getElementById('btn-next').classList.toggle('disabled', isFuture);
-
-        // Find Data or Default
-        const rawOura = this.cache.history.find(d => d.date === dk) || { 
-            score: "-", cal: "-", high: 0, med: 0, rhr: "-", 
-            sleep: "-", deep: "-", rem: "-" 
-        };
+        if (this.dayOffset === 0 && this.cache.history && this.cache.history.length > 0) {
+            dayData = this.cache.history[0]; 
+            document.getElementById('date-display').innerText = "LATEST SYNC";
+        } else {
+            dayData = this.cache.history.find(d => d.date === dateKey);
+            const label = this.dayOffset === 0 ? "TODAY" : this.dayOffset === -1 ? "YESTERDAY" : dateKey;
+            document.getElementById('date-display').innerText = label;
+        }
         
-        const scoreVal = parseInt(rawOura.score) || 0;
-        const rColor = scoreVal >= 80 ? 'var(--acid)' : scoreVal >= 60 ? 'var(--gold)' : 'var(--alert)';
+        if (!dayData) dayData = { score: 0, cal: 0, high: 0, med: 0, rhr: 0, sleep: 0, deep: 0, rem: 0 };
         
-        // SAFE MATH: Converts "-" to 0 for rings, keeps "-" for text
-        const safeNum = (v) => (v === "-" || v === undefined) ? 0 : parseFloat(v);
+        this.updateHUD(dayData);
+        this.renderTimeline(dayData);
+    }
 
-        const html = `
-        <div class="hero-section">
-            <div class="ring-container">
-                <svg class="ring-svg"><circle class="ring-bg" cx="55" cy="55" r="45"></circle><circle class="ring-fg" cx="55" cy="55" r="45" style="stroke:${rColor}; stroke-dashoffset:${283 - (Math.min(scoreVal,100)/100)*283}"></circle></svg>
-                <div class="ring-data"><div class="ring-val">${rawOura.score}</div><div class="ring-label">READINESS</div></div>
-            </div>
-            <div class="tactical-box" style="border-left-color:${rColor}">
-                <div class="tac-label" style="color:${rColor}">USER: ${this.user === 'J' ? 'JERMAINE' : 'SOPHIA'}</div>
-                <div class="tac-cmd">${scoreVal === 0 ? "LOADING DATA..." : scoreVal >= 80 ? "SYSTEMS NOMINAL" : "RECOVERY REQUIRED"}</div>
-                <div class="tac-meta">VIEWING: ${dk}</div>
-            </div>
-        </div>
+    updateHUD(d) {
+        const u = USERS[this.user];
+        this.state.score = d.score;
 
-        <div class="section-label">SLEEP ARCHITECTURE</div>
-        <div class="sleep-grid">
-            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-purple); stroke-dashoffset:${158-(Math.min(safeNum(rawOura.sleep),9)/9)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.sleep}</div><span class="orb-unit">HRS</span></div></div><div class="orb-label">TOTAL</div></div>
-            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:#007aff; stroke-dashoffset:${158-(Math.min(safeNum(rawOura.deep),120)/120)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.deep}</div><span class="orb-unit">DEEP</span></div></div><div class="orb-label">DEEP</div></div>
-            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--purple); stroke-dashoffset:${158-(Math.min(safeNum(rawOura.rem),120)/120)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.rem}</div><span class="orb-unit">REM</span></div></div><div class="orb-label">REM</div></div>
-        </div>
+        // Visuals
+        document.getElementById('score-val').innerText = d.score;
+        document.getElementById('val-cal').innerText = d.cal || "--";
+        document.getElementById('val-z2').innerText = d.med || 0; 
+        document.getElementById('val-z5').innerText = d.high || 0;
+        document.getElementById('val-rhr').innerText = d.rhr || "--"; 
+        
+        document.getElementById('val-sleep').innerText = d.sleep || "--";
+        document.getElementById('val-deep').innerText = d.deep || "--";
+        document.getElementById('val-rem').innerText = d.rem || "--";
 
-        <div class="section-label">CARDIO-METABOLIC STATUS</div>
-        <div class="telemetry-grid">
-            <div class="orb-card live"><div class="live-dot"></div><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--cyan); stroke-dashoffset:${158-(Math.min(safeNum(rawOura.cal),1000)/1000)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.cal}</div><span class="orb-unit">CAL</span></div></div><div class="orb-label">ACTIVE</div></div>
-            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-zone2); stroke-dashoffset:${158-(Math.min(safeNum(rawOura.med),60)/60)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.med}</div><span class="orb-unit">Z2 MIN</span></div></div><div class="orb-label">BASE</div></div>
-            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-zone5); stroke-dashoffset:${158-(Math.min(safeNum(rawOura.high),30)/30)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.high}</div><span class="orb-unit">Z5 MIN</span></div></div><div class="orb-label">PEAK</div></div>
-            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--acid)"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.rhr}</div><span class="orb-unit">BPM</span></div></div><div class="orb-label">RHR</div></div>
-        </div>
+        // SAFE MATH: Convert to Number or 0
+        const scoreNum = parseInt(d.score) || 0;
+        const calNum = parseFloat(d.cal) || 0;
+        const z2Num = parseFloat(d.med) || 0;
+        const z5Num = parseFloat(d.high) || 0;
+        const rhrNum = parseFloat(d.rhr) || 0;
+        
+        const sleepNum = parseFloat(d.sleep) || 0;
+        const deepNum = parseFloat(d.deep) || 0;
+        const remNum = parseFloat(d.rem) || 0;
 
-        <div class="timeline-container">
-            <div class="section-header"><span>CHRONO-PROTOCOL</span></div>
-            <div class="time-slot"><div class="ts-time">7 AM</div><div class="ts-card"><div class="ts-title">Hydration</div><div class="ts-desc">Sea Moss Gel (2 tbsp)</div></div></div>
-            <div class="time-slot"><div class="ts-time">9 AM</div><div class="ts-card"><div class="ts-title">Training</div><div class="ts-desc">Zone 2 / Strength A</div></div></div>
-        </div>
-        `;
+        this.updateRing('activity', scoreNum, 100);
+        this.updateRing('cal', calNum, u.goals.cal);
+        this.updateRing('z2', z2Num, u.goals.z2);
+        this.updateRing('z5', z5Num, u.goals.z5);
+        this.updateRing('rhr', rhrNum, 100); 
+        
+        this.updateRing('sleep', sleepNum, 8);
+        this.updateRing('deep', deepNum, 90);
+        this.updateRing('rem', remNum, 90);
+        
+        this.updateMacroRing('pro', this.state.pro, u.goals.pro);
+        this.updateMacroRing('carb', this.state.carb, u.goals.carb);
+        this.updateMacroRing('fat', this.state.fat, u.goals.fat);
+        this.updateMacroRing('fib', this.state.fib, u.goals.fib);
 
-        document.getElementById('dayContent').innerHTML = html;
+        document.getElementById('val-pro').innerText = this.state.pro + "g";
+        document.getElementById('val-carb').innerText = this.state.carb + "g";
+        document.getElementById('val-fat').innerText = this.state.fat + "g";
+        document.getElementById('val-fib').innerText = this.state.fib + "g";
+
+        let cmd = "SYSTEMS NOMINAL", reason = "Biometrics Stable", color = "var(--acid)";
+        if(scoreNum > 0 && scoreNum < 70) { 
+            cmd = "RECOVERY REQUIRED"; reason = "Readiness Low. Prioritize Sleep."; color = "var(--gold)";
+        }
+        
+        if(document.getElementById('tac-cmd').innerText.includes("SYSTEMS") || document.getElementById('tac-cmd').innerText.includes("RECOVERY")) {
+             document.getElementById('tac-cmd').innerText = cmd;
+             document.getElementById('tac-cmd').style.color = color;
+             document.getElementById('tac-reason').innerText = reason;
+             document.getElementById('tactical-box').style.borderLeftColor = color;
+        }
+    }
+
+    updateRing(id, val, max) {
+        const circ = id === 'activity' ? 283 : 158;
+        const pct = Math.min((val || 0) / max, 1);
+        const offset = circ - (pct * circ);
+        const el = document.getElementById(`ring-${id}`);
+        if(el) el.style.strokeDashoffset = offset;
+    }
+
+    updateMacroRing(id, val, max) {
+        const pct = (val || 0) / max;
+        const offset = 158 - (Math.min(pct, 1) * 158);
+        const el = document.getElementById(`ring-${id}`);
+        if(el) {
+            el.style.strokeDashoffset = offset;
+            if (pct > 1.1) el.style.stroke = "var(--alert)";
+            else if (pct >= 0.9) el.style.stroke = "var(--acid)";
+            else el.style.stroke = "var(--cyan)";
+        }
+    }
+
+    toggleWorkout(card) {
+        const details = card.querySelector('.workout-detail');
+        if (details) details.classList.toggle('active');
+    }
+
+    checkMeal(btn, mealID) {
+        const card = btn.parentElement;
+        if(card.classList.contains('past')) return;
+        
+        const macros = MACRO_LOOKUP[mealID];
+        if(macros) {
+            this.state.pro += macros.p;
+            this.state.carb += macros.c;
+            this.state.fat += macros.f;
+            this.state.fib += (macros.fiber || 0); 
+            const dayData = this.cache.history[0] || {};
+            this.updateHUD(dayData);
+        }
+        card.classList.add('past');
+        btn.innerText = "✓";
+    }
+
+    startClock() {
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('current-time').innerText = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        }, 1000);
+    }
+
+    formatTime(h) { const ampm = h >= 12 ? 'PM' : 'AM'; const hour = h % 12 || 12; return `${hour} ${ampm}`; }
+
+    renderTimeline(dayData) {
+        const container = document.getElementById('timeline-feed');
+        const score = dayData && dayData.score !== "-" ? parseInt(dayData.score) : 80;
+        const mode = score >= 80 ? "anabolic" : "repair";
+        const wKey = `${mode}_${this.user.toLowerCase()}`;
+        const workout = WORKOUTS[wKey];
+
+        const schedule = [
+            { t: 7, title: "Hydration", desc: "Sea Moss Gel (2 tbsp)", mech: "Thyroid Prime", id:'sup', tags: [{t:"PRIME",c:"bio"}] },
+            { t: 8, title: "Juice Protocol", desc: this.user==='J'?"Beet Vitality":"Orange Immune", mech: "Immune/VO2 Boost", id:'juice', tags: [{t:"BIO-ACTIVE",c:"syn"}] },
+            { t: 17, title: workout.title, desc: workout.sub, mech: "Training Block", id:'workout', isWorkout:true, exercises: workout.exercises, tags: [{t:"TRAINING",c:"bio"}] },
+            { t: 19, title: "Dinner", desc: mode==='anabolic'?"Steak & Potato":"White Fish & Greens", mech: "Recovery", id:'d', tags: [{t:"GROWTH",c:"bio"}] }
+        ];
+
+        let html = '';
+        schedule.forEach(slot => {
+            let extraHTML = "";
+            let cardAction = "";
+            let clickAction = `centurion.checkMeal(this, '${slot.id}')`;
+            
+            if (slot.isWorkout) {
+                cardAction = `onclick="centurion.toggleWorkout(this)"`;
+                clickAction = `event.stopPropagation(); centurion.checkMeal(this, '${slot.id}')`;
+                extraHTML = `<div class="workout-detail">`;
+                slot.exercises.forEach(ex => {
+                    extraHTML += `<div class="w-row"><span class="w-name">${ex}</span></div>`;
+                });
+                extraHTML += `</div>`;
+            }
+
+            let tags = "";
+            slot.tags.forEach(tag => {
+                const cls = tag.c === 'syn' ? 'b-syn' : 'b-bio';
+                tags += `<span class="ts-badge ${cls}">${tag.t}</span>`;
+            });
+
+            html += `
+                <div class="time-slot">
+                    <div class="ts-time">${this.formatTime(slot.t)}</div>
+                    <div class="ts-card" ${cardAction}>
+                        <div class="badge-row">${tags}</div>
+                        <div class="ts-title">${slot.title}</div>
+                        <div class="ts-desc">${slot.desc}</div>
+                        <div class="ts-mech">🔬 ${slot.mech}</div>
+                        ${extraHTML}
+                        <button class="check-btn" onclick="${clickAction}">○</button>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
     }
 }
 
