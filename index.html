@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v4700.12 DATA DEBUG</title>
+    <title>The Centurion | v4700.13 FIXED</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -36,19 +36,12 @@
     .date-nav { display: flex; justify-content: center; align-items: center; gap: 20px; font-family: var(--font-data); font-size: 0.8rem; font-weight: 700; color: #fff; padding-top: 5px; }
     .date-display { min-width: 100px; text-align: center; letter-spacing: 1px; }
 
-    .debug-box { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin: 20px 16px; font-family: var(--font-data); font-size: 0.55rem; color: var(--text-muted); max-height: 400px; overflow-y: auto; }
-    .debug-section { margin: 15px 0; padding: 10px; background: rgba(255,255,255,0.02); border-left: 2px solid var(--acid); }
-    .debug-title { color: var(--acid); font-weight: 900; margin-bottom: 8px; }
-    .debug-line { margin: 3px 0; }
-    .debug-json { color: var(--cyan); white-space: pre-wrap; word-break: break-all; margin-left: 10px; }
-    .debug-success { color: var(--acid); }
-    .debug-error { color: var(--alert); }
-    .debug-warn { color: var(--gold); }
-
     .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 16px; margin: 20px 0; }
     .data-card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 15px; }
     .data-label { font-size: 0.5rem; color: var(--text-muted); font-weight: 900; margin-bottom: 5px; }
     .data-val { font-family: var(--font-data); font-size: 1.2rem; color: var(--acid); }
+
+    .info-box { background: rgba(204, 255, 0, 0.1); border: 1px solid var(--acid); border-radius: 12px; padding: 15px; margin: 20px 16px; font-size: 0.65rem; color: var(--text-muted); line-height: 1.5; }
 
     .sync-footer { position: fixed; bottom: 0; left: 0; width: 100%; background: #000; padding: 12px 16px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-family: var(--font-data); font-size: 0.6rem; color: #555; z-index: 200; }
     .pulse { animation: pulse 2s infinite; display: inline-block; width: 6px; height: 6px; background: var(--acid); border-radius: 50%; margin-right: 6px; }
@@ -62,7 +55,7 @@
 ```
 <div class="hud-header">
     <div class="top-bar">
-        <div class="app-name">CENTURION v4700.12 DATA DEBUG</div>
+        <div class="app-name">CENTURION v4700.13 FIXED</div>
         <div class="user-switch">
             <button id="btn-J" class="u-badge active" onclick="centurion.switchUser('J')">JER</button>
             <button id="btn-S" class="u-badge" onclick="centurion.switchUser('S')">SOPH</button>
@@ -73,17 +66,22 @@
     </div>
 </div>
 
+<div class="info-box">
+    <strong style="color: var(--acid);">⚠️ DATA MAPPING FIX:</strong><br>
+    Readiness shows today's score, but Activity shows YESTERDAY's data (because today's activity hasn't happened yet at this hour). Sleep shows last night's data.
+</div>
+
 <div class="data-grid">
     <div class="data-card">
-        <div class="data-label">READINESS</div>
+        <div class="data-label">READINESS (Today)</div>
         <div class="data-val" id="val-readiness">--</div>
     </div>
     <div class="data-card">
-        <div class="data-label">RHR</div>
+        <div class="data-label">RHR (from user config)</div>
         <div class="data-val" id="val-rhr">--</div>
     </div>
     <div class="data-card">
-        <div class="data-label">SLEEP (hrs)</div>
+        <div class="data-label">SLEEP (Last night)</div>
         <div class="data-val" id="val-sleep">--</div>
     </div>
     <div class="data-card">
@@ -95,21 +93,17 @@
         <div class="data-val" id="val-rem">--</div>
     </div>
     <div class="data-card">
-        <div class="data-label">ACTIVE CAL</div>
+        <div class="data-label">ACTIVE CAL (Yesterday)</div>
         <div class="data-val" id="val-cal">--</div>
     </div>
     <div class="data-card">
-        <div class="data-label">Z2 (min)</div>
+        <div class="data-label">Z2 (min, Yesterday)</div>
         <div class="data-val" id="val-z2">--</div>
     </div>
     <div class="data-card">
-        <div class="data-label">Z5 (min)</div>
+        <div class="data-label">Z5 (min, Yesterday)</div>
         <div class="data-val" id="val-z5">--</div>
     </div>
-</div>
-
-<div class="debug-box" id="debugLog">
-    <div class="debug-line">🔍 INITIALIZING DATA INSPECTOR...</div>
 </div>
 
 <div class="sync-footer">
@@ -120,28 +114,13 @@
 
 <script>
 const TOKENS = { 'J': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'S': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
+const USERS = {
+    'J': { name: "Jermaine", rhr: 48 },
+    'S': { name: "Sophia", rhr: 58 }
+};
 
 function getCaDate() { let d = new Date(); d.setHours(12, 0, 0, 0); return d; }
 function getDateKey(d) { return d.toISOString().split('T')[0]; }
-
-function log(msg, type = 'info') {
-    const debugLog = document.getElementById('debugLog');
-    const className = type === 'error' ? 'debug-error' : type === 'warn' ? 'debug-warn' : 'debug-success';
-    debugLog.innerHTML += `<div class="debug-line ${className}">${msg}</div>`;
-    debugLog.scrollTop = debugLog.scrollHeight;
-    console.log(msg);
-}
-
-function logSection(title, data) {
-    const debugLog = document.getElementById('debugLog');
-    debugLog.innerHTML += `
-        <div class="debug-section">
-            <div class="debug-title">${title}</div>
-            <div class="debug-json">${JSON.stringify(data, null, 2)}</div>
-        </div>
-    `;
-    debugLog.scrollTop = debugLog.scrollHeight;
-}
 
 class CenturionCore {
     constructor() {
@@ -152,8 +131,6 @@ class CenturionCore {
     }
 
     init() {
-        log('✅ System initialized');
-        log(`👤 Active user: ${this.user}`);
         this.updateUI();
         this.render();
         this.fetchOuraData();
@@ -164,7 +141,6 @@ class CenturionCore {
         this.user = uID;
         localStorage.setItem('centurion_active_user', uID);
         
-        log(`🔄 Switching to ${uID}`);
         this.cache = { history: [] };
         localStorage.removeItem(`centurion_oura_cache_${uID}`);
         
@@ -191,124 +167,57 @@ class CenturionCore {
         const range = `start_date=${getDateKey(new Date(Date.now()-864e5*14))}&end_date=${getDateKey(new Date())}`;
         const cb = `&t=${Date.now()}`;
         
-        log(`🔗 Starting fetch for ${fetchID}`);
-        document.getElementById('ouraBar').innerHTML = "💍 CONNECTING...";
+        document.getElementById('ouraBar').innerHTML = "💍 SYNCING...";
         
         try {
-            // READINESS
-            log('📡 Fetching READINESS...');
-            const rRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}${cb}`)}`, { 
-                headers: { 'Authorization': `Bearer ${token}` } 
-            });
+            const [rRes, aRes, sRes] = await Promise.all([
+                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}${cb}`)}`, { 
+                    headers: { 'Authorization': `Bearer ${token}` } 
+                }),
+                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}${cb}`)}`, { 
+                    headers: { 'Authorization': `Bearer ${token}` } 
+                }),
+                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?${range}${cb}`)}`, { 
+                    headers: { 'Authorization': `Bearer ${token}` } 
+                })
+            ]);
+            
             const rData = await rRes.json();
-            log(`✅ Readiness: ${rRes.status} - ${rData.data?.length || 0} days`);
-            
-            if(rData.data && rData.data.length > 0) {
-                logSection('📊 READINESS DATA (Today)', rData.data[rData.data.length - 1]);
-            }
-            
-            // ACTIVITY
-            log('📡 Fetching ACTIVITY...');
-            const aRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}${cb}`)}`, { 
-                headers: { 'Authorization': `Bearer ${token}` } 
-            });
             const aData = await aRes.json();
-            log(`✅ Activity: ${aRes.status} - ${aData.data?.length || 0} days`);
-            
-            if(aData.data && aData.data.length > 0) {
-                logSection('📊 ACTIVITY DATA (Today)', aData.data[aData.data.length - 1]);
-            }
-            
-            // SLEEP
-            log('📡 Fetching SLEEP...');
-            const sRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?${range}${cb}`)}`, { 
-                headers: { 'Authorization': `Bearer ${token}` } 
-            });
             const sData = await sRes.json();
-            log(`✅ Sleep: ${sRes.status} - ${sData.data?.length || 0} days`);
             
-            if(sData.data && sData.data.length > 0) {
-                logSection('📊 SLEEP DATA (Most Recent)', sData.data[sData.data.length - 1]);
-            }
-            
-            if(this.user !== fetchID) {
-                log('⚠️ User switched during fetch, aborting', 'warn');
-                return;
-            }
+            if(this.user !== fetchID) return;
             
             if(rData.data) {
-                log('🔨 Processing data...');
-                const todayKey = getDateKey(getCaDate());
-                
-                // Find today's data
-                const todayReadiness = rData.data.find(d => d.day === todayKey);
-                const todayActivity = aData.data?.find(d => d.day === todayKey);
-                const todaySleep = sData.data?.find(d => d.day === todayKey);
-                
-                log('');
-                log('📋 TODAY\'S DATA MAPPING:', 'warn');
-                log(`Date key: ${todayKey}`, 'warn');
-                log('');
-                
-                if(todayReadiness) {
-                    log(`✅ Readiness found for today`);
-                    log(`  - Score: ${todayReadiness.score}`);
-                    log(`  - Contributors: ${JSON.stringify(todayReadiness.contributors)}`);
-                    log(`  - RHR from contributors: ${todayReadiness.contributors?.resting_heart_rate}`);
-                } else {
-                    log(`❌ No readiness data for ${todayKey}`, 'error');
-                }
-                
-                if(todayActivity) {
-                    log(`✅ Activity found for today`);
-                    log(`  - Active calories: ${todayActivity.active_calories}`);
-                    log(`  - High activity time: ${todayActivity.high_activity_time} sec = ${Math.round(todayActivity.high_activity_time/60)} min`);
-                    log(`  - Medium activity time: ${todayActivity.medium_activity_time} sec = ${Math.round(todayActivity.medium_activity_time/60)} min`);
-                } else {
-                    log(`❌ No activity data for ${todayKey}`, 'error');
-                }
-                
-                if(todaySleep) {
-                    log(`✅ Sleep found for today`);
-                    log(`  - Total sleep: ${todaySleep.total_sleep_duration} sec = ${(todaySleep.total_sleep_duration/3600).toFixed(1)} hrs`);
-                    log(`  - Deep sleep: ${todaySleep.deep_sleep_duration} sec = ${Math.round(todaySleep.deep_sleep_duration/60)} min`);
-                    log(`  - REM sleep: ${todaySleep.rem_sleep_duration} sec = ${Math.round(todaySleep.rem_sleep_duration/60)} min`);
-                } else {
-                    log(`❌ No sleep data for ${todayKey}`, 'error');
-                    log(`⚠️ This is EXPECTED if you haven't completed today's sleep yet!`, 'warn');
-                }
-                
                 const hist = rData.data.map(day => {
-                    const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
+                    // KEY FIX: For activity, look at YESTERDAY'S data since today hasn't happened yet
+                    const yesterday = new Date(day.day);
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    const yesterdayKey = getDateKey(yesterday);
+                    
+                    const act = aData.data ? aData.data.find(ac => ac.day === yesterdayKey) : null;
                     const slp = sData.data ? sData.data.find(sc => sc.day === day.day) : null;
                     
-                    const processed = { 
+                    return { 
                         date: day.day, 
                         score: day.score || "-", 
                         cal: act ? act.active_calories : "-", 
                         high: act ? Math.round(act.high_activity_time/60) : 0, 
                         med: act ? Math.round(act.medium_activity_time/60) : 0,
-                        rhr: day.contributors?.resting_heart_rate || "-",
+                        rhr: USERS[fetchID].rhr, // Use configured RHR instead of contributor score
                         sleep: slp ? (slp.total_sleep_duration/3600).toFixed(1) : "-",
                         deep: slp ? Math.round(slp.deep_sleep_duration/60) : "-",
                         rem: slp ? Math.round(slp.rem_sleep_duration/60) : "-"
                     };
-                    
-                    return processed;
                 }).reverse();
-                
-                log('');
-                logSection('📊 PROCESSED TODAY DATA', hist[0]);
                 
                 localStorage.setItem(`centurion_oura_cache_${fetchID}`, JSON.stringify({history: hist, lastFetch: Date.now()}));
                 this.cache = { history: hist };
                 document.getElementById('ouraBar').innerHTML = `💍 SYNCED`;
-                log('✅ SYNC COMPLETE!');
                 this.render();
             }
         } catch(e) { 
-            log(`❌ ERROR: ${e.message}`, 'error');
-            console.error('Full error:', e);
+            console.error(e);
             document.getElementById('ouraBar').innerHTML = "💍 SYNC FAILED"; 
         }
     }
@@ -324,12 +233,9 @@ class CenturionCore {
             score: "-", cal: "-", high: 0, med: 0, rhr: "-", sleep: "-", deep: "-", rem: "-" 
         };
         
-        log(`📊 Rendering: ${dk}`);
-        log(`  Values: Score=${rawOura.score}, RHR=${rawOura.rhr}, Sleep=${rawOura.sleep}, Deep=${rawOura.deep}, REM=${rawOura.rem}, Cal=${rawOura.cal}, Z2=${rawOura.med}, Z5=${rawOura.high}`);
-        
         document.getElementById('val-readiness').textContent = rawOura.score;
-        document.getElementById('val-rhr').textContent = rawOura.rhr;
-        document.getElementById('val-sleep').textContent = rawOura.sleep;
+        document.getElementById('val-rhr').textContent = rawOura.rhr + " BPM";
+        document.getElementById('val-sleep').textContent = rawOura.sleep + " hrs";
         document.getElementById('val-deep').textContent = rawOura.deep;
         document.getElementById('val-rem').textContent = rawOura.rem;
         document.getElementById('val-cal').textContent = rawOura.cal;
