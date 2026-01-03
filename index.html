@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v5100.0 LEGACY-CORE</title>
+    <title>The Centurion | v5200.0 PROTOCOL-MIRROR</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -14,6 +14,7 @@
             --cyan: #00f0ff;
             --gold: #FFD60A;
             --alert: #ff453a;
+            --purple: #bf5af2;
             --text-main: #ffffff;
             --text-muted: #666;
             --font-ui: 'Inter', sans-serif;
@@ -34,7 +35,9 @@
         /* DATE NAV */
         .date-nav { display: flex; justify-content: center; align-items: center; gap: 20px; font-family: var(--font-data); font-size: 0.8rem; font-weight: 700; color: #fff; padding-top: 5px; }
         .nav-arrow { color: var(--gold); cursor: pointer; padding: 5px 10px; user-select: none; }
-        
+        .nav-arrow:active { transform: scale(0.9); }
+        .date-display { min-width: 100px; text-align: center; letter-spacing: 1px; }
+
         /* HERO */
         .hero-section { padding: 25px 16px 10px; display: flex; align-items: center; justify-content: space-between; }
         .ring-container { width: 110px; height: 110px; position: relative; display: flex; align-items: center; justify-content: center; }
@@ -80,20 +83,29 @@
         .ts-time { width: 45px; font-family: var(--font-data); font-size: 0.75rem; color: var(--text-muted); text-align: right; padding-top: 5px; z-index: 1; }
         .ts-card { flex: 1; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 15px; position: relative; z-index: 1; overflow: hidden; transition: all 0.3s; }
         
+        .badge-row { display: flex; gap: 5px; margin-bottom: 8px; flex-wrap: wrap; }
+        .ts-badge { font-size: 0.5rem; padding: 2px 6px; border-radius: 4px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid transparent; }
+        .b-bio { background: rgba(255,255,255,0.1); color: var(--text-muted); border-color: var(--border); }
+        .b-syn { background: rgba(0, 240, 255, 0.1); color: var(--cyan); border-color: rgba(0, 240, 255, 0.3); }
+        .b-alert { background: rgba(255, 69, 58, 0.2); color: var(--alert); border-color: var(--alert); animation: blink 1s infinite; }
+
         .ts-title { font-size: 0.85rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
         .ts-desc { font-size: 0.75rem; color: #aaa; line-height: 1.4; margin-bottom: 8px; }
         .ts-mech { font-family: var(--font-data); font-size: 0.55rem; color: var(--text-muted); padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 5px; }
         .ts-mech::before { content: '🔬'; font-size: 0.6rem; }
 
-        .badge-row { display: flex; gap: 5px; margin-bottom: 8px; flex-wrap: wrap; }
-        .ts-badge { font-size: 0.5rem; padding: 2px 6px; border-radius: 4px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid transparent; }
-        .b-bio { background: rgba(255,255,255,0.1); color: var(--text-muted); border-color: var(--border); }
-        .b-syn { background: rgba(0, 240, 255, 0.1); color: var(--cyan); border-color: rgba(0, 240, 255, 0.3); }
-
         .check-btn { position: absolute; top: 15px; right: 15px; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border); background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; color: transparent; transition: all 0.2s; color: #000; font-weight: 800; font-size: 0.7rem; }
         .time-slot.past .check-btn { background: var(--acid); border-color: var(--acid); color: #000; }
         
         .macro-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 30px; }
+
+        /* WORKOUT EXPANSION */
+        .workout-detail { margin-top: 10px; background: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px; display: none; }
+        .workout-detail.active { display: block; animation: slideDown 0.3s; }
+        .w-row { display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 6px 0; font-family: var(--font-data); font-size: 0.7rem; }
+        .w-name { color: #ddd; }
+        .w-rep { color: var(--gold); }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
 
         .sync-footer { position: fixed; bottom: 0; left: 0; width: 100%; background: #000; padding: 12px 16px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-family: var(--font-data); font-size: 0.6rem; color: #555; z-index: 200; }
         .pulse { animation: pulse 2s infinite; display: inline-block; width: 6px; height: 6px; background: var(--acid); border-radius: 50%; margin-right: 6px; }
@@ -116,7 +128,7 @@
 
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v5100</div>
+            <div class="app-name">CENTURION v5200</div>
             <div class="user-switch">
                 <button id="btn-J" class="u-btn active" onclick="centurion.switchUser('J')">JER</button>
                 <button id="btn-S" class="u-btn" onclick="centurion.switchUser('S')">SOPH</button>
@@ -143,7 +155,7 @@
 
         <div class="tactical-box" id="tactical-box">
             <div class="tac-label" id="tac-label">STATUS</div>
-            <div class="tac-cmd" id="tac-cmd">INITIALIZING...</div>
+            <div class="tac-cmd" id="tac-cmd">AWAITING HANDSHAKE...</div>
             <div class="tac-meta" id="tac-reason">...</div>
         </div>
     </div>
@@ -175,9 +187,9 @@
         <div class="orb-card">
             <div class="orb-container">
                 <svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-stress" class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--acid)"></circle></svg>
-                <div class="orb-val-box"><div id="val-stress" class="orb-val">--</div><span class="orb-unit">HRV</span></div>
+                <div class="orb-val-box"><div id="val-stress" class="orb-val">--</div><span class="orb-unit">RHR</span></div>
             </div>
-            <div class="orb-label">BAL</div>
+            <div class="orb-label">RHR</div>
         </div>
     </div>
 
@@ -221,8 +233,8 @@
 
 <script>
 /**
- * CENTURION v5100.0 - LEGACY CORE
- * Logic: Exact fetch & display logic from v1300 (Latest available data, no date matching)
+ * CENTURION v5200.0 - EXACT MIRROR
+ * Logic: v1300 Handshake Logic + Cache Wipe on Toggle
  */
 
 const TOKENS = {
@@ -275,26 +287,35 @@ class CenturionCore {
         return d.toISOString().split('T')[0];
     }
 
+    getDateString(offset) {
+        const d = new Date();
+        d.setDate(d.getDate() + offset);
+        return d.toISOString().split('T')[0];
+    }
+
     init() {
         this.switchUser(this.user);
         this.startClock();
-        // Immediate Async Handshake (v1300 Method)
-        this.fetchOuraData();
-        // Background Refresh
-        setInterval(() => this.fetchOuraData(), 600000); 
+        setInterval(() => this.fetchOuraData(), 1800000); 
     }
 
     switchUser(uid) {
         this.user = uid;
         localStorage.setItem('centurion_active_user', uid);
-        this.cache = JSON.parse(localStorage.getItem(`centurion_oura_cache_${uid}`)) || { history: [] };
+        
+        // WIPE CACHE ON TOGGLE
+        this.cache = { history: [] }; 
+        this.state = { hr: 60, z2_time: 0, z5_time: 0, stress: 0, score: 0, pro: 0, carb: 0, fat: 0, checked: [] };
         
         document.querySelectorAll('.u-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(`btn-${uid}`).classList.add('active');
         
         this.dayOffset = 0;
-        this.loadDay();
-        this.fetchOuraData(); // Trigger Handshake on switch
+        this.loadDay(); 
+        
+        // Trigger Fresh Fetch
+        document.getElementById('tac-cmd').innerText = "SWITCHING USER...";
+        this.fetchOuraData(); 
     }
 
     changeDay(delta) {
@@ -306,7 +327,6 @@ class CenturionCore {
     async fetchOuraData() {
         const fetchID = this.user; 
         const token = TOKENS[fetchID];
-        // Dynamic Range (14 days)
         const range = `start_date=${this.getDateString(-14)}&end_date=${this.getDateString(1)}`;
         
         document.getElementById('sync-time').innerText = "HANDSHAKE...";
@@ -331,51 +351,40 @@ class CenturionCore {
                         cal: act ? act.active_calories : "-", 
                         high: act ? Math.round(act.high_activity_time/60) : 0, 
                         med: act ? Math.round(act.medium_activity_time/60) : 0,
-                        hrv: day.contributors ? day.contributors.hrv_balance_days : 0
+                        rhr: day.contributors?.resting_heart_rate || "-" // v1300 uses RHR
                     };
                 }).reverse();
                 
-                // Save to v1300 key
                 localStorage.setItem(`centurion_oura_cache_${fetchID}`, JSON.stringify({history: hist, lastFetch: Date.now()}));
-                this.cache = { history: hist }; // Update Memory
+                this.cache = { history: hist }; 
                 
                 document.getElementById('sync-time').innerText = "SYNCED: " + new Date().toLocaleTimeString();
                 document.getElementById('tac-cmd').innerText = "OURA CONNECTION ESTABLISHED";
+                document.getElementById('tac-reason').innerText = "Telemetry Validated.";
                 
-                this.loadDay(); // Refresh UI with fresh data
+                this.loadDay(); 
             }
         } catch(e) { 
             document.getElementById('sync-time').innerText = "SYNC FAILED";
+            document.getElementById('tac-cmd').innerText = "OFFLINE MODE";
             console.error(e);
         }
     }
 
-    getDateString(offset) {
-        const d = new Date();
-        d.setDate(d.getDate() + offset);
-        return d.toISOString().split('T')[0];
-    }
-
     loadDay() {
         const dateKey = this.dateKey;
-        
-        // --- v1300 LOGIC: SHOW LATEST IF TODAY ---
         let dayData;
         
         if (this.dayOffset === 0 && this.cache.history && this.cache.history.length > 0) {
-            // v1300: If Today, just show the first item in the reversed array (Latest Data)
-            // This prevents the "0" issue if dates don't match exactly
-            dayData = this.cache.history[0];
+            dayData = this.cache.history[0]; // Show Latest
             document.getElementById('date-display').innerText = "LATEST SYNC";
         } else {
-            // If browsing history, look for exact date
             dayData = this.cache.history.find(d => d.date === dateKey);
             const label = this.dayOffset === 0 ? "TODAY" : this.dayOffset === -1 ? "YESTERDAY" : dateKey;
             document.getElementById('date-display').innerText = label;
         }
         
-        // Default
-        if (!dayData) dayData = { score: 0, cal: 0, high: 0, med: 0, hrv: 0 };
+        if (!dayData) dayData = { score: 0, cal: 0, high: 0, med: 0, rhr: 0 };
         
         this.updateHUD(dayData);
         this.renderTimeline(dayData);
@@ -384,21 +393,14 @@ class CenturionCore {
     updateHUD(d) {
         const u = USERS[this.user];
         
-        // Update Internal State from API Data
         this.state.score = d.score;
-        this.state.cal = d.cal;
-        this.state.z5_time = d.high;
-        this.state.z2_time = d.med;
-        this.state.stress = d.hrv;
-
-        // Visuals
+        
         document.getElementById('score-val').innerText = d.score;
         document.getElementById('val-cal').innerText = d.cal;
         document.getElementById('val-z2').innerText = d.med; 
         document.getElementById('val-z5').innerText = d.high;
-        document.getElementById('val-stress').innerText = d.hrv;
+        document.getElementById('val-stress').innerText = d.rhr; // Showing RHR
         
-        // Rings
         const scoreNum = parseInt(d.score) || 0;
         const calNum = parseInt(d.cal) || 0;
         
@@ -406,9 +408,8 @@ class CenturionCore {
         this.updateRing('cal', calNum, u.goals.cal);
         this.updateRing('z2', d.med, u.goals.z2);
         this.updateRing('z5', d.high, u.goals.z5);
-        this.updateRing('stress', d.hrv || 0, 100);
+        this.updateRing('stress', d.rhr || 0, 100);
         
-        // Macros (Simulated Local State)
         this.updateMacroRing('pro', this.state.pro, u.goals.pro);
         this.updateMacroRing('carb', this.state.carb, u.goals.carb);
         this.updateMacroRing('fat', this.state.fat, u.goals.fat);
@@ -418,7 +419,6 @@ class CenturionCore {
         document.getElementById('val-fat').innerText = this.state.fat + "g";
         document.getElementById('vo2-val').innerText = u.vo2;
 
-        // Tactical Logic
         let cmd = "SYSTEMS NOMINAL", reason = "Biometrics Stable", color = "var(--acid)";
         if(scoreNum > 0 && scoreNum < 70) { 
             cmd = "RECOVERY REQUIRED"; reason = "Readiness Low. Prioritize Sleep."; color = "var(--gold)";
@@ -452,7 +452,6 @@ class CenturionCore {
         }
     }
 
-    // WORKOUT TOGGLE (Expansion)
     toggleWorkout(card) {
         const details = card.querySelector('.workout-detail');
         if (details) details.classList.toggle('active');
@@ -467,10 +466,7 @@ class CenturionCore {
             this.state.pro += macros.p;
             this.state.carb += macros.c;
             this.state.fat += macros.f;
-            
-            // Re-render only ring visuals, keep Oura data intact
-            const cached = JSON.parse(localStorage.getItem(`centurion_oura_cache_${this.user}`)) || { history: [] };
-            const dayData = cached.history[0] || {}; // Use latest
+            const dayData = this.cache.history[0] || {};
             this.updateHUD(dayData);
         }
         card.classList.add('past');
