@@ -14,6 +14,7 @@
             --cyan: #00f0ff;
             --gold: #FFD60A;
             --alert: #ff453a;
+            --purple: #bf5af2;
             --text-main: #ffffff;
             --text-muted: #666;
             --font-ui: 'Inter', sans-serif;
@@ -56,6 +57,7 @@
         /* GRIDS */
         .section-label { font-size: 0.55rem; font-weight: 900; color: var(--text-muted); letter-spacing: 1px; margin: 20px 16px 10px; text-transform: uppercase; }
         .telemetry-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 10px; }
+        .sleep-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 20px; }
         .macro-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 30px; }
         .orb-card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 10px 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
         .orb-container { width: 60px; height: 60px; position: relative; display: flex; align-items: center; justify-content: center; margin-bottom: 5px; }
@@ -416,6 +418,10 @@
           <stop offset="0%" style="stop-color:#ff453a;stop-opacity:1" />
           <stop offset="100%" style="stop-color:#ff9f0a;stop-opacity:1" />
         </linearGradient>
+        <linearGradient id="grad-purple" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" style="stop-color:#bf5af2;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#9d4edd;stop-opacity:1" />
+        </linearGradient>
       </defs>
     </svg>
 
@@ -453,6 +459,31 @@
             <div class="tac-label" id="tac-label">COMMAND:</div>
             <div class="tac-cmd" id="tac-cmd">SYSTEMS NOMINAL</div>
             <div class="tac-meta" id="tac-reason">Tracking autonomic drift...</div>
+        </div>
+    </div>
+
+    <div class="section-label">🌙 SLEEP ARCHITECTURE</div>
+    <div class="sleep-grid">
+        <div class="orb-card">
+            <div class="orb-container">
+                <svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-sleep-total" class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-purple)"></circle></svg>
+                <div class="orb-val-box"><div id="val-sleep-total" class="orb-val">--</div><span class="orb-unit">HRS</span></div>
+            </div>
+            <div class="orb-label">TOTAL</div>
+        </div>
+        <div class="orb-card">
+            <div class="orb-container">
+                <svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-deep" class="orb-fg" cx="30" cy="30" r="25" style="stroke:#007aff"></circle></svg>
+                <div class="orb-val-box"><div id="val-deep" class="orb-val">--</div><span class="orb-unit">MIN</span></div>
+            </div>
+            <div class="orb-label">DEEP</div>
+        </div>
+        <div class="orb-card">
+            <div class="orb-container">
+                <svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle id="ring-rem" class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--purple)"></circle></svg>
+                <div class="orb-val-box"><div id="val-rem" class="orb-val">--</div><span class="orb-unit">MIN</span></div>
+            </div>
+            <div class="orb-label">REM</div>
         </div>
     </div>
 
@@ -543,7 +574,8 @@ const USERS = {
         rhr: 48, 
         goals: { z2: 60, z5: 20, pro: 180, carb: 200, fat: 80, fiber: 40 },
         biomarkers: { apoB: 68, ldl: 89, hdl: 52, glucose: 91, hsCRP: 0.3 },
-        primaryFocus: "ApoB Reduction"
+        primaryFocus: "ApoB Reduction",
+        sleepTarget: 8.0
     },
     'S': { 
         name: "Sophia", 
@@ -553,7 +585,8 @@ const USERS = {
         goals: { z2: 45, z5: 15, pro: 120, carb: 150, fat: 60, fiber: 35 },
         biomarkers: { ana: 1.3, ferritin: 18, ldl: 112, hdl: 64, glucose: 86, hsCRP: 0.8 },
         primaryFocus: "ANA Suppression",
-        triggers: ["gluten", "dairy"]
+        triggers: ["gluten", "dairy"],
+        sleepTarget: 8.5
     }
 };
 
@@ -622,6 +655,7 @@ class CenturionCore {
             readiness: 0,
             deepSleep: 0,
             remSleep: 0,
+            totalSleep: 0,
             pro: 0, 
             carb: 0, 
             fat: 0,
@@ -641,6 +675,26 @@ class CenturionCore {
         this.startLiveSim();
         this.updateDateDisplay();
         this.renderTimeline();
+        this.updateSleepRings();
+    }
+
+    updateSleepRings() {
+        const s = this.state;
+        const u = USERS[this.user];
+        
+        // Total sleep ring
+        this.updateRing('sleep-total', s.totalSleep, u.sleepTarget);
+        
+        // Deep sleep ring (target 90min)
+        this.updateRing('deep', s.deepSleep, 90);
+        
+        // REM sleep ring (target 90min)
+        this.updateRing('rem', s.remSleep, 90);
+        
+        // Update values
+        document.getElementById('val-sleep-total').textContent = s.totalSleep ? s.totalSleep.toFixed(1) : '--';
+        document.getElementById('val-deep').textContent = s.deepSleep ? Math.floor(s.deepSleep) : '--';
+        document.getElementById('val-rem').textContent = s.remSleep ? Math.floor(s.remSleep) : '--';
     }
 
     changeDay(delta) {
@@ -656,6 +710,7 @@ class CenturionCore {
         
         this.updateDateDisplay();
         this.renderTimeline();
+        this.updateSleepRings();
     }
 
     updateDateDisplay() {
@@ -688,8 +743,9 @@ class CenturionCore {
                 z2_time: historical.training.z2,
                 z5_time: historical.training.z5,
                 readiness: historical.readiness,
-                deepSleep: historical.sleep.deep,
-                remSleep: historical.sleep.rem,
+                deepSleep: historical.sleep?.deep || 0,
+                remSleep: historical.sleep?.rem || 0,
+                totalSleep: historical.sleep?.total || 0,
                 checked: historical.mealsCompleted ? Array(historical.mealsCompleted).fill('checked') : [],
                 dailyMeals: this.state.dailyMeals
             };
@@ -761,6 +817,7 @@ class CenturionCore {
         
         this.updateHUD();
         this.renderTimeline();
+        this.updateSleepRings();
     }
 
     saveState() {
@@ -882,7 +939,11 @@ class CenturionCore {
     runTactics(s, u) {
         let cmd = "", reason = "", color = "var(--acid)";
         
-        if (s.z5_time >= u.goals.z5) {
+        if (s.totalSleep > 0 && s.totalSleep < u.sleepTarget * 0.85) {
+            cmd = "SLEEP DEBT DETECTED";
+            reason = `${(u.sleepTarget - s.totalSleep).toFixed(1)}h deficit impairs recovery. Prioritize sleep tonight.`;
+            color = "var(--alert)";
+        } else if (s.z5_time >= u.goals.z5) {
             cmd = "PEAK STIMULUS COMPLETE";
             reason = "VO2 Max adaptation triggered. Recovery protocol initiated.";
             color = "var(--gold)";
@@ -1040,12 +1101,12 @@ class CenturionCore {
         const z5Score = Math.min((viewState.z5_time / u.goals.z5) * 100, 100);
         const trainingAvg = (z2Score + z5Score) / 2;
         
-        const readinessScore = viewState.readiness || 0;
+        const sleepScore = viewState.totalSleep > 0 ? Math.min((viewState.totalSleep / u.sleepTarget) * 100, 100) : 0;
         
         const overallScore = Math.round(
-            (macroAvg * 0.4) + 
-            (trainingAvg * 0.35) + 
-            (readinessScore * 0.25)
+            (macroAvg * 0.35) + 
+            (trainingAvg * 0.30) + 
+            (sleepScore * 0.35)
         );
         
         let grade = 'C';
@@ -1055,6 +1116,12 @@ class CenturionCore {
         else if (overallScore >= 70) { grade = 'B'; gradeClass = 'grade-b'; }
         
         const insights = [];
+        
+        if (viewState.totalSleep > 0 && viewState.totalSleep < u.sleepTarget * 0.85) {
+            insights.push(`Sleep deficit of ${(u.sleepTarget - viewState.totalSleep).toFixed(1)}h critically impacts recovery and longevity.`);
+        } else if (viewState.totalSleep >= u.sleepTarget) {
+            insights.push(`Sleep duration optimal at ${viewState.totalSleep.toFixed(1)}h. Cellular repair maximized.`);
+        }
         
         if (proScore < 80) {
             insights.push(`Protein ${Math.round(proScore)}% of target. Increase lean sources to optimize recovery.`);
@@ -1082,7 +1149,7 @@ class CenturionCore {
             gradeClass,
             macroAvg: Math.round(macroAvg),
             trainingAvg: Math.round(trainingAvg),
-            readinessScore,
+            sleepScore: Math.round(sleepScore),
             proScore: Math.round(proScore),
             fiberScore: Math.round(fiberScore),
             insights
@@ -1114,10 +1181,10 @@ class CenturionCore {
                     </div>
                 </div>
                 <div class="summary-metric">
-                    <div class="summary-metric-label">Protein</div>
-                    <div class="summary-metric-value ${summary.proScore >= 90 ? 'good' : summary.proScore >= 75 ? 'warning' : 'alert'}">${summary.proScore}%</div>
+                    <div class="summary-metric-label">Sleep</div>
+                    <div class="summary-metric-value ${summary.sleepScore >= 90 ? 'good' : summary.sleepScore >= 75 ? 'warning' : 'alert'}">${summary.sleepScore}%</div>
                     <div class="summary-bar">
-                        <div class="summary-bar-fill" style="width: ${summary.proScore}%; background: var(--cyan);"></div>
+                        <div class="summary-bar-fill" style="width: ${summary.sleepScore}%; background: ${summary.sleepScore >= 90 ? 'var(--purple)' : summary.sleepScore >= 75 ? 'var(--gold)' : 'var(--alert)'};"></div>
                     </div>
                 </div>
                 <div class="summary-metric">
