@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v6700.0 ATOMIC-LOAD</title>
+    <title>The Centurion | v6800.0 TOGGLE-GUARD</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -129,12 +129,12 @@
 
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v6700</div>
+            <div class="app-name">CENTURION v6800</div>
             <div>
                 <button class="bio-btn">BIO</button>
                 <div class="user-switch">
-                    <button id="btn-J" class="u-btn active" onclick="centurion.switchUser('J')">JER</button>
-                    <button id="btn-S" class="u-btn" onclick="centurion.switchUser('S')">SOPH</button>
+                    <button id="btn-J" class="u-badge active" onclick="centurion.switchUser('J')">JER</button>
+                    <button id="btn-S" class="u-badge" onclick="centurion.switchUser('S')">SOPH</button>
                 </div>
             </div>
         </div>
@@ -221,8 +221,8 @@
 
 <script>
 /**
- * CENTURION v6700.0 - ATOMIC LOADER
- * Fix: Sequential Fetch + Immediate UI Updates per metric
+ * CENTURION v6800.0 - TOGGLE GUARD
+ * Logic: Sequential Fetch + Guard Rails on User Switch
  */
 
 const TOKENS = {
@@ -264,21 +264,21 @@ class CenturionCore {
     constructor() {
         this.user = localStorage.getItem('centurion_active_user') || 'J';
         this.dayOffset = 0; 
-        
+        this.resetState();
         try {
             this.cache = JSON.parse(localStorage.getItem(`centurion_oura_cache_${this.user}`)) || { history: [] };
         } catch(e) {
             this.cache = { history: [] };
         }
-        
-        // Base State
+        this.init();
+    }
+
+    resetState() {
         this.state = { 
             score: 0, cal: 0, med: 0, high: 0, rhr: 0, 
             sleep: 0, deep: 0, rem: 0,
             pro: 0, carb: 0, fat: 0, fib: 0, checked: [] 
         };
-        
-        try { this.init(); } catch(e) { console.error("Init Error:", e); }
     }
 
     init() {
@@ -291,19 +291,22 @@ class CenturionCore {
         this.user = uid;
         localStorage.setItem('centurion_active_user', uid);
         
-        // Wipe old data first
+        // 1. HARD WIPE
         localStorage.removeItem(`centurion_oura_cache_${uid}`);
         this.cache = { history: [] };
+        this.resetState();
         
-        document.querySelectorAll('.u-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
         const btn = document.getElementById(`btn-${uid}`);
         if(btn) btn.classList.add('active');
         
         this.dayOffset = 0;
-        this.updateHUD({ score: "-", cal: "-", med: 0, high: 0, rhr: "-", sleep: 0, deep: 0, rem: 0 });
-        const cmdEl = document.getElementById('tac-cmd');
-        if(cmdEl) cmdEl.innerText = "SWITCHING USER...";
         
+        // 2. IMMEDIATE VISUAL RESET
+        this.updateHUD({ score: "-", cal: "-", med: 0, high: 0, rhr: "-", sleep: 0, deep: 0, rem: 0 });
+        document.getElementById('tac-cmd').innerText = `SWITCHING TO ${USERS[uid].name.toUpperCase()}...`;
+        
+        // 3. FETCH
         this.fetchOuraData(); 
     }
 
@@ -312,7 +315,7 @@ class CenturionCore {
         this.loadDay();
     }
 
-    // --- ATOMIC FETCH: LOADS ONE BY ONE ---
+    // --- SEQUENTIAL FETCH WITH GUARDS ---
     async fetchOuraData() {
         const fetchID = this.user; 
         const token = TOKENS[fetchID];
@@ -323,15 +326,14 @@ class CenturionCore {
         
         const cmd = document.getElementById('tac-cmd');
         
-        // HELPER: Merge new data into cache
+        // HELPER: Merge with guard check
         const mergeData = (newData, type) => {
+            if(this.user !== fetchID) return; // STOP IF USER CHANGED
+
             if(!this.cache.history) this.cache.history = [];
-            
-            // Map existing cache by date
             const map = {};
             this.cache.history.forEach(d => map[d.date] = d);
             
-            // Merge new items
             newData.forEach(item => {
                 if(!map[item.day]) map[item.day] = { date: item.day };
                 const entry = map[item.day];
@@ -352,37 +354,38 @@ class CenturionCore {
                 }
             });
             
-            // Convert back to array & sort
             this.cache.history = Object.values(map).sort((a,b) => b.date.localeCompare(a.date));
             localStorage.setItem(`centurion_oura_cache_${fetchID}`, JSON.stringify(this.cache));
-            this.loadDay(); // Refresh UI immediately
+            this.loadDay(); 
         };
 
         try {
             // 1. READINESS
-            if(cmd) cmd.innerText = "GETTING READINESS...";
+            if(cmd && this.user === fetchID) cmd.innerText = "GETTING READINESS...";
             const rRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } });
             const rData = await rRes.json();
             if(rData.data) mergeData(rData.data, 'readiness');
             
-            // 2. ACTIVITY
-            if(cmd) cmd.innerText = "GETTING ACTIVITY...";
-            const aRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } });
-            const aData = await aRes.json();
-            if(aData.data) mergeData(aData.data, 'activity');
-
-            // 3. SLEEP
+            // 2. SLEEP (Guard check)
+            if(this.user !== fetchID) return;
             if(cmd) cmd.innerText = "GETTING SLEEP...";
             const sRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } });
             const sData = await sRes.json();
             if(sData.data) mergeData(sData.data, 'sleep');
+
+            // 3. ACTIVITY (Guard check)
+            if(this.user !== fetchID) return;
+            if(cmd) cmd.innerText = "GETTING ACTIVITY...";
+            const aRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const aData = await aRes.json();
+            if(aData.data) mergeData(aData.data, 'activity');
             
-            if(cmd) cmd.innerText = "SYSTEMS ONLINE";
+            if(cmd && this.user === fetchID) cmd.innerText = "SYSTEMS ONLINE";
             document.getElementById('sync-time').innerText = "SYNCED: " + new Date().toLocaleTimeString();
             
         } catch(e) { 
             console.error(e);
-            if(cmd) cmd.innerText = "PARTIAL SYNC ERROR";
+            if(cmd && this.user === fetchID) cmd.innerText = "PARTIAL SYNC ERROR";
         }
     }
 
@@ -393,7 +396,6 @@ class CenturionCore {
         
         let dayData;
         
-        // Show Latest if Today
         if (this.dayOffset === 0 && this.cache.history && this.cache.history.length > 0) {
             dayData = this.cache.history[0]; 
             document.getElementById('date-display').innerText = "LATEST SYNC";
@@ -403,7 +405,6 @@ class CenturionCore {
             document.getElementById('date-display').innerText = label;
         }
         
-        // Defaults
         if (!dayData) dayData = {};
         
         this.updateHUD(dayData);
@@ -416,7 +417,6 @@ class CenturionCore {
         const safeVal = (v, suffix="") => (v !== undefined && v !== "-") ? v + suffix : "--";
         const safeNum = (v) => (v && v !== "-") ? parseFloat(v) : 0;
 
-        // Visuals
         document.getElementById('score-val').innerText = safeVal(d.score);
         document.getElementById('val-cal').innerText = safeVal(d.cal);
         document.getElementById('val-z2').innerText = safeVal(d.med); 
@@ -427,7 +427,6 @@ class CenturionCore {
         document.getElementById('val-deep').innerText = safeVal(d.deep);
         document.getElementById('val-rem').innerText = safeVal(d.rem);
 
-        // Rings
         this.updateRing('activity', safeNum(d.score), 100);
         this.updateRing('cal', safeNum(d.cal), u.goals.cal);
         this.updateRing('z2', safeNum(d.med), u.goals.z2);
@@ -438,7 +437,6 @@ class CenturionCore {
         this.updateRing('deep', safeNum(d.deep), 90);
         this.updateRing('rem', safeNum(d.rem), 90);
         
-        // Macros (Local State)
         this.updateMacroRing('pro', this.state.pro, u.goals.pro);
         this.updateMacroRing('carb', this.state.carb, u.goals.carb);
         this.updateMacroRing('fat', this.state.fat, u.goals.fat);
