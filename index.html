@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v5600.0 EXACT-MATCH</title>
+    <title>The Centurion | v5700.0 STRICT</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -123,7 +123,7 @@
 
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v5600</div>
+            <div class="app-name">CENTURION v5700</div>
             <div class="user-switch">
                 <button id="btn-J" class="u-btn active" onclick="centurion.switchUser('J')">JER</button>
                 <button id="btn-S" class="u-btn" onclick="centurion.switchUser('S')">SOPH</button>
@@ -228,8 +228,8 @@
 
 <script>
 /**
- * CENTURION v5600.0 - EXACT MATCH
- * Logic: 1:1 Copy of v1300 Fetching Logic
+ * CENTURION v5700.0 - STRICT PROTOCOL
+ * Logic: Direct Port of v1300 Fetch Logic + Cache Wipe Toggle
  */
 
 const TOKENS = {
@@ -263,7 +263,8 @@ const WORKOUTS = {
     'repair_s': { title: "Yoga Flow", sub: "Parasympathetic", exercises: ["Vinyasa 45m", "Foam Roll 10m"] }
 };
 
-// UTILS (From v1300)
+// --- CRITICAL: DATE FUNCTIONS FROM v1300 ---
+function getCaDate() { let d = new Date(); d.setHours(12, 0, 0, 0); return d; }
 function getDateKey(d) { return d.toISOString().split('T')[0]; }
 
 class CenturionCore {
@@ -272,37 +273,34 @@ class CenturionCore {
         this.dayOffset = 0; 
         this.circumference = 158;
         this.cache = JSON.parse(localStorage.getItem(`centurion_oura_cache_${this.user}`)) || { history: [] };
-        
-        // Base State
         this.state = { hr: 60, z2_time: 0, z5_time: 0, stress: 0, score: 0, pro: 0, carb: 0, fat: 0, checked: [] };
         
         this.init();
     }
 
     init() {
-        this.switchUser(this.user);
+        this.switchUser(this.user); // Start via switch logic to ensure freshness
         this.startClock();
-        setInterval(() => this.fetchOuraData(), 600000); 
+        setInterval(() => this.fetchOuraData(), 1800000); 
     }
 
     switchUser(uid) {
         this.user = uid;
         localStorage.setItem('centurion_active_user', uid);
         
-        // --- 1. WIPE CACHE (Your Requirement) ---
-        this.cache = { history: [] };
+        // *** STRICT: CLEAR CACHE AND RE-PULL ***
         localStorage.removeItem(`centurion_oura_cache_${uid}`);
+        this.cache = { history: [] };
         
+        // Update UI immediately
         document.querySelectorAll('.u-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(`btn-${uid}`).classList.add('active');
         
         this.dayOffset = 0;
-        
-        // --- 2. SHOW LOADING ---
         this.updateHUD({ score: "-", cal: "-", med: 0, high: 0, rhr: "-" });
         document.getElementById('tac-cmd').innerText = "SWITCHING USER...";
         
-        // --- 3. FETCH FRESH ---
+        // Trigger Fresh Fetch
         this.fetchOuraData(); 
     }
 
@@ -311,7 +309,7 @@ class CenturionCore {
         this.loadDay();
     }
 
-    // --- EXACT FETCH FUNCTION FROM v1300 (No Edits) ---
+    // --- STRICT: EXACT FETCH BLOCK FROM v1300 ---
     async fetchOuraData() {
         const fetchID = this.user; 
         const token = TOKENS[fetchID];
@@ -343,8 +341,9 @@ class CenturionCore {
                     };
                 }).reverse();
                 
+                // SAVE CACHE
                 localStorage.setItem(`centurion_oura_cache_${fetchID}`, JSON.stringify({history: hist, lastFetch: Date.now()}));
-                this.cache = { history: hist }; 
+                this.cache = { history: hist };
                 
                 document.getElementById('sync-time').innerText = "SYNCED: " + new Date().toLocaleTimeString();
                 document.getElementById('tac-cmd').innerText = "OURA CONNECTION ESTABLISHED";
@@ -360,13 +359,14 @@ class CenturionCore {
     }
 
     loadDay() {
-        const d = new Date(); 
+        // Use v1300 Logic: getCaDate() for "Today"
+        let d = getCaDate(); 
         d.setDate(d.getDate() + this.dayOffset);
         const dateKey = getDateKey(d);
         
         let dayData;
         
-        // Show latest if Today and cached
+        // Priority: If today/no offset, try to just show index 0 (Latest) if specific date fails
         if (this.dayOffset === 0 && this.cache.history && this.cache.history.length > 0) {
             dayData = this.cache.history[0]; 
             document.getElementById('date-display').innerText = "LATEST SYNC";
@@ -384,7 +384,6 @@ class CenturionCore {
 
     updateHUD(d) {
         const u = USERS[this.user];
-        
         this.state.score = d.score;
         this.state.cal = d.cal;
         this.state.z5_time = d.high;
