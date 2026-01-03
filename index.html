@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v6500.1 STABILITY</title>
+    <title>The Centurion | v6600.0 SEQUENTIAL</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -29,8 +29,8 @@
         .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .app-name { font-size: 0.6rem; font-weight: 900; letter-spacing: 2px; color: var(--text-muted); }
         .user-switch { display: flex; gap: 4px; background: #222; padding: 2px; border-radius: 20px; }
-        .u-btn { padding: 4px 12px; border-radius: 16px; font-size: 0.6rem; font-weight: 700; color: #666; background: transparent; border: none; cursor: pointer; transition: all 0.2s; }
-        .u-btn.active { background: var(--text-main); color: #000; }
+        .u-badge { padding: 6px 14px; border-radius: 16px; font-size: 0.6rem; font-weight: 700; color: #666; background: transparent; border: none; cursor: pointer; transition: all 0.2s; }
+        .u-badge.active { background: var(--text-main); color: #000; }
         .bio-btn { background: rgba(255,255,255,0.1); border: 1px solid var(--border); color: var(--text-muted); padding: 4px 8px; border-radius: 8px; font-size: 0.55rem; font-weight: 700; cursor: pointer; margin-right: 10px; }
 
         /* DATE NAV */
@@ -129,7 +129,7 @@
 
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v6500.1</div>
+            <div class="app-name">CENTURION v6600</div>
             <div>
                 <button class="bio-btn">BIO</button>
                 <div class="user-switch">
@@ -221,8 +221,8 @@
 
 <script>
 /**
- * CENTURION v6500.1 - STABILITY PATCH
- * Fix: Corrected ID Selector for switchUser to prevent crash
+ * CENTURION v6600.0 - SEQUENTIAL SAFEGUARD
+ * Logic: Fetch Readiness -> Wait -> Sleep -> Wait -> Activity
  */
 
 const TOKENS = {
@@ -256,7 +256,7 @@ const WORKOUTS = {
     'repair_s': { title: "Yoga Flow", sub: "Parasympathetic", exercises: ["Vinyasa 45m", "Foam Roll 10m"] }
 };
 
-// CRITICAL DATE HELPERS
+// DATE HELPERS
 function getCaDate() { let d = new Date(); d.setHours(12, 0, 0, 0); return d; }
 function getDateKey(d) { return d.toISOString().split('T')[0]; }
 
@@ -271,19 +271,13 @@ class CenturionCore {
             this.cache = { history: [] };
         }
         
-        // Base State
         this.state = { 
             score: 0, cal: 0, med: 0, high: 0, rhr: 0, 
             sleep: 0, deep: 0, rem: 0,
             pro: 0, carb: 0, fat: 0, fib: 0, checked: [] 
         };
         
-        // SAFETY WRAP INIT
-        try {
-            this.init();
-        } catch(e) {
-            console.error("Init Error:", e);
-        }
+        try { this.init(); } catch(e) { console.error("Init Error:", e); }
     }
 
     init() {
@@ -296,23 +290,18 @@ class CenturionCore {
         this.user = uid;
         localStorage.setItem('centurion_active_user', uid);
         
-        // 1. WIPE CACHE
         localStorage.removeItem(`centurion_oura_cache_${uid}`);
         this.cache = { history: [] };
         
-        // FIXED ID SELECTOR
         document.querySelectorAll('.u-btn').forEach(b => b.classList.remove('active'));
         const btn = document.getElementById(`btn-${uid}`);
         if(btn) btn.classList.add('active');
         
         this.dayOffset = 0;
-        
-        // 2. SHOW LOADING
         this.updateHUD({ score: "-", cal: "-", med: 0, high: 0, rhr: "-", sleep: 0, deep: 0, rem: 0 });
         const cmdEl = document.getElementById('tac-cmd');
         if(cmdEl) cmdEl.innerText = "SWITCHING USER...";
         
-        // 3. FETCH
         this.fetchOuraData(); 
     }
 
@@ -321,7 +310,7 @@ class CenturionCore {
         this.loadDay();
     }
 
-    // --- ENHANCED FETCH (3 CALLS) ---
+    // --- SEQUENTIAL FETCHING ---
     async fetchOuraData() {
         const fetchID = this.user; 
         const token = TOKENS[fetchID];
@@ -330,52 +319,71 @@ class CenturionCore {
         const end = getCaDate(); 
         const range = `start_date=${getDateKey(start)}&end_date=${getDateKey(end)}`;
         
-        const stEl = document.getElementById('sync-time');
-        if(stEl) stEl.innerText = "HANDSHAKE...";
+        const cmd = document.getElementById('tac-cmd');
         
         try {
-            const [rRes, aRes, sRes] = await Promise.all([
-                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}&t=${Date.now()}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}&t=${Date.now()}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?${range}&t=${Date.now()}`)}`, { headers: { 'Authorization': `Bearer ${token}` } })
-            ]);
-            
+            // 1. READINESS
+            if(cmd) cmd.innerText = "GETTING READINESS...";
+            const rRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } });
             const rData = await rRes.json();
-            const aData = await aRes.json();
+            
+            // 2. SLEEP (Wait 200ms)
+            await new Promise(r => setTimeout(r, 200));
+            if(cmd) cmd.innerText = "GETTING SLEEP...";
+            const sRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } });
             const sData = await sRes.json();
+
+            // 3. ACTIVITY (Wait 200ms)
+            await new Promise(r => setTimeout(r, 200));
+            if(cmd) cmd.innerText = "GETTING ACTIVITY...";
+            const aRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const aData = await aRes.json();
             
             if(this.user !== fetchID) return;
             
-            if(rData.data) {
-                const hist = rData.data.map(day => {
-                    const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
-                    const slp = sData.data ? sData.data.find(sc => sc.day === day.day) : null;
-                    
-                    return { 
-                        date: day.day, 
-                        score: day.score || "-", 
-                        cal: act ? act.active_calories : 0, 
-                        high: act ? Math.round(act.high_activity_time/60) : 0, 
-                        med: act ? Math.round(act.medium_activity_time/60) : 0,
-                        rhr: day.contributors?.resting_heart_rate || 0,
-                        sleep: slp ? (slp.total_sleep_duration/3600).toFixed(1) : 0,
-                        deep: slp ? Math.round(slp.deep_sleep_duration/60) : 0,
-                        rem: slp ? Math.round(slp.rem_sleep_duration/60) : 0
-                    };
-                }).reverse();
-                
-                localStorage.setItem(`centurion_oura_cache_${fetchID}`, JSON.stringify({history: hist, lastFetch: Date.now()}));
-                this.cache = { history: hist };
-                
-                if(stEl) stEl.innerText = "SYNCED: " + new Date().toLocaleTimeString();
-                document.getElementById('tac-cmd').innerText = "OURA CONNECTION ESTABLISHED";
-                document.getElementById('tac-reason').innerText = "Telemetry Validated.";
-                
-                this.loadDay(); 
+            // MERGE LOGIC (Based on Dates)
+            const map = {};
+            
+            // Helper to init date obj
+            const getDayObj = (d) => {
+                if(!map[d]) map[d] = { date: d, score: "-", cal: 0, high: 0, med: 0, rhr: 0, sleep: 0, deep: 0, rem: 0 };
+                return map[d];
             }
+
+            if(rData.data) rData.data.forEach(r => {
+                const obj = getDayObj(r.day);
+                obj.score = r.score || "-";
+                obj.rhr = r.contributors?.resting_heart_rate || 0;
+            });
+
+            if(sData.data) sData.data.forEach(s => {
+                const obj = getDayObj(s.day);
+                obj.sleep = (s.total_sleep_duration/3600).toFixed(1);
+                obj.deep = Math.round(s.deep_sleep_duration/60);
+                obj.rem = Math.round(s.rem_sleep_duration/60);
+            });
+
+            if(aData.data) aData.data.forEach(a => {
+                const obj = getDayObj(a.day);
+                obj.cal = a.active_calories;
+                obj.high = Math.round(a.high_activity_time/60);
+                obj.med = Math.round(a.medium_activity_time/60);
+            });
+
+            // Convert map to sorted array
+            const hist = Object.values(map).sort((a,b) => b.date.localeCompare(a.date));
+            
+            localStorage.setItem(`centurion_oura_cache_${fetchID}`, JSON.stringify({history: hist, lastFetch: Date.now()}));
+            this.cache = { history: hist };
+            
+            document.getElementById('sync-time').innerText = "SYNCED: " + new Date().toLocaleTimeString();
+            if(cmd) cmd.innerText = "OURA CONNECTION ESTABLISHED";
+            
+            this.loadDay(); 
+            
         } catch(e) { 
-            if(stEl) stEl.innerText = "SYNC FAILED";
-            document.getElementById('tac-cmd').innerText = "OFFLINE MODE";
+            document.getElementById('sync-time').innerText = "SYNC FAILED";
+            if(cmd) cmd.innerText = "CONNECTION ERROR";
             console.error(e);
         }
     }
@@ -417,7 +425,7 @@ class CenturionCore {
         document.getElementById('val-deep').innerText = d.deep || "--";
         document.getElementById('val-rem').innerText = d.rem || "--";
 
-        // SANITIZE INPUTS FOR RINGS (Prevent NaN)
+        // SANITIZE INPUTS
         const scoreNum = parseInt(d.score) || 0;
         const calNum = d.cal === "-" ? 0 : parseInt(d.cal);
         const z2Num = d.med === "-" ? 0 : parseInt(d.med);
@@ -495,7 +503,7 @@ class CenturionCore {
             this.state.pro += macros.p;
             this.state.carb += macros.c;
             this.state.fat += macros.f;
-            this.state.fib += (macros.fiber || 0); // Added Fiber Check
+            this.state.fib += (macros.fiber || 0); 
             const dayData = this.cache.history[0] || {};
             this.updateHUD(dayData);
         }
