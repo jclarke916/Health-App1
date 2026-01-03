@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v9000.0 CHRONOS-COMPLETE</title>
+    <title>The Centurion | v9500.0 CHRONOS-FINAL</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -79,6 +79,7 @@
         .ts-card { flex: 1; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 15px; }
         .ts-title { font-size: 0.85rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
         .ts-desc { font-size: 0.75rem; color: #aaa; line-height: 1.4; }
+        .ts-mech { font-family: var(--font-data); font-size: 0.55rem; color: var(--text-muted); padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 5px; margin-top: 8px; }
         
         .check-btn { position: absolute; top: 15px; right: 15px; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border); background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; color: transparent; transition: all 0.2s; color: #000; font-weight: 800; font-size: 0.7rem; }
         .ts-card.checked .check-btn { background: var(--acid); border-color: var(--acid); color: #000; }
@@ -87,12 +88,6 @@
         /* SUMMARY CARD */
         .summary-card { background: linear-gradient(135deg, rgba(204, 255, 0, 0.05) 0%, rgba(0, 240, 255, 0.03) 100%); border: 2px solid var(--acid); box-shadow: 0 0 20px rgba(204, 255, 0, 0.1); }
         .summary-score { font-family: var(--font-data); font-size: 3rem; font-weight: 900; line-height: 1; margin: 10px 0; background: linear-gradient(135deg, var(--acid) 0%, var(--cyan) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
-        .summary-metric { background: rgba(255, 255, 255, 0.03); padding: 10px; border-radius: 8px; border: 1px solid var(--border); }
-        .summary-metric-label { font-size: 0.5rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
-        .summary-metric-value { font-family: var(--font-data); font-size: 1.2rem; font-weight: 700; color: #fff; }
-        .summary-bar { width: 100%; height: 6px; background: rgba(255, 255, 255, 0.05); border-radius: 3px; overflow: hidden; margin-top: 4px; }
-        .summary-bar-fill { height: 100%; transition: width 1s ease; border-radius: 3px; }
         .summary-grade { display: inline-block; padding: 4px 12px; border-radius: 6px; font-weight: 900; font-size: 0.7rem; margin-left: 10px; }
         .grade-s { background: var(--acid); color: #000; } .grade-a { border: 1px solid var(--cyan); color: var(--cyan); } .grade-b { border: 1px solid var(--gold); color: var(--gold); } .grade-c { border: 1px solid var(--alert); color: var(--alert); }
 
@@ -131,7 +126,7 @@
 
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v9000</div>
+            <div class="app-name">CENTURION v9500</div>
             <div style="display:flex; gap:10px; align-items:center;">
                 <button class="bio-btn" onclick="centurion.openBio()">BIO</button>
                 <div class="user-switch">
@@ -169,7 +164,7 @@
 
 <script>
 // ==========================================
-// V9000: CHRONOS COMPLETE
+// V9500: COMPLETE + MACROS
 // ==========================================
 
 const TOKENS = { 'J': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'S': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
@@ -194,6 +189,13 @@ const MEAL_DB = {
         snack: "Kefir Smoothie (Probiotic)",
         dinner: "Cod + White Beans"
     }
+};
+
+const MACRO_VALS = {
+    'hyd': { p:0, c:0, f:0, fib:0 },
+    'juice': { p:2, c:15, f:0, fib:2 },
+    'train': { p:25, c:10, f:2, fib:0 },
+    'lunch': { p:45, c:30, f:15, fib:8 }
 };
 
 const WORKOUTS = {
@@ -227,7 +229,6 @@ class CenturionCore {
         this.user = uID;
         localStorage.setItem('centurion_active_user', uID);
         
-        // Wipe local state
         this.cache = { history: [] };
         localStorage.removeItem(`centurion_oura_cache_${uID}`);
         this.checkedItems = JSON.parse(localStorage.getItem(`centurion_checked_${uID}`)) || {};
@@ -267,7 +268,6 @@ class CenturionCore {
         document.getElementById('ouraBar').innerHTML = `💍 SWITCHING...`;
     }
 
-    // --- BIO MODAL FUNCTIONS ---
     openBio() {
         document.getElementById('bioModal').classList.add('active');
         document.getElementById('in-vo2').value = this.bios.vo2 || "";
@@ -286,7 +286,6 @@ class CenturionCore {
         this.render();
     }
 
-    // --- FETCH (v8600 STABLE ENGINE) ---
     async fetchOuraData() {
         const fetchID = this.user; 
         const token = TOKENS[fetchID];
@@ -312,7 +311,6 @@ class CenturionCore {
                 const hist = rData.data.map(day => {
                     const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
                     const slp = sData.data ? sData.data.find(sc => sc.day === day.day) : null;
-                    
                     return { 
                         date: day.day, 
                         score: day.score || "-", 
@@ -337,7 +335,6 @@ class CenturionCore {
         }
     }
 
-    // --- RENDER (CHRONOS UI + LOGIC) ---
     render() {
         const d = this.getCurrentDate();
         const dk = getDateKey(d);
@@ -352,7 +349,6 @@ class CenturionCore {
         const rColor = scoreVal >= 80 ? 'var(--acid)' : scoreVal >= 60 ? 'var(--gold)' : 'var(--alert)';
         const safeNum = (v) => (v === "-" || v === undefined) ? 0 : parseFloat(v);
 
-        // LOGIC: STATUS MESSAGE
         let statusMsg = "GATHERING DATA...";
         if(scoreVal > 0) {
             if(scoreVal >= 85) statusMsg = "PEAK READINESS. PUSH HARD.";
@@ -360,13 +356,23 @@ class CenturionCore {
             else statusMsg = "RECOVERY REQUIRED. SLEEP DEBT.";
         }
 
-        // LOGIC: MEALS & WORKOUTS
         const meals = MEAL_DB[this.user];
         const mode = scoreVal >= 80 ? "anabolic" : "repair";
         const wKey = `${mode}_${this.user.toLowerCase()}`;
         const workout = WORKOUTS[wKey];
 
-        // LOGIC: SUMMARY CARD SCORING
+        // CALC MACROS
+        const checks = this.checkedItems[dk] || [];
+        let curMacros = { p:0, c:0, f:0, fib:0 };
+        checks.forEach(id => {
+            if(MACRO_VALS[id]) {
+                curMacros.p += MACRO_VALS[id].p;
+                curMacros.c += MACRO_VALS[id].c;
+                curMacros.f += MACRO_VALS[id].f;
+                curMacros.fib += MACRO_VALS[id].fib;
+            }
+        });
+
         const sleepScore = Math.min((safeNum(rawOura.sleep)/u.goals.sleep)*100, 100);
         const trainScore = Math.min((safeNum(rawOura.high)/u.goals.z5)*100, 100);
         const dayGrade = (sleepScore + trainScore) / 2;
@@ -375,7 +381,6 @@ class CenturionCore {
         else if(dayGrade >= 80) { gradeLetter = 'A'; gradeClass = 'grade-a'; }
         else if(dayGrade >= 70) { gradeLetter = 'B'; gradeClass = 'grade-b'; }
 
-        const checks = this.checkedItems[dk] || [];
         const isChecked = (id) => checks.includes(id) ? 'checked' : '';
         const btnTxt = (id) => checks.includes(id) ? '✓' : '○';
 
@@ -405,6 +410,14 @@ class CenturionCore {
             <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-zone2); stroke-dashoffset:${158-(Math.min(safeNum(rawOura.med),60)/60)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.med}</div><span class="orb-unit">Z2 MIN</span></div></div><div class="orb-label">BASE</div></div>
             <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-zone5); stroke-dashoffset:${158-(Math.min(safeNum(rawOura.high),30)/30)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.high}</div><span class="orb-unit">Z5 MIN</span></div></div><div class="orb-label">PEAK</div></div>
             <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--acid)"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.rhr}</div><span class="orb-unit">BPM</span></div></div><div class="orb-label">RHR</div></div>
+        </div>
+
+        <div class="section-label">MACRO ADHERENCE</div>
+        <div class="macro-grid">
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:#fff; stroke-dashoffset:${158-(Math.min(curMacros.p/u.goals.pro,1)*158)}"></circle></svg><div class="orb-val-box"><div class="orb-val">${curMacros.p}</div><span class="orb-unit">PRO</span></div></div><div class="orb-label">PROTEIN</div></div>
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:#fff; stroke-dashoffset:${158-(Math.min(curMacros.c/u.goals.carb,1)*158)}"></circle></svg><div class="orb-val-box"><div class="orb-val">${curMacros.c}</div><span class="orb-unit">CARB</span></div></div><div class="orb-label">CARBS</div></div>
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:#fff; stroke-dashoffset:${158-(Math.min(curMacros.f/u.goals.fat,1)*158)}"></circle></svg><div class="orb-val-box"><div class="orb-val">${curMacros.f}</div><span class="orb-unit">FAT</span></div></div><div class="orb-label">FATS</div></div>
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:#fff; stroke-dashoffset:${158-(Math.min(curMacros.fib/u.goals.fib,1)*158)}"></circle></svg><div class="orb-val-box"><div class="orb-val">${curMacros.fib}</div><span class="orb-unit">FIB</span></div></div><div class="orb-label">FIBER</div></div>
         </div>
 
         <div class="timeline-container">
