@@ -510,12 +510,51 @@ class CenturionCore {
             const aData = await aRes.json();
             const sData = await sRes.json();
             
+            console.log("=== RAW API RESPONSES ===");
+            console.log("Readiness API:", { 
+                status: rRes.status, 
+                hasData: !!rData.data,
+                count: rData.data ? rData.data.length : 0 
+            });
+            console.log("Activity API:", { 
+                status: aRes.status, 
+                hasData: !!aData.data,
+                count: aData.data ? aData.data.length : 0 
+            });
+            console.log("Sleep API:", { 
+                status: sRes.status, 
+                hasData: !!sData.data,
+                count: sData.data ? sData.data.length : 0 
+            });
+            
             if(this.user !== fetchID) return;
             
             if(rData.data) {
+                console.log("=== OURA DATA DEBUG ===");
+                console.log("Readiness records:", rData.data.length);
+                console.log("Activity records:", aData.data ? aData.data.length : 0);
+                console.log("Sleep records:", sData.data ? sData.data.length : 0);
+                
+                if(sData.data && sData.data.length > 0) {
+                    console.log("Sample sleep record:", {
+                        day: sData.data[0].day,
+                        total: sData.data[0].total_sleep_duration,
+                        deep: sData.data[0].deep_sleep_duration,
+                        rem: sData.data[0].rem_sleep_duration
+                    });
+                }
+                
                 const hist = rData.data.map(day => {
                     const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
+                    // Sleep data: the 'day' field in sleep records represents the day the sleep ENDED
+                    // So sleep.day matches readiness.day
                     const slp = sData.data ? sData.data.find(sc => sc.day === day.day) : null;
+                    
+                    if(!slp) {
+                        console.log(`No sleep data found for readiness date ${day.day}`);
+                    } else {
+                        console.log(`✓ Sleep data matched for ${day.day}: ${(slp.total_sleep_duration/3600).toFixed(1)}hrs`);
+                    }
                     
                     return { 
                         date: day.day, 
