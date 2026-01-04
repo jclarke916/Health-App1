@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v5200 INTELLIGENT</title>
+    <title>The Centurion | v5.2</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -205,7 +205,7 @@
 
 <div class="hud-header">
     <div class="top-bar">
-        <div class="app-name">CENTURION v5200 INTELLIGENT</div>
+        <div class="app-name">THE CENTURION v5.2</div>
         <div style="display:flex; gap:10px; align-items:center;">
             <button class="bio-btn" onclick="centurion.openBio()">BIOMARKERS</button>
             <div class="user-switch">
@@ -510,98 +510,18 @@ class CenturionCore {
             const aData = await aRes.json();
             const sData = await sRes.json();
             
-            console.log("=== RAW API RESPONSES ===");
-            console.log("Readiness API:", { 
-                status: rRes.status, 
-                hasData: !!rData.data,
-                count: rData.data ? rData.data.length : 0 
-            });
-            console.log("Activity API:", { 
-                status: aRes.status, 
-                hasData: !!aData.data,
-                count: aData.data ? aData.data.length : 0 
-            });
-            console.log("Sleep API:", { 
-                status: sRes.status, 
-                hasData: !!sData.data,
-                count: sData.data ? sData.data.length : 0 
-            });
-            
             if(this.user !== fetchID) return;
             
             if(rData.data) {
-                console.log("=== OURA DATA DEBUG ===");
-                console.log("Readiness records:", rData.data.length);
-                console.log("Activity records:", aData.data ? aData.data.length : 0);
-                console.log("Sleep records:", sData.data ? sData.data.length : 0);
-                
-                console.log("\n📅 ALL READINESS DATES:");
-                rData.data.forEach(r => console.log(`  - ${r.day} (score: ${r.score})`));
-                
-                if(sData.data && sData.data.length > 0) {
-                    console.log("\n😴 ALL SLEEP DATES:");
-                    sData.data.forEach(s => {
-                        console.log(`  - ${s.day}:`, {
-                            id: s.id?.substring(0, 20) + '...',
-                            score: s.score,
-                            timestamp: s.timestamp,
-                            // Check all possible duration field names
-                            total_sleep_duration: s.total_sleep_duration,
-                            deep_sleep_duration: s.deep_sleep_duration,
-                            rem_sleep_duration: s.rem_sleep_duration,
-                            // Maybe it's in time_in_bed?
-                            time_in_bed: s.time_in_bed,
-                            // Or in contributors as scores?
-                            contributors_total: s.contributors?.total_sleep,
-                            contributors_deep: s.contributors?.deep_sleep,
-                            contributors_rem: s.contributors?.rem_sleep
-                        });
-                    });
-                    
-                    console.log("\n📊 COMPLETE FIRST SLEEP RECORD:");
-                    console.log(JSON.stringify(sData.data[0], null, 2));
-                    
-                    console.log("\n📊 LOOKING FOR TODAY (2026-01-04):");
-                    const todaySleep = sData.data.find(s => s.day === "2026-01-04");
-                    if(todaySleep) {
-                        console.log("✓ Found record for 2026-01-04");
-                        console.log("All fields:", Object.keys(todaySleep));
-                        console.log("FULL RECORD:", JSON.stringify(todaySleep, null, 2));
-                        console.log("total_sleep_duration:", todaySleep.total_sleep_duration, "(" + typeof todaySleep.total_sleep_duration + ")");
-                        console.log("deep_sleep_duration:", todaySleep.deep_sleep_duration, "(" + typeof todaySleep.deep_sleep_duration + ")");
-                        console.log("rem_sleep_duration:", todaySleep.rem_sleep_duration, "(" + typeof todaySleep.rem_sleep_duration + ")");
-                    } else {
-                        console.log("❌ No sleep record found for 2026-01-04");
-                        console.log("Available dates:", sData.data.map(s => s.day));
-                    }
-                }
-                
-                console.log("\n🔄 MATCHING PROCESS:");
+                console.log(`📊 Oura sync: ${rData.data.length} days | Readiness + Activity + Sleep`);
                 
                 const hist = rData.data.map(day => {
                     const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
                     
-                    // CRITICAL FIX: Oura dates sleep for the day you WENT TO BED, not when you woke up
-                    // So we need to look for sleep data from the PREVIOUS day
-                    // Example: Jan 4's readiness should show sleep from Jan 3 (the night of Jan 3→4)
                     const dayBefore = new Date(day.day);
                     dayBefore.setDate(dayBefore.getDate() - 1);
                     const dayBeforeKey = getDateKey(dayBefore);
                     const slp = sData.data ? sData.data.find(sc => sc.day === dayBeforeKey) : null;
-                    
-                    if(!slp) {
-                        console.log(`❌ No sleep data found for ${dayBeforeKey} (looking back from readiness ${day.day})`);
-                    } else {
-                        console.log(`✓ Sleep data for ${day.day} using sleep from ${dayBeforeKey}:`, {
-                            raw_object_keys: Object.keys(slp),
-                            has_total_sleep_duration: 'total_sleep_duration' in slp,
-                            has_contributors: 'contributors' in slp,
-                            total_sleep_duration: slp.total_sleep_duration,
-                            deep_sleep_duration: slp.deep_sleep_duration,
-                            rem_sleep_duration: slp.rem_sleep_duration,
-                            full_record: JSON.stringify(slp)
-                        });
-                    }
                     
                     // More defensive parsing with explicit null checks
                     let sleepHours = "-";
@@ -613,25 +533,16 @@ class CenturionCore {
                         // Check if total_sleep_duration exists and is a number
                         if(typeof slp.total_sleep_duration === 'number' && slp.total_sleep_duration > 0) {
                             sleepHours = (slp.total_sleep_duration / 3600).toFixed(1);
-                            console.log(`  ✓ Converted ${slp.total_sleep_duration}s to ${sleepHours}hrs`);
-                        } else {
-                            console.warn(`  ⚠️ Invalid/missing total_sleep_duration for ${day.day}:`, slp.total_sleep_duration, typeof slp.total_sleep_duration);
                         }
                         
                         // Check deep sleep
                         if(typeof slp.deep_sleep_duration === 'number' && slp.deep_sleep_duration > 0) {
                             deepMin = Math.round(slp.deep_sleep_duration / 60);
-                            console.log(`  ✓ Converted ${slp.deep_sleep_duration}s to ${deepMin}min`);
-                        } else {
-                            console.warn(`  ⚠️ Invalid/missing deep_sleep_duration for ${day.day}:`, slp.deep_sleep_duration);
                         }
                         
                         // Check REM sleep
                         if(typeof slp.rem_sleep_duration === 'number' && slp.rem_sleep_duration > 0) {
                             remMin = Math.round(slp.rem_sleep_duration / 60);
-                            console.log(`  ✓ Converted ${slp.rem_sleep_duration}s to ${remMin}min`);
-                        } else {
-                            console.warn(`  ⚠️ Invalid/missing rem_sleep_duration for ${day.day}:`, slp.rem_sleep_duration);
                         }
                     }
                     
@@ -647,11 +558,6 @@ class CenturionCore {
                         rem: remMin
                     };
                 }).reverse();
-                
-                console.log("\n✅ FINAL PROCESSED DATA:");
-                hist.forEach(h => {
-                    console.log(`${h.date}: Sleep=${h.sleep}hrs, Deep=${h.deep}m, REM=${h.rem}m, Score=${h.score}, Cal=${h.cal}`);
-                });
                 
                 localStorage.setItem(`centurion_oura_cache_${fetchID}`, JSON.stringify({history: hist, lastFetch: Date.now()}));
                 this.cache = { history: hist };
@@ -847,23 +753,10 @@ Be direct, data-driven, and motivating. No fluff.`;
         const today = getDateKey(getCaDate());
         const displayDate = (dk === today) ? "TODAY" : dk.substring(5);
         
-        console.log("\n🎯 RENDER DEBUG:");
-        console.log("Viewing date:", dk);
-        console.log("Today's actual date:", today);
-        console.log("Is viewing today?", dk === today);
-        
         document.getElementById('dateDisplay').innerText = displayDate;
         document.getElementById('btn-next').classList.toggle('disabled', dk === today);
 
         const rawOura = this.cache.history.find(d => d.date === dk) || { score: "-", cal: "-", high: 0, med: 0, rhr: "-", sleep: "-", deep: "-", rem: "-" };
-        
-        console.log("Found Oura data for", dk, ":", {
-            score: rawOura.score,
-            sleep: rawOura.sleep,
-            deep: rawOura.deep,
-            rem: rawOura.rem,
-            cal: rawOura.cal
-        });
         const u = USERS[this.user];
         const scoreVal = parseInt(rawOura.score) || 0;
         const rColor = scoreVal >= 80 ? 'var(--acid)' : scoreVal >= 60 ? 'var(--gold)' : 'var(--alert)';
@@ -923,22 +816,6 @@ Be direct, data-driven, and motivating. No fluff.`;
         </div>`;
 
         const html = `
-        <!-- DEBUG PANEL -->
-        <div style="background:#1a0000; border:2px solid #ff0000; margin:15px; padding:15px; border-radius:8px; font-family:monospace; font-size:0.65rem; line-height:1.4;">
-            <div style="color:#ff0000; font-weight:900; margin-bottom:10px;">🔍 DEBUG PANEL</div>
-            <div style="color:#ffff00;">Current Date Key: <strong>${dk}</strong></div>
-            <div style="color:#ffff00;">Today's Date: <strong>${today}</strong></div>
-            <div style="color:#ffff00;">Viewing Today?: <strong>${dk === today ? 'YES ✓' : 'NO ✗'}</strong></div>
-            <div style="color:#00ff00; margin-top:10px;">Cache has <strong>${this.cache.history.length}</strong> days of data</div>
-            <div style="color:#00ff00;">Cache dates: ${this.cache.history.map(h => h.date).join(', ')}</div>
-            <div style="color:#0ff; margin-top:10px;">🔎 Looking for date: <strong>${dk}</strong></div>
-            <div style="color:#0ff;">📊 Found: Score=${rawOura.score}, Sleep=${rawOura.sleep}, Deep=${rawOura.deep}, REM=${rawOura.rem}, Cal=${rawOura.cal}</div>
-            <div style="color:#fff; margin-top:10px; padding-top:10px; border-top:1px solid #ff0000;">
-                <div style="margin-bottom:5px; font-weight:900;">ALL CACHED SLEEP DATA:</div>
-                ${this.cache.history.map(h => `<div style="padding:2px 0; ${h.date === dk ? 'background:#330000; font-weight:900;' : ''}">${h.date === dk ? '→ ' : '  '}${h.date}: sleep=${h.sleep}hrs, deep=${h.deep}m, rem=${h.rem}m, score=${h.score}</div>`).join('')}
-            </div>
-        </div>
-        
         <div class="hero-section">
             <div class="ring-container">
                 <svg class="ring-svg"><circle class="ring-bg" cx="55" cy="55" r="45"></circle><circle class="ring-fg" cx="55" cy="55" r="45" style="stroke:${rColor}; stroke-dashoffset:${283 - (Math.min(scoreVal,100)/100)*283}"></circle></svg>
