@@ -513,12 +513,33 @@ class CenturionCore {
             const aData = await aRes.json();
             const sData = await sRes.json();
             
+            console.log("=== OURA API DEBUG ===");
+            console.log("Readiness data:", rData.data ? rData.data.length + " days" : "none");
+            console.log("Activity data:", aData.data ? aData.data.length + " days" : "none");
+            console.log("Sleep data:", sData.data ? sData.data.length + " days" : "none");
+            
+            if(sData.data && sData.data.length > 0) {
+                console.log("Sample sleep record:", JSON.stringify(sData.data[0], null, 2));
+            }
+            if(rData.data && rData.data.length > 0) {
+                console.log("Sample readiness record:", JSON.stringify(rData.data[0], null, 2));
+            }
+            
             if(this.user !== fetchID) return;
             
             if(rData.data) {
+                console.log("Sleep data available:", sData.data ? sData.data.length : 0, "records");
+                if(sData.data && sData.data.length > 0) {
+                    console.log("Sample sleep record:", sData.data[0]);
+                }
+                
                 const hist = rData.data.map(day => {
                     const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
                     const slp = sData.data ? sData.data.find(sc => sc.day === day.day) : null;
+                    
+                    if(!slp) {
+                        console.log(`No sleep data found for readiness date ${day.day}`);
+                    }
                     
                     return { 
                         date: day.day, 
@@ -547,9 +568,11 @@ class CenturionCore {
     async getAIInsight(dk, rawOura, totals, u, rainbowScore) {
         // Check if we have a cached insight for this day
         if(this.aiInsights[dk]) {
+            console.log("Using cached AI insight for", dk);
             return this.aiInsights[dk];
         }
 
+        console.log("Generating new AI insight for", dk);
         const scoreVal = parseInt(rawOura.score) || 0;
         const safeNum = (v) => (v === "-" || v === undefined || isNaN(v)) ? 0 : parseFloat(v);
 
@@ -581,6 +604,7 @@ Provide a brief (2-3 sentences) personalized insight focusing on:
 Be direct, data-driven, and motivating. No fluff.`;
 
         try {
+            console.log("Calling Claude API...");
             const response = await fetch("https://api.anthropic.com/v1/messages", {
                 method: "POST",
                 headers: {
@@ -595,8 +619,24 @@ Be direct, data-driven, and motivating. No fluff.`;
                 })
             });
 
+            console.log("API response status:", response.status);
+            
+            if(!response.ok) {
+                const errorText = await response.text();
+                console.error("API error response:", errorText);
+                throw new Error(`API returned ${response.status}: ${errorText}`);
+            }
+
             const data = await response.json();
+            console.log("API response data:", data);
+            
+            if(!data.content || !data.content[0] || !data.content[0].text) {
+                console.error("Unexpected API response structure:", data);
+                throw new Error("Invalid API response structure");
+            }
+            
             const insight = data.content[0].text;
+            console.log("Generated insight:", insight);
 
             // Cache the insight
             this.aiInsights[dk] = insight;
@@ -605,7 +645,7 @@ Be direct, data-driven, and motivating. No fluff.`;
             return insight;
         } catch(e) {
             console.error("AI insight error:", e);
-            return "Unable to generate insight. Check console for details.";
+            return `<strong>AI Coach Unavailable</strong><br>Unable to generate personalized insight. Error: ${e.message}<br><br>Your data shows: ${scoreVal} readiness, ${rawOura.sleep}hrs sleep, ${totals.p}g protein consumed.`;
         }
     }
 
