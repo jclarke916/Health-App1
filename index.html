@@ -566,7 +566,10 @@ class CenturionCore {
                     if(todaySleep) {
                         console.log("✓ Found record for 2026-01-04");
                         console.log("All fields:", Object.keys(todaySleep));
-                        console.log("Full record:", todaySleep);
+                        console.log("FULL RECORD:", JSON.stringify(todaySleep, null, 2));
+                        console.log("total_sleep_duration:", todaySleep.total_sleep_duration, "(" + typeof todaySleep.total_sleep_duration + ")");
+                        console.log("deep_sleep_duration:", todaySleep.deep_sleep_duration, "(" + typeof todaySleep.deep_sleep_duration + ")");
+                        console.log("rem_sleep_duration:", todaySleep.rem_sleep_duration, "(" + typeof todaySleep.rem_sleep_duration + ")");
                     } else {
                         console.log("❌ No sleep record found for 2026-01-04");
                         console.log("Available dates:", sData.data.map(s => s.day));
@@ -577,14 +580,19 @@ class CenturionCore {
                 
                 const hist = rData.data.map(day => {
                     const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
-                    // Sleep data: the 'day' field in sleep records represents the day the sleep ENDED
-                    // So sleep.day matches readiness.day
-                    const slp = sData.data ? sData.data.find(sc => sc.day === day.day) : null;
+                    
+                    // CRITICAL FIX: Oura dates sleep for the day you WENT TO BED, not when you woke up
+                    // So we need to look for sleep data from the PREVIOUS day
+                    // Example: Jan 4's readiness should show sleep from Jan 3 (the night of Jan 3→4)
+                    const dayBefore = new Date(day.day);
+                    dayBefore.setDate(dayBefore.getDate() - 1);
+                    const dayBeforeKey = getDateKey(dayBefore);
+                    const slp = sData.data ? sData.data.find(sc => sc.day === dayBeforeKey) : null;
                     
                     if(!slp) {
-                        console.log(`❌ No sleep data found for readiness date ${day.day}`);
+                        console.log(`❌ No sleep data found for ${dayBeforeKey} (looking back from readiness ${day.day})`);
                     } else {
-                        console.log(`✓ Sleep data for ${day.day}:`, {
+                        console.log(`✓ Sleep data for ${day.day} using sleep from ${dayBeforeKey}:`, {
                             raw_object_keys: Object.keys(slp),
                             has_total_sleep_duration: 'total_sleep_duration' in slp,
                             has_contributors: 'contributors' in slp,
