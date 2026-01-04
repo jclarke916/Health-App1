@@ -503,7 +503,7 @@ class CenturionCore {
             const [rRes, aRes, sRes] = await Promise.all([
                 fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}${cb}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}${cb}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?${range}${cb}`)}`, { headers: { 'Authorization': `Bearer ${token}` } })
+                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?${range}${cb}`)}`, { headers: { 'Authorization': `Bearer ${token}` } })
             ]);
             
             const rData = await rRes.json();
@@ -541,21 +541,35 @@ class CenturionCore {
                 if(sData.data && sData.data.length > 0) {
                     console.log("\n😴 ALL SLEEP DATES:");
                     sData.data.forEach(s => {
-                        const hrs = s.total_sleep_duration ? (s.total_sleep_duration/3600).toFixed(1) : 'NO total_sleep_duration';
-                        console.log(`  - ${s.day}: ${hrs} | deep=${s.deep_sleep_duration} | rem=${s.rem_sleep_duration}`);
+                        console.log(`  - ${s.day}:`, {
+                            id: s.id?.substring(0, 20) + '...',
+                            score: s.score,
+                            timestamp: s.timestamp,
+                            // Check all possible duration field names
+                            total_sleep_duration: s.total_sleep_duration,
+                            deep_sleep_duration: s.deep_sleep_duration,
+                            rem_sleep_duration: s.rem_sleep_duration,
+                            // Maybe it's in time_in_bed?
+                            time_in_bed: s.time_in_bed,
+                            // Or in contributors as scores?
+                            contributors_total: s.contributors?.total_sleep,
+                            contributors_deep: s.contributors?.deep_sleep,
+                            contributors_rem: s.contributors?.rem_sleep
+                        });
                     });
                     
-                    console.log("\n📊 FULL SLEEP RECORD STRUCTURE (first record):");
+                    console.log("\n📊 COMPLETE FIRST SLEEP RECORD:");
                     console.log(JSON.stringify(sData.data[0], null, 2));
                     
-                    console.log("\n📊 FIELD CHECK FOR TODAY (2026-01-04):");
+                    console.log("\n📊 LOOKING FOR TODAY (2026-01-04):");
                     const todaySleep = sData.data.find(s => s.day === "2026-01-04");
                     if(todaySleep) {
-                        console.log("Found today's sleep record!");
-                        console.log("Fields present:", Object.keys(todaySleep));
-                        console.log("total_sleep_duration:", todaySleep.total_sleep_duration, typeof todaySleep.total_sleep_duration);
-                        console.log("deep_sleep_duration:", todaySleep.deep_sleep_duration, typeof todaySleep.deep_sleep_duration);  
-                        console.log("rem_sleep_duration:", todaySleep.rem_sleep_duration, typeof todaySleep.rem_sleep_duration);
+                        console.log("✓ Found record for 2026-01-04");
+                        console.log("All fields:", Object.keys(todaySleep));
+                        console.log("Full record:", todaySleep);
+                    } else {
+                        console.log("❌ No sleep record found for 2026-01-04");
+                        console.log("Available dates:", sData.data.map(s => s.day));
                     }
                 }
                 
