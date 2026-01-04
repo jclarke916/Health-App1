@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v5100 MEALS FIRST</title>
+    <title>The Centurion | v5200 INTELLIGENT</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -52,6 +52,55 @@
     .tac-label { font-size: 0.55rem; color: var(--acid); font-weight: 900; letter-spacing: 1px; margin-bottom: 4px; text-transform: uppercase; }
     .tac-cmd { font-size: 0.8rem; font-weight: 700; color: #fff; line-height: 1.3; }
     .tac-meta { font-family: var(--font-data); font-size: 0.55rem; color: var(--text-muted); margin-top: 4px; }
+
+    /* AI INSIGHT CARD - NEW! */
+    .ai-insight-card { 
+        background: linear-gradient(135deg, rgba(0,240,255,0.08) 0%, rgba(191,90,242,0.08) 100%); 
+        border: 1px solid rgba(0,240,255,0.3); 
+        border-radius: 12px; 
+        padding: 15px; 
+        margin: 15px 16px; 
+        position: relative;
+        box-shadow: 0 0 20px rgba(0,240,255,0.1);
+    }
+    .ai-header { 
+        display: flex; 
+        align-items: center; 
+        gap: 8px; 
+        margin-bottom: 10px; 
+        font-size: 0.65rem; 
+        color: var(--cyan); 
+        font-weight: 900; 
+        letter-spacing: 1px;
+    }
+    .ai-thinking { 
+        animation: pulse 1.5s infinite; 
+        display: inline-block; 
+    }
+    .ai-content { 
+        font-size: 0.75rem; 
+        line-height: 1.5; 
+        color: #ddd; 
+    }
+    .ai-content strong { 
+        color: var(--acid); 
+        font-weight: 900; 
+    }
+    .ai-refresh { 
+        background: rgba(0,240,255,0.1); 
+        border: 1px solid var(--cyan); 
+        color: var(--cyan); 
+        padding: 6px 12px; 
+        border-radius: 6px; 
+        font-size: 0.6rem; 
+        font-weight: 700; 
+        cursor: pointer; 
+        margin-top: 10px;
+        display: inline-block;
+    }
+    .ai-refresh:hover { 
+        background: rgba(0,240,255,0.2); 
+    }
 
     .section-label { font-size: 0.7rem; font-weight: 900; color: #999; letter-spacing: 1px; margin: 20px 16px 10px; text-transform: uppercase; }
     .telemetry-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 10px; }
@@ -125,6 +174,20 @@
     .expand-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text-muted); padding: 8px 16px; border-radius: 8px; font-size: 0.65rem; font-weight: 700; cursor: pointer; margin: 0 16px 15px; width: calc(100% - 32px); text-align: center; }
     .expandable { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
     .expandable.open { max-height: 2000px; }
+
+    /* Loading spinner for AI */
+    .ai-loading {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border: 2px solid rgba(0,240,255,0.3);
+        border-top-color: var(--cyan);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
 </style>
 ```
 
@@ -151,7 +214,7 @@
 
 <div class="hud-header">
     <div class="top-bar">
-        <div class="app-name">CENTURION v5100 MEALS FIRST</div>
+        <div class="app-name">CENTURION v5200 INTELLIGENT</div>
         <div style="display:flex; gap:10px; align-items:center;">
             <button class="bio-btn" onclick="centurion.openBio()">BIOMARKERS</button>
             <div class="user-switch">
@@ -208,11 +271,13 @@ const TOKENS = { 'J': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'S': '4QSDWYJJUZFHRWRH
 const USERS = {
     'J': { 
         name: "Jermaine", 
+        age: 42,
         rhr: 48, 
         goals: { cal: 700, z2: 60, z5: 20, pro: 180, carb: 200, fat: 80, fib: 40, sleep: 8, omega3: 3000, polyphenols: 500 }
     },
     'S': { 
         name: "Sophia", 
+        age: 38,
         rhr: 58, 
         goals: { cal: 450, z2: 45, z5: 15, pro: 120, carb: 150, fat: 60, fib: 35, sleep: 8.5, omega3: 2500, polyphenols: 400 }
     }
@@ -341,6 +406,7 @@ class CenturionCore {
         this.cache = JSON.parse(localStorage.getItem(`centurion_oura_cache_${this.user}`)) || { history: [] };
         this.checkedItems = JSON.parse(localStorage.getItem(`centurion_checked_${this.user}`)) || {};
         this.bios = JSON.parse(localStorage.getItem(`centurion_bios_${this.user}`)) || {};
+        this.aiInsights = JSON.parse(localStorage.getItem(`centurion_ai_insights_${this.user}`)) || {};
         this.init();
     }
 
@@ -358,6 +424,7 @@ class CenturionCore {
         this.cache = JSON.parse(localStorage.getItem(`centurion_oura_cache_${uID}`)) || { history: [] };
         this.checkedItems = JSON.parse(localStorage.getItem(`centurion_checked_${uID}`)) || {};
         this.bios = JSON.parse(localStorage.getItem(`centurion_bios_${uID}`)) || {};
+        this.aiInsights = JSON.parse(localStorage.getItem(`centurion_ai_insights_${uID}`)) || {};
         
         this.dayOffset = 0;
         this.updateUI();
@@ -450,10 +517,6 @@ class CenturionCore {
             
             if(rData.data) {
                 const hist = rData.data.map(day => {
-                    // READINESS on day.day reflects how you feel based on:
-                    // - SLEEP from the night ending on day.day (sleep.day === day.day)
-                    // - ACTIVITY from day.day (act.day === day.day) - this is LIVE and updates throughout the day
-                    
                     const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
                     const slp = sData.data ? sData.data.find(sc => sc.day === day.day) : null;
                     
@@ -481,7 +544,79 @@ class CenturionCore {
         }
     }
 
-    render() {
+    async getAIInsight(dk, rawOura, totals, u, rainbowScore) {
+        // Check if we have a cached insight for this day
+        if(this.aiInsights[dk]) {
+            return this.aiInsights[dk];
+        }
+
+        const scoreVal = parseInt(rawOura.score) || 0;
+        const safeNum = (v) => (v === "-" || v === undefined || isNaN(v)) ? 0 : parseFloat(v);
+
+        const contextPrompt = `You are an expert longevity coach analyzing daily health data for ${u.name}, age ${u.age}.
+
+TODAY'S DATA (${dk}):
+- Readiness Score: ${scoreVal}/100
+- Sleep: ${rawOura.sleep} hours (Deep: ${rawOura.deep}m, REM: ${rawOura.rem}m)
+- Activity: ${rawOura.cal} active calories, ${rawOura.med}min Zone 2, ${rawOura.high}min Zone 5
+- Nutrition: ${totals.p}g protein, ${Math.round(totals.omega3)}mg omega-3, ${totals.polyphenols}mg polyphenols
+- Phytonutrient Diversity: ${rainbowScore}% (${Math.round(rainbowScore/100*6)}/6 colors)
+
+BIOMARKERS:
+- VO2 Max: ${this.bios.vo2 || 'Not tracked'} mL/kg/min
+- HbA1c: ${this.bios.hba1c || 'Not tracked'}%
+- ApoB: ${this.bios.apob || 'Not tracked'} mg/dL
+
+GOALS:
+- Sleep: ${u.goals.sleep}hrs
+- Protein: ${u.goals.pro}g
+- Omega-3: ${u.goals.omega3}mg
+- Polyphenols: ${u.goals.polyphenols}mg
+
+Provide a brief (2-3 sentences) personalized insight focusing on:
+1. What's going WELL today (be specific with numbers)
+2. ONE actionable improvement (not generic advice)
+3. WHY this matters for longevity (mechanism, not platitude)
+
+Be direct, data-driven, and motivating. No fluff.`;
+
+        try {
+            const response = await fetch("https://api.anthropic.com/v1/messages", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    model: "claude-sonnet-4-20250514",
+                    max_tokens: 1000,
+                    messages: [
+                        { role: "user", content: contextPrompt }
+                    ],
+                })
+            });
+
+            const data = await response.json();
+            const insight = data.content[0].text;
+
+            // Cache the insight
+            this.aiInsights[dk] = insight;
+            localStorage.setItem(`centurion_ai_insights_${this.user}`, JSON.stringify(this.aiInsights));
+
+            return insight;
+        } catch(e) {
+            console.error("AI insight error:", e);
+            return "Unable to generate insight. Check console for details.";
+        }
+    }
+
+    async refreshAIInsight() {
+        const dk = getDateKey(this.getCurrentDate());
+        delete this.aiInsights[dk];
+        localStorage.setItem(`centurion_ai_insights_${this.user}`, JSON.stringify(this.aiInsights));
+        await this.render();
+    }
+
+    async render() {
         const d = this.getCurrentDate();
         const dk = getDateKey(d);
         const today = getDateKey(getCaDate());
@@ -509,7 +644,6 @@ class CenturionCore {
 
         const checks = this.checkedItems[dk] || [];
         
-        // Calculate total macros and compounds
         let totals = { p:0, c:0, f:0, fib:0, omega3:0, polyphenols:0 };
         let colorsPicked = new Set();
         
@@ -541,7 +675,6 @@ class CenturionCore {
         const isChecked = (id) => checks.includes(id) ? 'checked' : '';
         const btnTxt = (id) => checks.includes(id) ? '✓' : '○';
 
-        // Biomarker status
         const bioStatus = (val, optimal, warning) => {
             if(!val) return '';
             const v = parseFloat(val);
@@ -550,13 +683,21 @@ class CenturionCore {
             return '<span class="bio-status status-alert">ALERT</span>';
         };
 
-        // Color dots helper
         const colorDots = (colors) => {
             if(!colors || colors.length === 0) return '';
             return `<div class="color-dots">
                 ${colors.map(c => `<div class="color-dot" style="background:${COLOR_MAP[c].color}" title="${COLOR_MAP[c].compound}"></div>`).join('')}
             </div>`;
         };
+
+        // AI INSIGHT - Generate or retrieve
+        let aiInsightHTML = `<div class="ai-insight-card">
+            <div class="ai-header">
+                <span class="ai-loading"></span>
+                <span>AI LONGEVITY COACH ANALYZING...</span>
+            </div>
+            <div class="ai-content" id="aiInsightContent">Generating personalized insight...</div>
+        </div>`;
 
         const html = `
         <div class="hero-section">
@@ -570,6 +711,8 @@ class CenturionCore {
                 <div class="tac-meta">VO2: ${this.bios.vo2 || '--'} | HbA1c: ${this.bios.hba1c || '--'}% | 🌈 ${rainbowScore}% Diversity</div>
             </div>
         </div>
+
+        ${aiInsightHTML}
 
         <div class="section-label">SLEEP ARCHITECTURE</div>
         <div class="sleep-grid">
@@ -763,6 +906,21 @@ class CenturionCore {
         `;
 
         document.getElementById('dayContent').innerHTML = html;
+
+        // NOW generate AI insight AFTER render (async)
+        setTimeout(async () => {
+            const insight = await this.getAIInsight(dk, rawOura, totals, u, rainbowScore);
+            const aiCard = document.querySelector('.ai-insight-card');
+            if(aiCard) {
+                aiCard.innerHTML = `
+                    <div class="ai-header">
+                        <span>🧠 AI LONGEVITY COACH</span>
+                    </div>
+                    <div class="ai-content">${insight}</div>
+                    <button class="ai-refresh" onclick="centurion.refreshAIInsight()">🔄 REGENERATE INSIGHT</button>
+                `;
+            }
+        }, 100);
     }
 }
 
