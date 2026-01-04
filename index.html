@@ -506,7 +506,7 @@ class CenturionCore {
             const [rRes, aRes, sRes] = await Promise.all([
                 fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}${cb}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}${cb}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?${range}${cb}`)}`, { headers: { 'Authorization': `Bearer ${token}` } })
+                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?${range}${cb}`)}`, { headers: { 'Authorization': `Bearer ${token}` } })
             ]);
             
             const rData = await rRes.json();
@@ -519,10 +519,14 @@ class CenturionCore {
             console.log("Sleep data:", sData.data ? sData.data.length + " days" : "none");
             
             if(sData.data && sData.data.length > 0) {
-                console.log("Sample sleep record:", JSON.stringify(sData.data[0], null, 2));
+                console.log("=== FULL SLEEP RECORD (first one) ===");
+                console.log(JSON.stringify(sData.data[0], null, 2));
+                console.log("=== SLEEP FIELDS AVAILABLE ===");
+                console.log("Fields:", Object.keys(sData.data[0]));
             }
             if(rData.data && rData.data.length > 0) {
-                console.log("Sample readiness record:", JSON.stringify(rData.data[0], null, 2));
+                console.log("=== READINESS RECORD (first one) ===");
+                console.log("Date:", rData.data[0].day, "Score:", rData.data[0].score);
             }
             
             if(this.user !== fetchID) return;
@@ -531,6 +535,12 @@ class CenturionCore {
                 console.log("Sleep data available:", sData.data ? sData.data.length : 0, "records");
                 if(sData.data && sData.data.length > 0) {
                     console.log("Sample sleep record:", sData.data[0]);
+                    console.log("Looking for field names containing 'deep' or 'rem' or 'duration':");
+                    Object.keys(sData.data[0]).forEach(key => {
+                        if(key.toLowerCase().includes('deep') || key.toLowerCase().includes('rem') || key.toLowerCase().includes('duration') || key.toLowerCase().includes('sleep')) {
+                            console.log(`  ${key}:`, sData.data[0][key]);
+                        }
+                    });
                 }
                 
                 const hist = rData.data.map(day => {
@@ -538,7 +548,9 @@ class CenturionCore {
                     const slp = sData.data ? sData.data.find(sc => sc.day === day.day) : null;
                     
                     if(!slp) {
-                        console.log(`No sleep data found for readiness date ${day.day}`);
+                        console.log(`⚠️ No sleep data found for readiness date ${day.day}`);
+                    } else {
+                        console.log(`✓ Found sleep data for ${day.day}`);
                     }
                     
                     return { 
@@ -548,9 +560,10 @@ class CenturionCore {
                         high: act ? Math.round(act.high_activity_time/60) : 0, 
                         med: act ? Math.round(act.medium_activity_time/60) : 0,
                         rhr: USERS[fetchID].rhr,
-                        sleep: slp ? (slp.total_sleep_duration/3600).toFixed(1) : "-",
-                        deep: slp ? Math.round(slp.deep_sleep_duration/60) : "-",
-                        rem: slp ? Math.round(slp.rem_sleep_duration/60) : "-"
+                        // Oura API v2 daily_sleep uses contributors.deep_sleep and contributors.rem_sleep
+                        sleep: slp ? (slp.contributors?.total_sleep ? (slp.contributors.total_sleep/3600).toFixed(1) : "-") : "-",
+                        deep: slp ? (slp.contributors?.deep_sleep ? Math.round(slp.contributors.deep_sleep/60) : "-") : "-",
+                        rem: slp ? (slp.contributors?.rem_sleep ? Math.round(slp.contributors.rem_sleep/60) : "-") : "-"
                     };
                 }).reverse();
                 
