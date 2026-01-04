@@ -535,14 +535,18 @@ class CenturionCore {
                 console.log("Activity records:", aData.data ? aData.data.length : 0);
                 console.log("Sleep records:", sData.data ? sData.data.length : 0);
                 
+                console.log("\n📅 ALL READINESS DATES:");
+                rData.data.forEach(r => console.log(`  - ${r.day} (score: ${r.score})`));
+                
                 if(sData.data && sData.data.length > 0) {
-                    console.log("Sample sleep record:", {
-                        day: sData.data[0].day,
-                        total: sData.data[0].total_sleep_duration,
-                        deep: sData.data[0].deep_sleep_duration,
-                        rem: sData.data[0].rem_sleep_duration
-                    });
+                    console.log("\n😴 ALL SLEEP DATES:");
+                    sData.data.forEach(s => console.log(`  - ${s.day} (${s.total_sleep_duration ? (s.total_sleep_duration/3600).toFixed(1) + 'hrs' : 'NO DATA'})`));
+                    
+                    console.log("\n📊 Sample sleep record structure:");
+                    console.log(JSON.stringify(sData.data[0], null, 2));
                 }
+                
+                console.log("\n🔄 MATCHING PROCESS:");
                 
                 const hist = rData.data.map(day => {
                     const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
@@ -551,10 +555,20 @@ class CenturionCore {
                     const slp = sData.data ? sData.data.find(sc => sc.day === day.day) : null;
                     
                     if(!slp) {
-                        console.log(`No sleep data found for readiness date ${day.day}`);
+                        console.log(`❌ No sleep data found for readiness date ${day.day}`);
                     } else {
-                        console.log(`✓ Sleep data matched for ${day.day}: ${(slp.total_sleep_duration/3600).toFixed(1)}hrs`);
+                        console.log(`✓ Sleep data matched for ${day.day}:`, {
+                            total_duration: slp.total_sleep_duration,
+                            deep_duration: slp.deep_sleep_duration, 
+                            rem_duration: slp.rem_sleep_duration,
+                            calculated_hours: slp.total_sleep_duration ? (slp.total_sleep_duration/3600).toFixed(1) : "NULL"
+                        });
                     }
+                    
+                    // More defensive parsing with explicit null checks
+                    const sleepHours = slp && slp.total_sleep_duration ? (slp.total_sleep_duration/3600).toFixed(1) : "-";
+                    const deepMin = slp && slp.deep_sleep_duration ? Math.round(slp.deep_sleep_duration/60) : "-";
+                    const remMin = slp && slp.rem_sleep_duration ? Math.round(slp.rem_sleep_duration/60) : "-";
                     
                     return { 
                         date: day.day, 
@@ -563,9 +577,9 @@ class CenturionCore {
                         high: act ? Math.round(act.high_activity_time/60) : 0, 
                         med: act ? Math.round(act.medium_activity_time/60) : 0,
                         rhr: USERS[fetchID].rhr,
-                        sleep: slp ? (slp.total_sleep_duration/3600).toFixed(1) : "-",
-                        deep: slp ? Math.round(slp.deep_sleep_duration/60) : "-",
-                        rem: slp ? Math.round(slp.rem_sleep_duration/60) : "-"
+                        sleep: sleepHours,
+                        deep: deepMin,
+                        rem: remMin
                     };
                 }).reverse();
                 
