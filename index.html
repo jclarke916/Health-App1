@@ -642,6 +642,7 @@ class CenturionCore {
     showDiagnostics() {
         const dk = getDateKey(this.getCurrentDate());
         const rawOura = this.cache.history.find(d => d.date === dk) || {};
+        const allDates = this.cache.history.map(d => d.date).join(', ');
         
         const diagnostics = `
 <div style="margin-bottom:20px;">
@@ -649,6 +650,7 @@ class CenturionCore {
     <div>User: <span style="color:var(--cyan);">${this.user}</span></div>
     <div>Demo Mode: <span style="color:${this.demoMode ? 'var(--gold)' : 'var(--alert)'};">${this.demoMode ? 'ENABLED' : 'DISABLED'}</span></div>
     <div>Cache Size: <span style="color:var(--cyan);">${this.cache?.history?.length || 0} days</span></div>
+    <div>Dates in Cache: <span style="color:var(--cyan);font-size:0.6rem;">${allDates || 'NONE'}</span></div>
     <div>AI Insights Cached: <span style="color:var(--cyan);">${Object.keys(this.aiInsights).length} days</span></div>
 </div>
 
@@ -661,6 +663,14 @@ class CenturionCore {
     <div>Calories: <span style="color:var(--cyan);">${rawOura.cal || 'NOT FOUND'}</span></div>
     <div>Zone 2: <span style="color:var(--cyan);">${rawOura.med || 0} min</span></div>
     <div>Zone 5: <span style="color:var(--cyan);">${rawOura.high || 0} min</span></div>
+    <div style="margin-top:10px;padding:10px;background:rgba(0,240,255,0.1);border-radius:8px;">
+        <div style="color:var(--cyan);font-weight:bold;margin-bottom:5px;">RAW CACHE RECORD:</div>
+        <pre style="font-size:0.55rem;overflow-x:auto;color:#999;">${JSON.stringify(rawOura, null, 2)}</pre>
+
+```
+</div>
+```
+
 </div>
 
 <div style="margin-bottom:20px;">
@@ -683,308 +693,334 @@ class CenturionCore {
         <div style="margin:10px 0;padding:10px;background:rgba(255,69,58,0.1);border-left:2px solid var(--alert);">
             <div style="color:var(--alert);font-weight:bold;">${e.type}</div>
             <div style="font-size:0.65rem;">${e.timestamp}</div>
-            <div style="margin-top:5px;">${JSON.stringify(e.data).substring(0, 100)}...</div>
+            <div style="margin-top:5px;font-size:0.6rem;">${JSON.stringify(e.data).substring(0, 150)}...</div>
         </div>
     `).join('')}
 </div>
 
-<div style="display:flex;gap:10px;margin-top:20px;">
-    <button onclick="centurion.fetchOuraData();centurion.showDiagnostics()" style="padding:10px 20px;background:var(--acid);color:#000;border:none;border-radius:8px;cursor:pointer;font-weight:bold;">🔄 SYNC & REFRESH</button>
-    <button onclick="debugCenturion.clearCache();centurion.showDiagnostics()" style="padding:10px 20px;background:var(--alert);color:#fff;border:none;border-radius:8px;cursor:pointer;">🗑️ CLEAR CACHE</button>
+<div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;">
+    <button onclick="centurion.fetchOuraData();setTimeout(() => centurion.showDiagnostics(), 2000)" style="padding:10px 20px;background:var(--acid);color:#000;border:none;border-radius:8px;cursor:pointer;font-weight:bold;">🔄 SYNC & REFRESH</button>
+    <button onclick="debugCenturion.clearCache();location.reload()" style="padding:10px 20px;background:var(--alert);color:#fff;border:none;border-radius:8px;cursor:pointer;">🗑️ CLEAR CACHE</button>
     <button onclick="window.errorLogger.export()" style="padding:10px 20px;background:var(--cyan);color:#000;border:none;border-radius:8px;cursor:pointer;">📥 EXPORT ERRORS</button>
+    <button onclick="window.location.hash='#debug';centurion.fetchOuraData()" style="padding:10px 20px;background:var(--purple);color:#fff;border:none;border-radius:8px;cursor:pointer;">🐛 DEBUG SYNC</button>
 </div>
         `;
-        
-        const modal = document.createElement('div');
-        modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);z-index:2000;padding:20px;overflow-y:auto;';
-        modal.innerHTML = `
-            <div style="background:var(--bg-panel);border:1px solid var(--acid);border-radius:16px;padding:20px;max-width:800px;margin:20px auto;">
-                <div style="display:flex;justify-content:space-between;margin-bottom:20px;">
-                    <span style="color:var(--acid);font-weight:900;font-size:0.9rem;">🔍 DIAGNOSTICS PANEL</span>
-                    <span onclick="this.closest('div').parentElement.remove()" style="color:#fff;cursor:pointer;font-size:1.5rem;">✕</span>
-                </div>
-                ${diagnostics}
+
+```
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);z-index:2000;padding:20px;overflow-y:auto;';
+    modal.innerHTML = `
+        <div style="background:var(--bg-panel);border:1px solid var(--acid);border-radius:16px;padding:20px;max-width:800px;margin:20px auto;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:20px;">
+                <span style="color:var(--acid);font-weight:900;font-size:0.9rem;">🔍 DIAGNOSTICS PANEL</span>
+                <span onclick="this.closest('div').parentElement.remove()" style="color:#fff;cursor:pointer;font-size:1.5rem;">✕</span>
             </div>
-        `;
-        document.body.appendChild(modal);
+            ${diagnostics}
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+loadDemoData() {
+    // Generate 14 days of realistic demo data based on Jermaine's actual Oura metrics
+    const today = getCaDate();
+    const history = [];
+    
+    for (let i = 13; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        const dateKey = getDateKey(date);
+        
+        // Base metrics on actual Oura data with realistic variation
+        const baseScore = 63 + Math.floor(Math.random() * 20); // 63-83 range
+        const baseSleep = 5.6 + (Math.random() * 2); // 5.6-7.6 hours
+        const baseDeep = 50 + Math.floor(Math.random() * 30); // 50-80 min
+        const baseRem = 40 + Math.floor(Math.random() * 50); // 40-90 min
+        
+        history.push({
+            date: dateKey,
+            score: baseScore,
+            cal: 400 + Math.floor(Math.random() * 400), // 400-800 cal
+            high: Math.floor(Math.random() * 25), // 0-25 min high intensity
+            med: 30 + Math.floor(Math.random() * 40), // 30-70 min zone 2
+            rhr: 48,
+            sleep: baseSleep.toFixed(1),
+            deep: baseDeep,
+            rem: baseRem
+        });
     }
     
-    loadDemoData() {
-        // Generate 14 days of realistic demo data based on Jermaine's actual Oura metrics
-        const today = getCaDate();
-        const history = [];
-        
-        for (let i = 13; i >= 0; i--) {
-            const date = new Date(today);
-            date.setDate(date.getDate() - i);
-            const dateKey = getDateKey(date);
-            
-            // Base metrics on actual Oura data with realistic variation
-            const baseScore = 63 + Math.floor(Math.random() * 20); // 63-83 range
-            const baseSleep = 5.6 + (Math.random() * 2); // 5.6-7.6 hours
-            const baseDeep = 50 + Math.floor(Math.random() * 30); // 50-80 min
-            const baseRem = 40 + Math.floor(Math.random() * 50); // 40-90 min
-            
-            history.push({
-                date: dateKey,
-                score: baseScore,
-                cal: 400 + Math.floor(Math.random() * 400), // 400-800 cal
-                high: Math.floor(Math.random() * 25), // 0-25 min high intensity
-                med: 30 + Math.floor(Math.random() * 40), // 30-70 min zone 2
-                rhr: 48,
-                sleep: baseSleep.toFixed(1),
-                deep: baseDeep,
-                rem: baseRem
-            });
-        }
-        
-        this.cache = { history: history, lastFetch: Date.now() };
-        localStorage.setItem(`centurion_oura_cache_${this.user}`, JSON.stringify(this.cache));
-        document.getElementById('ouraBar').innerHTML = `💍 DEMO MODE`;
-        this.render();
-    }
+    this.cache = { history: history, lastFetch: Date.now() };
+    localStorage.setItem(`centurion_oura_cache_${this.user}`, JSON.stringify(this.cache));
+    document.getElementById('ouraBar').innerHTML = `💍 DEMO MODE`;
+    this.render();
+}
 
-    switchUser(uID) {
-        if(this.user === uID) return;
-        this.user = uID;
-        localStorage.setItem('centurion_active_user', uID);
-        
-        this.cache = JSON.parse(localStorage.getItem(`centurion_oura_cache_${uID}`)) || { history: [] };
-        this.checkedItems = JSON.parse(localStorage.getItem(`centurion_checked_${uID}`)) || {};
-        this.bios = JSON.parse(localStorage.getItem(`centurion_bios_${uID}`)) || {};
-        this.aiInsights = JSON.parse(localStorage.getItem(`centurion_ai_insights_${uID}`)) || {};
-        
-        this.dayOffset = 0;
-        this.updateUI();
-        this.render(); 
-        this.fetchOuraData();
-    }
+switchUser(uID) {
+    if(this.user === uID) return;
+    this.user = uID;
+    localStorage.setItem('centurion_active_user', uID);
+    
+    this.cache = JSON.parse(localStorage.getItem(`centurion_oura_cache_${uID}`)) || { history: [] };
+    this.checkedItems = JSON.parse(localStorage.getItem(`centurion_checked_${uID}`)) || {};
+    this.bios = JSON.parse(localStorage.getItem(`centurion_bios_${uID}`)) || {};
+    this.aiInsights = JSON.parse(localStorage.getItem(`centurion_ai_insights_${uID}`)) || {};
+    
+    this.dayOffset = 0;
+    this.updateUI();
+    this.render(); 
+    this.fetchOuraData();
+}
 
-    changeDate(d) {
-        this.dayOffset += d;
-        if(this.dayOffset > 0) this.dayOffset = 0;
-        this.render();
-    }
+changeDate(d) {
+    this.dayOffset += d;
+    if(this.dayOffset > 0) this.dayOffset = 0;
+    this.render();
+}
 
-    toggleItem(id) {
-        const dk = getDateKey(this.getCurrentDate());
-        if(!this.checkedItems[dk]) this.checkedItems[dk] = [];
-        const idx = this.checkedItems[dk].indexOf(id);
-        if(idx > -1) this.checkedItems[dk].splice(idx, 1);
-        else this.checkedItems[dk].push(id);
-        localStorage.setItem(`centurion_checked_${this.user}`, JSON.stringify(this.checkedItems));
-        this.render();
-    }
+toggleItem(id) {
+    const dk = getDateKey(this.getCurrentDate());
+    if(!this.checkedItems[dk]) this.checkedItems[dk] = [];
+    const idx = this.checkedItems[dk].indexOf(id);
+    if(idx > -1) this.checkedItems[dk].splice(idx, 1);
+    else this.checkedItems[dk].push(id);
+    localStorage.setItem(`centurion_checked_${this.user}`, JSON.stringify(this.checkedItems));
+    this.render();
+}
 
-    getCurrentDate() {
-        const d = getCaDate();
-        d.setDate(d.getDate() + this.dayOffset);
-        return d;
-    }
+getCurrentDate() {
+    const d = getCaDate();
+    d.setDate(d.getDate() + this.dayOffset);
+    return d;
+}
 
-    updateUI() {
-        document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
-        document.getElementById(`btn-${this.user}`).classList.add('active');
-        
-        // Update demo toggle button
-        const demoToggle = document.getElementById('demoToggle');
-        if (demoToggle) {
-            demoToggle.innerHTML = this.demoMode ? '🎮 DEMO ON' : 'DEMO MODE';
-            demoToggle.style.color = this.demoMode ? 'var(--acid)' : 'var(--gold)';
-        }
-        
-        if (!this.demoMode) {
-            document.getElementById('ouraBar').innerHTML = `💍 SWITCHING...`;
-        }
-    }
-
-    openBio() {
-        document.getElementById('bioModal').classList.add('active');
-        document.getElementById('in-hba1c').value = this.bios.hba1c || "";
-        document.getElementById('in-glucose').value = this.bios.glucose || "";
-        document.getElementById('in-insulin').value = this.bios.insulin || "";
-        document.getElementById('in-apob').value = this.bios.apob || "";
-        document.getElementById('in-lpa').value = this.bios.lpa || "";
-        document.getElementById('in-hscrp').value = this.bios.hscrp || "";
-        document.getElementById('in-vo2').value = this.bios.vo2 || "";
-        document.getElementById('in-test').value = this.bios.test || "";
-        document.getElementById('in-igf1').value = this.bios.igf1 || "";
-        document.getElementById('in-vitd').value = this.bios.vitd || "";
-        document.getElementById('in-tsh').value = this.bios.tsh || "";
-        document.getElementById('in-creatinine').value = this.bios.creatinine || "";
-        document.getElementById('in-egfr').value = this.bios.egfr || "";
-        document.getElementById('in-ferritin').value = this.bios.ferritin || "";
-        document.getElementById('in-ana').value = this.bios.ana || "";
+updateUI() {
+    document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
+    document.getElementById(`btn-${this.user}`).classList.add('active');
+    
+    // Update demo toggle button
+    const demoToggle = document.getElementById('demoToggle');
+    if (demoToggle) {
+        demoToggle.innerHTML = this.demoMode ? '🎮 DEMO ON' : 'DEMO MODE';
+        demoToggle.style.color = this.demoMode ? 'var(--acid)' : 'var(--gold)';
     }
     
-    closeBio() { document.getElementById('bioModal').classList.remove('active'); }
-    
-    saveBio() {
-        this.bios = {
-            hba1c: document.getElementById('in-hba1c').value,
-            glucose: document.getElementById('in-glucose').value,
-            insulin: document.getElementById('in-insulin').value,
-            apob: document.getElementById('in-apob').value,
-            lpa: document.getElementById('in-lpa').value,
-            hscrp: document.getElementById('in-hscrp').value,
-            vo2: document.getElementById('in-vo2').value,
-            test: document.getElementById('in-test').value,
-            igf1: document.getElementById('in-igf1').value,
-            vitd: document.getElementById('in-vitd').value,
-            tsh: document.getElementById('in-tsh').value,
-            creatinine: document.getElementById('in-creatinine').value,
-            egfr: document.getElementById('in-egfr').value,
-            ferritin: document.getElementById('in-ferritin').value,
-            ana: document.getElementById('in-ana').value
-        };
-        localStorage.setItem(`centurion_bios_${this.user}`, JSON.stringify(this.bios));
-        this.closeBio();
-        this.render();
+    if (!this.demoMode) {
+        document.getElementById('ouraBar').innerHTML = `💍 SWITCHING...`;
     }
+}
 
-    async fetchOuraData() {
-        const fetchID = this.user; 
-        const token = TOKENS[fetchID];
-        const range = `start_date=${getDateKey(new Date(Date.now()-864e5*14))}&end_date=${getDateKey(new Date())}`;
-        const cb = `&t=${Date.now()}`;
+openBio() {
+    document.getElementById('bioModal').classList.add('active');
+    document.getElementById('in-hba1c').value = this.bios.hba1c || "";
+    document.getElementById('in-glucose').value = this.bios.glucose || "";
+    document.getElementById('in-insulin').value = this.bios.insulin || "";
+    document.getElementById('in-apob').value = this.bios.apob || "";
+    document.getElementById('in-lpa').value = this.bios.lpa || "";
+    document.getElementById('in-hscrp').value = this.bios.hscrp || "";
+    document.getElementById('in-vo2').value = this.bios.vo2 || "";
+    document.getElementById('in-test').value = this.bios.test || "";
+    document.getElementById('in-igf1').value = this.bios.igf1 || "";
+    document.getElementById('in-vitd').value = this.bios.vitd || "";
+    document.getElementById('in-tsh').value = this.bios.tsh || "";
+    document.getElementById('in-creatinine').value = this.bios.creatinine || "";
+    document.getElementById('in-egfr').value = this.bios.egfr || "";
+    document.getElementById('in-ferritin').value = this.bios.ferritin || "";
+    document.getElementById('in-ana').value = this.bios.ana || "";
+}
+
+closeBio() { document.getElementById('bioModal').classList.remove('active'); }
+
+saveBio() {
+    this.bios = {
+        hba1c: document.getElementById('in-hba1c').value,
+        glucose: document.getElementById('in-glucose').value,
+        insulin: document.getElementById('in-insulin').value,
+        apob: document.getElementById('in-apob').value,
+        lpa: document.getElementById('in-lpa').value,
+        hscrp: document.getElementById('in-hscrp').value,
+        vo2: document.getElementById('in-vo2').value,
+        test: document.getElementById('in-test').value,
+        igf1: document.getElementById('in-igf1').value,
+        vitd: document.getElementById('in-vitd').value,
+        tsh: document.getElementById('in-tsh').value,
+        creatinine: document.getElementById('in-creatinine').value,
+        egfr: document.getElementById('in-egfr').value,
+        ferritin: document.getElementById('in-ferritin').value,
+        ana: document.getElementById('in-ana').value
+    };
+    localStorage.setItem(`centurion_bios_${this.user}`, JSON.stringify(this.bios));
+    this.closeBio();
+    this.render();
+}
+
+async fetchOuraData() {
+    const fetchID = this.user; 
+    const token = TOKENS[fetchID];
+    const range = `start_date=${getDateKey(new Date(Date.now()-864e5*14))}&end_date=${getDateKey(new Date())}`;
+    const cb = `&t=${Date.now()}`;
+    
+    window.errorLogger.log('OURA FETCH', { action: 'start', user: fetchID });
+    document.getElementById('ouraBar').innerHTML = "💍 SYNCING...";
+    
+    try {
+        // Try daily_sleep first (more reliable summary)
+        const [rRes, aRes, sRes] = await Promise.all([
+            fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}${cb}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
+            fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}${cb}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
+            fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?${range}${cb}`)}`, { headers: { 'Authorization': `Bearer ${token}` } })
+        ]);
         
-        window.errorLogger.log('OURA FETCH', { action: 'start', user: fetchID });
-        document.getElementById('ouraBar').innerHTML = "💍 SYNCING...";
+        window.errorLogger.log('OURA FETCH', { 
+            action: 'responses', 
+            readiness: rRes.status, 
+            activity: aRes.status, 
+            sleep: sRes.status 
+        });
         
-        try {
-            // Try daily_sleep first (more reliable summary)
-            const [rRes, aRes, sRes] = await Promise.all([
-                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}${cb}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}${cb}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?${range}${cb}`)}`, { headers: { 'Authorization': `Bearer ${token}` } })
-            ]);
+        const rData = await rRes.json();
+        const aData = await aRes.json();
+        let sData = await sRes.json();
+        
+        window.errorLogger.log('OURA FETCH', { 
+            action: 'parsed',
+            rDataCount: rData.data?.length,
+            aDataCount: aData.data?.length,
+            sDataCount: sData.data?.length
+        });
+        
+        // If daily_sleep fails, fallback to sleep endpoint
+        if(!sData.data || sData.data.length === 0) {
+            console.log("⚠️ daily_sleep returned no data, trying sleep endpoint...");
+            window.errorLogger.log('OURA FETCH', { action: 'fallback to sleep endpoint' });
+            const sleepFallback = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?${range}${cb}`)}`, { headers: { 'Authorization': `Bearer ${token}` } });
+            sData = await sleepFallback.json();
+            window.errorLogger.log('OURA FETCH', { action: 'fallback result', sDataCount: sData.data?.length });
+        }
+        
+        if(this.user !== fetchID) return;
+        
+        if(rData.data) {
+            console.log(`📊 Oura sync: ${rData.data.length} days | Readiness + Activity + Sleep`);
             
-            window.errorLogger.log('OURA FETCH', { 
-                action: 'responses', 
-                readiness: rRes.status, 
-                activity: aRes.status, 
-                sleep: sRes.status 
-            });
-            
-            const rData = await rRes.json();
-            const aData = await aRes.json();
-            let sData = await sRes.json();
-            
-            window.errorLogger.log('OURA FETCH', { 
-                action: 'parsed',
-                rDataCount: rData.data?.length,
-                aDataCount: aData.data?.length,
-                sDataCount: sData.data?.length
-            });
-            
-            // If daily_sleep fails, fallback to sleep endpoint
-            if(!sData.data || sData.data.length === 0) {
-                console.log("⚠️ daily_sleep returned no data, trying sleep endpoint...");
-                window.errorLogger.log('OURA FETCH', { action: 'fallback to sleep endpoint' });
-                const sleepFallback = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?${range}${cb}`)}`, { headers: { 'Authorization': `Bearer ${token}` } });
-                sData = await sleepFallback.json();
-                window.errorLogger.log('OURA FETCH', { action: 'fallback result', sDataCount: sData.data?.length });
-            }
-            
-            if(this.user !== fetchID) return;
-            
-            if(rData.data) {
-                console.log(`📊 Oura sync: ${rData.data.length} days | Readiness + Activity + Sleep`);
+            const hist = rData.data.map(day => {
+                const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
+                const slp = sData.data ? sData.data.find(sc => sc.day === day.day) : null;
                 
-                const hist = rData.data.map(day => {
-                    const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
-                    const slp = sData.data ? sData.data.find(sc => sc.day === day.day) : null;
-                    
-                    let sleepHours = "-";
-                    let deepMin = "-";
-                    let remMin = "-";
-                    
-                    if(slp) {
-                        if(typeof slp.total_sleep_duration === 'number' && slp.total_sleep_duration > 0) {
-                            sleepHours = (slp.total_sleep_duration / 3600).toFixed(1);
-                        }
-                        if(typeof slp.deep_sleep_duration === 'number' && slp.deep_sleep_duration > 0) {
-                            deepMin = Math.round(slp.deep_sleep_duration / 60);
-                        }
-                        if(typeof slp.rem_sleep_duration === 'number' && slp.rem_sleep_duration > 0) {
-                            remMin = Math.round(slp.rem_sleep_duration / 60);
-                        }
+                // DEBUG: Log the first sleep record to see structure
+                if (slp && window.location.hash === '#debug') {
+                    console.log('🛌 SLEEP RECORD SAMPLE:', {
+                        day: day.day,
+                        slpKeys: Object.keys(slp),
+                        total_sleep_duration: slp.total_sleep_duration,
+                        deep_sleep_duration: slp.deep_sleep_duration,
+                        rem_sleep_duration: slp.rem_sleep_duration,
+                        fullRecord: slp
+                    });
+                }
+                
+                let sleepHours = "-";
+                let deepMin = "-";
+                let remMin = "-";
+                
+                if(slp) {
+                    if(typeof slp.total_sleep_duration === 'number' && slp.total_sleep_duration > 0) {
+                        sleepHours = (slp.total_sleep_duration / 3600).toFixed(1);
+                    }
+                    if(typeof slp.deep_sleep_duration === 'number' && slp.deep_sleep_duration > 0) {
+                        deepMin = Math.round(slp.deep_sleep_duration / 60);
+                    }
+                    if(typeof slp.rem_sleep_duration === 'number' && slp.rem_sleep_duration > 0) {
+                        remMin = Math.round(slp.rem_sleep_duration / 60);
                     }
                     
-                    return { 
-                        date: day.day, 
-                        score: day.score || "-", 
-                        cal: act ? act.active_calories : "-", 
-                        high: act ? Math.round(act.high_activity_time/60) : 0, 
-                        med: act ? Math.round(act.medium_activity_time/60) : 0,
-                        rhr: USERS[fetchID].rhr,
-                        sleep: sleepHours,
-                        deep: deepMin,
-                        rem: remMin
-                    };
-                }).reverse();
+                    // DEBUG: Log what we calculated
+                    if (window.location.hash === '#debug') {
+                        console.log('💤 CALCULATED:', { date: day.day, sleepHours, deepMin, remMin });
+                    }
+                } else {
+                    // DEBUG: Log when no sleep found
+                    if (window.location.hash === '#debug') {
+                        console.log('❌ NO SLEEP DATA for', day.day);
+                    }
+                }
                 
-                window.errorLogger.log('OURA FETCH', { action: 'success', historySize: hist.length });
-                localStorage.setItem(`centurion_oura_cache_${fetchID}`, JSON.stringify({history: hist, lastFetch: Date.now()}));
-                this.cache = { history: hist };
-                document.getElementById('ouraBar').innerHTML = `💍 SYNCED`;
-                this.render();
-            } else {
-                throw new Error('No readiness data returned from Oura API');
-            }
-        } catch(e) { 
-            window.errorLogger.log('OURA FETCH ERROR', {
-                message: e.message,
-                stack: e.stack,
-                user: fetchID
-            });
-            console.error("Oura sync error:", e);
-            document.getElementById('ouraBar').innerHTML = "💍 SYNC TIMEOUT"; 
+                return { 
+                    date: day.day, 
+                    score: day.score || "-", 
+                    cal: act ? act.active_calories : "-", 
+                    high: act ? Math.round(act.high_activity_time/60) : 0, 
+                    med: act ? Math.round(act.medium_activity_time/60) : 0,
+                    rhr: USERS[fetchID].rhr,
+                    sleep: sleepHours,
+                    deep: deepMin,
+                    rem: remMin
+                };
+            }).reverse();
+            
+            window.errorLogger.log('OURA FETCH', { action: 'success', historySize: hist.length });
+            localStorage.setItem(`centurion_oura_cache_${fetchID}`, JSON.stringify({history: hist, lastFetch: Date.now()}));
+            this.cache = { history: hist };
+            document.getElementById('ouraBar').innerHTML = `💍 SYNCED`;
+            this.render();
+        } else {
+            throw new Error('No readiness data returned from Oura API');
         }
-    }
-
-    calculateDailyTotals(dk) {
-        const checks = this.checkedItems[dk] || [];
-        const meals = MEAL_DB[this.user];
-        let totals = { p:0, c:0, f:0, fib:0, omega3:0, polyphenols:0 };
-        let colorsPicked = new Set();
-        
-        ['breakfast', 'juice', 'lunch', 'snack', 'dinner'].forEach(mealType => {
-            if(checks.includes(mealType)) {
-                const meal = meals[mealType];
-                totals.p += meal.macros.p;
-                totals.c += meal.macros.c;
-                totals.f += meal.macros.f;
-                totals.fib += meal.macros.fib;
-                totals.omega3 += meal.compounds.omega3 || 0;
-                totals.polyphenols += meal.compounds.polyphenols || 0;
-                if(meal.colors) meal.colors.forEach(c => colorsPicked.add(c));
-            }
+    } catch(e) { 
+        window.errorLogger.log('OURA FETCH ERROR', {
+            message: e.message,
+            stack: e.stack,
+            user: fetchID
         });
+        console.error("Oura sync error:", e);
+        document.getElementById('ouraBar').innerHTML = "💍 SYNC TIMEOUT"; 
+    }
+}
 
-        const rainbowScore = Math.round((colorsPicked.size / 6) * 100);
-        return { totals, rainbowScore };
+calculateDailyTotals(dk) {
+    const checks = this.checkedItems[dk] || [];
+    const meals = MEAL_DB[this.user];
+    let totals = { p:0, c:0, f:0, fib:0, omega3:0, polyphenols:0 };
+    let colorsPicked = new Set();
+    
+    ['breakfast', 'juice', 'lunch', 'snack', 'dinner'].forEach(mealType => {
+        if(checks.includes(mealType)) {
+            const meal = meals[mealType];
+            totals.p += meal.macros.p;
+            totals.c += meal.macros.c;
+            totals.f += meal.macros.f;
+            totals.fib += meal.macros.fib;
+            totals.omega3 += meal.compounds.omega3 || 0;
+            totals.polyphenols += meal.compounds.polyphenols || 0;
+            if(meal.colors) meal.colors.forEach(c => colorsPicked.add(c));
+        }
+    });
+
+    const rainbowScore = Math.round((colorsPicked.size / 6) * 100);
+    return { totals, rainbowScore };
+}
+
+async getAIInsight(dk, rawOura, totals, u, rainbowScore) {
+    // Check cache first
+    if(this.aiInsights[dk]) {
+        console.log("✅ Using cached AI insight for", dk);
+        return this.aiInsights[dk];
     }
 
-    async getAIInsight(dk, rawOura, totals, u, rainbowScore) {
-        // Check cache first
-        if(this.aiInsights[dk]) {
-            console.log("✅ Using cached AI insight for", dk);
-            return this.aiInsights[dk];
-        }
+    // Check if API key is set
+    if(!GEMINI_API_KEY || GEMINI_API_KEY === "YOUR_API_KEY_HERE") {
+        console.warn("⚠️ No Gemini API key configured - returning demo insight");
+        return this.generateDemoInsight(rawOura, totals, u, rainbowScore);
+    }
 
-        // Check if API key is set
-        if(!GEMINI_API_KEY || GEMINI_API_KEY === "YOUR_API_KEY_HERE") {
-            console.warn("⚠️ No Gemini API key configured - returning demo insight");
-            return this.generateDemoInsight(rawOura, totals, u, rainbowScore);
-        }
+    console.log("🤖 Generating new Gemini AI insight for", dk);
+    const scoreVal = parseInt(rawOura.score) || 0;
 
-        console.log("🤖 Generating new Gemini AI insight for", dk);
-        const scoreVal = parseInt(rawOura.score) || 0;
+    const contextPrompt = `You are an expert longevity coach analyzing daily health data for ${u.name}, age ${u.age}.
+```
 
-        const contextPrompt = `You are an expert longevity coach analyzing daily health data for ${u.name}, age ${u.age}.
+TODAY’S DATA (${dk}):
 
-TODAY'S DATA (${dk}):
 - Readiness Score: ${scoreVal}/100
 - Sleep: ${rawOura.sleep} hours (Deep: ${rawOura.deep}m, REM: ${rawOura.rem}m)
 - Activity: ${rawOura.cal} active calories, ${rawOura.med}min Zone 2, ${rawOura.high}min Zone 5
@@ -992,479 +1028,485 @@ TODAY'S DATA (${dk}):
 - Phytonutrient Diversity: ${rainbowScore}% (${Math.round(rainbowScore/100*6)}/6 colors)
 
 BIOMARKERS:
-- VO2 Max: ${this.bios.vo2 || 'Not tracked'} mL/kg/min
-- HbA1c: ${this.bios.hba1c || 'Not tracked'}%
-- ApoB: ${this.bios.apob || 'Not tracked'} mg/dL
-- TSH: ${this.bios.tsh || 'Not tracked'} mIU/L
-- ANA: ${this.bios.ana || 'Not tracked'}
+
+- VO2 Max: ${this.bios.vo2 || ‘Not tracked’} mL/kg/min
+- HbA1c: ${this.bios.hba1c || ‘Not tracked’}%
+- ApoB: ${this.bios.apob || ‘Not tracked’} mg/dL
+- TSH: ${this.bios.tsh || ‘Not tracked’} mIU/L
+- ANA: ${this.bios.ana || ‘Not tracked’}
 
 GOALS:
+
 - Sleep: ${u.goals.sleep}hrs | Protein: ${u.goals.pro}g | Omega-3: ${u.goals.omega3}mg | Polyphenols: ${u.goals.polyphenols}mg
 
 Provide a brief (2-3 sentences) personalized insight:
-1. What's going WELL (be specific with numbers)
-2. ONE actionable improvement (not generic advice)
-3. WHY this matters for longevity (mechanism, not platitude)
+
+1. What’s going WELL (be specific with numbers)
+1. ONE actionable improvement (not generic advice)
+1. WHY this matters for longevity (mechanism, not platitude)
 
 Be direct, data-driven, and motivating. No fluff.`;
 
-        try {
-            // Using gemini-1.5-flash (current stable model)
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-            const response = await fetch(url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ 
-                    contents: [{ parts: [{ text: contextPrompt }] }] 
-                })
-            });
+```
+    try {
+        // Using gemini-1.5-flash (current stable model)
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+        const response = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+                contents: [{ parts: [{ text: contextPrompt }] }] 
+            })
+        });
 
-            if(!response.ok) {
-                const errData = await response.json();
-                let errMsg = "Gemini API Error";
-                if(errData.error && errData.error.message) errMsg = errData.error.message;
-                console.error("❌ Gemini API error:", response.status, errMsg);
-                throw new Error(errMsg);
-            }
-
-            const data = await response.json();
-            const insight = data.candidates[0].content.parts[0].text;
-            
-            // Cache the insight
-            this.aiInsights[dk] = insight;
-            localStorage.setItem(`centurion_ai_insights_${this.user}`, JSON.stringify(this.aiInsights));
-
-            console.log("✅ Gemini AI insight generated and cached");
-            return insight;
-        } catch(e) {
-            console.error("❌ Gemini AI insight error:", e);
-            return this.generateDemoInsight(rawOura, totals, u, rainbowScore);
+        if(!response.ok) {
+            const errData = await response.json();
+            let errMsg = "Gemini API Error";
+            if(errData.error && errData.error.message) errMsg = errData.error.message;
+            console.error("❌ Gemini API error:", response.status, errMsg);
+            throw new Error(errMsg);
         }
-    }
 
-    generateDemoInsight(rawOura, totals, u, rainbowScore) {
-        const scoreVal = parseInt(rawOura.score) || 0;
-        const proteinPct = Math.round(totals.p/u.goals.pro*100);
-        const sleepPct = rawOura.sleep !== "-" ? Math.round((rawOura.sleep/u.goals.sleep)*100) : 0;
+        const data = await response.json();
+        const insight = data.candidates[0].content.parts[0].text;
         
-        let insight = `<strong>Demo Mode - Configure API Key</strong><br><br>`;
-        
-        if(scoreVal >= 85) {
-            insight += `Your ${scoreVal} readiness score indicates <strong>peak recovery</strong>. `;
-        } else if(scoreVal >= 70) {
-            insight += `Your ${scoreVal} readiness suggests <strong>moderate recovery</strong>. `;
-        } else if(scoreVal > 0) {
-            insight += `Your ${scoreVal} readiness indicates you need more recovery. `;
-        } else {
-            insight += `Waiting for Oura sync data. `;
-        }
+        // Cache the insight
+        this.aiInsights[dk] = insight;
+        localStorage.setItem(`centurion_ai_insights_${this.user}`, JSON.stringify(this.aiInsights));
 
-        if(proteinPct >= 90) {
-            insight += `Excellent protein intake at ${totals.p}g (${proteinPct}% of goal), supporting muscle protein synthesis and mTOR activation. `;
-        } else if(proteinPct >= 70) {
-            insight += `You're at ${totals.p}g protein (${proteinPct}% of goal). `;
-        } else {
-            insight += `<strong>Priority: increase protein</strong> to ${u.goals.pro}g for optimal muscle maintenance and longevity signaling. `;
-        }
-
-        if(rainbowScore >= 80) {
-            insight += `Your ${rainbowScore}% phytonutrient diversity is outstanding! 🌈`;
-        } else if(rainbowScore >= 50) {
-            insight += `Try adding more colorful foods to boost polyphenol intake for enhanced cellular resilience.`;
-        } else {
-            insight += `Focus on eating across the color spectrum to maximize polyphenol diversity and activate longevity pathways.`;
-        }
-
-        insight += `<br><br><em style="color:#666;">Using demo AI insights. Gemini API is configured and active.</em>`;
-        
+        console.log("✅ Gemini AI insight generated and cached");
         return insight;
+    } catch(e) {
+        console.error("❌ Gemini AI insight error:", e);
+        return this.generateDemoInsight(rawOura, totals, u, rainbowScore);
+    }
+}
+
+generateDemoInsight(rawOura, totals, u, rainbowScore) {
+    const scoreVal = parseInt(rawOura.score) || 0;
+    const proteinPct = Math.round(totals.p/u.goals.pro*100);
+    const sleepPct = rawOura.sleep !== "-" ? Math.round((rawOura.sleep/u.goals.sleep)*100) : 0;
+    
+    let insight = `<strong>Demo Mode - Configure API Key</strong><br><br>`;
+    
+    if(scoreVal >= 85) {
+        insight += `Your ${scoreVal} readiness score indicates <strong>peak recovery</strong>. `;
+    } else if(scoreVal >= 70) {
+        insight += `Your ${scoreVal} readiness suggests <strong>moderate recovery</strong>. `;
+    } else if(scoreVal > 0) {
+        insight += `Your ${scoreVal} readiness indicates you need more recovery. `;
+    } else {
+        insight += `Waiting for Oura sync data. `;
     }
 
-    async refreshAIInsight() {
+    if(proteinPct >= 90) {
+        insight += `Excellent protein intake at ${totals.p}g (${proteinPct}% of goal), supporting muscle protein synthesis and mTOR activation. `;
+    } else if(proteinPct >= 70) {
+        insight += `You're at ${totals.p}g protein (${proteinPct}% of goal). `;
+    } else {
+        insight += `<strong>Priority: increase protein</strong> to ${u.goals.pro}g for optimal muscle maintenance and longevity signaling. `;
+    }
+
+    if(rainbowScore >= 80) {
+        insight += `Your ${rainbowScore}% phytonutrient diversity is outstanding! 🌈`;
+    } else if(rainbowScore >= 50) {
+        insight += `Try adding more colorful foods to boost polyphenol intake for enhanced cellular resilience.`;
+    } else {
+        insight += `Focus on eating across the color spectrum to maximize polyphenol diversity and activate longevity pathways.`;
+    }
+
+    insight += `<br><br><em style="color:#666;">Using demo AI insights. Gemini API is configured and active.</em>`;
+    
+    return insight;
+}
+
+async refreshAIInsight() {
+    const aiCard = document.querySelector('.ai-insight-card');
+    if(aiCard) {
+        aiCard.innerHTML = `
+            <div class="ai-header">
+                <span class="ai-loading"></span>
+                <span>AI COACH REGENERATING...</span>
+            </div>
+            <div class="ai-content">Analyzing your latest data...</div>
+        `;
+    }
+    
+    const dk = getDateKey(this.getCurrentDate());
+    delete this.aiInsights[dk];
+    localStorage.setItem(`centurion_ai_insights_${this.user}`, JSON.stringify(this.aiInsights));
+    
+    setTimeout(async () => {
+        const d = this.getCurrentDate();
+        const dkNew = getDateKey(d);
+        const rawOura = this.cache.history.find(d => d.date === dkNew) || { score: "-", cal: "-", high: 0, med: 0, rhr: "-", sleep: "-", deep: "-", rem: "-" };
+        const u = USERS[this.user];
+        
+        const { totals, rainbowScore } = this.calculateDailyTotals(dkNew);
+        
+        const insight = await this.getAIInsight(dkNew, rawOura, totals, u, rainbowScore);
+        
+        if(aiCard) {
+            aiCard.innerHTML = `
+                <div class="ai-header">
+                    <span>🧠 AI LONGEVITY COACH</span>
+                </div>
+                <div class="ai-content">${insight}</div>
+                <button class="ai-refresh" onclick="centurion.refreshAIInsight()">🔄 REGENERATE INSIGHT</button>
+            `;
+        }
+    }, 500);
+}
+
+async render() {
+    try {
+        window.errorLogger.log('RENDER', { action: 'start', user: this.user, dayOffset: this.dayOffset });
+        
+        const d = this.getCurrentDate();
+        const dk = getDateKey(d);
+        const today = getDateKey(getCaDate());
+        const displayDate = (dk === today) ? "TODAY" : dk.substring(5);
+        
+        document.getElementById('dateDisplay').innerText = displayDate;
+        document.getElementById('btn-next').classList.toggle('disabled', dk === today);
+
+        const rawOura = this.cache.history.find(d => d.date === dk) || { score: "-", cal: "-", high: 0, med: 0, rhr: "-", sleep: "-", deep: "-", rem: "-" };
+        const u = USERS[this.user];
+        
+        if (!u) {
+            throw new Error(`User ${this.user} not found in USERS`);
+        }
+        
+        const scoreVal = parseInt(rawOura.score) || 0;
+        const rColor = scoreVal >= 80 ? 'var(--acid)' : scoreVal >= 60 ? 'var(--gold)' : 'var(--alert)';
+        const safeNum = (v) => (v === "-" || v === undefined || isNaN(v)) ? 0 : parseFloat(v);
+
+        let statusMsg = "GATHERING DATA...";
+        if(scoreVal > 0) {
+            if(scoreVal >= 85) statusMsg = "PEAK READINESS. ANABOLIC WINDOW OPEN.";
+            else if(scoreVal >= 70) statusMsg = "SYSTEMS NOMINAL. MAINTAIN PROTOCOLS.";
+            else statusMsg = "RECOVERY MODE. PRIORITIZE SLEEP/NUTRITION.";
+        }
+
+        const meals = MEAL_DB[this.user];
+        if (!meals) {
+            throw new Error(`Meals not found for user ${this.user}`);
+        }
+        
+        const mode = scoreVal >= 80 ? "anabolic" : "repair";
+        const wKey = `${mode}_${this.user.toLowerCase()}`;
+        const workout = WORKOUTS[wKey] || WORKOUTS[`${mode}_jermaine`] || { title: "Training", sub: "Workout", mech: "See protocol" };
+        
+        if (!workout || !workout.title) {
+            window.errorLogger.log('WORKOUT ERROR', { 
+                wKey, 
+                availableKeys: Object.keys(WORKOUTS),
+                user: this.user,
+                mode 
+            });
+        }
+
+        const checks = this.checkedItems[dk] || [];
+    
+    const { totals, rainbowScore } = this.calculateDailyTotals(dk);
+
+    const sleepScore = Math.min((safeNum(rawOura.sleep)/u.goals.sleep)*100, 100);
+    const trainScore = Math.min(
+        (safeNum(rawOura.med)/u.goals.z2)*70 +  // Zone 2 = 70% (longevity foundation)
+        (safeNum(rawOura.high)/u.goals.z5)*30,  // Zone 5 = 30% (peak performance)
+        100
+    );
+    const nutritionScore = Math.min(((totals.p/u.goals.pro + totals.omega3/u.goals.omega3 + totals.polyphenols/u.goals.polyphenols)/3)*100, 100);
+    const dayGrade = (sleepScore + trainScore + nutritionScore) / 3;
+    
+    let gradeLetter = 'C', gradeClass = 'grade-c';
+    if(dayGrade >= 90) { gradeLetter = 'S'; gradeClass = 'grade-s'; }
+    else if(dayGrade >= 80) { gradeLetter = 'A'; gradeClass = 'grade-a'; }
+    else if(dayGrade >= 70) { gradeLetter = 'B'; gradeClass = 'grade-b'; }
+
+    const isChecked = (id) => checks.includes(id) ? 'checked' : '';
+    const btnTxt = (id) => checks.includes(id) ? '✓' : '○';
+
+    const bioStatus = (val, optimal, warning) => {
+        if(!val) return '';
+        const v = parseFloat(val);
+        if(v <= optimal) return '<span class="bio-status status-optimal">OPTIMAL</span>';
+        if(v <= warning) return '<span class="bio-status status-warning">MONITOR</span>';
+        return '<span class="bio-status status-alert">ALERT</span>';
+    };
+
+    const colorDots = (colors) => {
+        if(!colors || colors.length === 0) return '';
+        return `<div class="color-dots">
+            ${colors.map(c => `<div class="color-dot" style="background:${COLOR_MAP[c].color}" title="${COLOR_MAP[c].compound}"></div>`).join('')}
+        </div>`;
+    };
+
+    // AI INSIGHT - Show loading state initially
+    let aiInsightHTML = `<div class="ai-insight-card">
+        <div class="ai-header">
+            <span class="ai-loading"></span>
+            <span>AI LONGEVITY COACH ANALYZING...</span>
+        </div>
+        <div class="ai-content" id="aiInsightContent">Generating personalized insight...</div>
+    </div>`;
+
+    const html = `
+    <div class="hero-section">
+        <div class="ring-container">
+            <svg class="ring-svg"><circle class="ring-bg" cx="55" cy="55" r="45"></circle><circle class="ring-fg" cx="55" cy="55" r="45" style="stroke:${rColor}; stroke-dashoffset:${283 - (Math.min(scoreVal,100)/100)*283}"></circle></svg>
+            <div class="ring-data"><div class="ring-val">${rawOura.score}</div><div class="ring-label">READINESS</div></div>
+        </div>
+        <div class="tactical-box" style="border-left-color:${rColor}">
+            <div class="tac-label" style="color:${rColor}">USER: ${u.name.toUpperCase()}</div>
+            <div class="tac-cmd">${statusMsg}</div>
+            <div class="tac-meta">VO2: ${this.bios.vo2 || '--'} | HbA1c: ${this.bios.hba1c || '--'}% | 🌈 ${rainbowScore}% Diversity</div>
+        </div>
+    </div>
+
+    ${aiInsightHTML}
+
+    <div class="section-label">SLEEP ARCHITECTURE</div>
+    <div class="sleep-grid">
+        <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-purple); stroke-dashoffset:${158-(Math.min(safeNum(rawOura.sleep),9)/9)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.sleep}</div><span class="orb-unit">HRS</span></div></div><div class="orb-label">TOTAL</div></div>
+        <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:#007aff; stroke-dashoffset:${158-(Math.min(safeNum(rawOura.deep),120)/120)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.deep}</div><span class="orb-unit">DEEP</span></div></div><div class="orb-label">DEEP</div></div>
+        <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--purple); stroke-dashoffset:${158-(Math.min(safeNum(rawOura.rem),120)/120)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.rem}</div><span class="orb-unit">REM</span></div></div><div class="orb-label">REM</div></div>
+    </div>
+
+    <div class="section-label">CARDIO-METABOLIC STATUS</div>
+    <div class="telemetry-grid">
+        <div class="orb-card live"><div class="live-dot"></div><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--cyan); stroke-dashoffset:${158-(Math.min(safeNum(rawOura.cal),1000)/1000)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.cal}</div><span class="orb-unit">CAL</span></div></div><div class="orb-label">ACTIVE</div></div>
+        <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-zone2); stroke-dashoffset:${158-(Math.min(safeNum(rawOura.med),60)/60)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.med}</div><span class="orb-unit">Z2 MIN</span></div></div><div class="orb-label">BASE</div></div>
+        <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-zone5); stroke-dashoffset:${158-(Math.min(safeNum(rawOura.high),30)/30)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.high}</div><span class="orb-unit">Z5 MIN</span></div></div><div class="orb-label">PEAK</div></div>
+        <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--acid)"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.rhr}</div><span class="orb-unit">BPM</span></div></div><div class="orb-label">RHR</div></div>
+    </div>
+
+    <div class="section-label">MACRO & LONGEVITY COMPOUNDS</div>
+    <div class="macro-grid">
+        <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:#fff; stroke-dashoffset:${158-(Math.min(totals.p/u.goals.pro,1)*158)}"></circle></svg><div class="orb-val-box"><div class="orb-val">${totals.p}</div><span class="orb-unit">PRO</span></div></div><div class="orb-label">PROTEIN</div></div>
+        <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:#00d4ff; stroke-dashoffset:${158-(Math.min(totals.omega3/u.goals.omega3,1)*158)}"></circle></svg><div class="orb-val-box"><div class="orb-val">${Math.round(totals.omega3/100)/10}</div><span class="orb-unit">Ω-3g</span></div></div><div class="orb-label">OMEGA-3</div></div>
+        <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:#bf5af2; stroke-dashoffset:${158-(Math.min(totals.polyphenols/u.goals.polyphenols,1)*158)}"></circle></svg><div class="orb-val-box"><div class="orb-val">${totals.polyphenols}</div><span class="orb-unit">POLY</span></div></div><div class="orb-label">POLYPHENOLS</div></div>
+        <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:#30d158; stroke-dashoffset:${158-(Math.min(totals.fib/u.goals.fib,1)*158)}"></circle></svg><div class="orb-val-box"><div class="orb-val">${totals.fib}</div><span class="orb-unit">FIB</span></div></div><div class="orb-label">FIBER</div></div>
+    </div>
+
+    <button class="expand-btn" onclick="document.getElementById('bioPanel').classList.toggle('open')">▼ BIOMARKER PANEL</button>
+    <div id="bioPanel" class="expandable">
+        <div class="biomarker-panel">
+            <div style="font-size:0.6rem;color:var(--acid);margin-bottom:10px;font-weight:700;">METABOLIC</div>
+            <div class="bio-row"><span class="bio-name">HbA1c</span><span><span class="bio-val">${this.bios.hba1c || '--'}%</span>${bioStatus(this.bios.hba1c, 5.4, 5.7)}</span></div>
+            <div class="bio-row"><span class="bio-name">Fasting Glucose</span><span><span class="bio-val">${this.bios.glucose || '--'} mg/dL</span>${bioStatus(this.bios.glucose, 85, 100)}</span></div>
+            <div class="bio-row"><span class="bio-name">Fasting Insulin</span><span><span class="bio-val">${this.bios.insulin || '--'} μIU/mL</span>${bioStatus(this.bios.insulin, 5, 8)}</span></div>
+            
+            <div style="font-size:0.6rem;color:var(--acid);margin:15px 0 10px;font-weight:700;">CARDIOVASCULAR</div>
+            <div class="bio-row"><span class="bio-name">ApoB</span><span><span class="bio-val">${this.bios.apob || '--'} mg/dL</span>${bioStatus(this.bios.apob, 60, 80)}</span></div>
+            <div class="bio-row"><span class="bio-name">Lp(a)</span><span><span class="bio-val">${this.bios.lpa || '--'} nmol/L</span>${bioStatus(this.bios.lpa, 30, 75)}</span></div>
+            <div class="bio-row"><span class="bio-name">hsCRP</span><span><span class="bio-val">${this.bios.hscrp || '--'} mg/L</span>${bioStatus(this.bios.hscrp, 1, 3)}</span></div>
+            
+            <div style="font-size:0.6rem;color:var(--acid);margin:15px 0 10px;font-weight:700;">LONGEVITY MARKERS</div>
+            <div class="bio-row"><span class="bio-name">VO2 Max</span><span><span class="bio-val">${this.bios.vo2 || '--'} mL/kg/min</span></span></div>
+            <div class="bio-row"><span class="bio-name">Testosterone</span><span><span class="bio-val">${this.bios.test || '--'} ng/dL</span></span></div>
+            <div class="bio-row"><span class="bio-name">IGF-1</span><span><span class="bio-val">${this.bios.igf1 || '--'} ng/mL</span></span></div>
+            <div class="bio-row"><span class="bio-name">Vitamin D</span><span><span class="bio-val">${this.bios.vitd || '--'} ng/mL</span>${bioStatus(this.bios.vitd, 40, 60, true)}</span></div>
+            
+            <div style="font-size:0.6rem;color:var(--acid);margin:15px 0 10px;font-weight:700;">KIDNEY & THYROID</div>
+            <div class="bio-row"><span class="bio-name">TSH</span><span><span class="bio-val">${this.bios.tsh || '--'} mIU/L</span>${bioStatus(this.bios.tsh, 1.5, 2.5)}</span></div>
+            <div class="bio-row"><span class="bio-name">Creatinine</span><span><span class="bio-val">${this.bios.creatinine || '--'} mg/dL</span>${bioStatus(this.bios.creatinine, 0.9, 1.2)}</span></div>
+            <div class="bio-row"><span class="bio-name">eGFR</span><span><span class="bio-val">${this.bios.egfr || '--'} mL/min</span>${this.bios.egfr >= 90 ? '<span class="bio-status status-optimal">OPTIMAL</span>' : ''}</span></div>
+            
+            <div style="font-size:0.6rem;color:var(--acid);margin:15px 0 10px;font-weight:700;">IRON & AUTOIMMUNE</div>
+            <div class="bio-row"><span class="bio-name">Ferritin</span><span><span class="bio-val">${this.bios.ferritin || '--'} ng/mL</span>${bioStatus(this.bios.ferritin, 50, 150)}</span></div>
+            <div class="bio-row"><span class="bio-name">ANA</span><span><span class="bio-val">${this.bios.ana || '--'}</span>${this.bios.ana && this.bios.ana !== 'Negative' ? '<span class="bio-status status-alert">MONITOR</span>' : ''}</span></div>
+        </div>
+    </div>
+
+    <div class="timeline-container">
+        <div class="section-label" style="margin:0 0 15px;">CHRONO-NUTRITION PROTOCOL</div>
+        
+        <div class="time-slot">
+            <div class="ts-time">6:00</div>
+            <div class="ts-card ${isChecked('circadian')}">
+                <div class="ts-title">Circadian Activation</div>
+                <div class="ts-desc">Sunlight exposure (10min) + Cold shower (3min @ 50°F)</div>
+                <div class="ts-mech">🔬 <span class="science-term">Cortisol awakening response<span class="tooltip"><div class="tooltip-title">Cortisol Awakening Response</div>Natural cortisol spike within 30min of waking, triggered by morning sunlight. Sets circadian rhythm and optimizes energy/focus.<div class="tooltip-benefit">→ Circadian health & alertness</div></span></span> + <span class="science-term">Cold thermogenesis<span class="tooltip"><div class="tooltip-title">Cold Thermogenesis</div>Cold exposure activates brown fat, increases metabolic rate, and triggers resilience pathways like PGC-1α for mitochondrial health.<div class="tooltip-benefit">→ Metabolic boost & resilience</div></span></span></div>
+                <button class="check-btn" onclick="centurion.toggleItem('circadian')">${btnTxt('circadian')}</button>
+            </div>
+        </div>
+
+        <div class="time-slot">
+            <div class="ts-time">${meals.breakfast.time}</div>
+            <div class="ts-card ${isChecked('breakfast')}">
+                <div class="ts-title">${meals.breakfast.name}</div>
+                <div class="ts-desc">${meals.breakfast.desc}</div>
+                <div class="ts-nutrients">
+                    <span class="nutrient-tag science-term">EPA/DHA: ${meals.breakfast.compounds.omega3}mg<span class="tooltip"><div class="tooltip-title">EPA & DHA (Omega-3s)</div>Long-chain fatty acids from fish that reduce inflammation, support brain health, and improve cardiovascular function.<div class="tooltip-benefit">→ Heart, brain & longevity</div></span></span>
+                    <span class="nutrient-tag science-term">Polyphenols: ${meals.breakfast.compounds.polyphenols}mg<span class="tooltip"><div class="tooltip-title">Polyphenols</div>Plant compounds that activate longevity pathways (sirtuins), reduce oxidative stress, and support mitochondrial health.<div class="tooltip-benefit">→ Cellular longevity & disease prevention</div></span></span>
+                    <span class="nutrient-tag">${meals.breakfast.macros.p}p/${meals.breakfast.macros.c}c/${meals.breakfast.macros.f}f</span>
+                </div>
+                <div style="font-size:0.65rem;color:#666;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.05);">
+                    📊 ${meals.breakfast.micronutrients}
+                </div>
+                ${colorDots(meals.breakfast.colors)}
+                <button class="check-btn" onclick="centurion.toggleItem('breakfast')">${btnTxt('breakfast')}</button>
+            </div>
+        </div>
+
+        <div class="time-slot">
+            <div class="ts-time">${meals.juice.time}</div>
+            <div class="ts-card ${isChecked('juice')}">
+                <div class="ts-title">${meals.juice.name}</div>
+                <div class="ts-desc">${meals.juice.desc}</div>
+                <div class="ts-nutrients">
+                    <span class="nutrient-tag">Polyphenols: ${meals.juice.compounds.polyphenols}mg</span>
+                    ${meals.juice.compounds.nitrates ? `<span class="nutrient-tag science-term">Nitrates: ${meals.juice.compounds.nitrates}mg<span class="tooltip"><div class="tooltip-title">Dietary Nitrates</div>Converted to nitric oxide in the body, improving blood flow, lowering blood pressure, and enhancing exercise performance.<div class="tooltip-benefit">→ Cardiovascular health & performance</div></span></span>` : ''}
+                    ${meals.juice.compounds.curcumin ? `<span class="nutrient-tag science-term">Curcumin: ${meals.juice.compounds.curcumin}mg<span class="tooltip"><div class="tooltip-title">Curcumin + Piperine</div>Powerful anti-inflammatory from turmeric. Piperine (black pepper) increases absorption by 2000%.<div class="tooltip-benefit">→ Inflammation reduction</div></span></span>` : ''}
+                </div>
+                <div style="font-size:0.65rem;color:#666;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.05);">
+                    📊 ${meals.juice.micronutrients}
+                </div>
+                ${colorDots(meals.juice.colors)}
+                <button class="check-btn" onclick="centurion.toggleItem('juice')">${btnTxt('juice')}</button>
+            </div>
+        </div>
+
+        <div class="time-slot">
+            <div class="ts-time">9:00</div>
+            <div class="ts-card ${isChecked('train')}">
+                <div class="ts-title">Training: ${workout.title}</div>
+                <div class="ts-desc">${workout.sub}</div>
+                <div class="ts-mech">🔬 ${workout.mech.replace('mTOR', '<span class="science-term">mTOR<span class="tooltip"><div class="tooltip-title">Mechanistic Target of Rapamycin</div>Master growth regulator that triggers muscle protein synthesis when activated by resistance training + protein.<div class="tooltip-benefit">→ Muscle growth & longevity balance</div></span></span>').replace('Mitochondrial biogenesis', '<span class="science-term">Mitochondrial biogenesis<span class="tooltip"><div class="tooltip-title">Mitochondrial Biogenesis</div>Creation of new cellular powerhouses triggered by Zone 2 cardio. More mitochondria = better energy, endurance, and metabolic health.<div class="tooltip-benefit">→ Enhanced longevity & energy</div></span></span>').replace('HRV', '<span class="science-term">HRV<span class="tooltip"><div class="tooltip-title">Heart Rate Variability</div>Beat-to-beat heart rhythm variation. Higher HRV = better autonomic nervous system flexibility and recovery capacity.<div class="tooltip-benefit">→ Stress resilience & recovery</div></span></span>')}</div>
+                <button class="check-btn" onclick="centurion.toggleItem('train')">${btnTxt('train')}</button>
+            </div>
+        </div>
+
+        <div class="time-slot">
+            <div class="ts-time">10:00</div>
+            <div class="ts-card ${isChecked('post_workout')}">
+                <div class="ts-title">Post-Workout Nutrition</div>
+                <div class="ts-desc">${workout.postWorkout}</div>
+                ${this.user === 'J' ? `<div class="ts-mech">🧬 <span class="science-term">Creatine<span class="tooltip"><div class="tooltip-title">Creatine Monohydrate</div>Cannot get 5g from food (would need 2+ lbs of meat). Enhances ATP production for strength, power, and muscle growth. Also supports brain function.<div class="tooltip-benefit">→ Performance & cognitive health</div></span></span> - 5g daily (not obtainable from food)</div>` : ''}
+                <button class="check-btn" onclick="centurion.toggleItem('post_workout')">${btnTxt('post_workout')}</button>
+            </div>
+        </div>
+
+        <div class="time-slot">
+            <div class="ts-time">${meals.lunch.time}</div>
+            <div class="ts-card ${isChecked('lunch')}">
+                <div class="ts-title">${meals.lunch.name}</div>
+                <div class="ts-desc">${meals.lunch.desc}</div>
+                <div class="ts-nutrients">
+                    <span class="nutrient-tag">Omega-3: ${meals.lunch.compounds.omega3}mg</span>
+                    <span class="nutrient-tag">Polyphenols: ${meals.lunch.compounds.polyphenols}mg</span>
+                    <span class="nutrient-tag">${meals.lunch.macros.p}p/${meals.lunch.macros.c}c/${meals.lunch.macros.f}f</span>
+                </div>
+                <div style="font-size:0.65rem;color:#666;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.05);">
+                    📊 ${meals.lunch.micronutrients}
+                </div>
+                ${colorDots(meals.lunch.colors)}
+                <button class="check-btn" onclick="centurion.toggleItem('lunch')">${btnTxt('lunch')}</button>
+            </div>
+        </div>
+
+        <div class="time-slot">
+            <div class="ts-time">${meals.snack.time}</div>
+            <div class="ts-card ${isChecked('snack')}">
+                <div class="ts-title">${meals.snack.name}</div>
+                <div class="ts-desc">${meals.snack.desc}</div>
+                <div class="ts-nutrients">
+                    <span class="nutrient-tag">Polyphenols: ${meals.snack.compounds.polyphenols}mg</span>
+                    ${meals.snack.compounds.probiotics ? '<span class="nutrient-tag">Probiotics: 50B CFU</span>' : ''}
+                    <span class="nutrient-tag">${meals.snack.macros.p}p/${meals.snack.macros.c}c/${meals.snack.macros.f}f</span>
+                </div>
+                <div style="font-size:0.65rem;color:#666;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.05);">
+                    📊 ${meals.snack.micronutrients}
+                </div>
+                ${colorDots(meals.snack.colors)}
+                <button class="check-btn" onclick="centurion.toggleItem('snack')">${btnTxt('snack')}</button>
+            </div>
+        </div>
+
+        <div class="time-slot">
+            <div class="ts-time">${meals.dinner.time}</div>
+            <div class="ts-card ${isChecked('dinner')}">
+                <div class="ts-title">${meals.dinner.name}</div>
+                <div class="ts-desc">${meals.dinner.desc}</div>
+                <div class="ts-nutrients">
+                    <span class="nutrient-tag">EPA/DHA: ${meals.dinner.compounds.omega3}mg</span>
+                    <span class="nutrient-tag">Polyphenols: ${meals.dinner.compounds.polyphenols}mg</span>
+                    ${meals.dinner.compounds.sulforaphane ? `<span class="nutrient-tag science-term">Sulforaphane: ${meals.dinner.compounds.sulforaphane}mg<span class="tooltip"><div class="tooltip-title">Sulforaphane</div>Potent compound from cruciferous vegetables that activates Nrf2 pathway, boosting antioxidant production and detoxification.<div class="tooltip-benefit">→ Cancer prevention & detox</div></span></span>` : ''}
+                    <span class="nutrient-tag">${meals.dinner.macros.p}p/${meals.dinner.macros.c}c/${meals.dinner.macros.f}f</span>
+                </div>
+                <div style="font-size:0.65rem;color:#666;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.05);">
+                    📊 ${meals.dinner.micronutrients}
+                </div>
+                ${colorDots(meals.dinner.colors)}
+                <button class="check-btn" onclick="centurion.toggleItem('dinner')">${btnTxt('dinner')}</button>
+            </div>
+        </div>
+
+        <div class="time-slot">
+            <div class="ts-time">21:00</div>
+            <div class="ts-card ${isChecked('evening')}">
+                <div class="ts-title">Evening Protocol</div>
+                <div class="ts-desc">Blue light blocking + Magnesium-rich foods complete (${meals.breakfast.compounds.magnesium + meals.snack.compounds.magnesium + meals.dinner.compounds.magnesium}mg today)</div>
+                <div class="ts-mech">🔬 Melatonin optimization + <span class="science-term">Sleep pressure<span class="tooltip"><div class="tooltip-title">Sleep Pressure (Adenosine)</div>Adenosine builds throughout the day creating "sleep pressure." Magnesium from food aids natural sleep without supplements.<div class="tooltip-benefit">→ Natural deep sleep</div></span></span></div>
+                <button class="check-btn" onclick="centurion.toggleItem('evening')">${btnTxt('evening')}</button>
+            </div>
+        </div>
+
+        <div class="time-slot summary-card">
+            <div style="text-align:center;padding:10px 0;">
+                <div style="font-size:0.6rem;color:var(--text-muted);font-weight:900;letter-spacing:1px;margin-bottom:10px;">LONGEVITY PERFORMANCE SCORE</div>
+                <div class="summary-score">${dayGrade.toFixed(0)}<span style="font-size:1.5rem">/100</span></div>
+                <span class="summary-grade ${gradeClass}">${gradeLetter} GRADE</span>
+                <div style="font-family:var(--font-data);font-size:0.55rem;color:var(--text-muted);margin-top:10px;">
+                    Sleep: ${sleepScore.toFixed(0)}% | Training: ${trainScore.toFixed(0)}% | Nutrition: ${nutritionScore.toFixed(0)}%
+                </div>
+            </div>
+        </div>
+    </div>
+    `;
+
+    document.getElementById('dayContent').innerHTML = html;
+
+    // NOW generate AI insight AFTER render (async)
+    setTimeout(async () => {
+        const insight = await this.getAIInsight(dk, rawOura, totals, u, rainbowScore);
         const aiCard = document.querySelector('.ai-insight-card');
         if(aiCard) {
             aiCard.innerHTML = `
                 <div class="ai-header">
-                    <span class="ai-loading"></span>
-                    <span>AI COACH REGENERATING...</span>
+                    <span>🧠 AI LONGEVITY COACH</span>
                 </div>
-                <div class="ai-content">Analyzing your latest data...</div>
+                <div class="ai-content">${insight}</div>
+                <button class="ai-refresh" onclick="centurion.refreshAIInsight()">🔄 REGENERATE INSIGHT</button>
             `;
         }
+    }, 100);
+    
+    } catch(error) {
+        window.errorLogger.log('RENDER ERROR', {
+            message: error.message,
+            stack: error.stack,
+            user: this.user,
+            cacheSize: this.cache?.history?.length
+        });
         
-        const dk = getDateKey(this.getCurrentDate());
-        delete this.aiInsights[dk];
-        localStorage.setItem(`centurion_ai_insights_${this.user}`, JSON.stringify(this.aiInsights));
-        
-        setTimeout(async () => {
-            const d = this.getCurrentDate();
-            const dkNew = getDateKey(d);
-            const rawOura = this.cache.history.find(d => d.date === dkNew) || { score: "-", cal: "-", high: 0, med: 0, rhr: "-", sleep: "-", deep: "-", rem: "-" };
-            const u = USERS[this.user];
-            
-            const { totals, rainbowScore } = this.calculateDailyTotals(dkNew);
-            
-            const insight = await this.getAIInsight(dkNew, rawOura, totals, u, rainbowScore);
-            
-            if(aiCard) {
-                aiCard.innerHTML = `
-                    <div class="ai-header">
-                        <span>🧠 AI LONGEVITY COACH</span>
-                    </div>
-                    <div class="ai-content">${insight}</div>
-                    <button class="ai-refresh" onclick="centurion.refreshAIInsight()">🔄 REGENERATE INSIGHT</button>
-                `;
-            }
-        }, 500);
-    }
-
-    async render() {
-        try {
-            window.errorLogger.log('RENDER', { action: 'start', user: this.user, dayOffset: this.dayOffset });
-            
-            const d = this.getCurrentDate();
-            const dk = getDateKey(d);
-            const today = getDateKey(getCaDate());
-            const displayDate = (dk === today) ? "TODAY" : dk.substring(5);
-            
-            document.getElementById('dateDisplay').innerText = displayDate;
-            document.getElementById('btn-next').classList.toggle('disabled', dk === today);
-
-            const rawOura = this.cache.history.find(d => d.date === dk) || { score: "-", cal: "-", high: 0, med: 0, rhr: "-", sleep: "-", deep: "-", rem: "-" };
-            const u = USERS[this.user];
-            
-            if (!u) {
-                throw new Error(`User ${this.user} not found in USERS`);
-            }
-            
-            const scoreVal = parseInt(rawOura.score) || 0;
-            const rColor = scoreVal >= 80 ? 'var(--acid)' : scoreVal >= 60 ? 'var(--gold)' : 'var(--alert)';
-            const safeNum = (v) => (v === "-" || v === undefined || isNaN(v)) ? 0 : parseFloat(v);
-
-            let statusMsg = "GATHERING DATA...";
-            if(scoreVal > 0) {
-                if(scoreVal >= 85) statusMsg = "PEAK READINESS. ANABOLIC WINDOW OPEN.";
-                else if(scoreVal >= 70) statusMsg = "SYSTEMS NOMINAL. MAINTAIN PROTOCOLS.";
-                else statusMsg = "RECOVERY MODE. PRIORITIZE SLEEP/NUTRITION.";
-            }
-
-            const meals = MEAL_DB[this.user];
-            if (!meals) {
-                throw new Error(`Meals not found for user ${this.user}`);
-            }
-            
-            const mode = scoreVal >= 80 ? "anabolic" : "repair";
-            const wKey = `${mode}_${this.user.toLowerCase()}`;
-            const workout = WORKOUTS[wKey] || WORKOUTS[`${mode}_jermaine`] || { title: "Training", sub: "Workout", mech: "See protocol" };
-            
-            if (!workout || !workout.title) {
-                window.errorLogger.log('WORKOUT ERROR', { 
-                    wKey, 
-                    availableKeys: Object.keys(WORKOUTS),
-                    user: this.user,
-                    mode 
-                });
-            }
-
-            const checks = this.checkedItems[dk] || [];
-        
-        const { totals, rainbowScore } = this.calculateDailyTotals(dk);
-
-        const sleepScore = Math.min((safeNum(rawOura.sleep)/u.goals.sleep)*100, 100);
-        const trainScore = Math.min(
-            (safeNum(rawOura.med)/u.goals.z2)*70 +  // Zone 2 = 70% (longevity foundation)
-            (safeNum(rawOura.high)/u.goals.z5)*30,  // Zone 5 = 30% (peak performance)
-            100
-        );
-        const nutritionScore = Math.min(((totals.p/u.goals.pro + totals.omega3/u.goals.omega3 + totals.polyphenols/u.goals.polyphenols)/3)*100, 100);
-        const dayGrade = (sleepScore + trainScore + nutritionScore) / 3;
-        
-        let gradeLetter = 'C', gradeClass = 'grade-c';
-        if(dayGrade >= 90) { gradeLetter = 'S'; gradeClass = 'grade-s'; }
-        else if(dayGrade >= 80) { gradeLetter = 'A'; gradeClass = 'grade-a'; }
-        else if(dayGrade >= 70) { gradeLetter = 'B'; gradeClass = 'grade-b'; }
-
-        const isChecked = (id) => checks.includes(id) ? 'checked' : '';
-        const btnTxt = (id) => checks.includes(id) ? '✓' : '○';
-
-        const bioStatus = (val, optimal, warning) => {
-            if(!val) return '';
-            const v = parseFloat(val);
-            if(v <= optimal) return '<span class="bio-status status-optimal">OPTIMAL</span>';
-            if(v <= warning) return '<span class="bio-status status-warning">MONITOR</span>';
-            return '<span class="bio-status status-alert">ALERT</span>';
-        };
-
-        const colorDots = (colors) => {
-            if(!colors || colors.length === 0) return '';
-            return `<div class="color-dots">
-                ${colors.map(c => `<div class="color-dot" style="background:${COLOR_MAP[c].color}" title="${COLOR_MAP[c].compound}"></div>`).join('')}
-            </div>`;
-        };
-
-        // AI INSIGHT - Show loading state initially
-        let aiInsightHTML = `<div class="ai-insight-card">
-            <div class="ai-header">
-                <span class="ai-loading"></span>
-                <span>AI LONGEVITY COACH ANALYZING...</span>
-            </div>
-            <div class="ai-content" id="aiInsightContent">Generating personalized insight...</div>
-        </div>`;
-
-        const html = `
-        <div class="hero-section">
-            <div class="ring-container">
-                <svg class="ring-svg"><circle class="ring-bg" cx="55" cy="55" r="45"></circle><circle class="ring-fg" cx="55" cy="55" r="45" style="stroke:${rColor}; stroke-dashoffset:${283 - (Math.min(scoreVal,100)/100)*283}"></circle></svg>
-                <div class="ring-data"><div class="ring-val">${rawOura.score}</div><div class="ring-label">READINESS</div></div>
-            </div>
-            <div class="tactical-box" style="border-left-color:${rColor}">
-                <div class="tac-label" style="color:${rColor}">USER: ${u.name.toUpperCase()}</div>
-                <div class="tac-cmd">${statusMsg}</div>
-                <div class="tac-meta">VO2: ${this.bios.vo2 || '--'} | HbA1c: ${this.bios.hba1c || '--'}% | 🌈 ${rainbowScore}% Diversity</div>
-            </div>
-        </div>
-
-        ${aiInsightHTML}
-
-        <div class="section-label">SLEEP ARCHITECTURE</div>
-        <div class="sleep-grid">
-            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-purple); stroke-dashoffset:${158-(Math.min(safeNum(rawOura.sleep),9)/9)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.sleep}</div><span class="orb-unit">HRS</span></div></div><div class="orb-label">TOTAL</div></div>
-            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:#007aff; stroke-dashoffset:${158-(Math.min(safeNum(rawOura.deep),120)/120)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.deep}</div><span class="orb-unit">DEEP</span></div></div><div class="orb-label">DEEP</div></div>
-            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--purple); stroke-dashoffset:${158-(Math.min(safeNum(rawOura.rem),120)/120)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.rem}</div><span class="orb-unit">REM</span></div></div><div class="orb-label">REM</div></div>
-        </div>
-
-        <div class="section-label">CARDIO-METABOLIC STATUS</div>
-        <div class="telemetry-grid">
-            <div class="orb-card live"><div class="live-dot"></div><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--cyan); stroke-dashoffset:${158-(Math.min(safeNum(rawOura.cal),1000)/1000)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.cal}</div><span class="orb-unit">CAL</span></div></div><div class="orb-label">ACTIVE</div></div>
-            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-zone2); stroke-dashoffset:${158-(Math.min(safeNum(rawOura.med),60)/60)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.med}</div><span class="orb-unit">Z2 MIN</span></div></div><div class="orb-label">BASE</div></div>
-            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-zone5); stroke-dashoffset:${158-(Math.min(safeNum(rawOura.high),30)/30)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.high}</div><span class="orb-unit">Z5 MIN</span></div></div><div class="orb-label">PEAK</div></div>
-            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--acid)"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.rhr}</div><span class="orb-unit">BPM</span></div></div><div class="orb-label">RHR</div></div>
-        </div>
-
-        <div class="section-label">MACRO & LONGEVITY COMPOUNDS</div>
-        <div class="macro-grid">
-            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:#fff; stroke-dashoffset:${158-(Math.min(totals.p/u.goals.pro,1)*158)}"></circle></svg><div class="orb-val-box"><div class="orb-val">${totals.p}</div><span class="orb-unit">PRO</span></div></div><div class="orb-label">PROTEIN</div></div>
-            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:#00d4ff; stroke-dashoffset:${158-(Math.min(totals.omega3/u.goals.omega3,1)*158)}"></circle></svg><div class="orb-val-box"><div class="orb-val">${Math.round(totals.omega3/100)/10}</div><span class="orb-unit">Ω-3g</span></div></div><div class="orb-label">OMEGA-3</div></div>
-            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:#bf5af2; stroke-dashoffset:${158-(Math.min(totals.polyphenols/u.goals.polyphenols,1)*158)}"></circle></svg><div class="orb-val-box"><div class="orb-val">${totals.polyphenols}</div><span class="orb-unit">POLY</span></div></div><div class="orb-label">POLYPHENOLS</div></div>
-            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:#30d158; stroke-dashoffset:${158-(Math.min(totals.fib/u.goals.fib,1)*158)}"></circle></svg><div class="orb-val-box"><div class="orb-val">${totals.fib}</div><span class="orb-unit">FIB</span></div></div><div class="orb-label">FIBER</div></div>
-        </div>
-
-        <button class="expand-btn" onclick="document.getElementById('bioPanel').classList.toggle('open')">▼ BIOMARKER PANEL</button>
-        <div id="bioPanel" class="expandable">
-            <div class="biomarker-panel">
-                <div style="font-size:0.6rem;color:var(--acid);margin-bottom:10px;font-weight:700;">METABOLIC</div>
-                <div class="bio-row"><span class="bio-name">HbA1c</span><span><span class="bio-val">${this.bios.hba1c || '--'}%</span>${bioStatus(this.bios.hba1c, 5.4, 5.7)}</span></div>
-                <div class="bio-row"><span class="bio-name">Fasting Glucose</span><span><span class="bio-val">${this.bios.glucose || '--'} mg/dL</span>${bioStatus(this.bios.glucose, 85, 100)}</span></div>
-                <div class="bio-row"><span class="bio-name">Fasting Insulin</span><span><span class="bio-val">${this.bios.insulin || '--'} μIU/mL</span>${bioStatus(this.bios.insulin, 5, 8)}</span></div>
-                
-                <div style="font-size:0.6rem;color:var(--acid);margin:15px 0 10px;font-weight:700;">CARDIOVASCULAR</div>
-                <div class="bio-row"><span class="bio-name">ApoB</span><span><span class="bio-val">${this.bios.apob || '--'} mg/dL</span>${bioStatus(this.bios.apob, 60, 80)}</span></div>
-                <div class="bio-row"><span class="bio-name">Lp(a)</span><span><span class="bio-val">${this.bios.lpa || '--'} nmol/L</span>${bioStatus(this.bios.lpa, 30, 75)}</span></div>
-                <div class="bio-row"><span class="bio-name">hsCRP</span><span><span class="bio-val">${this.bios.hscrp || '--'} mg/L</span>${bioStatus(this.bios.hscrp, 1, 3)}</span></div>
-                
-                <div style="font-size:0.6rem;color:var(--acid);margin:15px 0 10px;font-weight:700;">LONGEVITY MARKERS</div>
-                <div class="bio-row"><span class="bio-name">VO2 Max</span><span><span class="bio-val">${this.bios.vo2 || '--'} mL/kg/min</span></span></div>
-                <div class="bio-row"><span class="bio-name">Testosterone</span><span><span class="bio-val">${this.bios.test || '--'} ng/dL</span></span></div>
-                <div class="bio-row"><span class="bio-name">IGF-1</span><span><span class="bio-val">${this.bios.igf1 || '--'} ng/mL</span></span></div>
-                <div class="bio-row"><span class="bio-name">Vitamin D</span><span><span class="bio-val">${this.bios.vitd || '--'} ng/mL</span>${bioStatus(this.bios.vitd, 40, 60, true)}</span></div>
-                
-                <div style="font-size:0.6rem;color:var(--acid);margin:15px 0 10px;font-weight:700;">KIDNEY & THYROID</div>
-                <div class="bio-row"><span class="bio-name">TSH</span><span><span class="bio-val">${this.bios.tsh || '--'} mIU/L</span>${bioStatus(this.bios.tsh, 1.5, 2.5)}</span></div>
-                <div class="bio-row"><span class="bio-name">Creatinine</span><span><span class="bio-val">${this.bios.creatinine || '--'} mg/dL</span>${bioStatus(this.bios.creatinine, 0.9, 1.2)}</span></div>
-                <div class="bio-row"><span class="bio-name">eGFR</span><span><span class="bio-val">${this.bios.egfr || '--'} mL/min</span>${this.bios.egfr >= 90 ? '<span class="bio-status status-optimal">OPTIMAL</span>' : ''}</span></div>
-                
-                <div style="font-size:0.6rem;color:var(--acid);margin:15px 0 10px;font-weight:700;">IRON & AUTOIMMUNE</div>
-                <div class="bio-row"><span class="bio-name">Ferritin</span><span><span class="bio-val">${this.bios.ferritin || '--'} ng/mL</span>${bioStatus(this.bios.ferritin, 50, 150)}</span></div>
-                <div class="bio-row"><span class="bio-name">ANA</span><span><span class="bio-val">${this.bios.ana || '--'}</span>${this.bios.ana && this.bios.ana !== 'Negative' ? '<span class="bio-status status-alert">MONITOR</span>' : ''}</span></div>
-            </div>
-        </div>
-
-        <div class="timeline-container">
-            <div class="section-label" style="margin:0 0 15px;">CHRONO-NUTRITION PROTOCOL</div>
-            
-            <div class="time-slot">
-                <div class="ts-time">6:00</div>
-                <div class="ts-card ${isChecked('circadian')}">
-                    <div class="ts-title">Circadian Activation</div>
-                    <div class="ts-desc">Sunlight exposure (10min) + Cold shower (3min @ 50°F)</div>
-                    <div class="ts-mech">🔬 <span class="science-term">Cortisol awakening response<span class="tooltip"><div class="tooltip-title">Cortisol Awakening Response</div>Natural cortisol spike within 30min of waking, triggered by morning sunlight. Sets circadian rhythm and optimizes energy/focus.<div class="tooltip-benefit">→ Circadian health & alertness</div></span></span> + <span class="science-term">Cold thermogenesis<span class="tooltip"><div class="tooltip-title">Cold Thermogenesis</div>Cold exposure activates brown fat, increases metabolic rate, and triggers resilience pathways like PGC-1α for mitochondrial health.<div class="tooltip-benefit">→ Metabolic boost & resilience</div></span></span></div>
-                    <button class="check-btn" onclick="centurion.toggleItem('circadian')">${btnTxt('circadian')}</button>
+        // Display error to user
+        const content = document.getElementById('dayContent');
+        if (content) {
+            content.innerHTML = `
+                <div style="padding: 20px; text-align: center;">
+                    <h2 style="color: var(--alert);">⚠️ Render Error</h2>
+                    <p style="color: #999;">${error.message}</p>
+                    <button onclick="debugCenturion.errors()" style="padding: 10px 20px; background: var(--acid); color: #000; border: none; border-radius: 8px; margin: 10px; cursor: pointer;">View Error Log</button>
+                    <button onclick="location.reload()" style="padding: 10px 20px; background: var(--cyan); color: #000; border: none; border-radius: 8px; margin: 10px; cursor: pointer;">Reload App</button>
                 </div>
-            </div>
-
-            <div class="time-slot">
-                <div class="ts-time">${meals.breakfast.time}</div>
-                <div class="ts-card ${isChecked('breakfast')}">
-                    <div class="ts-title">${meals.breakfast.name}</div>
-                    <div class="ts-desc">${meals.breakfast.desc}</div>
-                    <div class="ts-nutrients">
-                        <span class="nutrient-tag science-term">EPA/DHA: ${meals.breakfast.compounds.omega3}mg<span class="tooltip"><div class="tooltip-title">EPA & DHA (Omega-3s)</div>Long-chain fatty acids from fish that reduce inflammation, support brain health, and improve cardiovascular function.<div class="tooltip-benefit">→ Heart, brain & longevity</div></span></span>
-                        <span class="nutrient-tag science-term">Polyphenols: ${meals.breakfast.compounds.polyphenols}mg<span class="tooltip"><div class="tooltip-title">Polyphenols</div>Plant compounds that activate longevity pathways (sirtuins), reduce oxidative stress, and support mitochondrial health.<div class="tooltip-benefit">→ Cellular longevity & disease prevention</div></span></span>
-                        <span class="nutrient-tag">${meals.breakfast.macros.p}p/${meals.breakfast.macros.c}c/${meals.breakfast.macros.f}f</span>
-                    </div>
-                    <div style="font-size:0.65rem;color:#666;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.05);">
-                        📊 ${meals.breakfast.micronutrients}
-                    </div>
-                    ${colorDots(meals.breakfast.colors)}
-                    <button class="check-btn" onclick="centurion.toggleItem('breakfast')">${btnTxt('breakfast')}</button>
-                </div>
-            </div>
-
-            <div class="time-slot">
-                <div class="ts-time">${meals.juice.time}</div>
-                <div class="ts-card ${isChecked('juice')}">
-                    <div class="ts-title">${meals.juice.name}</div>
-                    <div class="ts-desc">${meals.juice.desc}</div>
-                    <div class="ts-nutrients">
-                        <span class="nutrient-tag">Polyphenols: ${meals.juice.compounds.polyphenols}mg</span>
-                        ${meals.juice.compounds.nitrates ? `<span class="nutrient-tag science-term">Nitrates: ${meals.juice.compounds.nitrates}mg<span class="tooltip"><div class="tooltip-title">Dietary Nitrates</div>Converted to nitric oxide in the body, improving blood flow, lowering blood pressure, and enhancing exercise performance.<div class="tooltip-benefit">→ Cardiovascular health & performance</div></span></span>` : ''}
-                        ${meals.juice.compounds.curcumin ? `<span class="nutrient-tag science-term">Curcumin: ${meals.juice.compounds.curcumin}mg<span class="tooltip"><div class="tooltip-title">Curcumin + Piperine</div>Powerful anti-inflammatory from turmeric. Piperine (black pepper) increases absorption by 2000%.<div class="tooltip-benefit">→ Inflammation reduction</div></span></span>` : ''}
-                    </div>
-                    <div style="font-size:0.65rem;color:#666;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.05);">
-                        📊 ${meals.juice.micronutrients}
-                    </div>
-                    ${colorDots(meals.juice.colors)}
-                    <button class="check-btn" onclick="centurion.toggleItem('juice')">${btnTxt('juice')}</button>
-                </div>
-            </div>
-
-            <div class="time-slot">
-                <div class="ts-time">9:00</div>
-                <div class="ts-card ${isChecked('train')}">
-                    <div class="ts-title">Training: ${workout.title}</div>
-                    <div class="ts-desc">${workout.sub}</div>
-                    <div class="ts-mech">🔬 ${workout.mech.replace('mTOR', '<span class="science-term">mTOR<span class="tooltip"><div class="tooltip-title">Mechanistic Target of Rapamycin</div>Master growth regulator that triggers muscle protein synthesis when activated by resistance training + protein.<div class="tooltip-benefit">→ Muscle growth & longevity balance</div></span></span>').replace('Mitochondrial biogenesis', '<span class="science-term">Mitochondrial biogenesis<span class="tooltip"><div class="tooltip-title">Mitochondrial Biogenesis</div>Creation of new cellular powerhouses triggered by Zone 2 cardio. More mitochondria = better energy, endurance, and metabolic health.<div class="tooltip-benefit">→ Enhanced longevity & energy</div></span></span>').replace('HRV', '<span class="science-term">HRV<span class="tooltip"><div class="tooltip-title">Heart Rate Variability</div>Beat-to-beat heart rhythm variation. Higher HRV = better autonomic nervous system flexibility and recovery capacity.<div class="tooltip-benefit">→ Stress resilience & recovery</div></span></span>')}</div>
-                    <button class="check-btn" onclick="centurion.toggleItem('train')">${btnTxt('train')}</button>
-                </div>
-            </div>
-
-            <div class="time-slot">
-                <div class="ts-time">10:00</div>
-                <div class="ts-card ${isChecked('post_workout')}">
-                    <div class="ts-title">Post-Workout Nutrition</div>
-                    <div class="ts-desc">${workout.postWorkout}</div>
-                    ${this.user === 'J' ? `<div class="ts-mech">🧬 <span class="science-term">Creatine<span class="tooltip"><div class="tooltip-title">Creatine Monohydrate</div>Cannot get 5g from food (would need 2+ lbs of meat). Enhances ATP production for strength, power, and muscle growth. Also supports brain function.<div class="tooltip-benefit">→ Performance & cognitive health</div></span></span> - 5g daily (not obtainable from food)</div>` : ''}
-                    <button class="check-btn" onclick="centurion.toggleItem('post_workout')">${btnTxt('post_workout')}</button>
-                </div>
-            </div>
-
-            <div class="time-slot">
-                <div class="ts-time">${meals.lunch.time}</div>
-                <div class="ts-card ${isChecked('lunch')}">
-                    <div class="ts-title">${meals.lunch.name}</div>
-                    <div class="ts-desc">${meals.lunch.desc}</div>
-                    <div class="ts-nutrients">
-                        <span class="nutrient-tag">Omega-3: ${meals.lunch.compounds.omega3}mg</span>
-                        <span class="nutrient-tag">Polyphenols: ${meals.lunch.compounds.polyphenols}mg</span>
-                        <span class="nutrient-tag">${meals.lunch.macros.p}p/${meals.lunch.macros.c}c/${meals.lunch.macros.f}f</span>
-                    </div>
-                    <div style="font-size:0.65rem;color:#666;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.05);">
-                        📊 ${meals.lunch.micronutrients}
-                    </div>
-                    ${colorDots(meals.lunch.colors)}
-                    <button class="check-btn" onclick="centurion.toggleItem('lunch')">${btnTxt('lunch')}</button>
-                </div>
-            </div>
-
-            <div class="time-slot">
-                <div class="ts-time">${meals.snack.time}</div>
-                <div class="ts-card ${isChecked('snack')}">
-                    <div class="ts-title">${meals.snack.name}</div>
-                    <div class="ts-desc">${meals.snack.desc}</div>
-                    <div class="ts-nutrients">
-                        <span class="nutrient-tag">Polyphenols: ${meals.snack.compounds.polyphenols}mg</span>
-                        ${meals.snack.compounds.probiotics ? '<span class="nutrient-tag">Probiotics: 50B CFU</span>' : ''}
-                        <span class="nutrient-tag">${meals.snack.macros.p}p/${meals.snack.macros.c}c/${meals.snack.macros.f}f</span>
-                    </div>
-                    <div style="font-size:0.65rem;color:#666;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.05);">
-                        📊 ${meals.snack.micronutrients}
-                    </div>
-                    ${colorDots(meals.snack.colors)}
-                    <button class="check-btn" onclick="centurion.toggleItem('snack')">${btnTxt('snack')}</button>
-                </div>
-            </div>
-
-            <div class="time-slot">
-                <div class="ts-time">${meals.dinner.time}</div>
-                <div class="ts-card ${isChecked('dinner')}">
-                    <div class="ts-title">${meals.dinner.name}</div>
-                    <div class="ts-desc">${meals.dinner.desc}</div>
-                    <div class="ts-nutrients">
-                        <span class="nutrient-tag">EPA/DHA: ${meals.dinner.compounds.omega3}mg</span>
-                        <span class="nutrient-tag">Polyphenols: ${meals.dinner.compounds.polyphenols}mg</span>
-                        ${meals.dinner.compounds.sulforaphane ? `<span class="nutrient-tag science-term">Sulforaphane: ${meals.dinner.compounds.sulforaphane}mg<span class="tooltip"><div class="tooltip-title">Sulforaphane</div>Potent compound from cruciferous vegetables that activates Nrf2 pathway, boosting antioxidant production and detoxification.<div class="tooltip-benefit">→ Cancer prevention & detox</div></span></span>` : ''}
-                        <span class="nutrient-tag">${meals.dinner.macros.p}p/${meals.dinner.macros.c}c/${meals.dinner.macros.f}f</span>
-                    </div>
-                    <div style="font-size:0.65rem;color:#666;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.05);">
-                        📊 ${meals.dinner.micronutrients}
-                    </div>
-                    ${colorDots(meals.dinner.colors)}
-                    <button class="check-btn" onclick="centurion.toggleItem('dinner')">${btnTxt('dinner')}</button>
-                </div>
-            </div>
-
-            <div class="time-slot">
-                <div class="ts-time">21:00</div>
-                <div class="ts-card ${isChecked('evening')}">
-                    <div class="ts-title">Evening Protocol</div>
-                    <div class="ts-desc">Blue light blocking + Magnesium-rich foods complete (${meals.breakfast.compounds.magnesium + meals.snack.compounds.magnesium + meals.dinner.compounds.magnesium}mg today)</div>
-                    <div class="ts-mech">🔬 Melatonin optimization + <span class="science-term">Sleep pressure<span class="tooltip"><div class="tooltip-title">Sleep Pressure (Adenosine)</div>Adenosine builds throughout the day creating "sleep pressure." Magnesium from food aids natural sleep without supplements.<div class="tooltip-benefit">→ Natural deep sleep</div></span></span></div>
-                    <button class="check-btn" onclick="centurion.toggleItem('evening')">${btnTxt('evening')}</button>
-                </div>
-            </div>
-
-            <div class="time-slot summary-card">
-                <div style="text-align:center;padding:10px 0;">
-                    <div style="font-size:0.6rem;color:var(--text-muted);font-weight:900;letter-spacing:1px;margin-bottom:10px;">LONGEVITY PERFORMANCE SCORE</div>
-                    <div class="summary-score">${dayGrade.toFixed(0)}<span style="font-size:1.5rem">/100</span></div>
-                    <span class="summary-grade ${gradeClass}">${gradeLetter} GRADE</span>
-                    <div style="font-family:var(--font-data);font-size:0.55rem;color:var(--text-muted);margin-top:10px;">
-                        Sleep: ${sleepScore.toFixed(0)}% | Training: ${trainScore.toFixed(0)}% | Nutrition: ${nutritionScore.toFixed(0)}%
-                    </div>
-                </div>
-            </div>
-        </div>
-        `;
-
-        document.getElementById('dayContent').innerHTML = html;
-
-        // NOW generate AI insight AFTER render (async)
-        setTimeout(async () => {
-            const insight = await this.getAIInsight(dk, rawOura, totals, u, rainbowScore);
-            const aiCard = document.querySelector('.ai-insight-card');
-            if(aiCard) {
-                aiCard.innerHTML = `
-                    <div class="ai-header">
-                        <span>🧠 AI LONGEVITY COACH</span>
-                    </div>
-                    <div class="ai-content">${insight}</div>
-                    <button class="ai-refresh" onclick="centurion.refreshAIInsight()">🔄 REGENERATE INSIGHT</button>
-                `;
-            }
-        }, 100);
-        
-        } catch(error) {
-            window.errorLogger.log('RENDER ERROR', {
-                message: error.message,
-                stack: error.stack,
-                user: this.user,
-                cacheSize: this.cache?.history?.length
-            });
-            
-            // Display error to user
-            const content = document.getElementById('dayContent');
-            if (content) {
-                content.innerHTML = `
-                    <div style="padding: 20px; text-align: center;">
-                        <h2 style="color: var(--alert);">⚠️ Render Error</h2>
-                        <p style="color: #999;">${error.message}</p>
-                        <button onclick="debugCenturion.errors()" style="padding: 10px 20px; background: var(--acid); color: #000; border: none; border-radius: 8px; margin: 10px; cursor: pointer;">View Error Log</button>
-                        <button onclick="location.reload()" style="padding: 10px 20px; background: var(--cyan); color: #000; border: none; border-radius: 8px; margin: 10px; cursor: pointer;">Reload App</button>
-                    </div>
-                `;
-            }
+            `;
         }
     }
+}
+```
+
 }
 
 const centurion = new CenturionCore();
