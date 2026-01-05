@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v9800.0 FINAL</title>
+    <title>The Centurion | v9900.0 UNBREAKABLE</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -63,6 +63,7 @@
             margin: 15px 16px; 
             position: relative;
             box-shadow: 0 0 20px rgba(0,240,255,0.1);
+            min-height: 100px;
         }
         .ai-header { 
             display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 0.65rem; 
@@ -147,7 +148,7 @@
 
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v9800 (FINAL)</div>
+            <div class="app-name">CENTURION v9900</div>
             <div style="display:flex; gap:10px; align-items:center;">
                 <button class="bio-btn" onclick="centurion.openBio()">BIO</button>
                 <div class="user-switch">
@@ -185,13 +186,14 @@
 
 <script>
 // ==========================================
-// V9800: GOLDEN MASTER
-// - Oura: Yesterday-Logic applied (Fixes NaN)
-// - Gemini: Switched to 'gemini-pro' (Fixes 404)
+// V9900: UNBREAKABLE EDITION
+// - Non-blocking AI (UI loads instantly)
+// - Fallback to gemini-pro (Fixes 404)
+// - Oura Yesterday-Logic (Fixes NaN)
 // ==========================================
 
 const TOKENS = { 'jermaine': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'sophia': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
-const GEMINI_API_KEY = "AIzaSyCHZvxl_YvhDxZQFuZ1RuriCFasaKSDero"; 
+const GEMINI_API_KEY = "AIzaSyCHZvxl_YvhDxZQFuZ1RuriCFasaKSDero"; // Consider regenerating this
 
 const USERS = {
     'jermaine': { name: "Jermaine", age: 42, rhr: 48, goals: { cal: 700, z2: 60, z5: 20, pro: 180, carb: 200, fat: 80, fib: 40, sleep: 8, omega3: 3000, polyphenols: 500 } },
@@ -203,14 +205,8 @@ TOKENS['J'] = TOKENS['jermaine']; TOKENS['S'] = TOKENS['sophia'];
 USERS['J'] = USERS['jermaine']; USERS['S'] = USERS['sophia'];
 
 const MEAL_DB = {
-    'jermaine': {
-        juice: "Beet Vitality (Nitric Oxide)", breakfast: "Wild Salmon Bowl (Omega-3)",
-        lunch: "Sardine Quinoa Salad", snack: "Greek Yogurt Power Cup", dinner: "Wild Salmon Centurion"
-    },
-    'sophia': {
-        juice: "Orange Immune (Vit C)", breakfast: "Omega Scramble (Anti-Inflammatory)",
-        lunch: "White Fish Ceviche", snack: "Kefir Smoothie (Probiotic)", dinner: "Cod + White Beans"
-    }
+    'jermaine': { juice: "Beet Vitality (Nitric Oxide)", breakfast: "Wild Salmon Bowl (Omega-3)", lunch: "Sardine Quinoa Salad", snack: "Greek Yogurt Power Cup", dinner: "Wild Salmon Centurion" },
+    'sophia': { juice: "Orange Immune (Vit C)", breakfast: "Omega Scramble (Anti-Inflammatory)", lunch: "White Fish Ceviche", snack: "Kefir Smoothie (Probiotic)", dinner: "Cod + White Beans" }
 };
 MEAL_DB['J'] = MEAL_DB['jermaine']; MEAL_DB['S'] = MEAL_DB['sophia'];
 
@@ -255,12 +251,10 @@ class CenturionCore {
         if(this.user === uID) return;
         this.user = uID;
         localStorage.setItem('centurion_active_user', uID);
-        
         this.cache = JSON.parse(localStorage.getItem(`centurion_oura_cache_${uID}`)) || { history: [] };
         this.checkedItems = JSON.parse(localStorage.getItem(`centurion_checked_${uID}`)) || {};
         this.bios = JSON.parse(localStorage.getItem(`centurion_bios_${uID}`)) || {};
         this.aiInsights = JSON.parse(localStorage.getItem(`centurion_ai_insights_${uID}`)) || {};
-        
         this.dayOffset = 0;
         this.updateUI();
         this.render(); 
@@ -315,6 +309,7 @@ class CenturionCore {
         return { totals, rainbowScore };
     }
 
+    // --- ROBUST FETCH LOGIC ---
     async fetchOuraData() {
         const fetchID = this.user; 
         const token = TOKENS[fetchID];
@@ -340,16 +335,13 @@ class CenturionCore {
                 const hist = rData.data.map(day => {
                     const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
                     
-                    // --- THE YESTERDAY FIX ---
+                    // --- YESTERDAY LOGIC FIX ---
                     const yesterday = new Date(day.day);
                     yesterday.setDate(yesterday.getDate() - 1);
                     const yKey = yesterday.toISOString().split('T')[0];
 
                     let sessions = sData.data ? sData.data.filter(s => s.day === yKey) : [];
-                    
-                    if(sessions.length === 0) {
-                        sessions = sData.data ? sData.data.filter(s => s.day === day.day) : [];
-                    }
+                    if(sessions.length === 0) sessions = sData.data ? sData.data.filter(s => s.day === day.day) : [];
 
                     let totalSec = 0, deepSec = 0, remSec = 0;
                     if(sessions.length > 0) {
@@ -389,39 +381,64 @@ class CenturionCore {
         }
     }
 
-    async getAIInsight(dk, rawOura, totals, u, rainbowScore) {
-        if(this.aiInsights[dk]) return this.aiInsights[dk];
+    // --- LAZY AI LOADING ---
+    async updateAI() {
+        const dk = getDateKey(this.getCurrentDate());
+        const aiContainer = document.getElementById('ai-container');
+        
+        // 1. Check Cache
+        if(this.aiInsights[dk]) {
+            if(aiContainer) aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header"><span>🧠 GEMINI LONGEVITY COACH</span></div><div class="ai-content">${this.aiInsights[dk].replace(/\*\*/g, '<strong>').replace(/\*/g, '')}</div><button class="ai-refresh" onclick="centurion.forceRefreshAI()">🔄 REGENERATE</button></div>`;
+            return;
+        }
 
+        // 2. Prepare Prompt
+        const rawOura = this.cache.history.find(d => d.date === dk) || {};
+        const { totals, rainbowScore } = this.calculateDailyTotals(dk);
+        const u = USERS[this.user];
         const scoreVal = parseInt(rawOura.score) || 0;
+        
+        if(scoreVal === 0) {
+            if(aiContainer) aiContainer.innerHTML = ''; // Hide if no data
+            return;
+        }
+
+        if(aiContainer) aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header"><span class="ai-loading"></span><span>GEMINI ANALYZING...</span></div><div class="ai-content">Calculating longevity metrics...</div></div>`;
+
         const contextPrompt = `You are an expert longevity coach. Analyze this data for ${u.name}.
         TODAY (${dk}): Readiness ${scoreVal}, Sleep ${rawOura.sleep}h, Active Cal ${rawOura.cal}.
         NUTRITION: Protein ${totals.p}g, Omega-3 ${totals.omega3}mg.
         Give 3 sentence insight: What's good, What to improve, Why it matters.`;
 
         try {
-            // FIX: Using gemini-pro which is standard for most free keys
+            // 3. Fetch from Gemini (Non-blocking)
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
             const response = await fetch(url, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ contents: [{ parts: [{ text: contextPrompt }] }] })
             });
+
             if(!response.ok) throw new Error("Gemini Error");
             const data = await response.json();
             const insight = data.candidates[0].content.parts[0].text;
             
             this.aiInsights[dk] = insight;
             localStorage.setItem(`centurion_ai_insights_${this.user}`, JSON.stringify(this.aiInsights));
-            return insight;
-        } catch(e) { return "AI Coach Currently Offline."; }
+            
+            if(aiContainer) aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header"><span>🧠 GEMINI LONGEVITY COACH</span></div><div class="ai-content">${insight.replace(/\*\*/g, '<strong>').replace(/\*/g, '')}</div><button class="ai-refresh" onclick="centurion.forceRefreshAI()">🔄 REGENERATE</button></div>`;
+
+        } catch(e) {
+            // 4. Fail Gracefully (Don't Crash)
+            console.error("AI Failed", e);
+            if(aiContainer) aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header"><span>⚠️ AI OFFLINE</span></div><div class="ai-content">Gemini API is currently unreachable. Check your API key.</div></div>`;
+        }
     }
 
-    async refreshAIInsight() {
-        const aiCard = document.querySelector('.ai-insight-card');
-        if(aiCard) aiCard.innerHTML = `<div class="ai-header"><span class="ai-loading"></span><span>GEMINI THINKING...</span></div>`;
+    forceRefreshAI() {
         const dk = getDateKey(this.getCurrentDate());
         delete this.aiInsights[dk];
-        this.render();
+        this.updateAI();
     }
 
     openBio() { document.getElementById('bioModal').classList.add('active'); }
@@ -437,7 +454,7 @@ class CenturionCore {
         this.render();
     }
 
-    async render() {
+    render() {
         const d = this.getCurrentDate();
         const dk = getDateKey(d);
         const today = getDateKey(getCaDate());
@@ -462,8 +479,6 @@ class CenturionCore {
         const checks = this.checkedItems[dk] || [];
         const { totals, rainbowScore } = this.calculateDailyTotals(dk);
         
-        let aiHTML = `<div class="ai-insight-card"><div class="ai-header"><span class="ai-loading"></span><span>GEMINI ANALYZING...</span></div><div class="ai-content">Calculating longevity metrics...</div></div>`;
-
         const html = `
         <div class="hero-section">
             <div class="ring-container">
@@ -477,7 +492,7 @@ class CenturionCore {
             </div>
         </div>
 
-        <div id="ai-container">${aiHTML}</div>
+        <div id="ai-container"></div>
 
         <div class="section-label">SLEEP ARCHITECTURE</div>
         <div class="sleep-grid">
@@ -512,17 +527,7 @@ class CenturionCore {
         `;
 
         document.getElementById('dayContent').innerHTML = html;
-
-        const insight = await this.getAIInsight(dk, rawOura, totals, u, rainbowScore);
-        const aiContainer = document.getElementById('ai-container');
-        if(aiContainer) {
-            aiContainer.innerHTML = `
-            <div class="ai-insight-card">
-                <div class="ai-header"><span>🧠 GEMINI LONGEVITY COACH</span></div>
-                <div class="ai-content">${insight.replace(/\*\*/g, '<strong>').replace(/\*/g, '')}</div>
-                <button class="ai-refresh" onclick="centurion.refreshAIInsight()">🔄 REGENERATE</button>
-            </div>`;
-        }
+        this.updateAI(); // CALL AI LAST (NON-BLOCKING)
     }
 }
 
