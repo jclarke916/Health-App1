@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v10011 OMNI-KEY</title>
+    <title>The Centurion | v10013 DIAGNOSTICS</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -54,6 +54,13 @@
         .tac-cmd { font-size: 0.8rem; font-weight: 700; color: #fff; line-height: 1.3; }
         .tac-meta { font-family: var(--font-data); font-size: 0.55rem; color: var(--muted); margin-top: 4px; }
 
+        /* DIAGNOSTICS CARD (New) */
+        .diag-card { background: #111; border: 1px solid #333; margin: 10px 16px; padding: 10px; border-radius: 8px; font-family: var(--font-data); font-size: 0.6rem; color: #888; }
+        .diag-row { display: flex; justify-content: space-between; margin-bottom: 4px; border-bottom: 1px solid #222; padding-bottom: 4px; }
+        .diag-status { font-weight: 700; }
+        .status-ok { color: var(--acid); }
+        .status-fail { color: var(--alert); }
+
         /* AI INSIGHT CARD */
         .ai-insight-card { 
             background: linear-gradient(135deg, rgba(0,240,255,0.05) 0%, rgba(66, 133, 244, 0.1) 100%); 
@@ -72,10 +79,8 @@
 
         /* GRIDS */
         .section-label { font-size: 0.55rem; font-weight: 900; color: var(--muted); letter-spacing: 1px; margin: 20px 16px 10px; text-transform: uppercase; }
-        .telemetry-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 10px; }
         .sleep-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 20px; }
-        .macro-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 30px; }
-        
+        .telemetry-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 10px; }
         .orb-card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 10px 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
         .orb-container { width: 60px; height: 60px; position: relative; display: flex; align-items: center; justify-content: center; margin-bottom: 5px; }
         .orb-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
@@ -88,31 +93,9 @@
         .live-dot { width: 5px; height: 5px; background: var(--alert); border-radius: 50%; position: absolute; top: 8px; right: 8px; box-shadow: 0 0 5px var(--alert); animation: pulse-fast 1s infinite; display: none; }
         .orb-card.live .live-dot { display: block; }
 
-        /* TIMELINE & BIO */
-        .timeline-container { padding: 0 16px; }
-        .time-slot { display: flex; gap: 12px; margin-bottom: 20px; position: relative; }
-        .ts-time { width: 45px; font-family: var(--font-data); font-size: 0.75rem; color: var(--muted); text-align: right; padding-top: 5px; }
-        .ts-card { flex: 1; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 15px; }
-        .ts-title { font-size: 0.85rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
-        .ts-desc { font-size: 0.75rem; color: #aaa; line-height: 1.4; }
-        .ts-mech { font-family: var(--font-data); font-size: 0.55rem; color: var(--muted); padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 5px; margin-top: 8px; }
-        
-        .check-btn { position: absolute; top: 15px; right: 15px; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border); background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; font-weight: 800; font-size: 0.7rem; }
-        .ts-card.checked .check-btn { background: var(--acid); border-color: var(--acid); color: #000; }
-        .ts-card.checked { opacity: 0.5; }
-
-        .bio-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; padding: 20px; overflow-y: auto; }
-        .bio-modal.active { display: block; }
-        .bio-content { background: var(--panel); border: 1px solid var(--acid); border-radius: 16px; padding: 20px; max-width: 500px; margin: 20px auto; }
-        .bio-field { margin-bottom: 15px; }
-        .bio-field label { display: block; font-size: 0.7rem; color: #aaa; margin-bottom: 5px; }
-        .bio-field input { width: 100%; background: #111; border: 1px solid var(--border); padding: 12px; color: #fff; font-family: var(--font-data); border-radius: 8px; }
-        .bio-save { width: 100%; padding: 15px; background: var(--acid); color: #000; font-weight: 900; border: none; border-radius: 8px; margin-top: 10px; cursor: pointer; }
-
         .sync-footer { position: fixed; bottom: 0; left: 0; width: 100%; background: #000; padding: 12px 16px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-family: var(--font-data); font-size: 0.6rem; color: #555; z-index: 200; }
         .pulse { animation: pulse 2s infinite; display: inline-block; width: 6px; height: 6px; background: var(--acid); border-radius: 50%; margin-right: 6px; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } }
-        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -136,7 +119,7 @@
 
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v10011</div>
+            <div class="app-name">CENTURION v10013</div>
             <div style="display:flex; gap:10px; align-items:center;">
                 <button class="bio-btn" onclick="centurion.openBio()">BIO</button>
                 <div class="user-switch">
@@ -150,6 +133,11 @@
             <span class="date-display" id="dateDisplay">TODAY</span>
             <button id="btn-next" class="nav-btn disabled" onclick="centurion.changeDate(1)">▶</button>
         </div>
+    </div>
+
+    <div id="diag-panel" class="diag-card">
+        <div style="color:#fff;margin-bottom:5px;">SYSTEM DIAGNOSTICS</div>
+        <div id="diag-content">Initializing Model Handshake...</div>
     </div>
 
     <div id="dayContent"></div>
@@ -174,60 +162,24 @@
 
 <script>
 // ==========================================
-// V10011: OMNI-KEY & DAILY SLEEP
-// - Auto-hunts for working Gemini Model
-// - Matches Oura App data exactly
+// V10013: DIAGNOSTIC MODE
 // ==========================================
 
 const TOKENS = { 'jermaine': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'sophia': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
-const GEMINI_API_KEY = "AIzaSyBtqgUcbq5uVGFZ5nHPDyhthLDii7uRNrg"; 
+const GEMINI_API_KEY = "AIzaSyDfX5eEzh24Jpw-ql0Vd2daAQ2lKHGOZho"; // PASTE KEY HERE
 
-// --- MODELS TO TRY IN ORDER ---
-const AI_MODELS = [
-    "gemini-1.5-flash-latest",
-    "gemini-1.5-flash-001",
+const USERS = {
+    'jermaine': { name: "Jermaine", goals: { cal: 700, z2: 60, z5: 20 } },
+    'sophia': { name: "Sophia", goals: { cal: 450, z2: 45, z5: 15 } }
+};
+
+// MODELS TO TEST
+const MODELS = [
     "gemini-1.5-flash",
+    "gemini-1.5-flash-latest",
     "gemini-pro",
     "gemini-1.0-pro"
 ];
-
-const USERS = {
-    'jermaine': { name: "Jermaine", age: 42, rhr: 48, goals: { cal: 700, z2: 60, z5: 20, pro: 180, carb: 200, fat: 80, fib: 40, sleep: 8, omega3: 3000, polyphenols: 500 } },
-    'sophia': { name: "Sophia", age: 38, rhr: 58, goals: { cal: 450, z2: 45, z5: 15, pro: 120, carb: 150, fat: 60, fib: 35, sleep: 8.5, omega3: 2500, polyphenols: 400 } }
-};
-
-// Backward Compatibility
-TOKENS['J'] = TOKENS['jermaine']; TOKENS['S'] = TOKENS['sophia'];
-USERS['J'] = USERS['jermaine']; USERS['S'] = USERS['sophia'];
-
-const MEAL_DB = {
-    'jermaine': {
-        juice: "Beet Vitality (Nitric Oxide)", breakfast: "Wild Salmon Bowl (Omega-3)",
-        lunch: "Sardine Quinoa Salad", snack: "Greek Yogurt Power Cup", dinner: "Wild Salmon Centurion"
-    },
-    'sophia': {
-        juice: "Orange Immune (Vit C)", breakfast: "Omega Scramble (Anti-Inflammatory)",
-        lunch: "White Fish Ceviche", snack: "Kefir Smoothie (Probiotic)", dinner: "Cod + White Beans"
-    }
-};
-MEAL_DB['J'] = MEAL_DB['jermaine']; MEAL_DB['S'] = MEAL_DB['sophia'];
-
-const MACRO_VALS = {
-    'hyd': { p:0, c:0, f:0, fib:0, omega3:0, polyphenols:0 },
-    'juice': { p:2, c:15, f:0, fib:2, omega3:50, polyphenols:200 },
-    'train': { p:25, c:10, f:2, fib:0, omega3:0, polyphenols:0 },
-    'lunch': { p:45, c:30, f:15, fib:8, omega3:1500, polyphenols:150 },
-    'breakfast': { p:45, c:10, f:25, fib:5, omega3:2000, polyphenols:100 },
-    'snack': { p:15, c:15, f:10, fib:5, omega3:500, polyphenols:250 },
-    'dinner': { p:50, c:30, f:15, fib:10, omega3:2500, polyphenols:150 }
-};
-
-const WORKOUTS = {
-    'anabolic_j': { title: "Heavy Compounds", sub: "Hypertrophy A", mech: "Deadlifts 5x5" },
-    'repair_j': { title: "Zone 2 Flush", sub: "Active Recovery", mech: "Ruck 45m @ 35lbs" },
-    'anabolic_s': { title: "Glute/Core", sub: "Strength", mech: "Hip Thrusts 4x10" },
-    'repair_s': { title: "Yoga Flow", sub: "Parasympathetic", mech: "Vinyasa 45m" }
-};
 
 function getCaDate() { let d = new Date(); d.setHours(12, 0, 0, 0); return d; }
 function getDateKey(d) { return d.toISOString().split('T')[0]; }
@@ -237,48 +189,86 @@ class CenturionCore {
         this.user = localStorage.getItem('centurion_active_user') || 'jermaine';
         this.dayOffset = 0;
         this.cache = JSON.parse(localStorage.getItem(`centurion_oura_cache_${this.user}`)) || { history: [] };
-        this.checkedItems = JSON.parse(localStorage.getItem(`centurion_checked_${this.user}`)) || {};
-        this.bios = JSON.parse(localStorage.getItem(`centurion_bios_${this.user}`)) || {};
         this.aiInsights = JSON.parse(localStorage.getItem(`centurion_ai_insights_${this.user}`)) || {};
+        this.validModel = null; // Stores the working model
         this.init();
     }
 
     init() {
         this.updateUI(); 
         this.render();   
-        this.fetchOuraData(); 
+        this.fetchOuraData();
+        this.runDiagnostics(); // RUN THE TEST
+    }
+
+    // --- NEW DIAGNOSTIC ENGINE ---
+    async runDiagnostics() {
+        const diagEl = document.getElementById('diag-content');
+        diagEl.innerHTML = "";
+        
+        let found = false;
+
+        for (let model of MODELS) {
+            const row = document.createElement('div');
+            row.className = 'diag-row';
+            row.innerHTML = `<span>${model}</span><span class="diag-status">Testing...</span>`;
+            diagEl.appendChild(row);
+
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+                const res = await fetch(url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: "Hello" }] }] })
+                });
+
+                if (res.ok) {
+                    row.querySelector('.diag-status').innerText = "✅ CONNECTED";
+                    row.querySelector('.diag-status').classList.add('status-ok');
+                    this.validModel = model;
+                    found = true;
+                    // Keep testing others just to show the user, or break? Let's break to be fast.
+                    diagEl.innerHTML += `<div style="color:#fff;margin-top:5px;">LOCKED ON: ${model}</div>`;
+                    this.updateAI(); // Trigger actual AI now
+                    break; 
+                } else {
+                    const err = await res.json();
+                    let code = err.error?.code || res.status;
+                    let msg = err.error?.message || "Unknown";
+                    if(msg.includes("not found")) msg = "NOT FOUND";
+                    if(msg.includes("API key")) msg = "KEY ERROR";
+                    
+                    row.querySelector('.diag-status').innerText = `❌ ${code} (${msg})`;
+                    row.querySelector('.diag-status').classList.add('status-fail');
+                }
+            } catch (e) {
+                row.querySelector('.diag-status').innerText = "❌ NET ERROR";
+            }
+        }
+
+        if(!found) {
+            diagEl.innerHTML += `<div style="color:var(--alert);margin-top:5px;">ALL CONNECTIONS FAILED. CHECK KEY PERMISSIONS.</div>`;
+        }
     }
 
     switchUser(uID) {
         if(this.user === uID) return;
         this.user = uID;
         localStorage.setItem('centurion_active_user', uID);
-        
         this.cache = JSON.parse(localStorage.getItem(`centurion_oura_cache_${uID}`)) || { history: [] };
-        this.checkedItems = JSON.parse(localStorage.getItem(`centurion_checked_${uID}`)) || {};
-        this.bios = JSON.parse(localStorage.getItem(`centurion_bios_${uID}`)) || {};
         this.aiInsights = JSON.parse(localStorage.getItem(`centurion_ai_insights_${uID}`)) || {};
-        
         this.dayOffset = 0;
         this.updateUI();
         this.render(); 
         this.fetchOuraData();
+        this.runDiagnostics();
     }
 
     changeDate(d) {
         this.dayOffset += d;
         if(this.dayOffset > 0) this.dayOffset = 0;
         this.render();
-    }
-
-    toggleItem(id) {
-        const dk = getDateKey(this.getCurrentDate());
-        if(!this.checkedItems[dk]) this.checkedItems[dk] = [];
-        const idx = this.checkedItems[dk].indexOf(id);
-        if(idx > -1) this.checkedItems[dk].splice(idx, 1);
-        else this.checkedItems[dk].push(id);
-        localStorage.setItem(`centurion_checked_${this.user}`, JSON.stringify(this.checkedItems));
-        this.render();
+        this.updateAI();
     }
 
     getCurrentDate() {
@@ -293,30 +283,9 @@ class CenturionCore {
         document.getElementById('ouraBar').innerHTML = `💍 SWITCHING...`;
     }
 
-    calculateDailyTotals(dk) {
-        const checks = this.checkedItems[dk] || [];
-        let totals = { p:0, c:0, f:0, fib:0, omega3:0, polyphenols:0 };
-        let colors = 0; 
-        
-        checks.forEach(id => {
-            if(MACRO_VALS[id]) {
-                totals.p += MACRO_VALS[id].p;
-                totals.c += MACRO_VALS[id].c;
-                totals.f += MACRO_VALS[id].f;
-                totals.fib += MACRO_VALS[id].fib;
-                totals.omega3 += MACRO_VALS[id].omega3;
-                totals.polyphenols += MACRO_VALS[id].polyphenols;
-                colors += 1;
-            }
-        });
-        const rainbowScore = Math.min(Math.round((colors / 5) * 100), 100);
-        return { totals, rainbowScore };
-    }
-
     async fetchOuraData() {
         const fetchID = this.user; 
         const token = TOKENS[fetchID];
-        // Fetch 7 days for stable history
         const endD = new Date(); 
         const startD = new Date(); startD.setDate(endD.getDate() - 7);
         const range = `start_date=${getDateKey(startD)}&end_date=${getDateKey(endD)}`;
@@ -324,7 +293,6 @@ class CenturionCore {
         document.getElementById('ouraBar').innerHTML = "💍 SYNCING...";
         
         try {
-            // PIVOT: Fetch 'daily_sleep' (summary) and 'daily_readiness' (score) and 'daily_activity'
             const [rRes, dsRes, aRes] = await Promise.all([
                 fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
@@ -339,12 +307,10 @@ class CenturionCore {
             
             if(rData.data) {
                 const hist = rData.data.map(day => {
-                    // Match everything by "day" string (2026-01-05)
                     const dateKey = day.day;
                     const dailySleep = dsData.data ? dsData.data.find(d => d.day === dateKey) : null;
                     const dailyAct = aData.data ? aData.data.find(a => a.day === dateKey) : null;
 
-                    // SLEEP FROM DAILY_SLEEP (The source of truth for the App)
                     let sleepHours = "-", deepMin = "-", remMin = "-";
                     
                     if(dailySleep && dailySleep.total_sleep_duration) {
@@ -375,57 +341,53 @@ class CenturionCore {
         }
     }
 
-    // --- AUTO-NEGOTIATING AI FETCH ---
-    async getAIInsight(dk, rawOura, totals, u, rainbowScore) {
-        if(this.aiInsights[dk]) return this.aiInsights[dk];
-
-        const scoreVal = parseInt(rawOura.score) || 0;
-        const contextPrompt = `You are an expert longevity coach. Analyze this data for ${u.name}.
-        TODAY (${dk}): Readiness ${scoreVal}, Sleep ${rawOura.sleep}h, Active Cal ${rawOura.cal}.
-        NUTRITION: Protein ${totals.p}g, Omega-3 ${totals.omega3}mg.
-        Give 3 sentence insight: What's good, What to improve, Why it matters.`;
-
-        // Loop through models until one works
-        for(let model of AI_MODELS) {
-            try {
-                console.log(`Trying Gemini Model: ${model}...`);
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
-                
-                const response = await fetch(url, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: contextPrompt }] }] })
-                });
-
-                if(response.status === 404) {
-                    console.warn(`${model} not found (404). Trying next...`);
-                    continue; // Try next model
-                }
-                
-                if(!response.ok) throw new Error(`Status ${response.status}`);
-
-                const data = await response.json();
-                if(!data.candidates) throw new Error("No candidates");
-
-                const insight = data.candidates[0].content.parts[0].text;
-                this.aiInsights[dk] = insight;
-                localStorage.setItem(`centurion_ai_insights_${this.user}`, JSON.stringify(this.aiInsights));
-                return insight;
-
-            } catch(e) {
-                console.error(`Model ${model} failed:`, e);
-            }
-        }
+    async updateAI() {
+        const dk = getDateKey(this.getCurrentDate());
+        const aiContainer = document.getElementById('ai-container');
         
-        return "⚠️ OFFLINE: API Key permission issue. Check Google Cloud Console.";
+        if(!this.validModel) return; // Wait for handshake
+
+        if(this.aiInsights[dk]) {
+            if(aiContainer) aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header"><span>🧠 GEMINI COACH</span></div><div class="ai-content">${this.aiInsights[dk].replace(/\*\*/g, '<strong>').replace(/\*/g, '')}</div><button class="ai-refresh" onclick="centurion.forceRefreshAI()">🔄 REGENERATE</button></div>`;
+            return;
+        }
+
+        const rawOura = this.cache.history.find(d => d.date === dk) || {};
+        const u = USERS[this.user];
+        const scoreVal = parseInt(rawOura.score) || 0;
+        
+        if(scoreVal === 0) { if(aiContainer) aiContainer.innerHTML = ''; return; }
+
+        aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header"><span class="ai-loading"></span><span>ANALYZING...</span></div><div class="ai-content">Checking longevity metrics...</div></div>`;
+
+        const contextPrompt = `Expert longevity analysis for ${u.name}. TODAY: Readiness ${scoreVal}, Sleep ${rawOura.sleep}h. One sentence advice.`;
+
+        try {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.validModel}:generateContent?key=${GEMINI_API_KEY}`;
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ contents: [{ parts: [{ text: contextPrompt }] }] })
+            });
+
+            if(!response.ok) throw new Error("Gemini Error");
+            const data = await response.json();
+            const insight = data.candidates[0].content.parts[0].text;
+            
+            this.aiInsights[dk] = insight;
+            localStorage.setItem(`centurion_ai_insights_${this.user}`, JSON.stringify(this.aiInsights));
+            
+            if(aiContainer) aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header"><span>🧠 GEMINI COACH</span></div><div class="ai-content">${insight.replace(/\*\*/g, '<strong>').replace(/\*/g, '')}</div><button class="ai-refresh" onclick="centurion.forceRefreshAI()">🔄 REGENERATE</button></div>`;
+
+        } catch(e) {
+            aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header" style="color:var(--alert)">⚠️ RUNTIME ERROR</div><div class="ai-content">Connection dropped during analysis.</div></div>`;
+        }
     }
 
-    async refreshAIInsight() {
-        const aiCard = document.querySelector('.ai-insight-card');
-        if(aiCard) aiCard.innerHTML = `<div class="ai-header"><span class="ai-loading"></span><span>GEMINI THINKING...</span></div>`;
+    forceRefreshAI() {
         const dk = getDateKey(this.getCurrentDate());
         delete this.aiInsights[dk];
-        this.render();
+        this.updateAI();
     }
 
     openBio() { document.getElementById('bioModal').classList.add('active'); }
@@ -441,7 +403,7 @@ class CenturionCore {
         this.render();
     }
 
-    async render() {
+    render() {
         const d = this.getCurrentDate();
         const dk = getDateKey(d);
         const today = getDateKey(getCaDate());
@@ -462,12 +424,6 @@ class CenturionCore {
             else statusMsg = "RECOVERY REQUIRED. SLEEP DEBT.";
         }
 
-        const meals = MEAL_DB[this.user];
-        const checks = this.checkedItems[dk] || [];
-        const { totals, rainbowScore } = this.calculateDailyTotals(dk);
-        
-        let aiHTML = `<div class="ai-insight-card"><div class="ai-header"><span class="ai-loading"></span><span>GEMINI ANALYZING...</span></div><div class="ai-content">Checking models...</div></div>`;
-
         const html = `
         <div class="hero-section">
             <div class="ring-container">
@@ -481,7 +437,7 @@ class CenturionCore {
             </div>
         </div>
 
-        <div id="ai-container">${aiHTML}</div>
+        <div id="ai-container"></div>
 
         <div class="section-label">SLEEP ARCHITECTURE</div>
         <div class="sleep-grid">
@@ -497,36 +453,10 @@ class CenturionCore {
             <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-zone5); stroke-dashoffset:${158-(Math.min(safeNum(rawOura.high),30)/30)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.high}</div><span class="orb-unit">Z5 MIN</span></div></div><div class="orb-label">PEAK</div></div>
             <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--acid)"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.rhr}</div><span class="orb-unit">BPM</span></div></div><div class="orb-label">RHR</div></div>
         </div>
-
-        <div class="section-label">MACRO ADHERENCE</div>
-        <div class="macro-grid">
-            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:#fff; stroke-dashoffset:${158-(Math.min(totals.p/u.goals.pro,1)*158)}"></circle></svg><div class="orb-val-box"><div class="orb-val">${totals.p}</div><span class="orb-unit">PRO</span></div></div><div class="orb-label">PROTEIN</div></div>
-            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:#00d4ff; stroke-dashoffset:${158-(Math.min(totals.omega3/u.goals.omega3,1)*158)}"></circle></svg><div class="orb-val-box"><div class="orb-val">${Math.round(totals.omega3/100)/10}</div><span class="orb-unit">Ω-3g</span></div></div><div class="orb-label">OMEGA-3</div></div>
-            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:#bf5af2; stroke-dashoffset:${158-(Math.min(totals.polyphenols/u.goals.polyphenols,1)*158)}"></circle></svg><div class="orb-val-box"><div class="orb-val">${totals.polyphenols}</div><span class="orb-unit">POLY</span></div></div><div class="orb-label">POLYPHENOLS</div></div>
-            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:#30d158; stroke-dashoffset:${158-(Math.min(totals.fib/u.goals.fib,1)*158)}"></circle></svg><div class="orb-val-box"><div class="orb-val">${totals.fib}</div><span class="orb-unit">FIB</span></div></div><div class="orb-label">FIBER</div></div>
-        </div>
-
-        <div class="timeline-container">
-            <div class="section-header"><span>CHRONO-PROTOCOL</span></div>
-            <div class="time-slot"><div class="ts-time">7 AM</div><div class="ts-card ${this.checkedItems[dk]?.includes('hyd')?'checked':''}"><div class="ts-title">Hydration</div><div class="ts-desc">Sea Moss Gel (2 tbsp)</div><button class="check-btn" onclick="centurion.toggleItem('hyd')">${this.checkedItems[dk]?.includes('hyd')?'✓':'○'}</button></div></div>
-            <div class="time-slot"><div class="ts-time">8 AM</div><div class="ts-card ${this.checkedItems[dk]?.includes('juice')?'checked':''}"><div class="ts-title">Juice Protocol</div><div class="ts-desc">${meals.juice}</div><button class="check-btn" onclick="centurion.toggleItem('juice')">${this.checkedItems[dk]?.includes('juice')?'✓':'○'}</button></div></div>
-            <div class="time-slot"><div class="ts-time">9 AM</div><div class="ts-card ${this.checkedItems[dk]?.includes('train')?'checked':''}"><div class="ts-title">Training</div><div class="ts-desc">${scoreVal>=80?'Zone 5 / Strength':'Zone 2 Recovery'}</div><button class="check-btn" onclick="centurion.toggleItem('train')">${this.checkedItems[dk]?.includes('train')?'✓':'○'}</button></div></div>
-            <div class="time-slot"><div class="ts-time">1 PM</div><div class="ts-card ${this.checkedItems[dk]?.includes('lunch')?'checked':''}"><div class="ts-title">Lunch</div><div class="ts-desc">${meals.lunch}</div><button class="check-btn" onclick="centurion.toggleItem('lunch')">${this.checkedItems[dk]?.includes('lunch')?'✓':'○'}</button></div></div>
-        </div>
         `;
 
         document.getElementById('dayContent').innerHTML = html;
-
-        const insight = await this.getAIInsight(dk, rawOura, totals, u, rainbowScore);
-        const aiContainer = document.getElementById('ai-container');
-        if(aiContainer) {
-            aiContainer.innerHTML = `
-            <div class="ai-insight-card">
-                <div class="ai-header"><span>🧠 GEMINI LONGEVITY COACH</span></div>
-                <div class="ai-content">${insight.replace(/\*\*/g, '<strong>').replace(/\*/g, '')}</div>
-                <button class="ai-refresh" onclick="centurion.refreshAIInsight()">🔄 REGENERATE</button>
-            </div>`;
-        }
+        if(this.validModel) this.updateAI();
     }
 }
 
