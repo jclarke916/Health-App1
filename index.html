@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v10039 FINAL LINK</title>
+    <title>The Centurion | v10040 UNIFIED</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -14,138 +14,258 @@
             --cyan: #00f0ff;
             --gold: #FFD60A;
             --alert: #ff453a;
+            --purple: #bf5af2;
             --text: #ffffff;
+            --muted: #666;
             --font-ui: 'Inter', sans-serif;
             --font-data: 'JetBrains Mono', monospace;
         }
 
-        * { box-sizing: border-box; }
-        body { margin: 0; padding: 0 0 100px 0; background: var(--bg); color: var(--text); font-family: var(--font-ui); min-height: 100vh; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; padding: 0 0 100px 0; background: var(--bg); color: var(--text); font-family: var(--font-ui); min-height: 100vh; background-image: radial-gradient(circle at top right, #111 0%, #000 70%); }
 
-        /* HEADER */
+        /* HEADER & SCANNER */
         .hud-header { padding: 15px 16px; background: rgba(0,0,0,0.95); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--border); }
         .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .app-name { font-size: 0.6rem; font-weight: 900; letter-spacing: 2px; color: var(--muted); }
         .user-switch { display: flex; gap: 4px; background: #222; padding: 2px; border-radius: 20px; }
         .u-badge { padding: 6px 14px; border-radius: 16px; font-size: 0.6rem; font-weight: 700; color: #666; background: transparent; border: none; cursor: pointer; transition: all 0.2s; }
         .u-badge.active { background: var(--text); color: #000; }
-
-        /* SCANNER UI */
-        .scanner-box { background: #111; border: 1px solid #333; padding: 10px; margin-bottom: 15px; border-radius: 8px; }
-        .scan-btn { width: 100%; background: var(--cyan); color: #000; font-weight: 900; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.7rem; margin-bottom: 10px; }
-        .entry-list { max-height: 150px; overflow-y: auto; }
-        .entry-item { 
-            display: flex; justify-content: space-between; padding: 10px; 
-            border-bottom: 1px solid #222; cursor: pointer; font-family: var(--font-data); font-size: 0.65rem; color: #aaa; 
-        }
+        
+        .scanner-box { background: #111; border: 1px solid #333; padding: 5px; border-radius: 8px; margin-top: 5px; }
+        .scan-btn { width: 100%; background: var(--cyan); color: #000; font-weight: 900; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.65rem; }
+        .entry-list { max-height: 120px; overflow-y: auto; margin-top: 5px; display: none; border-top: 1px solid #333; }
+        .entry-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #222; cursor: pointer; font-family: var(--font-data); font-size: 0.6rem; color: #aaa; }
         .entry-item:hover { background: #222; color: #fff; }
-        .entry-item.active { border-left: 3px solid var(--acid); background: rgba(204,255,0,0.1); color: var(--acid); }
+        .entry-item.active { background: rgba(0, 240, 255, 0.1); color: var(--cyan); border-left: 2px solid var(--cyan); }
 
-        /* DASHBOARD */
-        .hero-section { padding: 20px 16px; display: flex; align-items: center; justify-content: space-between; }
-        .ring-container { width: 80px; height: 80px; position: relative; display: flex; align-items: center; justify-content: center; }
+        /* HERO */
+        .hero-section { padding: 25px 16px 10px; display: flex; align-items: center; justify-content: space-between; }
+        .ring-container { width: 110px; height: 110px; position: relative; display: flex; align-items: center; justify-content: center; }
         .ring-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
         .ring-bg { fill: none; stroke: var(--border); stroke-width: 6; }
-        .ring-fg { fill: none; stroke: var(--acid); stroke-width: 6; stroke-dasharray: 220; stroke-dashoffset: 220; transition: stroke-dashoffset 1s ease; }
-        .ring-val { font-family: var(--font-data); font-size: 1.2rem; font-weight: 700; color: #fff; }
+        .ring-fg { fill: none; stroke: var(--acid); stroke-width: 6; stroke-dasharray: 283; stroke-dashoffset: 283; transition: stroke-dashoffset 1s ease; }
+        .ring-data { position: absolute; text-align: center; }
+        .ring-val { font-family: var(--font-data); font-size: 1.8rem; font-weight: 700; color: #fff; line-height: 1; }
+        .ring-label { font-size: 0.5rem; font-weight: 700; color: var(--muted); margin-top: 2px; }
+
+        .tactical-box { flex: 1; margin-left: 20px; background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, transparent 100%); border-left: 3px solid var(--acid); padding: 12px; border-radius: 0 12px 12px 0; border: 1px solid var(--border); }
+        .tac-label { font-size: 0.55rem; color: var(--acid); font-weight: 900; letter-spacing: 1px; margin-bottom: 4px; text-transform: uppercase; }
+        .tac-cmd { font-size: 0.8rem; font-weight: 700; color: #fff; line-height: 1.3; }
+        .tac-meta { font-family: var(--font-data); font-size: 0.55rem; color: var(--muted); margin-top: 4px; }
+
+        /* SECTIONS & GRIDS */
+        .section-label { font-size: 0.55rem; font-weight: 900; color: var(--muted); letter-spacing: 1px; margin: 20px 16px 10px; text-transform: uppercase; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 20px; }
+        .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 20px; }
         
-        .tactical-box { flex: 1; margin-left: 20px; border-left: 3px solid var(--acid); padding: 10px; }
-        .tac-label { font-size: 0.6rem; color: var(--acid); font-weight: 900; text-transform: uppercase; }
-        .tac-cmd { font-size: 0.8rem; font-weight: 700; color: #fff; }
+        .orb-card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 10px 5px; display: flex; flex-direction: column; align-items: center; position: relative; }
+        .orb-container { width: 50px; height: 50px; position: relative; display: flex; align-items: center; justify-content: center; margin-bottom: 5px; }
+        .orb-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+        .orb-bg { fill: none; stroke: #222; stroke-width: 4; }
+        .orb-fg { fill: none; stroke: var(--cyan); stroke-width: 4; stroke-dasharray: 145; stroke-dashoffset: 145; transition: stroke-dashoffset 1s ease; }
+        .orb-val-box { position: absolute; text-align: center; }
+        .orb-val { font-family: var(--font-data); font-size: 0.7rem; font-weight: 700; color: #fff; }
+        .orb-label { font-size: 0.45rem; font-weight: 700; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
 
-        .sleep-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-top: 20px; }
-        .orb-card { background: var(--panel); border: 1px solid var(--border); padding: 15px 5px; text-align: center; border-radius: 8px; }
-        .orb-val { font-family: var(--font-data); font-weight: 700; font-size: 0.8rem; color: #fff; }
-        .orb-label { font-size: 0.5rem; color: #666; margin-top: 5px; text-transform: uppercase; }
+        /* TIMELINE */
+        .timeline-container { padding: 0 16px; margin-bottom: 40px; }
+        .time-slot { display: flex; gap: 12px; margin-bottom: 15px; position: relative; }
+        .ts-time { width: 45px; font-family: var(--font-data); font-size: 0.7rem; color: var(--muted); text-align: right; padding-top: 5px; }
+        .ts-card { flex: 1; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 12px; position: relative; }
+        .ts-title { font-size: 0.8rem; font-weight: 700; color: #fff; margin-bottom: 2px; }
+        .ts-desc { font-size: 0.65rem; color: #888; }
+        .check-btn { position: absolute; top: 12px; right: 12px; width: 20px; height: 20px; border-radius: 50%; border: 1px solid #444; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #000; font-weight: 800; font-size: 0.6rem; transition: all 0.2s; }
+        .ts-card.checked { border-color: var(--acid); opacity: 0.6; }
+        .ts-card.checked .check-btn { background: var(--acid); border-color: var(--acid); }
 
-        /* AI SECTION */
-        .ai-section { padding: 16px; }
-        .ai-card { background: #080808; border: 1px solid #333; padding: 15px; border-radius: 12px; }
-        .ai-select { width: 100%; background: #111; color: #fff; border: 1px solid #444; padding: 8px; font-size: 0.65rem; margin-bottom: 10px; border-radius: 4px; }
-        .ai-btn { width: 100%; background: var(--acid); color: #000; font-weight: 900; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.7rem; }
+        /* AI CARD */
+        .ai-insight-card { 
+            background: linear-gradient(135deg, rgba(0,240,255,0.05) 0%, rgba(66, 133, 244, 0.1) 100%); 
+            border: 1px solid rgba(0,240,255,0.3); border-radius: 12px; padding: 15px; margin: 15px 16px; 
+        }
+        .ai-select { width: 100%; background: #000; color: #fff; border: 1px solid #333; padding: 8px; font-size: 0.6rem; margin-bottom: 10px; border-radius: 4px; }
+        .ai-btn { width: 100%; padding: 10px; background: rgba(0,240,255,0.1); border: 1px solid var(--cyan); color: var(--cyan); font-weight: 700; border-radius: 6px; cursor: pointer; font-size: 0.65rem; }
+
+        /* MODAL */
+        .bio-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; padding: 20px; }
+        .bio-modal.active { display: block; }
+        .bio-content { background: var(--panel); border: 1px solid var(--acid); border-radius: 16px; padding: 20px; margin-top: 50px; }
+        .bio-field { margin-bottom: 15px; }
+        .bio-field label { display: block; font-size: 0.7rem; color: #aaa; margin-bottom: 5px; }
+        .bio-field input { width: 100%; background: #111; border: 1px solid var(--border); padding: 12px; color: #fff; font-family: var(--font-data); border-radius: 8px; }
+        .bio-save { width: 100%; padding: 15px; background: var(--acid); color: #000; font-weight: 900; border: none; border-radius: 8px; cursor: pointer; }
     </style>
 </head>
 <body>
 
+    <svg style="width:0; height:0; position:absolute;" aria-hidden="true" focusable="false">
+      <defs>
+        <linearGradient id="grad-zone2" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" style="stop-color:#00f0ff;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#0080ff;stop-opacity:1" />
+        </linearGradient>
+        <linearGradient id="grad-zone5" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" style="stop-color:#ff453a;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#ff9f0a;stop-opacity:1" />
+        </linearGradient>
+        <linearGradient id="grad-purple" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" style="stop-color:#bf5af2;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#9d4edd;stop-opacity:1" />
+        </linearGradient>
+      </defs>
+    </svg>
+
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v10039</div>
-            <div class="user-switch">
-                <button id="btn-jermaine" class="u-badge active" onclick="centurion.switchUser('jermaine')">JER</button>
-                <button id="btn-sophia" class="u-badge" onclick="centurion.switchUser('sophia')">SOPH</button>
+            <div class="app-name">CENTURION v10040</div>
+            <div style="display:flex; gap:10px;">
+                <button onclick="centurion.openBio()" style="background:transparent; border:1px solid #333; color:#666; padding:4px 8px; border-radius:4px; font-size:0.6rem;">BIO</button>
+                <div class="user-switch">
+                    <button id="btn-jermaine" class="u-badge active" onclick="centurion.switchUser('jermaine')">JER</button>
+                    <button id="btn-sophia" class="u-badge" onclick="centurion.switchUser('sophia')">SOPH</button>
+                </div>
             </div>
         </div>
-
         <div class="scanner-box">
             <button class="scan-btn" onclick="centurion.scanCloud()">SCAN CLOUD DATA</button>
-            <div id="entryList" class="entry-list">
-                <div style="text-align:center; padding:10px; color:#444; font-size:0.6rem;">Click SCAN to find data.</div>
-            </div>
+            <div id="entryList" class="entry-list"></div>
         </div>
     </div>
 
     <div id="dashboard" style="opacity:0.3; transition:opacity 0.5s;">
+        
         <div class="hero-section">
             <div class="ring-container">
-                <svg class="ring-svg"><circle class="ring-bg" cx="40" cy="40" r="35"></circle><circle class="ring-fg" id="ringFg" cx="40" cy="40" r="35"></circle></svg>
-                <div class="ring-val" id="scoreVal">--</div>
+                <svg class="ring-svg"><circle class="ring-bg" cx="50" cy="50" r="45"></circle><circle class="ring-fg" id="ringFg" cx="50" cy="50" r="45"></circle></svg>
+                <div class="ring-data"><div class="ring-val" id="scoreVal">--</div><div class="ring-label">READINESS</div></div>
             </div>
             <div class="tactical-box">
                 <div class="tac-label" id="dateLabel">NO DATA</div>
-                <div class="tac-cmd" id="statusMsg">SELECT AN ENTRY</div>
+                <div class="tac-cmd" id="statusMsg">SELECT DATA ABOVE</div>
+                <div class="tac-meta" id="bioDisplay">--</div>
             </div>
         </div>
 
-        <div class="sleep-grid">
-            <div class="orb-card"><div class="orb-val" id="sleepVal">--</div><div class="orb-label">TOTAL</div></div>
-            <div class="orb-card"><div class="orb-val" id="deepVal">--</div><div class="orb-label">DEEP</div></div>
-            <div class="orb-card"><div class="orb-val" id="remVal">--</div><div class="orb-label">REM</div></div>
+        <div class="ai-insight-card">
+            <select id="aiModel" class="ai-select">
+                <option value="gemini-2.0-flash-lite-preview-02-05">gemini-2.0-flash-lite (Recommended)</option>
+                <option value="gemini-1.5-flash">gemini-1.5-flash</option>
+                <option value="gemini-pro">gemini-pro</option>
+            </select>
+            <div id="aiOutput" style="font-size:0.75rem; line-height:1.4; color:#ddd; margin-bottom:10px;">Ready for analysis.</div>
+            <button class="ai-btn" onclick="centurion.runAI()">GENERATE COACHING</button>
         </div>
 
-        <div class="ai-section">
-            <div class="ai-card">
-                <div style="color:var(--cyan); font-weight:900; font-size:0.7rem; margin-bottom:5px;">AI COACH</div>
-                
-                <select id="aiModel" class="ai-select">
-                    <option value="gemini-2.0-flash-lite-preview-02-05">gemini-2.0-flash-lite (Your Account)</option>
-                    <option value="gemini-1.5-flash">gemini-1.5-flash</option>
-                    <option value="gemini-pro">gemini-pro</option>
-                </select>
+        <div class="section-label">SLEEP ARCHITECTURE</div>
+        <div class="grid-3">
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle><circle class="orb-fg" id="sleepOrb" cx="25" cy="25" r="20" style="stroke:url(#grad-purple)"></circle></svg><div class="orb-val-box"><div class="orb-val" id="sleepVal">--</div></div></div><div class="orb-label">TOTAL</div></div>
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle><circle class="orb-fg" id="deepOrb" cx="25" cy="25" r="20" style="stroke:#007aff"></circle></svg><div class="orb-val-box"><div class="orb-val" id="deepVal">--</div></div></div><div class="orb-label">DEEP</div></div>
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle><circle class="orb-fg" id="remOrb" cx="25" cy="25" r="20" style="stroke:var(--purple)"></circle></svg><div class="orb-val-box"><div class="orb-val" id="remVal">--</div></div></div><div class="orb-label">REM</div></div>
+        </div>
 
-                <div id="aiOutput" style="font-size:0.7rem; color:#ddd; min-height:20px; margin-bottom:10px;">Load data above, then click Generate.</div>
-                <button class="ai-btn" onclick="centurion.runAI()">GENERATE ANALYSIS</button>
+        <div class="section-label">CARDIO-METABOLIC STATUS</div>
+        <div class="grid-4">
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle><circle class="orb-fg" cx="25" cy="25" r="20" style="stroke:var(--cyan)"></circle></svg><div class="orb-val-box"><div class="orb-val">-</div></div></div><div class="orb-label">CAL</div></div>
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle><circle class="orb-fg" cx="25" cy="25" r="20" style="stroke:url(#grad-zone2)"></circle></svg><div class="orb-val-box"><div class="orb-val">-</div></div></div><div class="orb-label">Z2</div></div>
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle><circle class="orb-fg" cx="25" cy="25" r="20" style="stroke:url(#grad-zone5)"></circle></svg><div class="orb-val-box"><div class="orb-val">-</div></div></div><div class="orb-label">Z5</div></div>
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle><circle class="orb-fg" cx="25" cy="25" r="20" style="stroke:var(--acid)"></circle></svg><div class="orb-val-box"><div class="orb-val" id="rhrVal">--</div></div></div><div class="orb-label">RHR</div></div>
+        </div>
+
+        <div class="section-label">MACRO ADHERENCE</div>
+        <div class="grid-4" id="macroGrid">
             </div>
+
+        <div class="timeline-container" id="timeline">
+            </div>
+    </div>
+
+    <div id="bioModal" class="bio-modal">
+        <div class="bio-content">
+            <div style="display:flex;justify-content:space-between;margin-bottom:20px;">
+                <span style="color:var(--acid);font-weight:900;">BIOMETRICS</span>
+                <span onclick="centurion.closeBio()" style="color:#666;cursor:pointer;">✕</span>
+            </div>
+            <div class="bio-field"><label>VO2 MAX</label><input id="in-vo2" type="number"></div>
+            <div class="bio-field"><label>RHR (MANUAL)</label><input id="in-rhr" type="number"></div>
+            <div class="bio-field"><label>APOB / ANA</label><input id="in-bio" type="text"></div>
+            <button class="bio-save" onclick="centurion.saveBio()">SAVE DATA</button>
         </div>
     </div>
 
 <script>
 // ==========================================
-// V10039: THE FINAL LINK
-// - Scanner confirmed working
-// - AI Model Switcher added to fix 404
+// V10040: THE GRAND UNIFICATION
+// - Scanner Engine (Data Fetch)
+// - Full Dashboard UI (Orbs, Grids, Timeline)
+// - Model Switcher (AI Repair)
 // ==========================================
 
 const TOKENS = { 'jermaine': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'sophia': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
 const API_KEY = "AIzaSyBtqgUcbq5uVGFZ5nHPDyhthLDii7uRNrg"; 
 
+const USERS = {
+    'jermaine': { name: "Jermaine", goals: { pro: 180, omega3: 3000, poly: 500, fib: 40 } },
+    'sophia': { name: "Sophia", goals: { pro: 120, omega3: 2500, poly: 400, fib: 35 } }
+};
+
+const MACRO_VALS = {
+    'hyd': { p:0, o:0, poly:0, f:0 },
+    'juice': { p:2, o:50, poly:200, f:2 },
+    'train': { p:25, o:0, poly:0, f:0 },
+    'lunch': { p:45, o:1500, poly:150, f:8 },
+    'dinner': { p:50, o:2500, poly:150, f:10 }
+};
+
+const PROTOCOL = {
+    'jermaine': [
+        { id:'hyd', time:'7 AM', title:'Hydration', desc:'Sea Moss Gel (2 tbsp)' },
+        { id:'juice', time:'8 AM', title:'Juice', desc:'Beet Vitality' },
+        { id:'train', time:'9 AM', title:'Training', desc:'Strength / Zone 2' },
+        { id:'lunch', time:'1 PM', title:'Lunch', desc:'Sardine Quinoa Salad' },
+        { id:'dinner', time:'6 PM', title:'Dinner', desc:'Wild Salmon' }
+    ],
+    'sophia': [
+        { id:'hyd', time:'7 AM', title:'Hydration', desc:'Lemon Water' },
+        { id:'juice', time:'8 AM', title:'Juice', desc:'Orange Immune' },
+        { id:'train', time:'9 AM', title:'Movement', desc:'Yoga / Pilates' },
+        { id:'lunch', time:'1 PM', title:'Lunch', desc:'Ceviche' },
+        { id:'dinner', time:'6 PM', title:'Dinner', desc:'White Fish' }
+    ]
+};
+
 class CenturionCore {
     constructor() {
-        this.user = 'jermaine';
+        this.user = localStorage.getItem('centurion_user') || 'jermaine';
         this.activeData = null;
+        this.checked = JSON.parse(localStorage.getItem(`c_checked_${this.user}`)) || {};
+        this.bios = JSON.parse(localStorage.getItem(`c_bios_${this.user}`)) || {};
+        this.renderMacros();
+        this.renderTimeline();
+        this.updateBioDisplay();
     }
 
     switchUser(u) {
         this.user = u;
+        localStorage.setItem('centurion_user', u);
+        this.checked = JSON.parse(localStorage.getItem(`c_checked_${u}`)) || {};
+        this.bios = JSON.parse(localStorage.getItem(`c_bios_${u}`)) || {};
+        
         document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
         document.getElementById(`btn-${u}`).classList.add('active');
-        this.scanCloud();
+        
+        this.renderMacros();
+        this.renderTimeline();
+        this.updateBioDisplay();
+        this.scanCloud(); // Auto-scan on switch
     }
 
+    // --- SCANNER ENGINE ---
     async scanCloud() {
         const list = document.getElementById('entryList');
+        list.style.display = 'block';
         list.innerHTML = '<div style="text-align:center; padding:10px; color:#fff;">Scanning Oura Cloud...</div>';
         
-        // Date Range: Wide net to catch timezone issues
         const d = new Date();
         d.setDate(d.getDate() + 1);
         const end = d.toISOString().split('T')[0];
@@ -153,7 +273,6 @@ class CenturionCore {
         const start = d.toISOString().split('T')[0];
 
         try {
-            // Parallel Fetch
             const [sRes, rRes] = await Promise.all([
                 fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${start}&end_date=${end}`)}`, { headers: { 'Authorization': `Bearer ${TOKENS[this.user]}` } }),
                 fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${start}&end_date=${end}`)}`, { headers: { 'Authorization': `Bearer ${TOKENS[this.user]}` } })
@@ -169,7 +288,6 @@ class CenturionCore {
 
             list.innerHTML = '';
             
-            // Map & Sort Data
             const entries = sJson.data.map(session => {
                 const day = session.day;
                 const readiness = rJson.data ? rJson.data.find(r => r.day === day) : null;
@@ -178,15 +296,14 @@ class CenturionCore {
                     score: readiness ? readiness.score : 0,
                     totalSec: session.total_sleep_duration,
                     deepSec: session.deep_sleep_duration,
-                    remSec: session.rem_sleep_duration
+                    remSec: session.rem_sleep_duration,
+                    rhr: readiness && readiness.contributors ? readiness.contributors.resting_heart_rate : '-'
                 };
             }).sort((a, b) => b.date.localeCompare(a.date));
 
             entries.forEach(e => {
-                // Calculate display time
                 const h = Math.floor(e.totalSec / 3600);
                 const m = Math.round((e.totalSec % 3600) / 60);
-                
                 const item = document.createElement('div');
                 item.className = 'entry-item';
                 item.innerHTML = `<span>${e.date}</span><span>${h}h ${m}m | Score: ${e.score || '-'}</span>`;
@@ -202,10 +319,10 @@ class CenturionCore {
     loadData(data, element) {
         document.querySelectorAll('.entry-item').forEach(el => el.classList.remove('active'));
         element.classList.add('active');
-
         this.activeData = data;
         document.getElementById('dashboard').style.opacity = '1';
 
+        // Render Sleep & Score
         const h = Math.floor(data.totalSec / 3600);
         const m = Math.round((data.totalSec % 3600) / 60);
         
@@ -213,18 +330,98 @@ class CenturionCore {
         document.getElementById('sleepVal').innerText = `${h}h ${m}m`;
         document.getElementById('deepVal').innerText = Math.round(data.deepSec / 60) + "m";
         document.getElementById('remVal').innerText = Math.round(data.remSec / 60) + "m";
+        document.getElementById('rhrVal').innerText = data.rhr;
         
         document.getElementById('dateLabel').innerText = `DATA: ${data.date}`;
-        document.getElementById('statusMsg').innerText = data.score >= 80 ? "OPTIMAL" : "RECOVERY";
+        document.getElementById('statusMsg').innerText = data.score >= 80 ? "OPTIMAL READINESS" : "RECOVERY REQUIRED";
 
-        const offset = 220 - (Math.min(data.score, 100) / 100) * 220;
-        document.getElementById('ringFg').style.strokeDashoffset = offset;
-        document.getElementById('aiOutput').innerText = "Data loaded. Ready for AI.";
+        // Orbs
+        const ringOff = 283 - (Math.min(data.score, 100) / 100) * 283;
+        document.getElementById('ringFg').style.strokeDashoffset = ringOff;
+        
+        const sleepOff = 145 - (Math.min((data.totalSec/3600), 9) / 9) * 145;
+        document.getElementById('sleepOrb').style.strokeDashoffset = sleepOff;
+
+        // Reset AI
+        document.getElementById('aiOutput').innerText = "Data loaded. Ready for Analysis.";
+        
+        // Load macros for this specific date
+        this.renderMacros();
+        this.renderTimeline();
     }
 
+    // --- MACROS & TIMELINE ---
+    toggleTask(id) {
+        const dateKey = this.activeData ? this.activeData.date : new Date().toISOString().split('T')[0];
+        if(!this.checked[dateKey]) this.checked[dateKey] = [];
+        
+        const idx = this.checked[dateKey].indexOf(id);
+        if(idx > -1) this.checked[dateKey].splice(idx, 1);
+        else this.checked[dateKey].push(id);
+        
+        localStorage.setItem(`c_checked_${this.user}`, JSON.stringify(this.checked));
+        this.renderTimeline();
+        this.renderMacros();
+    }
+
+    renderTimeline() {
+        const dateKey = this.activeData ? this.activeData.date : new Date().toISOString().split('T')[0];
+        const tasks = PROTOCOL[this.user];
+        const done = this.checked[dateKey] || [];
+        const container = document.getElementById('timeline');
+        
+        let html = '';
+        tasks.forEach(t => {
+            const isDone = done.includes(t.id);
+            html += `
+            <div class="time-slot">
+                <div class="ts-time">${t.time}</div>
+                <div class="ts-card ${isDone ? 'checked' : ''}" onclick="centurion.toggleTask('${t.id}')">
+                    <div class="ts-title">${t.title}</div>
+                    <div class="ts-desc">${t.desc}</div>
+                    <div class="check-btn">${isDone ? '✓' : ''}</div>
+                </div>
+            </div>`;
+        });
+        container.innerHTML = html;
+    }
+
+    renderMacros() {
+        const dateKey = this.activeData ? this.activeData.date : new Date().toISOString().split('T')[0];
+        const done = this.checked[dateKey] || [];
+        const goals = USERS[this.user].goals;
+        
+        let totals = { p:0, o:0, poly:0, f:0 };
+        done.forEach(id => {
+            if(MACRO_VALS[id]) {
+                totals.p += MACRO_VALS[id].p;
+                totals.o += MACRO_VALS[id].o;
+                totals.poly += MACRO_VALS[id].poly;
+                totals.f += MACRO_VALS[id].f;
+            }
+        });
+
+        const drawOrb = (label, val, goal, color) => {
+            const pct = Math.min(val / goal, 1);
+            const off = 145 - (pct * 145);
+            return `
+            <div class="orb-card"><div class="orb-container">
+                <svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle>
+                <circle class="orb-fg" cx="25" cy="25" r="20" style="stroke:${color}; stroke-dashoffset:${off}"></circle></svg>
+                <div class="orb-val-box"><div class="orb-val">${val}</div></div>
+            </div><div class="orb-label">${label}</div></div>`;
+        };
+
+        document.getElementById('macroGrid').innerHTML = 
+            drawOrb('PROTEIN', totals.p, goals.pro, '#fff') +
+            drawOrb('OMEGA-3', totals.o, goals.omega3, '#00d4ff') +
+            drawOrb('POLY', totals.poly, goals.poly, '#bf5af2') +
+            drawOrb('FIBER', totals.f, goals.fib, '#30d158');
+    }
+
+    // --- AI & BIO ---
     async runAI() {
         if(!this.activeData) { alert("Select a date first."); return; }
-        
         const ui = document.getElementById('aiOutput');
         const model = document.getElementById('aiModel').value;
         ui.innerText = `Connecting to ${model}...`;
@@ -238,17 +435,32 @@ class CenturionCore {
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
             });
-            
             const json = await res.json();
-            
             if(json.candidates) {
                 ui.innerHTML = `<span style="color:var(--acid)">${json.candidates[0].content.parts[0].text}</span>`;
             } else {
                 ui.innerText = "Error: " + (json.error ? json.error.message : JSON.stringify(json));
             }
-        } catch(e) {
-            ui.innerText = "Connection Error: " + e.message;
-        }
+        } catch(e) { ui.innerText = "Error: " + e.message; }
+    }
+
+    openBio() { document.getElementById('bioModal').classList.add('active'); }
+    closeBio() { document.getElementById('bioModal').classList.remove('active'); }
+    
+    saveBio() {
+        this.bios = {
+            vo2: document.getElementById('in-vo2').value,
+            rhr: document.getElementById('in-rhr').value,
+            marker: document.getElementById('in-bio').value
+        };
+        localStorage.setItem(`c_bios_${this.user}`, JSON.stringify(this.bios));
+        this.closeBio();
+        this.updateBioDisplay();
+    }
+
+    updateBioDisplay() {
+        const b = this.bios;
+        document.getElementById('bioDisplay').innerText = `VO2: ${b.vo2 || '--'} | APOB: ${b.marker || '--'}`;
     }
 }
 
