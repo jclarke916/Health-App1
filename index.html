@@ -3,165 +3,530 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Centurion v9700.1 DEBUG</title>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <title>The Centurion | v9800.0 FINAL</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
-        body { background: #000; color: #fff; font-family: 'JetBrains Mono', monospace; padding: 15px; font-size: 11px; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
-        .btn { background: #222; border: 1px solid #444; color: #fff; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .btn.active { background: #00f0ff; color: #000; }
-        
-        #log-console { 
-            background: #0a0a0a; border: 1px solid #333; border-radius: 8px; 
-            height: 500px; overflow-y: auto; padding: 10px; margin-bottom: 20px;
-            white-space: pre-wrap; word-break: break-all;
+        :root {
+            --bg-deep: #000000;
+            --bg-panel: #0a0a0a;
+            --border: #222;
+            --acid: #ccff00;
+            --cyan: #00f0ff;
+            --gold: #FFD60A;
+            --alert: #ff453a;
+            --purple: #bf5af2;
+            --text-main: #ffffff;
+            --text-muted: #666;
+            --font-ui: 'Inter', sans-serif;
+            --font-data: 'JetBrains Mono', monospace;
         }
-        .log-line { margin-bottom: 4px; border-bottom: 1px solid #111; padding-bottom: 2px; }
-        .t-stamp { color: #666; margin-right: 8px; }
-        .c-info { color: #00f0ff; }
-        .c-warn { color: #ffd60a; font-weight: bold; }
-        .c-error { color: #ff453a; font-weight: bold; background: rgba(255, 69, 58, 0.15); display:block; padding:2px; }
-        .c-success { color: #30d158; }
-        .c-debug { color: #bf5af2; }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; padding: 0 0 100px 0; background: var(--bg-deep); color: var(--text-main); font-family: var(--font-ui); min-height: 100vh; background-image: radial-gradient(circle at top right, #111 0%, #000 70%); }
+
+        /* HEADER */
+        .hud-header { padding: 15px 16px; background: rgba(0,0,0,0.9); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--border); }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .app-name { font-size: 0.6rem; font-weight: 900; letter-spacing: 2px; color: var(--text-muted); }
+        .user-switch { display: flex; gap: 4px; background: #222; padding: 2px; border-radius: 20px; }
+        .u-badge { padding: 6px 14px; border-radius: 16px; font-size: 0.6rem; font-weight: 700; color: #666; background: transparent; border: none; cursor: pointer; transition: all 0.2s; }
+        .u-badge.active { background: var(--text-main); color: #000; }
+        .bio-btn { background: rgba(255,255,255,0.1); border: 1px solid var(--border); color: var(--text-muted); padding: 4px 8px; border-radius: 8px; font-size: 0.55rem; font-weight: 700; cursor: pointer; margin-right: 10px; }
+
+        /* DATE NAV */
+        .date-nav { display: flex; justify-content: center; align-items: center; gap: 20px; font-family: var(--font-data); font-size: 0.8rem; font-weight: 700; color: #fff; padding-top: 5px; }
+        .nav-btn { background: transparent; border: 1px solid var(--border); color: var(--gold); padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 0.6rem; font-weight: 900; }
+        .nav-btn.disabled { opacity: 0.3; cursor: default; }
+        .date-display { min-width: 100px; text-align: center; letter-spacing: 1px; }
+
+        /* HERO */
+        .hero-section { padding: 25px 16px 10px; display: flex; align-items: center; justify-content: space-between; }
+        .ring-container { width: 110px; height: 110px; position: relative; display: flex; align-items: center; justify-content: center; }
+        .ring-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+        .ring-bg { fill: none; stroke: var(--border); stroke-width: 6; }
+        .ring-fg { fill: none; stroke: var(--acid); stroke-width: 6; stroke-dasharray: 283; stroke-dashoffset: 283; transition: stroke-dashoffset 1s ease, stroke 0.5s ease; stroke-linecap: round; }
+        .ring-data { position: absolute; text-align: center; }
+        .ring-val { font-family: var(--font-data); font-size: 1.8rem; font-weight: 700; color: #fff; line-height: 1; }
+        .ring-label { font-size: 0.5rem; font-weight: 700; color: var(--text-muted); margin-top: 2px; }
+
+        .tactical-box { flex: 1; margin-left: 20px; background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, transparent 100%); border-left: 3px solid var(--acid); padding: 12px; border-radius: 0 12px 12px 0; border: 1px solid var(--border); border-left-width: 3px; }
+        .tac-label { font-size: 0.55rem; color: var(--acid); font-weight: 900; letter-spacing: 1px; margin-bottom: 4px; text-transform: uppercase; }
+        .tac-cmd { font-size: 0.8rem; font-weight: 700; color: #fff; line-height: 1.3; }
+        .tac-meta { font-family: var(--font-data); font-size: 0.55rem; color: var(--text-muted); margin-top: 4px; }
+
+        /* AI INSIGHT CARD */
+        .ai-insight-card { 
+            background: linear-gradient(135deg, rgba(0,240,255,0.05) 0%, rgba(66, 133, 244, 0.1) 100%); 
+            border: 1px solid rgba(0,240,255,0.3); 
+            border-radius: 12px; 
+            padding: 15px; 
+            margin: 15px 16px; 
+            position: relative;
+            box-shadow: 0 0 20px rgba(0,240,255,0.1);
+        }
+        .ai-header { 
+            display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 0.65rem; 
+            color: var(--cyan); font-weight: 900; letter-spacing: 1px;
+        }
+        .ai-content { font-size: 0.75rem; line-height: 1.5; color: #ddd; }
+        .ai-content strong { color: var(--acid); font-weight: 900; }
+        .ai-refresh { 
+            background: rgba(0,240,255,0.1); border: 1px solid var(--cyan); color: var(--cyan); 
+            padding: 6px 12px; border-radius: 6px; font-size: 0.6rem; font-weight: 700; 
+            cursor: pointer; margin-top: 10px; display: inline-block;
+        }
+        .ai-loading {
+            display: inline-block; width: 12px; height: 12px;
+            border: 2px solid rgba(0,240,255,0.3); border-top-color: var(--cyan);
+            border-radius: 50%; animation: spin 0.8s linear infinite;
+        }
+
+        /* GRIDS */
+        .section-label { font-size: 0.55rem; font-weight: 900; color: var(--text-muted); letter-spacing: 1px; margin: 20px 16px 10px; text-transform: uppercase; }
+        .telemetry-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 10px; }
+        .sleep-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 20px; }
+        .macro-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 30px; }
+        
+        .orb-card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 10px 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+        .orb-container { width: 60px; height: 60px; position: relative; display: flex; align-items: center; justify-content: center; margin-bottom: 5px; }
+        .orb-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+        .orb-bg { fill: none; stroke: #222; stroke-width: 5; }
+        .orb-fg { fill: none; stroke: var(--cyan); stroke-width: 5; stroke-dasharray: 158; stroke-dashoffset: 158; transition: stroke-dashoffset 1s ease; stroke-linecap: round; }
+        .orb-val-box { position: absolute; text-align: center; }
+        .orb-val { font-family: var(--font-data); font-size: 0.75rem; font-weight: 700; color: #fff; line-height: 1; }
+        .orb-unit { font-size: 0.4rem; color: var(--text-muted); display: block; margin-top: 2px; }
+        .orb-label { font-size: 0.5rem; font-weight: 700; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; }
+        .live-dot { width: 5px; height: 5px; background: var(--alert); border-radius: 50%; position: absolute; top: 8px; right: 8px; box-shadow: 0 0 5px var(--alert); animation: pulse-fast 1s infinite; display: none; }
+        .orb-card.live .live-dot { display: block; }
+
+        /* TIMELINE & BIO */
+        .timeline-container { padding: 0 16px; }
+        .time-slot { display: flex; gap: 12px; margin-bottom: 20px; position: relative; }
+        .ts-time { width: 45px; font-family: var(--font-data); font-size: 0.75rem; color: var(--text-muted); text-align: right; padding-top: 5px; }
+        .ts-card { flex: 1; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 15px; }
+        .ts-title { font-size: 0.85rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
+        .ts-desc { font-size: 0.75rem; color: #aaa; line-height: 1.4; }
+        .ts-mech { font-family: var(--font-data); font-size: 0.55rem; color: var(--text-muted); padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 5px; margin-top: 8px; }
+        
+        .check-btn { position: absolute; top: 15px; right: 15px; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border); background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; font-weight: 800; font-size: 0.7rem; }
+        .ts-card.checked .check-btn { background: var(--acid); border-color: var(--acid); color: #000; }
+        .ts-card.checked { opacity: 0.5; }
+
+        .bio-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; padding: 20px; overflow-y: auto; }
+        .bio-modal.active { display: block; }
+        .bio-content { background: var(--bg-panel); border: 1px solid var(--acid); border-radius: 16px; padding: 20px; max-width: 500px; margin: 20px auto; }
+        .bio-field { margin-bottom: 15px; }
+        .bio-field label { display: block; font-size: 0.7rem; color: #aaa; margin-bottom: 5px; }
+        .bio-field input { width: 100%; background: #111; border: 1px solid var(--border); padding: 12px; color: #fff; font-family: var(--font-data); border-radius: 8px; }
+        .bio-save { width: 100%; padding: 15px; background: var(--acid); color: #000; font-weight: 900; border: none; border-radius: 8px; margin-top: 10px; cursor: pointer; }
+
+        .sync-footer { position: fixed; bottom: 0; left: 0; width: 100%; background: #000; padding: 12px 16px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-family: var(--font-data); font-size: 0.6rem; color: #555; z-index: 200; }
+        .pulse { animation: pulse 2s infinite; display: inline-block; width: 6px; height: 6px; background: var(--acid); border-radius: 50%; margin-right: 6px; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <div>V9700.1 PROBE</div>
-        <div>
-            <button id="btn-J" class="btn active" onclick="app.switchUser('jermaine')">JER</button>
-            <button id="btn-S" class="btn" onclick="app.switchUser('sophia')">SOPH</button>
+    <svg style="width:0; height:0; position:absolute;" aria-hidden="true" focusable="false">
+      <defs>
+        <linearGradient id="grad-zone2" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" style="stop-color:#00f0ff;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#0080ff;stop-opacity:1" />
+        </linearGradient>
+        <linearGradient id="grad-zone5" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" style="stop-color:#ff453a;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#ff9f0a;stop-opacity:1" />
+        </linearGradient>
+        <linearGradient id="grad-purple" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" style="stop-color:#bf5af2;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#9d4edd;stop-opacity:1" />
+        </linearGradient>
+      </defs>
+    </svg>
+
+    <div class="hud-header">
+        <div class="top-bar">
+            <div class="app-name">CENTURION v9800 (GOLDEN MASTER)</div>
+            <div style="display:flex; gap:10px; align-items:center;">
+                <button class="bio-btn" onclick="centurion.openBio()">BIO</button>
+                <div class="user-switch">
+                    <button id="btn-jermaine" class="u-badge active" onclick="centurion.switchUser('jermaine')">JER</button>
+                    <button id="btn-sophia" class="u-badge" onclick="centurion.switchUser('sophia')">SOPH</button>
+                </div>
+            </div>
+        </div>
+        <div class="date-nav">
+            <button id="btn-prev" class="nav-btn" onclick="centurion.changeDate(-1)">◀</button>
+            <span class="date-display" id="dateDisplay">TODAY</span>
+            <button id="btn-next" class="nav-btn disabled" onclick="centurion.changeDate(1)">▶</button>
         </div>
     </div>
 
-    <div id="log-console"></div>
-    <button class="btn" style="width:100%; border-color:#00f0ff; color:#00f0ff;" onclick="app.fetchData()">FORCE SYNC (DIAGNOSTIC)</button>
+    <div id="dayContent"></div>
+
+    <div class="sync-footer">
+        <div><span class="pulse"></span><span id="ouraBar">INIT...</span></div>
+        <div onclick="centurion.fetchOuraData()" style="cursor:pointer">FORCE SYNC</div>
+    </div>
+
+    <div id="bioModal" class="bio-modal">
+        <div class="bio-content">
+            <div style="display:flex;justify-content:space-between;margin-bottom:20px;">
+                <span style="color:var(--acid);font-weight:900;">BIOMETRICS</span>
+                <span onclick="centurion.closeBio()" style="color:#666;cursor:pointer;">✕</span>
+            </div>
+            <div class="bio-field"><label>VO2 MAX</label><input id="in-vo2" type="number"></div>
+            <div class="bio-field"><label>RHR (MANUAL)</label><input id="in-rhr" type="number"></div>
+            <div class="bio-field"><label>APOB / ANA</label><input id="in-bio" type="text"></div>
+            <button class="bio-save" onclick="centurion.saveBio()">SAVE DATA</button>
+        </div>
+    </div>
 
 <script>
+// ==========================================
+// V9800: GOLDEN MASTER
+// - Oura: Yesterday-Logic applied (Fixes NaN)
+// - Gemini: Switched to 'gemini-pro' (Fixes 404)
+// ==========================================
+
 const TOKENS = { 'jermaine': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'sophia': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
-const GEMINI_API_KEY = "AIzaSyCHZvxl_YvhDxZQFuZ1RuriCFasaKSDero";
+const GEMINI_API_KEY = "AIzaSyCHZvxl_YvhDxZQFuZ1RuriCFasaKSDero"; 
 
-function log(msg, type='info') {
-    const box = document.getElementById('log-console');
-    const time = new Date().toLocaleTimeString().split(' ')[0];
-    box.innerHTML += `<div class="log-line"><span class="t-stamp">[${time}]</span><span class="c-${type}">${msg}</span></div>`;
-    box.scrollTop = box.scrollHeight;
-}
-
-const app = {
-    user: 'jermaine',
-    
-    init: function() { this.switchUser('jermaine'); },
-
-    switchUser: function(uid) {
-        this.user = uid;
-        document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(uid === 'jermaine' ? 'btn-J' : 'btn-S').classList.add('active');
-        log(`User Switched: ${uid.toUpperCase()}`, 'info');
-    },
-
-    fetchData: async function() {
-        const token = TOKENS[this.user];
-        const today = new Date(); today.setHours(12,0,0,0);
-        const todayStr = today.toISOString().split('T')[0];
-        const start = new Date(); start.setDate(start.getDate() - 3);
-        const startStr = start.toISOString().split('T')[0];
-        
-        log('=================================', 'info');
-        log(`SYNC TARGET: ${todayStr}`, 'warn');
-
-        try {
-            // 1. FETCH RAW DATA
-            log(`Fetching Oura Data (${startStr} to ${todayStr})...`, 'info');
-            const cb = `&t=${Date.now()}`;
-            
-            const [rRes, dsRes, sRes] = await Promise.all([
-                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${startStr}&end_date=${todayStr}${cb}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${startStr}&end_date=${todayStr}${cb}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${startStr}&end_date=${todayStr}${cb}`)}`, { headers: { 'Authorization': `Bearer ${token}` } })
-            ]);
-
-            if(!rRes.ok) throw new Error(`Readiness API Failed: ${rRes.status}`);
-            if(!sRes.ok) throw new Error(`Sleep Sessions API Failed: ${sRes.status}`);
-
-            const rData = await rRes.json();
-            const dsData = await dsRes.json();
-            const sData = await sRes.json();
-
-            log(`Readiness: ${rData.data?.length || 0} records`, 'success');
-            log(`Daily Sleep: ${dsData.data?.length || 0} records`, 'success');
-            log(`Sleep Sessions: ${sData.data?.length || 0} records`, 'success');
-
-            if(!rData.data || rData.data.length === 0) {
-                log('STOPPING: No readiness data to process.', 'error');
-                return;
-            }
-
-            // 2. PROCESS SPECIFIC TARGET DAY
-            log(`Processing specific day: ${todayStr}`, 'warn');
-            
-            // A. Readiness
-            const todayReadiness = rData.data.find(r => r.day === todayStr);
-            if(todayReadiness) {
-                log(`> Readiness found: ${todayReadiness.score}`, 'success');
-            } else {
-                log(`> Readiness MISSING for ${todayStr}`, 'error');
-            }
-
-            // B. YESTERDAY CALCULATION
-            const yObj = new Date(todayStr); // Parse "2026-01-05"
-            yObj.setDate(yObj.getDate() - 1); // Subtract 1 day
-            const prevKey = yObj.toISOString().split('T')[0]; // "2026-01-04"
-            
-            log(`> Calculated Yesterday: ${prevKey}`, 'debug');
-
-            // C. SLEEP SESSION SEARCH
-            let sessions = [];
-            if(sData.data) {
-                sessions = sData.data.filter(s => s.day === prevKey);
-            }
-            
-            if(sessions.length > 0) {
-                log(`> Found ${sessions.length} sessions for ${prevKey} (Yesterday)`, 'success');
-                let total = 0;
-                sessions.forEach(s => total += s.total_sleep_duration);
-                log(`> Total Sleep: ${(total/3600).toFixed(1)} hrs`, 'success');
-            } else {
-                log(`> NO SESSIONS found for yesterday (${prevKey})`, 'error');
-                log(`> Raw Data Dump for ${prevKey}:`, 'debug');
-                // Dump nearby dates to see what's available
-                sData.data.forEach(s => log(`  - Available: ${s.day} (${s.type})`, 'info'));
-            }
-
-            // 3. GEMINI TEST
-            log('Testing Gemini API...', 'warn');
-            try {
-                const aiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-                const aiRes = await fetch(aiUrl, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: "Ping. Reply with 'Pong'." }] }] })
-                });
-                
-                if(!aiRes.ok) throw new Error(`Gemini status ${aiRes.status}`);
-                const aiData = await aiRes.json();
-                const reply = aiData.candidates[0].content.parts[0].text;
-                log(`> Gemini Reply: ${reply.trim()}`, 'success');
-            } catch(gemErr) {
-                log(`> Gemini Failed: ${gemErr.message}`, 'error');
-            }
-
-            log('DIAGNOSTIC COMPLETE', 'success');
-
-        } catch(e) {
-            log(`[CRITICAL ERROR]: ${e.message}`, 'error');
-            log(e.stack, 'error');
-        }
-    }
+const USERS = {
+    'jermaine': { name: "Jermaine", age: 42, rhr: 48, goals: { cal: 700, z2: 60, z5: 20, pro: 180, carb: 200, fat: 80, fib: 40, sleep: 8, omega3: 3000, polyphenols: 500 } },
+    'sophia': { name: "Sophia", age: 38, rhr: 58, goals: { cal: 450, z2: 45, z5: 15, pro: 120, carb: 150, fat: 60, fib: 35, sleep: 8.5, omega3: 2500, polyphenols: 400 } }
 };
 
-app.init();
+// Backward Compatibility
+TOKENS['J'] = TOKENS['jermaine']; TOKENS['S'] = TOKENS['sophia'];
+USERS['J'] = USERS['jermaine']; USERS['S'] = USERS['sophia'];
+
+const MEAL_DB = {
+    'jermaine': {
+        juice: "Beet Vitality (Nitric Oxide)", breakfast: "Wild Salmon Bowl (Omega-3)",
+        lunch: "Sardine Quinoa Salad", snack: "Greek Yogurt Power Cup", dinner: "Wild Salmon Centurion"
+    },
+    'sophia': {
+        juice: "Orange Immune (Vit C)", breakfast: "Omega Scramble (Anti-Inflammatory)",
+        lunch: "White Fish Ceviche", snack: "Kefir Smoothie (Probiotic)", dinner: "Cod + White Beans"
+    }
+};
+MEAL_DB['J'] = MEAL_DB['jermaine']; MEAL_DB['S'] = MEAL_DB['sophia'];
+
+const MACRO_VALS = {
+    'hyd': { p:0, c:0, f:0, fib:0, omega3:0, polyphenols:0 },
+    'juice': { p:2, c:15, f:0, fib:2, omega3:50, polyphenols:200 },
+    'train': { p:25, c:10, f:2, fib:0, omega3:0, polyphenols:0 },
+    'lunch': { p:45, c:30, f:15, fib:8, omega3:1500, polyphenols:150 },
+    'breakfast': { p:45, c:10, f:25, fib:5, omega3:2000, polyphenols:100 },
+    'snack': { p:15, c:15, f:10, fib:5, omega3:500, polyphenols:250 },
+    'dinner': { p:50, c:30, f:15, fib:10, omega3:2500, polyphenols:150 }
+};
+
+const WORKOUTS = {
+    'anabolic_j': { title: "Heavy Compounds", sub: "Hypertrophy A", mech: "Deadlifts 5x5" },
+    'repair_j': { title: "Zone 2 Flush", sub: "Active Recovery", mech: "Ruck 45m @ 35lbs" },
+    'anabolic_s': { title: "Glute/Core", sub: "Strength", mech: "Hip Thrusts 4x10" },
+    'repair_s': { title: "Yoga Flow", sub: "Parasympathetic", mech: "Vinyasa 45m" }
+};
+
+function getCaDate() { let d = new Date(); d.setHours(12, 0, 0, 0); return d; }
+function getDateKey(d) { return d.toISOString().split('T')[0]; }
+
+class CenturionCore {
+    constructor() {
+        this.user = localStorage.getItem('centurion_active_user') || 'jermaine';
+        this.dayOffset = 0;
+        this.cache = JSON.parse(localStorage.getItem(`centurion_oura_cache_${this.user}`)) || { history: [] };
+        this.checkedItems = JSON.parse(localStorage.getItem(`centurion_checked_${this.user}`)) || {};
+        this.bios = JSON.parse(localStorage.getItem(`centurion_bios_${this.user}`)) || {};
+        this.aiInsights = JSON.parse(localStorage.getItem(`centurion_ai_insights_${this.user}`)) || {};
+        this.init();
+    }
+
+    init() {
+        this.updateUI(); 
+        this.render();   
+        this.fetchOuraData(); 
+    }
+
+    switchUser(uID) {
+        if(this.user === uID) return;
+        this.user = uID;
+        localStorage.setItem('centurion_active_user', uID);
+        
+        this.cache = JSON.parse(localStorage.getItem(`centurion_oura_cache_${uID}`)) || { history: [] };
+        this.checkedItems = JSON.parse(localStorage.getItem(`centurion_checked_${uID}`)) || {};
+        this.bios = JSON.parse(localStorage.getItem(`centurion_bios_${uID}`)) || {};
+        this.aiInsights = JSON.parse(localStorage.getItem(`centurion_ai_insights_${uID}`)) || {};
+        
+        this.dayOffset = 0;
+        this.updateUI();
+        this.render(); 
+        this.fetchOuraData();
+    }
+
+    changeDate(d) {
+        this.dayOffset += d;
+        if(this.dayOffset > 0) this.dayOffset = 0;
+        this.render();
+    }
+
+    toggleItem(id) {
+        const dk = getDateKey(this.getCurrentDate());
+        if(!this.checkedItems[dk]) this.checkedItems[dk] = [];
+        const idx = this.checkedItems[dk].indexOf(id);
+        if(idx > -1) this.checkedItems[dk].splice(idx, 1);
+        else this.checkedItems[dk].push(id);
+        localStorage.setItem(`centurion_checked_${this.user}`, JSON.stringify(this.checkedItems));
+        this.render();
+    }
+
+    getCurrentDate() {
+        const d = getCaDate();
+        d.setDate(d.getDate() + this.dayOffset);
+        return d;
+    }
+
+    updateUI() {
+        document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
+        document.getElementById(`btn-${this.user}`).classList.add('active');
+        document.getElementById('ouraBar').innerHTML = `💍 SWITCHING...`;
+    }
+
+    calculateDailyTotals(dk) {
+        const checks = this.checkedItems[dk] || [];
+        let totals = { p:0, c:0, f:0, fib:0, omega3:0, polyphenols:0 };
+        let colors = 0; 
+        
+        checks.forEach(id => {
+            if(MACRO_VALS[id]) {
+                totals.p += MACRO_VALS[id].p;
+                totals.c += MACRO_VALS[id].c;
+                totals.f += MACRO_VALS[id].f;
+                totals.fib += MACRO_VALS[id].fib;
+                totals.omega3 += MACRO_VALS[id].omega3;
+                totals.polyphenols += MACRO_VALS[id].polyphenols;
+                colors += 1;
+            }
+        });
+        const rainbowScore = Math.min(Math.round((colors / 5) * 100), 100);
+        return { totals, rainbowScore };
+    }
+
+    async fetchOuraData() {
+        const fetchID = this.user; 
+        const token = TOKENS[fetchID];
+        const range = `start_date=${getDateKey(new Date(Date.now()-864e5*14))}&end_date=${getDateKey(new Date())}`;
+        const cb = `&t=${Date.now()}`;
+        
+        document.getElementById('ouraBar').innerHTML = "💍 HANDSHAKE...";
+        
+        try {
+            const [rRes, aRes, sRes] = await Promise.all([
+                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}${cb}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}${cb}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?${range}${cb}`)}`, { headers: { 'Authorization': `Bearer ${token}` } })
+            ]);
+            
+            const rData = await rRes.json();
+            const aData = await aRes.json();
+            const sData = await sRes.json();
+            
+            if(this.user !== fetchID) return;
+            
+            if(rData.data) {
+                const hist = rData.data.map(day => {
+                    const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
+                    
+                    // --- THE YESTERDAY FIX ---
+                    const yesterday = new Date(day.day);
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    const yKey = yesterday.toISOString().split('T')[0];
+
+                    let sessions = sData.data ? sData.data.filter(s => s.day === yKey) : [];
+                    
+                    if(sessions.length === 0) {
+                        sessions = sData.data ? sData.data.filter(s => s.day === day.day) : [];
+                    }
+
+                    let totalSec = 0, deepSec = 0, remSec = 0;
+                    if(sessions.length > 0) {
+                        sessions.forEach(sess => {
+                            totalSec += (sess.total_sleep_duration || 0);
+                            deepSec += (sess.deep_sleep_duration || 0);
+                            remSec += (sess.rem_sleep_duration || 0);
+                        });
+                    }
+
+                    let sleepHours = "-", deepMin = "-", remMin = "-";
+                    if(totalSec > 0) {
+                        sleepHours = (totalSec / 3600).toFixed(1);
+                        deepMin = Math.round(deepSec / 60);
+                        remMin = Math.round(remSec / 60);
+                    }
+
+                    return { 
+                        date: day.day, 
+                        score: day.score || "-", 
+                        cal: act ? act.active_calories : "-", 
+                        high: act ? Math.round(act.high_activity_time/60) : 0, 
+                        med: act ? Math.round(act.medium_activity_time/60) : 0,
+                        rhr: day.contributors?.resting_heart_rate || "-",
+                        sleep: sleepHours, deep: deepMin, rem: remMin
+                    };
+                }).reverse();
+                
+                localStorage.setItem(`centurion_oura_cache_${fetchID}`, JSON.stringify({history: hist, lastFetch: Date.now()}));
+                this.cache = { history: hist };
+                document.getElementById('ouraBar').innerHTML = `💍 SYNCED`;
+                this.render();
+            }
+        } catch(e) { 
+            console.error(e);
+            document.getElementById('ouraBar').innerHTML = "💍 SYNC TIMEOUT"; 
+        }
+    }
+
+    async getAIInsight(dk, rawOura, totals, u, rainbowScore) {
+        if(this.aiInsights[dk]) return this.aiInsights[dk];
+
+        const scoreVal = parseInt(rawOura.score) || 0;
+        const contextPrompt = `You are an expert longevity coach. Analyze this data for ${u.name}.
+        TODAY (${dk}): Readiness ${scoreVal}, Sleep ${rawOura.sleep}h, Active Cal ${rawOura.cal}.
+        NUTRITION: Protein ${totals.p}g, Omega-3 ${totals.omega3}mg.
+        Give 3 sentence insight: What's good, What to improve, Why it matters.`;
+
+        try {
+            // FIX: Using gemini-pro which is standard for most free keys
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ contents: [{ parts: [{ text: contextPrompt }] }] })
+            });
+            if(!response.ok) throw new Error("Gemini Error");
+            const data = await response.json();
+            const insight = data.candidates[0].content.parts[0].text;
+            
+            this.aiInsights[dk] = insight;
+            localStorage.setItem(`centurion_ai_insights_${this.user}`, JSON.stringify(this.aiInsights));
+            return insight;
+        } catch(e) { return "AI Coach Currently Offline."; }
+    }
+
+    async refreshAIInsight() {
+        const aiCard = document.querySelector('.ai-insight-card');
+        if(aiCard) aiCard.innerHTML = `<div class="ai-header"><span class="ai-loading"></span><span>GEMINI THINKING...</span></div>`;
+        const dk = getDateKey(this.getCurrentDate());
+        delete this.aiInsights[dk];
+        this.render();
+    }
+
+    openBio() { document.getElementById('bioModal').classList.add('active'); }
+    closeBio() { document.getElementById('bioModal').classList.remove('active'); }
+    saveBio() {
+        this.bios = {
+            vo2: document.getElementById('in-vo2').value,
+            rhr: document.getElementById('in-rhr').value,
+            marker: document.getElementById('in-bio').value
+        };
+        localStorage.setItem(`centurion_bios_${this.user}`, JSON.stringify(this.bios));
+        this.closeBio();
+        this.render();
+    }
+
+    async render() {
+        const d = this.getCurrentDate();
+        const dk = getDateKey(d);
+        const today = getDateKey(getCaDate());
+        const displayDate = (dk === today) ? "TODAY" : dk.substring(5);
+        document.getElementById('dateDisplay').innerText = displayDate;
+        document.getElementById('btn-next').classList.toggle('disabled', dk === today);
+
+        const rawOura = this.cache.history.find(d => d.date === dk) || { score: "-", cal: "-", high: 0, med: 0, rhr: "-", sleep: "-", deep: "-", rem: "-" };
+        const u = USERS[this.user];
+        const scoreVal = parseInt(rawOura.score) || 0;
+        const rColor = scoreVal >= 80 ? 'var(--acid)' : scoreVal >= 60 ? 'var(--gold)' : 'var(--alert)';
+        const safeNum = (v) => (v === "-" || v === undefined) ? 0 : parseFloat(v);
+
+        let statusMsg = "GATHERING DATA...";
+        if(scoreVal > 0) {
+            if(scoreVal >= 85) statusMsg = "PEAK READINESS. PUSH HARD.";
+            else if(scoreVal >= 70) statusMsg = "SYSTEMS NOMINAL. MAINTAIN.";
+            else statusMsg = "RECOVERY REQUIRED. SLEEP DEBT.";
+        }
+
+        const meals = MEAL_DB[this.user];
+        const checks = this.checkedItems[dk] || [];
+        const { totals, rainbowScore } = this.calculateDailyTotals(dk);
+        
+        let aiHTML = `<div class="ai-insight-card"><div class="ai-header"><span class="ai-loading"></span><span>GEMINI ANALYZING...</span></div><div class="ai-content">Calculating longevity metrics...</div></div>`;
+
+        const html = `
+        <div class="hero-section">
+            <div class="ring-container">
+                <svg class="ring-svg"><circle class="ring-bg" cx="55" cy="55" r="45"></circle><circle class="ring-fg" cx="55" cy="55" r="45" style="stroke:${rColor}; stroke-dashoffset:${283 - (Math.min(scoreVal,100)/100)*283}"></circle></svg>
+                <div class="ring-data"><div class="ring-val">${rawOura.score}</div><div class="ring-label">READINESS</div></div>
+            </div>
+            <div class="tactical-box" style="border-left-color:${rColor}">
+                <div class="tac-label" style="color:${rColor}">USER: ${u.name.toUpperCase()}</div>
+                <div class="tac-cmd">${statusMsg}</div>
+                <div class="tac-meta">VO2: ${this.bios.vo2 || '--'} | APOB: ${this.bios.marker || '--'}</div>
+            </div>
+        </div>
+
+        <div id="ai-container">${aiHTML}</div>
+
+        <div class="section-label">SLEEP ARCHITECTURE</div>
+        <div class="sleep-grid">
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-purple); stroke-dashoffset:${158-(Math.min(safeNum(rawOura.sleep),9)/9)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.sleep}</div><span class="orb-unit">HRS</span></div></div><div class="orb-label">TOTAL</div></div>
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:#007aff; stroke-dashoffset:${158-(Math.min(safeNum(rawOura.deep),120)/120)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.deep}</div><span class="orb-unit">DEEP</span></div></div><div class="orb-label">DEEP</div></div>
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--purple); stroke-dashoffset:${158-(Math.min(safeNum(rawOura.rem),120)/120)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.rem}</div><span class="orb-unit">REM</span></div></div><div class="orb-label">REM</div></div>
+        </div>
+
+        <div class="section-label">CARDIO-METABOLIC STATUS</div>
+        <div class="telemetry-grid">
+            <div class="orb-card live"><div class="live-dot"></div><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--cyan); stroke-dashoffset:${158-(Math.min(safeNum(rawOura.cal),1000)/1000)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.cal}</div><span class="orb-unit">CAL</span></div></div><div class="orb-label">ACTIVE</div></div>
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-zone2); stroke-dashoffset:${158-(Math.min(safeNum(rawOura.med),60)/60)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.med}</div><span class="orb-unit">Z2 MIN</span></div></div><div class="orb-label">BASE</div></div>
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-zone5); stroke-dashoffset:${158-(Math.min(safeNum(rawOura.high),30)/30)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.high}</div><span class="orb-unit">Z5 MIN</span></div></div><div class="orb-label">PEAK</div></div>
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--acid)"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.rhr}</div><span class="orb-unit">BPM</span></div></div><div class="orb-label">RHR</div></div>
+        </div>
+
+        <div class="section-label">MACRO ADHERENCE</div>
+        <div class="macro-grid">
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:#fff; stroke-dashoffset:${158-(Math.min(totals.p/u.goals.pro,1)*158)}"></circle></svg><div class="orb-val-box"><div class="orb-val">${totals.p}</div><span class="orb-unit">PRO</span></div></div><div class="orb-label">PROTEIN</div></div>
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:#00d4ff; stroke-dashoffset:${158-(Math.min(totals.omega3/u.goals.omega3,1)*158)}"></circle></svg><div class="orb-val-box"><div class="orb-val">${Math.round(totals.omega3/100)/10}</div><span class="orb-unit">Ω-3g</span></div></div><div class="orb-label">OMEGA-3</div></div>
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:#bf5af2; stroke-dashoffset:${158-(Math.min(totals.polyphenols/u.goals.polyphenols,1)*158)}"></circle></svg><div class="orb-val-box"><div class="orb-val">${totals.polyphenols}</div><span class="orb-unit">POLY</span></div></div><div class="orb-label">POLYPHENOLS</div></div>
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:#30d158; stroke-dashoffset:${158-(Math.min(totals.fib/u.goals.fib,1)*158)}"></circle></svg><div class="orb-val-box"><div class="orb-val">${totals.fib}</div><span class="orb-unit">FIB</span></div></div><div class="orb-label">FIBER</div></div>
+        </div>
+
+        <div class="timeline-container">
+            <div class="section-header"><span>CHRONO-PROTOCOL</span></div>
+            <div class="time-slot"><div class="ts-time">7 AM</div><div class="ts-card ${this.checkedItems[dk]?.includes('hyd')?'checked':''}"><div class="ts-title">Hydration</div><div class="ts-desc">Sea Moss Gel (2 tbsp)</div><button class="check-btn" onclick="centurion.toggleItem('hyd')">${this.checkedItems[dk]?.includes('hyd')?'✓':'○'}</button></div></div>
+            <div class="time-slot"><div class="ts-time">8 AM</div><div class="ts-card ${this.checkedItems[dk]?.includes('juice')?'checked':''}"><div class="ts-title">Juice Protocol</div><div class="ts-desc">${meals.juice}</div><button class="check-btn" onclick="centurion.toggleItem('juice')">${this.checkedItems[dk]?.includes('juice')?'✓':'○'}</button></div></div>
+            <div class="time-slot"><div class="ts-time">9 AM</div><div class="ts-card ${this.checkedItems[dk]?.includes('train')?'checked':''}"><div class="ts-title">Training</div><div class="ts-desc">${scoreVal>=80?'Zone 5 / Strength':'Zone 2 Recovery'}</div><button class="check-btn" onclick="centurion.toggleItem('train')">${this.checkedItems[dk]?.includes('train')?'✓':'○'}</button></div></div>
+            <div class="time-slot"><div class="ts-time">1 PM</div><div class="ts-card ${this.checkedItems[dk]?.includes('lunch')?'checked':''}"><div class="ts-title">Lunch</div><div class="ts-desc">${meals.lunch}</div><button class="check-btn" onclick="centurion.toggleItem('lunch')">${this.checkedItems[dk]?.includes('lunch')?'✓':'○'}</button></div></div>
+        </div>
+        `;
+
+        document.getElementById('dayContent').innerHTML = html;
+
+        const insight = await this.getAIInsight(dk, rawOura, totals, u, rainbowScore);
+        const aiContainer = document.getElementById('ai-container');
+        if(aiContainer) {
+            aiContainer.innerHTML = `
+            <div class="ai-insight-card">
+                <div class="ai-header"><span>🧠 GEMINI LONGEVITY COACH</span></div>
+                <div class="ai-content">${insight.replace(/\*\*/g, '<strong>').replace(/\*/g, '')}</div>
+                <button class="ai-refresh" onclick="centurion.refreshAIInsight()">🔄 REGENERATE</button>
+            </div>`;
+        }
+    }
+}
+
+const centurion = new CenturionCore();
 </script>
 </body>
 </html>
