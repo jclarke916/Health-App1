@@ -273,52 +273,6 @@
 
 <script>
 // ==========================================
-// IMMEDIATE ERROR DISPLAY - Shows errors on screen
-// ==========================================
-(function() {
-    const errorContainer = document.createElement('div');
-    errorContainer.id = 'emergency-errors';
-    errorContainer.style.cssText = 'position:fixed;top:60px;left:0;right:0;background:#000;color:#fff;padding:20px;z-index:9999;font-family:monospace;font-size:12px;max-height:80vh;overflow-y:auto;display:none;';
-    document.body.appendChild(errorContainer);
-    
-    window.showError = function(type, data) {
-        errorContainer.style.display = 'block';
-        const errorDiv = document.createElement('div');
-        errorDiv.style.cssText = 'margin:10px 0;padding:10px;background:#ff453a;border-radius:5px;';
-        errorDiv.innerHTML = `
-            <div style="font-weight:bold;color:#fff;">${type}</div>
-            <div style="margin-top:5px;color:#fff;white-space:pre-wrap;">${JSON.stringify(data, null, 2)}</div>
-        `;
-        errorContainer.insertBefore(errorDiv, errorContainer.firstChild);
-    };
-    
-    // Override console.error immediately
-    const originalError = console.error;
-    console.error = function(...args) {
-        window.showError('CONSOLE ERROR', args);
-        originalError.apply(console, args);
-    };
-    
-    // Catch all errors immediately
-    window.addEventListener('error', function(e) {
-        window.showError('UNCAUGHT ERROR', {
-            message: e.message,
-            filename: e.filename,
-            line: e.lineno,
-            col: e.colno,
-            stack: e.error?.stack
-        });
-    });
-    
-    window.addEventListener('unhandledrejection', function(e) {
-        window.showError('UNHANDLED PROMISE', {
-            reason: e.reason,
-            promise: String(e.promise)
-        });
-    });
-})();
-
-// ==========================================
 // ERROR LOGGER - COMPREHENSIVE DEBUG SYSTEM
 // ==========================================
 class ErrorLogger {
@@ -690,67 +644,80 @@ class CenturionCore {
         const rawOura = this.cache.history.find(d => d.date === dk) || {};
         const allDates = this.cache.history.map(d => d.date).join(', ');
         
-        let errorHTML = '';
-        window.errorLogger.errors.slice(0, 3).forEach(e => {
-            errorHTML += '<div style="margin:10px 0;padding:10px;background:rgba(255,69,58,0.1);border-left:2px solid var(--alert);">';
-            errorHTML += '<div style="color:var(--alert);font-weight:bold;">' + e.type + '</div>';
-            errorHTML += '<div style="font-size:0.65rem;">' + e.timestamp + '</div>';
-            errorHTML += '<div style="margin-top:5px;font-size:0.6rem;">' + JSON.stringify(e.data).substring(0, 150) + '...</div>';
-            errorHTML += '</div>';
-        });
-        
-        const modal = document.createElement('div');
-        modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);z-index:2000;padding:20px;overflow-y:auto;';
-        
-        const content = document.createElement('div');
-        content.style.cssText = 'background:var(--bg-panel);border:1px solid var(--acid);border-radius:16px;padding:20px;max-width:800px;margin:20px auto;';
-        
-        content.innerHTML = `
-<div style="display:flex;justify-content:space-between;margin-bottom:20px;">
-    <span style="color:var(--acid);font-weight:900;font-size:0.9rem;">🔍 DIAGNOSTICS</span>
-    <span onclick="this.closest('div').parentElement.parentElement.remove()" style="color:#fff;cursor:pointer;font-size:1.5rem;">✕</span>
-</div>
-
-<div style="margin-bottom:15px;">
-    <div style="color:var(--acid);font-weight:bold;margin-bottom:8px;">SYSTEM</div>
+        const diagnostics = `
+<div style="margin-bottom:20px;">
+    <div style="color:var(--acid);font-weight:bold;margin-bottom:10px;">🎯 SYSTEM STATUS</div>
     <div>User: <span style="color:var(--cyan);">${this.user}</span></div>
-    <div>Cache: <span style="color:var(--cyan);">${this.cache?.history?.length || 0} days</span></div>
-    <div style="font-size:0.6rem;color:#999;">Dates: ${allDates}</div>
+    <div>Demo Mode: <span style="color:${this.demoMode ? 'var(--gold)' : 'var(--alert)'};">${this.demoMode ? 'ENABLED' : 'DISABLED'}</span></div>
+    <div>Cache Size: <span style="color:var(--cyan);">${this.cache?.history?.length || 0} days</span></div>
+    <div>Dates in Cache: <span style="color:var(--cyan);font-size:0.6rem;">${allDates || 'NONE'}</span></div>
+    <div>AI Insights Cached: <span style="color:var(--cyan);">${Object.keys(this.aiInsights).length} days</span></div>
 </div>
 
-<div style="margin-bottom:15px;">
-    <div style="color:var(--acid);font-weight:bold;margin-bottom:8px;">TODAY (${dk})</div>
-    <div>Score: <span style="color:var(--cyan);">${rawOura.score || 'MISSING'}</span></div>
-    <div>Sleep: <span style="color:var(--cyan);">${rawOura.sleep || 'MISSING'}</span> hrs</div>
-    <div>Deep: <span style="color:var(--cyan);">${rawOura.deep || 'MISSING'}</span> min</div>
-    <div>REM: <span style="color:var(--cyan);">${rawOura.rem || 'MISSING'}</span> min</div>
+<div style="margin-bottom:20px;">
+    <div style="color:var(--acid);font-weight:bold;margin-bottom:10px;">💍 OURA DATA (Today: ${dk})</div>
+    <div>Readiness: <span style="color:var(--cyan);">${rawOura.score || 'NOT FOUND'}</span></div>
+    <div>Sleep: <span style="color:var(--cyan);">${rawOura.sleep || 'NOT FOUND'} hrs</span></div>
+    <div>Deep: <span style="color:var(--cyan);">${rawOura.deep || 'NOT FOUND'} min</span></div>
+    <div>REM: <span style="color:var(--cyan);">${rawOura.rem || 'NOT FOUND'} min</span></div>
+    <div>Calories: <span style="color:var(--cyan);">${rawOura.cal || 'NOT FOUND'}</span></div>
+    <div>Zone 2: <span style="color:var(--cyan);">${rawOura.med || 0} min</span></div>
+    <div>Zone 5: <span style="color:var(--cyan);">${rawOura.high || 0} min</span></div>
+    <div style="margin-top:10px;padding:10px;background:rgba(0,240,255,0.1);border-radius:8px;">
+        <div style="color:var(--cyan);font-weight:bold;margin-bottom:5px;">RAW CACHE RECORD:</div>
+        <pre style="font-size:0.55rem;overflow-x:auto;color:#999;">${JSON.stringify(rawOura, null, 2)}</pre>
+
+```
+</div>
+```
+
 </div>
 
-<div style="margin-bottom:15px;padding:10px;background:rgba(0,240,255,0.05);border-radius:8px;">
-    <div style="color:var(--cyan);font-size:0.7rem;font-weight:bold;margin-bottom:5px;">RAW DATA:</div>
-    <pre style="font-size:0.55rem;overflow-x:auto;color:#999;margin:0;">${JSON.stringify(rawOura, null, 2)}</pre>
-
+<div style="margin-bottom:20px;">
+    <div style="color:var(--acid);font-weight:bold;margin-bottom:10px;">🧠 AI STATUS</div>
+    <div>Gemini API Key: <span style="color:var(--cyan);">${GEMINI_API_KEY ? 'CONFIGURED' : 'MISSING'}</span></div>
+    <div>Today's Insight: <span style="color:var(--cyan);">${this.aiInsights[dk] ? 'CACHED' : 'NOT GENERATED'}</span></div>
 </div>
 
-<div style="margin-bottom:15px;">
-    <div style="color:var(--acid);font-weight:bold;margin-bottom:8px;">ERRORS</div>
-    ${errorHTML || '<div style="color:#999;">No errors</div>'}
+<div style="margin-bottom:20px;">
+    <div style="color:var(--acid);font-weight:bold;margin-bottom:10px;">🔬 BIOMARKERS</div>
+    <div>HbA1c: <span style="color:var(--cyan);">${this.bios.hba1c || 'NOT SET'}</span></div>
+    <div>TSH: <span style="color:var(--cyan);">${this.bios.tsh || 'NOT SET'}</span></div>
+    <div>VO2 Max: <span style="color:var(--cyan);">${this.bios.vo2 || 'NOT SET'}</span></div>
 </div>
 
-<div style="display:flex;gap:10px;flex-wrap:wrap;">
-    <button onclick="centurion.fetchOuraData();setTimeout(() => location.reload(), 2000)" 
-        style="padding:10px 15px;background:var(--acid);color:#000;border:none;border-radius:8px;cursor:pointer;font-weight:bold;font-size:0.7rem;">
-        🔄 SYNC
-    </button>
-    <button onclick="debugCenturion.clearCache();location.reload()" 
-        style="padding:10px 15px;background:var(--alert);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:0.7rem;">
-        🗑️ CLEAR
-    </button>
+<div style="margin-bottom:20px;">
+    <div style="color:var(--acid);font-weight:bold;margin-bottom:10px;">📋 ERROR LOG</div>
+    <div>Total Errors: <span style="color:var(--cyan);">${window.errorLogger.errors.length}</span></div>
+    ${window.errorLogger.errors.slice(0, 3).map(e => `
+        <div style="margin:10px 0;padding:10px;background:rgba(255,69,58,0.1);border-left:2px solid var(--alert);">
+            <div style="color:var(--alert);font-weight:bold;">${e.type}</div>
+            <div style="font-size:0.65rem;">${e.timestamp}</div>
+            <div style="margin-top:5px;font-size:0.6rem;">${JSON.stringify(e.data).substring(0, 150)}...</div>
+        </div>
+    `).join('')}
+</div>
+
+<div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;">
+    <button onclick="centurion.fetchOuraData();setTimeout(() => centurion.showDiagnostics(), 2000)" style="padding:10px 20px;background:var(--acid);color:#000;border:none;border-radius:8px;cursor:pointer;font-weight:bold;">🔄 SYNC & REFRESH</button>
+    <button onclick="debugCenturion.clearCache();location.reload()" style="padding:10px 20px;background:var(--alert);color:#fff;border:none;border-radius:8px;cursor:pointer;">🗑️ CLEAR CACHE</button>
+    <button onclick="window.errorLogger.export()" style="padding:10px 20px;background:var(--cyan);color:#000;border:none;border-radius:8px;cursor:pointer;">📥 EXPORT ERRORS</button>
+    <button onclick="window.location.hash='#debug';centurion.fetchOuraData()" style="padding:10px 20px;background:var(--purple);color:#fff;border:none;border-radius:8px;cursor:pointer;">🐛 DEBUG SYNC</button>
 </div>
         `;
 
 ```
-    modal.appendChild(content);
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);z-index:2000;padding:20px;overflow-y:auto;';
+    modal.innerHTML = `
+        <div style="background:var(--bg-panel);border:1px solid var(--acid);border-radius:16px;padding:20px;max-width:800px;margin:20px auto;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:20px;">
+                <span style="color:var(--acid);font-weight:900;font-size:0.9rem;">🔍 DIAGNOSTICS PANEL</span>
+                <span onclick="this.closest('div').parentElement.remove()" style="color:#fff;cursor:pointer;font-size:1.5rem;">✕</span>
+            </div>
+            ${diagnostics}
+        </div>
+    `;
     document.body.appendChild(modal);
 }
 
@@ -1000,15 +967,12 @@ async fetchOuraData() {
             throw new Error('No readiness data returned from Oura API');
         }
     } catch(e) { 
-        const errorDetails = {
+        window.errorLogger.log('OURA FETCH ERROR', {
             message: e.message,
             stack: e.stack,
-            user: fetchID,
-            toString: e.toString()
-        };
-        window.errorLogger.log('OURA FETCH ERROR', errorDetails);
-        console.error("Oura sync error:", errorDetails);
-        window.showError('OURA SYNC ERROR', errorDetails);
+            user: fetchID
+        });
+        console.error("Oura sync error:", e);
         document.getElementById('ouraBar').innerHTML = "💍 SYNC TIMEOUT"; 
     }
 }
@@ -1096,19 +1060,10 @@ Be direct, data-driven, and motivating. No fluff.`;
         });
 
         if(!response.ok) {
-            const errData = await response.json().catch(() => ({}));
+            const errData = await response.json();
             let errMsg = "Gemini API Error";
             if(errData.error && errData.error.message) errMsg = errData.error.message;
-            
-            const fullError = {
-                status: response.status,
-                statusText: response.statusText,
-                message: errMsg,
-                fullResponse: errData
-            };
-            
-            console.error("❌ Gemini API error:", fullError);
-            window.showError('GEMINI API ERROR', fullError);
+            console.error("❌ Gemini API error:", response.status, errMsg);
             throw new Error(errMsg);
         }
 
@@ -1283,10 +1238,7 @@ async render() {
     const colorDots = (colors) => {
         if(!colors || colors.length === 0) return '';
         return `<div class="color-dots">
-            ${colors.map(c => {
-                if (!COLOR_MAP[c]) return '';
-                return `<div class="color-dot" style="background:${COLOR_MAP[c].color}" title="${COLOR_MAP[c].compound}"></div>`;
-            }).join('')}
+            ${colors.map(c => `<div class="color-dot" style="background:${COLOR_MAP[c].color}" title="${COLOR_MAP[c].compound}"></div>`).join('')}
         </div>`;
     };
 
@@ -1539,30 +1491,17 @@ async render() {
             cacheSize: this.cache?.history?.length
         });
         
-        // Display error directly to DOM
+        // Display error to user
         const content = document.getElementById('dayContent');
         if (content) {
-            content.style.cssText = 'padding: 20px; text-align: center; color: #fff;';
-            const errorDiv = document.createElement('div');
-            errorDiv.innerHTML = `
-                <h2 style="color: var(--alert); margin: 20px 0;">⚠️ Render Error</h2>
-                <p style="color: #999; margin: 10px 0; font-size: 0.9rem;">${error.message}</p>
-                <div style="margin: 20px 0;">
-                    <button onclick="location.reload()" style="padding: 15px 30px; background: var(--acid); color: #000; border: none; border-radius: 8px; margin: 10px; cursor: pointer; font-weight: bold;">
-                        🔄 RELOAD APP
-                    </button>
-                </div>
-                <div style="margin: 20px 0;">
-                    <button onclick="debugCenturion.errors()" style="padding: 15px 30px; background: var(--cyan); color: #000; border: none; border-radius: 8px; margin: 10px; cursor: pointer; font-weight: bold;">
-                        📋 VIEW ERRORS
-                    </button>
-                </div>
-                <div style="margin-top: 30px; padding: 15px; background: rgba(255,69,58,0.1); border-radius: 8px; text-align: left;">
-                    <div style="color: var(--alert); font-weight: bold; margin-bottom: 10px;">Stack Trace:</div>
-                    <pre style="color: #666; font-size: 0.7rem; overflow-x: auto; white-space: pre-wrap;">${error.stack}</pre>
+            content.innerHTML = `
+                <div style="padding: 20px; text-align: center;">
+                    <h2 style="color: var(--alert);">⚠️ Render Error</h2>
+                    <p style="color: #999;">${error.message}</p>
+                    <button onclick="debugCenturion.errors()" style="padding: 10px 20px; background: var(--acid); color: #000; border: none; border-radius: 8px; margin: 10px; cursor: pointer;">View Error Log</button>
+                    <button onclick="location.reload()" style="padding: 10px 20px; background: var(--cyan); color: #000; border: none; border-radius: 8px; margin: 10px; cursor: pointer;">Reload App</button>
                 </div>
             `;
-            content.appendChild(errorDiv);
         }
     }
 }
