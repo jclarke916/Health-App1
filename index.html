@@ -226,6 +226,7 @@
 <div class="sync-footer">
     <div><span class="pulse"></span><span id="ouraBar">INIT...</span></div>
     <div style="display:flex;gap:15px;">
+        <div onclick="centurion.showDiagnostics()" style="cursor:pointer;color:var(--cyan);">🔍 DEBUG</div>
         <div onclick="centurion.toggleDemoMode()" style="cursor:pointer;color:var(--gold);" id="demoToggle">DEMO MODE</div>
         <div onclick="centurion.fetchOuraData()" style="cursor:pointer">FORCE SYNC</div>
     </div>
@@ -636,6 +637,76 @@ class CenturionCore {
         } else {
             this.fetchOuraData();
         }
+    }
+    
+    showDiagnostics() {
+        const dk = getDateKey(this.getCurrentDate());
+        const rawOura = this.cache.history.find(d => d.date === dk) || {};
+        
+        const diagnostics = `
+<div style="margin-bottom:20px;">
+    <div style="color:var(--acid);font-weight:bold;margin-bottom:10px;">🎯 SYSTEM STATUS</div>
+    <div>User: <span style="color:var(--cyan);">${this.user}</span></div>
+    <div>Demo Mode: <span style="color:${this.demoMode ? 'var(--gold)' : 'var(--alert)'};">${this.demoMode ? 'ENABLED' : 'DISABLED'}</span></div>
+    <div>Cache Size: <span style="color:var(--cyan);">${this.cache?.history?.length || 0} days</span></div>
+    <div>AI Insights Cached: <span style="color:var(--cyan);">${Object.keys(this.aiInsights).length} days</span></div>
+</div>
+
+<div style="margin-bottom:20px;">
+    <div style="color:var(--acid);font-weight:bold;margin-bottom:10px;">💍 OURA DATA (Today: ${dk})</div>
+    <div>Readiness: <span style="color:var(--cyan);">${rawOura.score || 'NOT FOUND'}</span></div>
+    <div>Sleep: <span style="color:var(--cyan);">${rawOura.sleep || 'NOT FOUND'} hrs</span></div>
+    <div>Deep: <span style="color:var(--cyan);">${rawOura.deep || 'NOT FOUND'} min</span></div>
+    <div>REM: <span style="color:var(--cyan);">${rawOura.rem || 'NOT FOUND'} min</span></div>
+    <div>Calories: <span style="color:var(--cyan);">${rawOura.cal || 'NOT FOUND'}</span></div>
+    <div>Zone 2: <span style="color:var(--cyan);">${rawOura.med || 0} min</span></div>
+    <div>Zone 5: <span style="color:var(--cyan);">${rawOura.high || 0} min</span></div>
+</div>
+
+<div style="margin-bottom:20px;">
+    <div style="color:var(--acid);font-weight:bold;margin-bottom:10px;">🧠 AI STATUS</div>
+    <div>Gemini API Key: <span style="color:var(--cyan);">${GEMINI_API_KEY ? 'CONFIGURED' : 'MISSING'}</span></div>
+    <div>Today's Insight: <span style="color:var(--cyan);">${this.aiInsights[dk] ? 'CACHED' : 'NOT GENERATED'}</span></div>
+</div>
+
+<div style="margin-bottom:20px;">
+    <div style="color:var(--acid);font-weight:bold;margin-bottom:10px;">🔬 BIOMARKERS</div>
+    <div>HbA1c: <span style="color:var(--cyan);">${this.bios.hba1c || 'NOT SET'}</span></div>
+    <div>TSH: <span style="color:var(--cyan);">${this.bios.tsh || 'NOT SET'}</span></div>
+    <div>VO2 Max: <span style="color:var(--cyan);">${this.bios.vo2 || 'NOT SET'}</span></div>
+</div>
+
+<div style="margin-bottom:20px;">
+    <div style="color:var(--acid);font-weight:bold;margin-bottom:10px;">📋 ERROR LOG</div>
+    <div>Total Errors: <span style="color:var(--cyan);">${window.errorLogger.errors.length}</span></div>
+    ${window.errorLogger.errors.slice(0, 3).map(e => `
+        <div style="margin:10px 0;padding:10px;background:rgba(255,69,58,0.1);border-left:2px solid var(--alert);">
+            <div style="color:var(--alert);font-weight:bold;">${e.type}</div>
+            <div style="font-size:0.65rem;">${e.timestamp}</div>
+            <div style="margin-top:5px;">${JSON.stringify(e.data).substring(0, 100)}...</div>
+        </div>
+    `).join('')}
+</div>
+
+<div style="display:flex;gap:10px;margin-top:20px;">
+    <button onclick="centurion.fetchOuraData();centurion.showDiagnostics()" style="padding:10px 20px;background:var(--acid);color:#000;border:none;border-radius:8px;cursor:pointer;font-weight:bold;">🔄 SYNC & REFRESH</button>
+    <button onclick="debugCenturion.clearCache();centurion.showDiagnostics()" style="padding:10px 20px;background:var(--alert);color:#fff;border:none;border-radius:8px;cursor:pointer;">🗑️ CLEAR CACHE</button>
+    <button onclick="window.errorLogger.export()" style="padding:10px 20px;background:var(--cyan);color:#000;border:none;border-radius:8px;cursor:pointer;">📥 EXPORT ERRORS</button>
+</div>
+        `;
+        
+        const modal = document.createElement('div');
+        modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);z-index:2000;padding:20px;overflow-y:auto;';
+        modal.innerHTML = `
+            <div style="background:var(--bg-panel);border:1px solid var(--acid);border-radius:16px;padding:20px;max-width:800px;margin:20px auto;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:20px;">
+                    <span style="color:var(--acid);font-weight:900;font-size:0.9rem;">🔍 DIAGNOSTICS PANEL</span>
+                    <span onclick="this.closest('div').parentElement.remove()" style="color:#fff;cursor:pointer;font-size:1.5rem;">✕</span>
+                </div>
+                ${diagnostics}
+            </div>
+        `;
+        document.body.appendChild(modal);
     }
     
     loadDemoData() {
