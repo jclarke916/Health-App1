@@ -63,7 +63,7 @@
             margin: 15px 16px; 
             position: relative;
             box-shadow: 0 0 20px rgba(0,240,255,0.1);
-            min-height: 100px;
+            min-height: 80px;
         }
         .ai-header { 
             display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 0.65rem; 
@@ -421,6 +421,12 @@ class CenturionCore {
 
             if(!response.ok) throw new Error("Gemini Error");
             const data = await response.json();
+            
+            // --- SAFETY CHECK (Prevent Crash on Empty Candidates) ---
+            if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+                throw new Error("Empty AI Response");
+            }
+
             const insight = data.candidates[0].content.parts[0].text;
             
             this.aiInsights[dk] = insight;
@@ -431,7 +437,7 @@ class CenturionCore {
         } catch(e) {
             // 4. Fail Gracefully (Don't Crash)
             console.error("AI Failed", e);
-            if(aiContainer) aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header"><span>⚠️ AI OFFLINE</span></div><div class="ai-content">Gemini API is currently unreachable. Check your API key.</div></div>`;
+            if(aiContainer) aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header"><span>⚠️ AI OFFLINE</span></div><div class="ai-content">Gemini API unreachable or filtered. Check Key.</div></div>`;
         }
     }
 
