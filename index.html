@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v10037 DEBUGGER</title>
+    <title>The Centurion | v10038 SCANNER</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -19,218 +19,244 @@
             --font-data: 'JetBrains Mono', monospace;
         }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        * { box-sizing: border-box; }
         body { margin: 0; padding: 0 0 100px 0; background: var(--bg); color: var(--text); font-family: var(--font-ui); min-height: 100vh; }
 
-        /* START OVERLAY */
-        #start-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95); z-index: 9999;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-        }
-        .ignite-btn {
-            padding: 20px 40px; background: var(--acid); color: #000; font-size: 1.2rem;
-            font-weight: 900; border: none; border-radius: 12px; cursor: pointer;
-            box-shadow: 0 0 20px var(--acid); margin-bottom: 20px;
-        }
-
-        /* DEBUG LOG */
-        #debug-log {
-            background: #111; border-bottom: 1px solid #333; padding: 10px 16px;
-            font-family: var(--font-data); font-size: 0.6rem; color: #aaa;
-            height: 150px; overflow-y: scroll; white-space: pre-wrap;
-            position: sticky; top: 0; z-index: 100;
-        }
-        .log-line { margin-bottom: 2px; border-bottom: 1px solid #222; }
-        .log-err { color: var(--alert); font-weight: bold; background: rgba(255,0,0,0.1); }
-        .log-ok { color: var(--acid); }
-
-        /* DASHBOARD ELEMENTS */
-        .hud-header { padding: 10px 16px; border-bottom: 1px solid var(--border); }
-        .top-bar { display: flex; justify-content: space-between; align-items: center; }
+        /* HEADER */
+        .hud-header { padding: 15px 16px; background: rgba(0,0,0,0.95); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--border); }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .app-name { font-size: 0.6rem; font-weight: 900; letter-spacing: 2px; color: var(--muted); }
+        .user-switch { display: flex; gap: 4px; background: #222; padding: 2px; border-radius: 20px; }
+        .u-badge { padding: 6px 14px; border-radius: 16px; font-size: 0.6rem; font-weight: 700; color: #666; background: transparent; border: none; cursor: pointer; transition: all 0.2s; }
+        .u-badge.active { background: var(--text); color: #000; }
+
+        /* SCANNER UI */
+        .scanner-box { background: #111; border: 1px solid #333; padding: 10px; margin-bottom: 15px; border-radius: 8px; }
+        .scan-btn { width: 100%; background: var(--cyan); color: #000; font-weight: 900; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.7rem; margin-bottom: 10px; }
+        .entry-list { max-height: 150px; overflow-y: auto; }
+        .entry-item { 
+            display: flex; justify-content: space-between; padding: 10px; 
+            border-bottom: 1px solid #222; cursor: pointer; font-family: var(--font-data); font-size: 0.65rem; color: #aaa; 
+        }
+        .entry-item:hover { background: #222; color: #fff; }
+        .entry-item.active { border-left: 3px solid var(--acid); background: rgba(204,255,0,0.1); color: var(--acid); }
+
+        /* DASHBOARD */
+        .hero-section { padding: 20px 16px; display: flex; align-items: center; justify-content: space-between; }
+        .ring-container { width: 80px; height: 80px; position: relative; display: flex; align-items: center; justify-content: center; }
+        .ring-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+        .ring-bg { fill: none; stroke: var(--border); stroke-width: 6; }
+        .ring-fg { fill: none; stroke: var(--acid); stroke-width: 6; stroke-dasharray: 220; stroke-dashoffset: 220; transition: stroke-dashoffset 1s ease; }
+        .ring-val { font-family: var(--font-data); font-size: 1.2rem; font-weight: 700; color: #fff; }
         
-        .hero-section { padding: 25px 16px; display: flex; align-items: center; justify-content: space-between; }
-        .ring-container { width: 100px; height: 100px; position: relative; display: flex; align-items: center; justify-content: center; background: #111; border-radius: 50%; }
-        .ring-val { font-family: var(--font-data); font-size: 1.5rem; font-weight: 700; color: #fff; }
-        
-        .tactical-box { flex: 1; margin-left: 20px; background: #111; border-left: 3px solid var(--acid); padding: 12px; }
+        .tactical-box { flex: 1; margin-left: 20px; border-left: 3px solid var(--acid); padding: 10px; }
+        .tac-label { font-size: 0.6rem; color: var(--acid); font-weight: 900; text-transform: uppercase; }
         .tac-cmd { font-size: 0.8rem; font-weight: 700; color: #fff; }
 
         .sleep-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-top: 20px; }
-        .orb-card { background: var(--panel); border: 1px solid var(--border); padding: 15px; text-align: center; border-radius: 8px; }
-        .orb-val { font-family: var(--font-data); font-weight: 700; font-size: 0.9rem; color: #fff; }
-        .orb-label { font-size: 0.5rem; color: #666; margin-top: 5px; }
+        .orb-card { background: var(--panel); border: 1px solid var(--border); padding: 15px 5px; text-align: center; border-radius: 8px; }
+        .orb-val { font-family: var(--font-data); font-weight: 700; font-size: 0.8rem; color: #fff; }
+        .orb-label { font-size: 0.5rem; color: #666; margin-top: 5px; text-transform: uppercase; }
 
-        .controls { padding: 16px; display: flex; gap: 10px; }
-        .btn { background: var(--cyan); color: #000; border: none; padding: 10px; flex: 1; font-weight: 800; font-size: 0.7rem; cursor: pointer; border-radius: 4px; }
+        /* AI SECTION */
+        .ai-section { padding: 16px; }
+        .ai-card { background: #080808; border: 1px solid #333; padding: 15px; border-radius: 12px; }
+        .ai-btn { width: 100%; background: var(--acid); color: #000; font-weight: 900; padding: 12px; border: none; border-radius: 6px; cursor: pointer; margin-top: 10px; font-size: 0.7rem; }
     </style>
 </head>
 <body>
 
-    <div id="start-overlay">
-        <button class="ignite-btn" onclick="bootSystem()">START DEBUGGER</button>
-        <div style="color:#666; font-size:0.7rem;">v10037 Safe Mode</div>
-    </div>
-
-    <div id="debug-log">Waiting for boot...</div>
-
-    <div id="dashboard" style="display:none;">
-        <div class="hud-header">
-            <div class="top-bar">
-                <div class="app-name">CENTURION v10037</div>
-                <div style="font-size:0.6rem; color:#fff;" id="dateDisplay">--</div>
+    <div class="hud-header">
+        <div class="top-bar">
+            <div class="app-name">CENTURION v10038</div>
+            <div class="user-switch">
+                <button id="btn-jermaine" class="u-badge active" onclick="centurion.switchUser('jermaine')">JER</button>
+                <button id="btn-sophia" class="u-badge" onclick="centurion.switchUser('sophia')">SOPH</button>
             </div>
         </div>
 
+        <div class="scanner-box">
+            <button class="scan-btn" onclick="centurion.scanCloud()">SCAN CLOUD DATA</button>
+            <div id="entryList" class="entry-list">
+                <div style="text-align:center; padding:10px; color:#444; font-size:0.6rem;">Click SCAN to find your sleep data.</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="dashboard" style="opacity:0.3; transition:opacity 0.5s;">
         <div class="hero-section">
             <div class="ring-container">
+                <svg class="ring-svg"><circle class="ring-bg" cx="40" cy="40" r="35"></circle><circle class="ring-fg" id="ringFg" cx="40" cy="40" r="35"></circle></svg>
                 <div class="ring-val" id="scoreVal">--</div>
             </div>
             <div class="tactical-box">
-                <div class="tac-cmd" id="statusMsg">SYSTEM STANDBY</div>
+                <div class="tac-label" id="dateLabel">NO DATA SELECTED</div>
+                <div class="tac-cmd" id="statusMsg">SELECT AN ENTRY ABOVE</div>
             </div>
         </div>
 
         <div class="sleep-grid">
             <div class="orb-card"><div class="orb-val" id="sleepVal">--</div><div class="orb-label">TOTAL</div></div>
             <div class="orb-card"><div class="orb-val" id="deepVal">--</div><div class="orb-label">DEEP</div></div>
-            <div class="orb-card"><div class="orb-container"><div class="orb-val" id="remVal">--</div><div class="orb-label">REM</div></div></div>
+            <div class="orb-card"><div class="orb-val" id="remVal">--</div><div class="orb-label">REM</div></div>
         </div>
 
-        <div class="controls">
-            <button class="btn" onclick="centurion.fetchData()">FORCE SYNC</button>
-            <button class="btn" onclick="centurion.runAI()" style="background:var(--acid);">RUN AI</button>
+        <div class="ai-section">
+            <div class="ai-card">
+                <div style="color:var(--cyan); font-weight:900; font-size:0.7rem; margin-bottom:5px;">GEMINI COACH (1.5-flash-8b)</div>
+                <div id="aiOutput" style="font-size:0.7rem; color:#ddd; min-height:20px;">Waiting for data...</div>
+                <button class="ai-btn" onclick="centurion.runAI()">GENERATE ANALYSIS</button>
+            </div>
         </div>
-        
-        <div id="ai-output" style="padding:16px; font-size:0.7rem; color:#ddd; font-family:monospace;"></div>
     </div>
 
 <script>
-// --- GLOBAL ERROR CATCHER ---
-window.onerror = function(msg, url, line) {
-    const log = document.getElementById('debug-log');
-    log.innerHTML += `<div class="log-line log-err">CRASH: ${msg} (Line ${line})</div>`;
-    return false;
-};
+// ==========================================
+// V10038: THE DATA SCANNER
+// - Fetches last 5 days
+// - Lists them for user selection
+// - Bypasses "Today" date matching logic
+// ==========================================
 
-// --- CONFIG ---
-const TOKENS = { 'jermaine': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y' };
+const TOKENS = { 'jermaine': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'sophia': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
 const API_KEY = "AIzaSyBtqgUcbq5uVGFZ5nHPDyhthLDii7uRNrg"; 
 
-// --- BOOT SEQUENCE ---
-let centurion = null;
-function bootSystem() {
-    document.getElementById('start-overlay').style.display = 'none';
-    document.getElementById('dashboard').style.display = 'block';
-    centurion = new App();
-}
-
-class App {
+class CenturionCore {
     constructor() {
-        this.log("System Initializing...");
-        this.data = { score: 0, sleep: 0, deep: 0, rem: 0 }; // Default Safe Data
-        this.render(); // Draw safe data first
-        this.fetchData(); // Then try to fetch real data
+        this.user = 'jermaine';
+        this.activeData = null;
     }
 
-    log(msg, type='') {
-        const box = document.getElementById('debug-log');
-        box.innerHTML += `<div class="log-line ${type}">[${new Date().toLocaleTimeString()}] ${msg}</div>`;
-        box.scrollTop = box.scrollHeight;
+    switchUser(u) {
+        this.user = u;
+        document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
+        document.getElementById(`btn-${u}`).classList.add('active');
+        this.scanCloud();
     }
 
-    async fetchData() {
-        this.log("Fetching Oura Data...");
+    async scanCloud() {
+        const list = document.getElementById('entryList');
+        list.innerHTML = '<div style="text-align:center; padding:10px; color:#fff;">Scanning Oura Cloud...</div>';
         
-        // 1. Calculate Dates safely
+        // Date Range: Last 5 days + Tomorrow (to catch timezone shifts)
         const d = new Date();
+        d.setDate(d.getDate() + 1);
         const end = d.toISOString().split('T')[0];
-        d.setDate(d.getDate() - 7);
+        d.setDate(d.getDate() - 6); // Go back 6 days
         const start = d.toISOString().split('T')[0];
-        
-        this.log(`Date Range: ${start} to ${end}`);
 
         try {
-            // 2. Fetch Readiness
-            const rRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${start}&end_date=${end}`)}`, {
-                headers: { 'Authorization': `Bearer ${TOKENS.jermaine}` }
-            });
-            const rJson = await rRes.json();
-            
-            // 3. Fetch Sleep (Using 'sleep' endpoint for raw sessions)
+            // Fetch Sleep Sessions (Best for Duration)
             const sRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${start}&end_date=${end}`)}`, {
-                headers: { 'Authorization': `Bearer ${TOKENS.jermaine}` }
+                headers: { 'Authorization': `Bearer ${TOKENS[this.user]}` }
             });
             const sJson = await sRes.json();
 
-            // 4. Process Data safely
-            if (rJson.data && rJson.data.length > 0) {
-                const lastR = rJson.data[rJson.data.length - 1]; // Last item
-                this.data.score = lastR.score;
-                this.log(`Readiness Found: ${this.data.score}`, 'log-ok');
-            } else {
-                this.log("No Readiness Data Found", 'log-err');
+            // Fetch Readiness (Best for Score)
+            const rRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${start}&end_date=${end}`)}`, {
+                headers: { 'Authorization': `Bearer ${TOKENS[this.user]}` }
+            });
+            const rJson = await rRes.json();
+
+            if (!sJson.data || sJson.data.length === 0) {
+                list.innerHTML = '<div style="text-align:center; padding:10px; color:var(--alert);">No Data Found. Check Oura App Backup.</div>';
+                return;
             }
 
-            if (sJson.data && sJson.data.length > 0) {
-                const lastS = sJson.data[sJson.data.length - 1]; // Last session
-                this.data.sleep = (lastS.total_sleep_duration / 3600).toFixed(1);
-                this.data.deep = Math.round(lastS.deep_sleep_duration / 60);
-                this.data.rem = Math.round(lastS.rem_sleep_duration / 60);
-                this.log(`Sleep Found: ${this.data.sleep}h`, 'log-ok');
-            } else {
-                this.log("No Sleep Data Found", 'log-err');
-            }
+            // Build List
+            list.innerHTML = '';
+            
+            // Merge Data (Match by Day)
+            const entries = sJson.data.map(session => {
+                const day = session.day;
+                const readiness = rJson.data ? rJson.data.find(r => r.day === day) : null;
+                return {
+                    date: day,
+                    score: readiness ? readiness.score : 0,
+                    totalSec: session.total_sleep_duration,
+                    deepSec: session.deep_sleep_duration,
+                    remSec: session.rem_sleep_duration,
+                    raw: session
+                };
+            }).sort((a, b) => b.date.localeCompare(a.date)); // Sort newest first
 
-            this.render(); // Re-draw with real data
+            entries.forEach(e => {
+                const hrs = (e.totalSec / 3600).toFixed(1);
+                const item = document.createElement('div');
+                item.className = 'entry-item';
+                item.innerHTML = `<span>${e.date}</span><span>${hrs} hrs | Score: ${e.score || '-'}</span>`;
+                item.onclick = () => this.loadData(e, item);
+                list.appendChild(item);
+            });
 
         } catch (e) {
-            this.log(`FETCH ERROR: ${e.message}`, 'log-err');
+            list.innerHTML = `<div style="text-align:center; color:var(--alert);">Error: ${e.message}</div>`;
         }
     }
 
-    render() {
-        try {
-            this.log("Rendering Dashboard...");
-            document.getElementById('scoreVal').innerText = this.data.score || "-";
-            document.getElementById('sleepVal').innerText = this.data.sleep || "-";
-            document.getElementById('deepVal').innerText = this.data.deep || "-";
-            document.getElementById('remVal').innerText = this.data.rem || "-";
-            document.getElementById('statusMsg').innerText = this.data.score > 80 ? "OPTIMAL" : "RECOVERY";
-            document.getElementById('dateDisplay').innerText = new Date().toLocaleDateString();
-        } catch(e) {
-            this.log(`RENDER CRASH: ${e.message}`, 'log-err');
-        }
+    loadData(data, element) {
+        // Highlight in list
+        document.querySelectorAll('.entry-item').forEach(el => el.classList.remove('active'));
+        element.classList.add('active');
+
+        // Activate Dashboard
+        this.activeData = data;
+        document.getElementById('dashboard').style.opacity = '1';
+
+        // Render Values
+        const hrs = (data.totalSec / 3600).toFixed(1); // e.g. 5.6
+        const deepM = Math.round(data.deepSec / 60);
+        const remM = Math.round(data.remSec / 60);
+        
+        // Calculate Hours/Min for display like "5h 37m"
+        const h = Math.floor(data.totalSec / 3600);
+        const m = Math.round((data.totalSec % 3600) / 60);
+        const prettyTime = `${h}h ${m}m`;
+
+        document.getElementById('scoreVal').innerText = data.score || "-";
+        document.getElementById('sleepVal').innerText = prettyTime;
+        document.getElementById('deepVal').innerText = deepM + "m";
+        document.getElementById('remVal').innerText = remM + "m";
+        
+        document.getElementById('dateLabel').innerText = `DATA: ${data.date}`;
+        document.getElementById('statusMsg').innerText = data.score >= 80 ? "OPTIMAL READINESS" : "RECOVERY REQUIRED";
+
+        // Ring Animation
+        const offset = 220 - (Math.min(data.score, 100) / 100) * 220;
+        document.getElementById('ringFg').style.strokeDashoffset = offset;
+        
+        // Clear AI
+        document.getElementById('aiOutput').innerText = "Data loaded. Click Generate.";
     }
 
     async runAI() {
-        this.log("Starting AI...");
-        const prompt = `Longevity advice. Readiness ${this.data.score}, Sleep ${this.data.sleep}h. One sentence.`;
+        if(!this.activeData) { alert("Select a date from the list first."); return; }
         
+        const ui = document.getElementById('aiOutput');
+        ui.innerText = "Gemini 1.5-Flash-8b is thinking...";
+        
+        const prompt = `I slept ${this.activeData.totalSec/3600} hours. Score ${this.activeData.score}. Deep ${this.activeData.deepSec/60}m. Give me 1 sentence of tough love coaching.`;
+
         try {
-            // Trying 1.5-flash-8b as proven working
             const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-8b:generateContent?key=${API_KEY}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
             });
-            
             const json = await res.json();
             
-            if(json.error) {
-                this.log(`AI API ERROR: ${json.error.message}`, 'log-err');
-                document.getElementById('ai-output').innerText = "AI Error: " + json.error.message;
+            if(json.candidates) {
+                ui.innerText = json.candidates[0].content.parts[0].text;
             } else {
-                const text = json.candidates[0].content.parts[0].text;
-                this.log("AI Response Received", 'log-ok');
-                document.getElementById('ai-output').innerText = "GEMINI: " + text;
+                ui.innerText = "AI Error: " + JSON.stringify(json);
             }
         } catch(e) {
-            this.log(`AI NET ERROR: ${e.message}`, 'log-err');
+            ui.innerText = "Connection Error: " + e.message;
         }
     }
 }
+
+const centurion = new CenturionCore();
 </script>
 </body>
 </html>
