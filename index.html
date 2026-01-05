@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v10030 DATA FIX</title>
+    <title>The Centurion | v10031 DATA FORCE</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -38,6 +38,9 @@
         .c-select { background: #111; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px; font-family: var(--font-data); font-size: 0.65rem; flex: 1; }
         .c-btn { background: var(--cyan); color: #000; border: none; padding: 8px 16px; border-radius: 4px; font-weight: 800; font-size: 0.65rem; cursor: pointer; }
         .c-btn:disabled { opacity: 0.5; cursor: not-allowed; background: #333; color: #888; }
+
+        /* DEBUG DATA LINE */
+        .debug-data { font-family: var(--font-data); font-size: 0.55rem; color: #444; margin: 0 16px 10px; }
 
         /* DATE NAV */
         .date-nav { display: flex; justify-content: center; align-items: center; gap: 20px; font-family: var(--font-data); font-size: 0.8rem; font-weight: 700; color: #fff; padding-top: 15px; }
@@ -76,7 +79,7 @@
         .ai-loading { display: inline-block; width: 12px; height: 12px; border: 2px solid rgba(0,240,255,0.3); border-top-color: var(--cyan); border-radius: 50%; animation: spin 0.8s linear infinite; }
 
         /* GRIDS */
-        .section-label { font-size: 0.55rem; font-weight: 900; color: var(--muted); letter-spacing: 1px; margin: 20px 16px 10px; text-transform: uppercase; }
+        .section-label { font-size: 0.55rem; font-weight: 900; color: var(--muted); letter-spacing: 1px; margin: 20px 16px 5px; text-transform: uppercase; }
         .telemetry-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 10px; }
         .sleep-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 20px; }
         .macro-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 30px; }
@@ -153,10 +156,10 @@
         
         <div class="model-selector">
             <select id="modelSelect" class="c-select">
-                <option value="gemini-1.5-flash-8b">gemini-1.5-flash-8b (High Limit)</option>
+                <option value="gemini-1.5-flash-8b">gemini-1.5-flash-8b</option>
                 <option value="gemini-1.5-flash">gemini-1.5-flash</option>
                 <option value="gemini-2.0-flash-lite-preview-02-05">gemini-2.0-flash-lite</option>
-                <option value="gemini-pro">gemini-pro (Legacy)</option>
+                <option value="gemini-pro">gemini-pro</option>
             </select>
             <button id="retryBtn" class="c-btn" onclick="centurion.updateAI()">RUN AI</button>
         </div>
@@ -190,9 +193,9 @@
 
 <script>
 // ==========================================
-// V10030: DATA STABILIZATION
-// - Smart Date Matching (Finds latest data automatically)
-// - Forced Re-Render on Sync
+// V10031: DATA FORCE
+// - Forcing the Latest Available Data (ignoring strict date match)
+// - Raw Data Readout
 // ==========================================
 
 const TOKENS = { 'jermaine': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'sophia': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
@@ -344,8 +347,10 @@ class CenturionCore {
                     const dailyAct = aData.data ? aData.data.find(a => a.day === dateKey) : null;
 
                     let sleepHours = "-", deepMin = "-", remMin = "-";
+                    let rawSleepSec = 0;
                     
                     if(dailySleep && dailySleep.total_sleep_duration) {
+                        rawSleepSec = dailySleep.total_sleep_duration;
                         sleepHours = (dailySleep.total_sleep_duration / 3600).toFixed(1);
                         deepMin = Math.round(dailySleep.deep_sleep_duration / 60);
                         remMin = Math.round(dailySleep.rem_sleep_duration / 60);
@@ -358,17 +363,16 @@ class CenturionCore {
                         high: dailyAct ? Math.round(dailyAct.high_activity_time/60) : 0, 
                         med: dailyAct ? Math.round(dailyAct.medium_activity_time/60) : 0,
                         rhr: day.contributors?.resting_heart_rate || "-",
-                        sleep: sleepHours, deep: deepMin, rem: remMin
+                        sleep: sleepHours, deep: deepMin, rem: remMin,
+                        rawSec: rawSleepSec
                     };
                 }).reverse();
                 
                 localStorage.setItem(`centurion_oura_cache_${fetchID}`, JSON.stringify({history: hist, lastFetch: Date.now()}));
                 this.cache = { history: hist };
                 
-                // FORCE UI UPDATE WITH NEW DATA
                 this.render(); 
                 
-                // Show status
                 if(hist.length > 0) {
                     const latest = hist[0];
                     document.getElementById('ouraBar').innerHTML = `💍 SYNCED: ${latest.date}`;
@@ -403,10 +407,9 @@ class CenturionCore {
         // AUTO-FALLBACK: Use latest data if today is empty
         let rawOura = this.cache.history.find(d => d.date === dk);
         if (!rawOura && this.cache.history.length > 0) {
-             // Fallback to the most recent entry if "today" is missing (e.g. morning sync delay)
-             rawOura = this.cache.history[0];
+             rawOura = this.cache.history[0]; 
         }
-        rawOura = rawOura || {}; // Final safety
+        rawOura = rawOura || {}; 
 
         const { totals } = this.calculateDailyTotals(dk);
         const u = USERS[this.user];
@@ -428,7 +431,6 @@ class CenturionCore {
 
             if(!response.ok) {
                 if(response.status === 404 && selectedModel !== 'gemini-flash-latest') {
-                    // Fallback
                     document.getElementById('modelSelect').value = 'gemini-flash-latest';
                     return this.updateAI();
                 }
@@ -448,7 +450,6 @@ class CenturionCore {
         } catch(e) {
             let userMsg = e.message;
             if(userMsg.includes("429")) userMsg = "Quota Limit. Please wait 60s.";
-            
             if(aiContainer) aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header" style="color:var(--alert)">⚠️ ERROR</div><div class="ai-content">${userMsg}</div></div>`;
         }
     }
@@ -459,19 +460,6 @@ class CenturionCore {
         this.updateAI();
     }
 
-    openBio() { document.getElementById('bioModal').classList.add('active'); }
-    closeBio() { document.getElementById('bioModal').classList.remove('active'); }
-    saveBio() {
-        this.bios = {
-            vo2: document.getElementById('in-vo2').value,
-            rhr: document.getElementById('in-rhr').value,
-            marker: document.getElementById('in-bio').value
-        };
-        localStorage.setItem(`centurion_bios_${this.user}`, JSON.stringify(this.bios));
-        this.closeBio();
-        this.render();
-    }
-
     render() {
         const d = this.getCurrentDate();
         const dk = getDateKey(d);
@@ -480,14 +468,17 @@ class CenturionCore {
         document.getElementById('dateDisplay').innerText = displayDate;
         document.getElementById('btn-next').classList.toggle('disabled', dk === today);
 
-        // DATA RETRIEVAL LOGIC:
-        // Try to find exact date match. If not, and it's "Today", try the most recent data entry.
+        // --- THE FORCE LOGIC ---
+        // 1. Try exact date match
         let rawOura = this.cache.history.find(d => d.date === dk);
+        
+        // 2. If viewing "Today" but no data, force the LATEST entry available
         if (!rawOura && dk === today && this.cache.history.length > 0) {
-             rawOura = this.cache.history[0]; // Use latest available
+             rawOura = this.cache.history[0]; 
         }
-        // Fallback default
-        rawOura = rawOura || { score: "-", cal: "-", high: 0, med: 0, rhr: "-", sleep: "-", deep: "-", rem: "-" };
+        
+        // 3. Fallback
+        rawOura = rawOura || { score: "-", cal: "-", high: 0, med: 0, rhr: "-", sleep: "-", deep: "-", rem: "-", rawSec: 0 };
 
         const u = USERS[this.user];
         const scoreVal = parseInt(rawOura.score) || 0;
@@ -521,6 +512,7 @@ class CenturionCore {
         <div id="ai-container"></div>
 
         <div class="section-label">SLEEP ARCHITECTURE</div>
+        <div class="debug-data">RAW: ${rawOura.rawSec}s</div> 
         <div class="sleep-grid">
             <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-purple); stroke-dashoffset:${158-(Math.min(safeNum(rawOura.sleep),9)/9)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.sleep}</div><span class="orb-unit">HRS</span></div></div><div class="orb-label">TOTAL</div></div>
             <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:#007aff; stroke-dashoffset:${158-(Math.min(safeNum(rawOura.deep),120)/120)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.deep}</div><span class="orb-unit">DEEP</span></div></div><div class="orb-label">DEEP</div></div>
@@ -553,7 +545,7 @@ class CenturionCore {
         `;
 
         document.getElementById('dayContent').innerHTML = html;
-        // Don't auto-update AI yet, let user trigger it if needed
+        // Manual trigger only for AI
     }
 }
 
