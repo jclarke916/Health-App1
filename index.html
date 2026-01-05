@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v10004 PRECISION</title>
+    <title>The Centurion | v10005 PRECISION</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root { --bg: #000; --panel: #0a0a0a; --border: #222; --acid: #ccff00; --cyan: #00f0ff; --alert: #ff453a; --purple: #bf5af2; --text: #fff; --muted: #666; }
@@ -49,7 +49,7 @@
             min-height: 80px;
         }
         .ai-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 0.65rem; color: var(--cyan); font-weight: 900; letter-spacing: 1px; }
-        .ai-content { font-size: 0.75rem; line-height: 1.5; color: #ddd; }
+        .ai-content { font-size: 0.75rem; line-height: 1.5; color: #ddd; word-break: break-word; }
         .ai-link { color: var(--acid); text-decoration: underline; cursor: pointer; }
         
         /* GRIDS */
@@ -81,8 +81,9 @@
 
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v10004</div>
+            <div class="app-name">CENTURION v10005</div>
             <div style="display:flex; gap:10px; align-items:center;">
+                <button class="bio-btn" onclick="centurion.openBio()">BIO</button>
                 <div class="user-switch">
                     <button id="btn-jermaine" class="u-badge active" onclick="centurion.switchUser('jermaine')">JER</button>
                     <button id="btn-sophia" class="u-badge" onclick="centurion.switchUser('sophia')">SOPH</button>
@@ -105,9 +106,7 @@
 
 <script>
 // ==========================================
-// V10004: PRECISION SYNC
-// - Sleep Match: Uses 'bedtime_end' to find correct session
-// - AI Fix: Uses standard gemini-pro + permission help
+// V10005: PRECISION MATCHING + AI DIAGNOSTICS
 // ==========================================
 
 const TOKENS = { 'jermaine': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'sophia': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
@@ -169,7 +168,7 @@ class CenturionCore {
     async fetchOuraData() {
         const fetchID = this.user; 
         const token = TOKENS[fetchID];
-        // Fetch wider range to ensure we capture the sleep that spans midnight
+        // Fetch wider range to ensure we capture late sessions
         const endD = new Date(); 
         const startD = new Date(); startD.setDate(endD.getDate() - 10);
         const range = `start_date=${getDateKey(startD)}&end_date=${getDateKey(endD)}`;
@@ -189,27 +188,20 @@ class CenturionCore {
             
             if(rData.data) {
                 const hist = rData.data.map(day => {
-                    // TARGET: We want the sleep session that ENDED on this "day"
-                    // Example: Readiness for Jan 5 should match Sleep that ended morning of Jan 5
-                    
-                    const readinessDate = day.day; // "2026-01-05"
-                    
+                    const readinessDate = day.day; 
                     let bestSession = null;
                     let maxOverlap = 0;
 
+                    // STRATEGY: Find session that ENDED on the same day as the Readiness score
                     if(sData.data) {
                         sData.data.forEach(sess => {
-                            // Only look at main sleep periods
-                            if(sess.type === 'long_sleep' || sess.type === 'sleep') {
-                                const endDate = sess.day; // "2026-01-05" (Oura API usually marks sessions by end date, but sometimes start)
-                                
-                                // Precise Match Strategy:
-                                // Check if the session *ends* in the morning of the readiness date
+                            if(sess.type === 'long_sleep' || sess.type === 'sleep' || sess.type === 'late_nap') {
                                 const endTimestamp = new Date(sess.bedtime_end);
-                                const endKey = endTimestamp.toISOString().split('T')[0]; // "2026-01-05"
+                                // Account for timezone offset if needed, but local string split is usually safest for "morning of"
+                                // We use the API's date string representation
+                                const endString = sess.bedtime_end.split('T')[0];
                                 
-                                if(endKey === readinessDate) {
-                                    // This session ended on the same day as the readiness score. Perfect match.
+                                if(endString === readinessDate) {
                                     if(sess.total_sleep_duration > maxOverlap) {
                                         maxOverlap = sess.total_sleep_duration;
                                         bestSession = sess;
@@ -219,7 +211,7 @@ class CenturionCore {
                         });
                     }
 
-                    // Fallback: If no "end-match" found, try the "yesterday" logic as backup
+                    // Fallback to "Yesterday" logic if morning-match fails
                     if(!bestSession && sData.data) {
                         const yesterday = new Date(day.day);
                         yesterday.setDate(yesterday.getDate() - 1);
@@ -277,14 +269,19 @@ class CenturionCore {
                 body: JSON.stringify({ contents: [{ parts: [{ text: contextPrompt }] }] })
             });
 
-            // Specific 403/400 handling
-            if(response.status === 403 || response.status === 400) {
-                aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header" style="color:var(--alert)">⚠️ PERMISSION ERROR</div><div class="ai-content">Google Cloud API not enabled. <a class="ai-link" href="https://console.cloud.google.com/apis/library/generativelanguage.googleapis.com" target="_blank">Click here to enable Generative Language API</a></div></div>`;
-                return;
+            const data = await response.json();
+
+            // SPECIFIC ERROR HANDLING FOR UI
+            if(data.error) {
+                let msg = data.error.message || "Unknown Error";
+                if(data.error.code === 403 || msg.includes("API key")) {
+                    msg = "Google Cloud API not enabled. Click here.";
+                    aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header" style="color:var(--alert)">⚠️ PERMISSION ERROR</div><div class="ai-content"><a class="ai-link" href="https://console.cloud.google.com/apis/library/generativelanguage.googleapis.com" target="_blank">${msg}</a></div></div>`;
+                    return;
+                }
+                throw new Error(msg);
             }
 
-            if(!response.ok) throw new Error("Gemini Error");
-            const data = await response.json();
             const insight = data.candidates[0].content.parts[0].text;
             
             this.aiInsights[dk] = insight;
@@ -294,7 +291,7 @@ class CenturionCore {
 
         } catch(e) {
             console.error("AI Failed", e);
-            aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header" style="color:var(--muted)">⚠️ AI OFFLINE</div><div class="ai-content">Connection issue.</div></div>`;
+            aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header" style="color:var(--muted)">⚠️ AI OFFLINE</div><div class="ai-content">${e.message}</div></div>`;
         }
     }
 
