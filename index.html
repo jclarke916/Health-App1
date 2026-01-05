@@ -271,6 +271,139 @@
 </div>
 
 <script>
+// ==========================================
+// ERROR LOGGER - COMPREHENSIVE DEBUG SYSTEM
+// ==========================================
+class ErrorLogger {
+    constructor() {
+        this.errors = [];
+        this.maxErrors = 50;
+        this.setupGlobalHandlers();
+    }
+
+    setupGlobalHandlers() {
+        // Catch all uncaught errors
+        window.onerror = (msg, url, line, col, error) => {
+            this.log('UNCAUGHT ERROR', {
+                message: msg,
+                url: url,
+                line: line,
+                column: col,
+                stack: error?.stack
+            });
+            return false; // Let default handler run too
+        };
+
+        // Catch unhandled promise rejections
+        window.addEventListener('unhandledrejection', (event) => {
+            this.log('UNHANDLED PROMISE', {
+                reason: event.reason,
+                promise: event.promise
+            });
+        });
+
+        // Override console.error to capture
+        const originalError = console.error;
+        console.error = (...args) => {
+            this.log('CONSOLE ERROR', args);
+            originalError.apply(console, args);
+        };
+    }
+
+    log(type, data) {
+        const timestamp = new Date().toISOString();
+        const entry = {
+            timestamp,
+            type,
+            data: this.sanitize(data)
+        };
+        
+        this.errors.unshift(entry);
+        if (this.errors.length > this.maxErrors) {
+            this.errors.pop();
+        }
+
+        // Store in localStorage
+        try {
+            localStorage.setItem('centurion_error_log', JSON.stringify(this.errors));
+        } catch(e) {
+            console.warn('Could not save error log to localStorage');
+        }
+
+        // Also log to console for immediate debugging
+        console.log(`[${type}]`, timestamp, data);
+    }
+
+    sanitize(data) {
+        // Remove sensitive info
+        if (typeof data === 'string') {
+            return data.replace(/Bearer\s+[A-Za-z0-9_-]+/g, 'Bearer ***');
+        }
+        if (typeof data === 'object') {
+            return JSON.parse(JSON.stringify(data, (key, value) => {
+                if (key.toLowerCase().includes('token') || key.toLowerCase().includes('key')) {
+                    return '***';
+                }
+                return value;
+            }));
+        }
+        return data;
+    }
+
+    getErrors() {
+        return this.errors;
+    }
+
+    clear() {
+        this.errors = [];
+        localStorage.removeItem('centurion_error_log');
+        console.log('✅ Error log cleared');
+    }
+
+    export() {
+        const blob = new Blob([JSON.stringify(this.errors, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `centurion-errors-${Date.now()}.json`;
+        a.click();
+        console.log('✅ Error log exported');
+    }
+
+    display() {
+        console.group('🐛 CENTURION ERROR LOG');
+        this.errors.forEach((err, i) => {
+            console.log(`${i + 1}. [${err.type}] ${err.timestamp}`);
+            console.log(err.data);
+        });
+        console.groupEnd();
+    }
+}
+
+// Initialize error logger globally
+window.errorLogger = new ErrorLogger();
+
+// Add debug commands to window for easy access
+window.debugCenturion = {
+    errors: () => window.errorLogger.display(),
+    clear: () => window.errorLogger.clear(),
+    export: () => window.errorLogger.export(),
+    cache: () => {
+        const user = localStorage.getItem('centurion_active_user') || 'jermaine';
+        const cache = JSON.parse(localStorage.getItem(`centurion_oura_cache_${user}`));
+        console.log('📦 Cache:', cache);
+    },
+    clearCache: () => {
+        const user = localStorage.getItem('centurion_active_user') || 'jermaine';
+        localStorage.removeItem(`centurion_oura_cache_${user}`);
+        console.log('✅ Cache cleared for', user);
+    }
+};
+
+console.log('%c🐛 DEBUG MODE ENABLED', 'background: #ccff00; color: #000; padding: 5px; font-weight: bold;');
+console.log('Type debugCenturion.errors() to view errors');
+console.log('Type debugCenturion.cache() to view Oura cache');
+
 // ⚠️ REPLACE THIS WITH YOUR ACTUAL ANTHROPIC API KEY FOR TESTING
 // WARNING: Never commit API keys to public repositories!
 const GEMINI_API_KEY = "AIzaSyBtqgUcbq5uVGFZ5nHPDyhthLDii7uRNrg";
@@ -638,6 +771,7 @@ class CenturionCore {
         const range = `start_date=${getDateKey(new Date(Date.now()-864e5*14))}&end_date=${getDateKey(new Date())}`;
         const cb = `&t=${Date.now()}`;
         
+        window.errorLogger.log('OURA FETCH', { action: 'start', user: fetchID });
         document.getElementById('ouraBar').innerHTML = "💍 SYNCING...";
         
         try {
@@ -648,15 +782,31 @@ class CenturionCore {
                 fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?${range}${cb}`)}`, { headers: { 'Authorization': `Bearer ${token}` } })
             ]);
             
+            window.errorLogger.log('OURA FETCH', { 
+                action: 'responses', 
+                readiness: rRes.status, 
+                activity: aRes.status, 
+                sleep: sRes.status 
+            });
+            
             const rData = await rRes.json();
             const aData = await aRes.json();
             let sData = await sRes.json();
             
+            window.errorLogger.log('OURA FETCH', { 
+                action: 'parsed',
+                rDataCount: rData.data?.length,
+                aDataCount: aData.data?.length,
+                sDataCount: sData.data?.length
+            });
+            
             // If daily_sleep fails, fallback to sleep endpoint
             if(!sData.data || sData.data.length === 0) {
                 console.log("⚠️ daily_sleep returned no data, trying sleep endpoint...");
+                window.errorLogger.log('OURA FETCH', { action: 'fallback to sleep endpoint' });
                 const sleepFallback = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?${range}${cb}`)}`, { headers: { 'Authorization': `Bearer ${token}` } });
                 sData = await sleepFallback.json();
+                window.errorLogger.log('OURA FETCH', { action: 'fallback result', sDataCount: sData.data?.length });
             }
             
             if(this.user !== fetchID) return;
@@ -697,12 +847,20 @@ class CenturionCore {
                     };
                 }).reverse();
                 
+                window.errorLogger.log('OURA FETCH', { action: 'success', historySize: hist.length });
                 localStorage.setItem(`centurion_oura_cache_${fetchID}`, JSON.stringify({history: hist, lastFetch: Date.now()}));
                 this.cache = { history: hist };
                 document.getElementById('ouraBar').innerHTML = `💍 SYNCED`;
                 this.render();
+            } else {
+                throw new Error('No readiness data returned from Oura API');
             }
         } catch(e) { 
+            window.errorLogger.log('OURA FETCH ERROR', {
+                message: e.message,
+                stack: e.stack,
+                user: fetchID
+            });
             console.error("Oura sync error:", e);
             document.getElementById('ouraBar').innerHTML = "💍 SYNC TIMEOUT"; 
         }
@@ -884,33 +1042,45 @@ Be direct, data-driven, and motivating. No fluff.`;
     }
 
     async render() {
-        const d = this.getCurrentDate();
-        const dk = getDateKey(d);
-        const today = getDateKey(getCaDate());
-        const displayDate = (dk === today) ? "TODAY" : dk.substring(5);
-        
-        document.getElementById('dateDisplay').innerText = displayDate;
-        document.getElementById('btn-next').classList.toggle('disabled', dk === today);
+        try {
+            window.errorLogger.log('RENDER', { action: 'start', user: this.user, dayOffset: this.dayOffset });
+            
+            const d = this.getCurrentDate();
+            const dk = getDateKey(d);
+            const today = getDateKey(getCaDate());
+            const displayDate = (dk === today) ? "TODAY" : dk.substring(5);
+            
+            document.getElementById('dateDisplay').innerText = displayDate;
+            document.getElementById('btn-next').classList.toggle('disabled', dk === today);
 
-        const rawOura = this.cache.history.find(d => d.date === dk) || { score: "-", cal: "-", high: 0, med: 0, rhr: "-", sleep: "-", deep: "-", rem: "-" };
-        const u = USERS[this.user];
-        const scoreVal = parseInt(rawOura.score) || 0;
-        const rColor = scoreVal >= 80 ? 'var(--acid)' : scoreVal >= 60 ? 'var(--gold)' : 'var(--alert)';
-        const safeNum = (v) => (v === "-" || v === undefined || isNaN(v)) ? 0 : parseFloat(v);
+            const rawOura = this.cache.history.find(d => d.date === dk) || { score: "-", cal: "-", high: 0, med: 0, rhr: "-", sleep: "-", deep: "-", rem: "-" };
+            const u = USERS[this.user];
+            
+            if (!u) {
+                throw new Error(`User ${this.user} not found in USERS`);
+            }
+            
+            const scoreVal = parseInt(rawOura.score) || 0;
+            const rColor = scoreVal >= 80 ? 'var(--acid)' : scoreVal >= 60 ? 'var(--gold)' : 'var(--alert)';
+            const safeNum = (v) => (v === "-" || v === undefined || isNaN(v)) ? 0 : parseFloat(v);
 
-        let statusMsg = "GATHERING DATA...";
-        if(scoreVal > 0) {
-            if(scoreVal >= 85) statusMsg = "PEAK READINESS. ANABOLIC WINDOW OPEN.";
-            else if(scoreVal >= 70) statusMsg = "SYSTEMS NOMINAL. MAINTAIN PROTOCOLS.";
-            else statusMsg = "RECOVERY MODE. PRIORITIZE SLEEP/NUTRITION.";
-        }
+            let statusMsg = "GATHERING DATA...";
+            if(scoreVal > 0) {
+                if(scoreVal >= 85) statusMsg = "PEAK READINESS. ANABOLIC WINDOW OPEN.";
+                else if(scoreVal >= 70) statusMsg = "SYSTEMS NOMINAL. MAINTAIN PROTOCOLS.";
+                else statusMsg = "RECOVERY MODE. PRIORITIZE SLEEP/NUTRITION.";
+            }
 
-        const meals = MEAL_DB[this.user];
-        const mode = scoreVal >= 80 ? "anabolic" : "repair";
-        const wKey = `${mode}_${this.user.toLowerCase()}`;
-        const workout = WORKOUTS[wKey];
+            const meals = MEAL_DB[this.user];
+            if (!meals) {
+                throw new Error(`Meals not found for user ${this.user}`);
+            }
+            
+            const mode = scoreVal >= 80 ? "anabolic" : "repair";
+            const wKey = `${mode}_${this.user.toLowerCase()}`;
+            const workout = WORKOUTS[wKey];
 
-        const checks = this.checkedItems[dk] || [];
+            const checks = this.checkedItems[dk] || [];
         
         const { totals, rainbowScore } = this.calculateDailyTotals(dk);
 
@@ -1186,6 +1356,28 @@ Be direct, data-driven, and motivating. No fluff.`;
                 `;
             }
         }, 100);
+        
+        } catch(error) {
+            window.errorLogger.log('RENDER ERROR', {
+                message: error.message,
+                stack: error.stack,
+                user: this.user,
+                cacheSize: this.cache?.history?.length
+            });
+            
+            // Display error to user
+            const content = document.getElementById('dayContent');
+            if (content) {
+                content.innerHTML = `
+                    <div style="padding: 20px; text-align: center;">
+                        <h2 style="color: var(--alert);">⚠️ Render Error</h2>
+                        <p style="color: #999;">${error.message}</p>
+                        <button onclick="debugCenturion.errors()" style="padding: 10px 20px; background: var(--acid); color: #000; border: none; border-radius: 8px; margin: 10px; cursor: pointer;">View Error Log</button>
+                        <button onclick="location.reload()" style="padding: 10px 20px; background: var(--cyan); color: #000; border: none; border-radius: 8px; margin: 10px; cursor: pointer;">Reload App</button>
+                    </div>
+                `;
+            }
+        }
     }
 }
 
