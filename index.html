@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v10015 AUTO-DISCOVERY</title>
+    <title>The Centurion | v10016 FLASH</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -28,12 +28,10 @@
         .log-box { 
             margin: 10px 16px; padding: 10px; background: #111; border: 1px solid #333; 
             border-radius: 8px; font-family: var(--font-data); font-size: 0.6rem; color: #aaa; 
-            min-height: 60px; overflow-y: auto; white-space: pre-wrap;
+            height: 60px; overflow-y: auto; white-space: pre-wrap;
         }
-        .log-entry { margin-bottom: 2px; border-bottom: 1px solid #222; padding-bottom: 2px; }
         .log-success { color: var(--acid); }
         .log-error { color: var(--alert); }
-        .log-info { color: var(--cyan); }
 
         /* HEADER */
         .hud-header { padding: 15px 16px; background: rgba(0,0,0,0.95); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--border); }
@@ -147,7 +145,7 @@
 
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v10015</div>
+            <div class="app-name">CENTURION v10016 (QUOTA SAFE)</div>
             <div style="display:flex; gap:10px; align-items:center;">
                 <button class="bio-btn" onclick="centurion.openBio()">BIO</button>
                 <div class="user-switch">
@@ -187,7 +185,9 @@
 
 <script>
 // ==========================================
-// V10015: AUTO-DISCOVERY PROTOCOL
+// V10016: EFFICIENCY ENGINE (QUOTA FIX)
+// - Forced gemini-1.5-flash
+// - Removed Auto-Discovery overhead
 // ==========================================
 
 const TOKENS = { 'jermaine': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'sophia': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
@@ -235,16 +235,14 @@ class CenturionCore {
         this.checkedItems = JSON.parse(localStorage.getItem(`centurion_checked_${this.user}`)) || {};
         this.bios = JSON.parse(localStorage.getItem(`centurion_bios_${this.user}`)) || {};
         this.aiInsights = JSON.parse(localStorage.getItem(`centurion_ai_insights_${this.user}`)) || {};
-        this.foundModel = null;
         this.init();
     }
 
     init() {
-        this.log("App Started.");
+        this.log("App Started. (Flash Mode)");
         this.updateUI(); 
         this.render();   
-        this.fetchOuraData();
-        this.discoverModel(); // AUTO-DISCOVER
+        this.fetchOuraData(); 
     }
 
     log(msg, type='') {
@@ -254,39 +252,6 @@ class CenturionCore {
         entry.className = `log-entry ${type}`;
         entry.innerText = msg;
         box.prepend(entry);
-    }
-
-    async discoverModel() {
-        this.log("Auto-Discovering Models...");
-        try {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`;
-            const res = await fetch(url);
-            if(!res.ok) throw new Error("API List Blocked");
-            
-            const data = await res.json();
-            if(!data.models) throw new Error("No Models returned");
-
-            // Hunt for a generation model
-            const valid = data.models.find(m => 
-                m.supportedGenerationMethods && 
-                m.supportedGenerationMethods.includes("generateContent") &&
-                (m.name.includes("1.5") || m.name.includes("pro"))
-            );
-
-            if(valid) {
-                this.foundModel = valid.name.replace("models/", "");
-                this.log(`LOCKED ON: ${this.foundModel}`, 'log-success');
-                this.updateAI();
-            } else {
-                this.log("No compatible models found.", 'log-error');
-            }
-
-        } catch(e) {
-            this.log(`Discovery Failed: ${e.message}`, 'log-error');
-            this.log("Using Default: gemini-pro", 'log-info');
-            this.foundModel = "gemini-pro";
-            this.updateAI();
-        }
     }
 
     switchUser(uID) {
@@ -302,7 +267,6 @@ class CenturionCore {
         this.updateUI();
         this.render(); 
         this.fetchOuraData();
-        if(this.foundModel) this.updateAI();
     }
 
     changeDate(d) {
@@ -366,7 +330,6 @@ class CenturionCore {
         document.getElementById('ouraBar').innerHTML = "💍 SYNCING...";
         
         try {
-            // PIVOT: Fetch 'daily_sleep' (summary) and 'daily_readiness' (score) and 'daily_activity'
             const [rRes, dsRes, aRes] = await Promise.all([
                 fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
@@ -409,7 +372,7 @@ class CenturionCore {
                 this.cache = { history: hist };
                 document.getElementById('ouraBar').innerHTML = `💍 UPDATED`;
                 this.render();
-                if(this.foundModel) this.updateAI();
+                this.updateAI();
             }
         } catch(e) { 
             console.error(e);
@@ -422,8 +385,6 @@ class CenturionCore {
         const dk = getDateKey(this.getCurrentDate());
         const aiContainer = document.getElementById('ai-container');
         
-        if(!this.foundModel) return;
-
         if(this.aiInsights[dk]) {
             if(aiContainer) aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header"><span>🧠 GEMINI COACH</span></div><div class="ai-content">${this.aiInsights[dk].replace(/\*\*/g, '<strong>').replace(/\*/g, '')}</div><button class="ai-refresh" onclick="centurion.forceRefreshAI()">🔄 REGENERATE</button></div>`;
             return;
@@ -434,31 +395,28 @@ class CenturionCore {
         const u = USERS[this.user];
         const scoreVal = parseInt(rawOura.score) || 0;
         
-        if(scoreVal === 0) {
-            if(aiContainer) aiContainer.innerHTML = ''; 
-            return;
-        }
+        if(scoreVal === 0) { if(aiContainer) aiContainer.innerHTML = ''; return; }
 
-        aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header"><span class="ai-loading"></span><span>ANALYZING...</span></div><div class="ai-content">Checking longevity metrics...</div></div>`;
-        this.log(`AI: Querying ${this.foundModel}...`);
+        aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header"><span class="ai-loading"></span><span>ANALYZING...</span></div><div class="ai-content">Checking metrics...</div></div>`;
+        this.log("AI: Using gemini-1.5-flash...");
 
-        const contextPrompt = `You are an expert longevity coach. Analyze this data for ${u.name}.
-        TODAY (${dk}): Readiness ${scoreVal}, Sleep ${rawOura.sleep}h, Active Cal ${rawOura.cal}.
-        NUTRITION: Protein ${totals.p}g, Omega-3 ${totals.omega3}mg.
-        Give 3 sentence insight: What's good, What to improve, Why it matters.`;
+        const contextPrompt = `Expert longevity analysis for ${u.name}. TODAY: Readiness ${scoreVal}, Sleep ${rawOura.sleep}h. One sentence advice.`;
 
         try {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.foundModel}:generateContent?key=${GEMINI_API_KEY}`;
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
             const response = await fetch(url, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ contents: [{ parts: [{ text: contextPrompt }] }] })
             });
 
+            if(response.status === 429) {
+                throw new Error("Quota Exceeded. Please wait 60s.");
+            }
+
             if(!response.ok) {
                 const errData = await response.json();
-                let errMsg = "Gemini Error";
-                if(errData.error && errData.error.message) errMsg = errData.error.message;
+                let errMsg = errData.error?.message || "Gemini Error";
                 this.log(`AI Error: ${errMsg}`, 'log-error');
                 throw new Error(errMsg);
             }
@@ -466,17 +424,16 @@ class CenturionCore {
             const data = await response.json();
             const insight = data.candidates[0].content.parts[0].text;
             
-            this.log("AI: Response Received", 'log-success');
+            this.log("AI: Success.", 'log-success');
             this.aiInsights[dk] = insight;
             localStorage.setItem(`centurion_ai_insights_${this.user}`, JSON.stringify(this.aiInsights));
             
             if(aiContainer) aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header"><span>🧠 GEMINI COACH</span></div><div class="ai-content">${insight.replace(/\*\*/g, '<strong>').replace(/\*/g, '')}</div><button class="ai-refresh" onclick="centurion.forceRefreshAI()">🔄 REGENERATE</button></div>`;
 
         } catch(e) {
-            let userMsg = "AI Offline.";
-            if(e.message.includes("API key")) userMsg = "API Key Error.";
-            
-            if(aiContainer) aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header" style="color:var(--alert)">⚠️ ${userMsg}</div><div class="ai-content">See System Log for details.</div></div>`;
+            let userMsg = e.message;
+            if(userMsg.includes("429")) userMsg = "Rate Limit Hit. Cooling down...";
+            if(aiContainer) aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header" style="color:var(--alert)">⚠️ ${userMsg}</div><div class="ai-content">System recovering from quota limit.</div></div>`;
         }
     }
 
@@ -572,7 +529,7 @@ class CenturionCore {
         `;
 
         document.getElementById('dayContent').innerHTML = html;
-        if(this.foundModel) this.updateAI();
+        this.updateAI(); 
     }
 }
 
