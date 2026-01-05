@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v10024 QUOTA BUSTER</title>
+    <title>The Centurion | v10025 LIGHTWEIGHT</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -37,6 +37,7 @@
         .model-selector { display: flex; gap: 10px; margin-top: 10px; }
         .c-select { background: #111; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px; font-family: var(--font-data); font-size: 0.65rem; flex: 1; }
         .c-btn { background: var(--cyan); color: #000; border: none; padding: 8px 16px; border-radius: 4px; font-weight: 800; font-size: 0.65rem; cursor: pointer; }
+        .c-btn:disabled { opacity: 0.5; cursor: not-allowed; background: #333; color: #888; }
 
         /* DATE NAV */
         .date-nav { display: flex; justify-content: center; align-items: center; gap: 20px; font-family: var(--font-data); font-size: 0.8rem; font-weight: 700; color: #fff; padding-top: 15px; }
@@ -140,7 +141,7 @@
 
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v10024</div>
+            <div class="app-name">CENTURION v10025</div>
             <div style="display:flex; gap:10px; align-items:center;">
                 <button class="bio-btn" onclick="centurion.openBio()">BIO</button>
                 <div class="user-switch">
@@ -152,12 +153,11 @@
         
         <div class="model-selector">
             <select id="modelSelect" class="c-select">
-                <option value="gemini-1.5-flash-latest">gemini-1.5-flash-latest (High Quota)</option>
-                <option value="gemini-1.5-flash">gemini-1.5-flash</option>
+                <option value="gemini-1.5-flash-8b">gemini-1.5-flash-8b (Lightest)</option>
+                <option value="gemini-pro">gemini-pro (Legacy)</option>
                 <option value="gemini-2.0-flash-lite-preview-02-05">gemini-2.0-flash-lite</option>
-                <option value="gemini-2.5-flash">gemini-2.5-flash (Low Quota)</option>
             </select>
-            <button class="c-btn" onclick="centurion.updateAI()">RETRY AI</button>
+            <button id="retryBtn" class="c-btn" onclick="centurion.updateAI()">RETRY AI</button>
         </div>
 
         <div class="date-nav">
@@ -189,9 +189,9 @@
 
 <script>
 // ==========================================
-// V10024: QUOTA BUSTER
-// - Defaults to 1.5-flash-latest (Stable/High Quota)
-// - Fallback options available in UI
+// V10025: LIGHTWEIGHT PROTOCOL
+// - Defaults to 1.5-flash-8b
+// - Implements rate limiting/cool-down
 // ==========================================
 
 const TOKENS = { 'jermaine': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'sophia': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
@@ -239,6 +239,7 @@ class CenturionCore {
         this.checkedItems = JSON.parse(localStorage.getItem(`centurion_checked_${this.user}`)) || {};
         this.bios = JSON.parse(localStorage.getItem(`centurion_bios_${this.user}`)) || {};
         this.aiInsights = JSON.parse(localStorage.getItem(`centurion_ai_insights_${this.user}`)) || {};
+        this.lastCall = 0;
         this.init();
     }
 
@@ -267,7 +268,7 @@ class CenturionCore {
         this.dayOffset += d;
         if(this.dayOffset > 0) this.dayOffset = 0;
         this.render();
-        this.updateAI();
+        // Don't auto-fetch AI on date change to save quota
     }
 
     toggleItem(id) {
@@ -365,7 +366,7 @@ class CenturionCore {
                 this.cache = { history: hist };
                 document.getElementById('ouraBar').innerHTML = `💍 UPDATED`;
                 this.render();
-                this.updateAI();
+                // We do NOT auto-call AI here to prevent quota burn
             }
         } catch(e) { 
             console.error(e);
@@ -374,12 +375,20 @@ class CenturionCore {
     }
 
     async updateAI() {
+        // Rate Limit Check (10 seconds)
+        const now = Date.now();
+        if(now - this.lastCall < 10000) {
+            alert("Cooling down... please wait a few seconds.");
+            return;
+        }
+        this.lastCall = now;
+
         const dk = getDateKey(this.getCurrentDate());
         const aiContainer = document.getElementById('ai-container');
         const selectedModel = document.getElementById('modelSelect').value;
         
-        if(this.aiInsights[dk]) {
-            if(aiContainer) aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header"><span>🧠 GEMINI COACH (${selectedModel})</span></div><div class="ai-content">${this.aiInsights[dk].replace(/\*\*/g, '<strong>').replace(/\*/g, '')}</div><button class="ai-refresh" onclick="centurion.forceRefreshAI()">🔄 REGENERATE</button></div>`;
+        if(this.aiInsights[dk] && !this.aiInsights[dk].includes("Error")) {
+            if(aiContainer) aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header"><span>🧠 GEMINI COACH (${selectedModel})</span></div><div class="ai-content">${this.aiInsights[dk].replace(/\*\*/g, '<strong>').replace(/\*/g, '')}</div><button class="c-btn" onclick="centurion.forceRefreshAI()">REGENERATE</button></div>`;
             return;
         }
 
@@ -403,6 +412,11 @@ class CenturionCore {
             });
 
             if(!response.ok) {
+                if(response.status === 404 && selectedModel !== 'gemini-pro') {
+                    // Fallback to legacy if 8b fails
+                    document.getElementById('modelSelect').value = 'gemini-pro';
+                    return this.updateAI();
+                }
                 const errData = await response.json();
                 let errMsg = errData.error?.message || "Gemini Error";
                 throw new Error(errMsg);
@@ -414,11 +428,11 @@ class CenturionCore {
             this.aiInsights[dk] = insight;
             localStorage.setItem(`centurion_ai_insights_${this.user}`, JSON.stringify(this.aiInsights));
             
-            if(aiContainer) aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header"><span>✅ GEMINI COACH (${selectedModel})</span></div><div class="ai-content">${insight.replace(/\*\*/g, '<strong>').replace(/\*/g, '')}</div><button class="ai-refresh" onclick="centurion.forceRefreshAI()">🔄 REGENERATE</button></div>`;
+            if(aiContainer) aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header"><span>✅ GEMINI COACH (${selectedModel})</span></div><div class="ai-content">${insight.replace(/\*\*/g, '<strong>').replace(/\*/g, '')}</div><button class="c-btn" onclick="centurion.forceRefreshAI()">REGENERATE</button></div>`;
 
         } catch(e) {
             let userMsg = e.message;
-            if(userMsg.includes("429")) userMsg = "Quota Limit. Try a different model above.";
+            if(userMsg.includes("429")) userMsg = "Quota Limit. Please wait 60s.";
             
             if(aiContainer) aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header" style="color:var(--alert)">⚠️ ERROR</div><div class="ai-content">${userMsg}</div></div>`;
         }
@@ -464,10 +478,6 @@ class CenturionCore {
             else statusMsg = "RECOVERY REQUIRED. SLEEP DEBT.";
         }
 
-        const meals = MEAL_DB[this.user];
-        const checks = this.checkedItems[dk] || [];
-        const { totals, rainbowScore } = this.calculateDailyTotals(dk);
-        
         const html = `
         <div class="hero-section">
             <div class="ring-container">
@@ -516,7 +526,7 @@ class CenturionCore {
         `;
 
         document.getElementById('dayContent').innerHTML = html;
-        this.updateAI(); 
+        // Manual trigger only for AI
     }
 }
 
