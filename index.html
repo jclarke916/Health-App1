@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v9600.0 TIME-BRIDGE</title>
+    <title>The Centurion | v9700.0 YESTERDAY-LOGIC</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -147,7 +147,7 @@
 
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v9600 (TIME-BRIDGE)</div>
+            <div class="app-name">CENTURION v9700 (YESTERDAY-LOGIC)</div>
             <div style="display:flex; gap:10px; align-items:center;">
                 <button class="bio-btn" onclick="centurion.openBio()">BIO</button>
                 <div class="user-switch">
@@ -185,7 +185,7 @@
 
 <script>
 // ==========================================
-// V9600: TIME-BRIDGE FIX (YESTERDAY LOGIC)
+// V9700: YESTERDAY LOGIC (THE FIX)
 // ==========================================
 
 const TOKENS = { 'jermaine': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'sophia': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
@@ -338,16 +338,18 @@ class CenturionCore {
                 const hist = rData.data.map(day => {
                     const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
                     
-                    // --- TIME BRIDGE LOGIC ---
-                    // 1. Try to find sleep sessions for TODAY
-                    let sessions = sData.data ? sData.data.filter(s => s.day === day.day) : [];
+                    // --- YESTERDAY LOGIC (CORE FIX) ---
+                    // Calculate "Yesterday's Date" based on current readiness day
+                    const yesterday = new Date(day.day);
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    const prevKey = yesterday.toISOString().split('T')[0];
+
+                    // Look for sessions from YESTERDAY
+                    let sessions = sData.data ? sData.data.filter(s => s.day === prevKey) : [];
                     
-                    // 2. If NO sessions found, look for YESTERDAY'S sessions (Oura Lag Fix)
+                    // If none found yesterday (rare), check TODAY as fallback
                     if(sessions.length === 0) {
-                        const yesterday = new Date(day.day);
-                        yesterday.setDate(yesterday.getDate() - 1);
-                        const yKey = yesterday.toISOString().split('T')[0];
-                        sessions = sData.data ? sData.data.filter(s => s.day === yKey) : [];
+                        sessions = sData.data ? sData.data.filter(s => s.day === day.day) : [];
                     }
 
                     // Sum up session data (naps + main sleep)
