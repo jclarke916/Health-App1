@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v10034 SEQUENTIAL</title>
+    <title>The Centurion | v10035 IGNITION</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -23,6 +23,18 @@
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { margin: 0; padding: 0 0 100px 0; background: var(--bg); color: var(--text); font-family: var(--font-ui); min-height: 100vh; background-image: radial-gradient(circle at top right, #111 0%, #000 70%); }
+
+        /* START BUTTON OVERLAY */
+        #start-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .ignite-btn {
+            padding: 20px 40px; background: var(--acid); color: #000; font-size: 1.2rem;
+            font-weight: 900; border: none; border-radius: 12px; cursor: pointer;
+            box-shadow: 0 0 20px var(--acid); animation: pulse 2s infinite;
+        }
 
         /* DEBUG LOG */
         .data-log {
@@ -131,11 +143,16 @@
 </head>
 <body>
 
-    <div class="data-log" id="dataLog">Waiting for start...</div>
+    <div id="start-overlay">
+        <button class="ignite-btn" onclick="startSystem()">START SYSTEM</button>
+        <div style="color:#aaa; font-size:0.7rem; margin-top:10px;">v10035 Manual Ignition</div>
+    </div>
+
+    <div class="data-log" id="dataLog">System Ready. Click START.</div>
 
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v10034</div>
+            <div class="app-name">CENTURION v10035</div>
             <div style="display:flex; gap:10px; align-items:center;">
                 <button class="bio-btn" onclick="centurion.openBio()">BIO</button>
                 <div class="user-switch">
@@ -183,9 +200,9 @@
 
 <script>
 // ==========================================
-// V10034: SEQUENTIAL LOADER
-// - Loads endpoints one by one to avoid hangs
-// - Visible Debug Log
+// V10035: MANUAL IGNITION
+// - Manual Start Button to bypass browser blocking
+// - Enhanced Error Logging
 // ==========================================
 
 const TOKENS = { 'jermaine': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'sophia': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
@@ -225,6 +242,17 @@ const MACRO_VALS = {
 function getCaDate() { let d = new Date(); d.setHours(12, 0, 0, 0); return d; }
 function getDateKey(d) { return d.toISOString().split('T')[0]; }
 
+// --- MANUAL START FUNCTION ---
+let centurion = null;
+function startSystem() {
+    try {
+        document.getElementById('start-overlay').style.display = 'none';
+        centurion = new CenturionCore();
+    } catch(e) {
+        alert("CRITICAL ERROR: " + e.message);
+    }
+}
+
 class CenturionCore {
     constructor() {
         this.user = localStorage.getItem('centurion_active_user') || 'jermaine';
@@ -237,6 +265,7 @@ class CenturionCore {
     }
 
     init() {
+        this.log("System Initialized.");
         this.updateUI(); 
         this.render();   
         this.fetchOuraData(); 
@@ -244,11 +273,13 @@ class CenturionCore {
 
     log(msg, type='') {
         const box = document.getElementById('dataLog');
-        const line = document.createElement('div');
-        line.className = 'log-line ' + type;
-        line.innerText = msg;
-        box.appendChild(line);
-        box.scrollTop = box.scrollHeight;
+        if(box) {
+            const line = document.createElement('div');
+            line.className = 'log-line ' + type;
+            line.innerText = msg;
+            box.appendChild(line);
+            box.scrollTop = box.scrollHeight;
+        }
     }
 
     switchUser(uID) {
@@ -270,6 +301,22 @@ class CenturionCore {
         document.getElementById('ouraBar').innerHTML = `💍 SWITCHING...`;
     }
 
+    calculateDailyTotals(dk) {
+        const checks = this.checkedItems[dk] || [];
+        let totals = { p:0, c:0, f:0, fib:0, omega3:0, polyphenols:0 };
+        checks.forEach(id => {
+            if(MACRO_VALS[id]) {
+                totals.p += MACRO_VALS[id].p;
+                totals.c += MACRO_VALS[id].c;
+                totals.f += MACRO_VALS[id].f;
+                totals.fib += MACRO_VALS[id].fib;
+                totals.omega3 += MACRO_VALS[id].omega3;
+                totals.polyphenols += MACRO_VALS[id].polyphenols;
+            }
+        });
+        return { totals };
+    }
+
     async fetchOuraData() {
         const fetchID = this.user; 
         const token = TOKENS[fetchID];
@@ -278,76 +325,66 @@ class CenturionCore {
         const range = `start_date=${getDateKey(startD)}&end_date=${getDateKey(endD)}`;
         
         document.getElementById('ouraBar').innerHTML = "💍 SYNCING...";
-        document.getElementById('dataLog').innerHTML = ""; // Clear log
-        this.log("Starting Sequential Sync...");
-
-        let rData = { data: [] };
-        let sData = { data: [] };
-
-        // STEP 1: READINESS
-        try {
-            this.log("1. Fetching Readiness...");
-            const rRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } });
-            if(!rRes.ok) throw new Error(rRes.status);
-            rData = await rRes.json();
-            this.log(`✓ Readiness OK (${rData.data?.length || 0} items)`, 'log-success');
-        } catch(e) {
-            this.log(`X Readiness Failed: ${e.message}`, 'log-err');
-        }
-
-        // STEP 2: SLEEP SESSIONS
-        try {
-            this.log("2. Fetching Sleep Sessions...");
-            const sRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } });
-            if(!sRes.ok) throw new Error(sRes.status);
-            sData = await sRes.json();
-            this.log(`✓ Sleep OK (${sData.data?.length || 0} items)`, 'log-success');
-        } catch(e) {
-            this.log(`X Sleep Failed: ${e.message}`, 'log-err');
-        }
-
-        if(this.user !== fetchID) return;
-
-        // MERGE DATA
-        this.log("Processing Data...");
-        const hist = [];
+        this.log("Fetching from Oura...");
         
-        // We use Readiness as the base timeline
-        if(rData.data) {
-            hist.push(...rData.data.map(day => {
-                const dateKey = day.day;
-                // Find matching sleep session (match by 'day')
-                const session = sData.data ? sData.data.find(s => s.day === dateKey) : null;
+        try {
+            const [rRes, sRes] = await Promise.all([
+                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } })
+            ]);
+            
+            if(!rRes.ok) throw new Error("Readiness: " + rRes.status);
+            if(!sRes.ok) throw new Error("Sleep: " + sRes.status);
 
-                let sleepHours = "-", deepMin = "-", remMin = "-";
+            const rData = await rRes.json();
+            const sData = await sRes.json();
+            
+            if(this.user !== fetchID) return;
+            
+            if(rData.data) {
+                const hist = rData.data.map(day => {
+                    const dateKey = day.day;
+                    const session = sData.data ? sData.data.find(s => s.day === dateKey) : null;
+
+                    let sleepHours = "-", deepMin = "-", remMin = "-";
+                    
+                    if(session && session.total_sleep_duration) {
+                        sleepHours = (session.total_sleep_duration / 3600).toFixed(1);
+                        deepMin = Math.round(session.deep_sleep_duration / 60);
+                        remMin = Math.round(session.rem_sleep_duration / 60);
+                    }
+
+                    return { 
+                        date: dateKey, 
+                        score: day.score || "-", 
+                        sleep: sleepHours, deep: deepMin, rem: remMin
+                    };
+                }).reverse();
                 
-                if(session && session.total_sleep_duration) {
-                    sleepHours = (session.total_sleep_duration / 3600).toFixed(1);
-                    deepMin = Math.round(session.deep_sleep_duration / 60);
-                    remMin = Math.round(session.rem_sleep_duration / 60);
-                }
-
-                return { 
-                    date: dateKey, 
-                    score: day.score || "-", 
-                    sleep: sleepHours, deep: deepMin, rem: remMin
-                };
-            }).reverse());
-        }
-
-        if(hist.length > 0) {
-            this.log(`Saved ${hist.length} days of data.`, 'log-success');
-            localStorage.setItem(`centurion_oura_cache_${fetchID}`, JSON.stringify({history: hist, lastFetch: Date.now()}));
-            this.cache = { history: hist };
-            document.getElementById('ouraBar').innerHTML = `💍 UPDATED`;
-            this.render();
-        } else {
-            this.log("No data found to merge.", 'log-err');
+                this.log(`Received ${hist.length} days of data.`);
+                localStorage.setItem(`centurion_oura_cache_${fetchID}`, JSON.stringify({history: hist, lastFetch: Date.now()}));
+                this.cache = { history: hist };
+                document.getElementById('ouraBar').innerHTML = `💍 UPDATED`;
+                this.render();
+            } else {
+                this.log("Oura returned no data.", 'log-err');
+            }
+        } catch(e) { 
+            console.error(e);
+            this.log("Sync Failed: " + e.message, 'log-err');
+            document.getElementById('ouraBar').innerHTML = "💍 ERROR"; 
         }
     }
 
-    // ... (Standard Render/AI functions same as before) ...
+    // ... (Standard Render, AI, Bio methods) ...
+    // Keep exact logic from previous versions, just wrapped in class
     
+    changeDate(d) {
+        this.dayOffset += d;
+        if(this.dayOffset > 0) this.dayOffset = 0;
+        this.render();
+    }
+
     toggleItem(id) {
         const dk = getDateKey(this.getCurrentDate());
         if(!this.checkedItems[dk]) this.checkedItems[dk] = [];
@@ -388,7 +425,7 @@ class CenturionCore {
                 body: JSON.stringify({ contents: [{ parts: [{ text: contextPrompt }] }] })
             });
 
-            if(!response.ok) throw new Error("API Error");
+            if(!response.ok) throw new Error("API Error: " + response.status);
             const data = await response.json();
             const insight = data.candidates[0].content.parts[0].text;
             
@@ -462,6 +499,14 @@ class CenturionCore {
             <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--purple); stroke-dashoffset:${158-(Math.min(safeNum(rawOura.rem),120)/120)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.rem}</div><span class="orb-unit">REM</span></div></div><div class="orb-label">REM</div></div>
         </div>
 
+        <div class="section-label">CARDIO-METABOLIC STATUS</div>
+        <div class="telemetry-grid">
+            <div class="orb-card live"><div class="live-dot"></div><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--cyan); stroke-dashoffset:${158-(Math.min(safeNum(rawOura.cal),1000)/1000)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.cal}</div><span class="orb-unit">CAL</span></div></div><div class="orb-label">ACTIVE</div></div>
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-zone2); stroke-dashoffset:${158-(Math.min(safeNum(rawOura.med),60)/60)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.med}</div><span class="orb-unit">Z2 MIN</span></div></div><div class="orb-label">BASE</div></div>
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-zone5); stroke-dashoffset:${158-(Math.min(safeNum(rawOura.high),30)/30)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.high}</div><span class="orb-unit">Z5 MIN</span></div></div><div class="orb-label">PEAK</div></div>
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--acid)"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.rhr}</div><span class="orb-unit">BPM</span></div></div><div class="orb-label">RHR</div></div>
+        </div>
+
         <div class="section-label">MACRO ADHERENCE</div>
         <div class="macro-grid">
             <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:#fff; stroke-dashoffset:${158-(Math.min(totals.p/u.goals.pro,1)*158)}"></circle></svg><div class="orb-val-box"><div class="orb-val">${totals.p}</div><span class="orb-unit">PRO</span></div></div><div class="orb-label">PROTEIN</div></div>
@@ -482,8 +527,6 @@ class CenturionCore {
         document.getElementById('dayContent').innerHTML = html;
     }
 }
-
-const centurion = new CenturionCore();
 </script>
 </body>
 </html>
