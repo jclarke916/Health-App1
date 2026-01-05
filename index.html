@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v10035 IGNITION</title>
+    <title>The Centurion | v10036 IRONCLAD</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -24,23 +24,24 @@
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { margin: 0; padding: 0 0 100px 0; background: var(--bg); color: var(--text); font-family: var(--font-ui); min-height: 100vh; background-image: radial-gradient(circle at top right, #111 0%, #000 70%); }
 
-        /* START BUTTON OVERLAY */
+        /* START OVERLAY */
         #start-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); z-index: 999;
+            background: rgba(0,0,0,0.95); z-index: 999;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
         .ignite-btn {
             padding: 20px 40px; background: var(--acid); color: #000; font-size: 1.2rem;
             font-weight: 900; border: none; border-radius: 12px; cursor: pointer;
-            box-shadow: 0 0 20px var(--acid); animation: pulse 2s infinite;
+            box-shadow: 0 0 20px var(--acid); margin-bottom: 20px;
         }
+        .boot-log { font-family: var(--font-data); font-size: 0.7rem; color: #888; max-width: 80%; text-align: center; }
 
         /* DEBUG LOG */
         .data-log {
             background: #111; border-bottom: 1px solid #333; padding: 10px 16px;
             font-family: var(--font-data); font-size: 0.55rem; color: #aaa;
-            height: 120px; overflow-y: scroll; white-space: pre-wrap;
+            height: 100px; overflow-y: scroll; white-space: pre-wrap; display:none;
         }
         .log-line { margin-bottom: 4px; border-bottom: 1px solid #222; padding-bottom: 2px; }
         .log-success { color: var(--acid); }
@@ -144,15 +145,15 @@
 <body>
 
     <div id="start-overlay">
-        <button class="ignite-btn" onclick="startSystem()">START SYSTEM</button>
-        <div style="color:#aaa; font-size:0.7rem; margin-top:10px;">v10035 Manual Ignition</div>
+        <button class="ignite-btn" onclick="startSystem()">SYSTEM START</button>
+        <div id="bootStatus" class="boot-log">Ready to boot v10036</div>
     </div>
 
-    <div class="data-log" id="dataLog">System Ready. Click START.</div>
+    <div class="data-log" id="dataLog"></div>
 
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v10035</div>
+            <div class="app-name">CENTURION v10036</div>
             <div style="display:flex; gap:10px; align-items:center;">
                 <button class="bio-btn" onclick="centurion.openBio()">BIO</button>
                 <div class="user-switch">
@@ -164,7 +165,7 @@
         
         <div class="model-selector">
             <select id="modelSelect" class="c-select">
-                <option value="gemini-1.5-flash-8b">gemini-1.5-flash-8b</option>
+                <option value="gemini-1.5-flash-8b">gemini-1.5-flash-8b (Recommended)</option>
                 <option value="gemini-1.5-flash">gemini-1.5-flash</option>
                 <option value="gemini-2.0-flash-lite-preview-02-05">gemini-2.0-flash-lite</option>
             </select>
@@ -200,32 +201,25 @@
 
 <script>
 // ==========================================
-// V10035: MANUAL IGNITION
-// - Manual Start Button to bypass browser blocking
-// - Enhanced Error Logging
+// V10036: IRONCLAD
+// - Safe Date Engine (Prevents "Invalid Date" Crash)
+// - Manual Start
 // ==========================================
 
 const TOKENS = { 'jermaine': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'sophia': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
-const GEMINI_API_KEY = "AIzaSyBtqgUcbq5uVGFZ5nHPDyhthLDii7uRNrg"; // HARDCODED
+const GEMINI_API_KEY = "AIzaSyBtqgUcbq5uVGFZ5nHPDyhthLDii7uRNrg"; 
 
 const USERS = {
     'jermaine': { name: "Jermaine", age: 42, rhr: 48, goals: { cal: 700, z2: 60, z5: 20, pro: 180, carb: 200, fat: 80, fib: 40, sleep: 8, omega3: 3000, polyphenols: 500 } },
     'sophia': { name: "Sophia", age: 38, rhr: 58, goals: { cal: 450, z2: 45, z5: 15, pro: 120, carb: 150, fat: 60, fib: 35, sleep: 8.5, omega3: 2500, polyphenols: 400 } }
 };
 
-// Backward Compatibility
 TOKENS['J'] = TOKENS['jermaine']; TOKENS['S'] = TOKENS['sophia'];
 USERS['J'] = USERS['jermaine']; USERS['S'] = USERS['sophia'];
 
 const MEAL_DB = {
-    'jermaine': {
-        juice: "Beet Vitality (Nitric Oxide)", breakfast: "Wild Salmon Bowl (Omega-3)",
-        lunch: "Sardine Quinoa Salad", snack: "Greek Yogurt Power Cup", dinner: "Wild Salmon Centurion"
-    },
-    'sophia': {
-        juice: "Orange Immune (Vit C)", breakfast: "Omega Scramble (Anti-Inflammatory)",
-        lunch: "White Fish Ceviche", snack: "Kefir Smoothie (Probiotic)", dinner: "Cod + White Beans"
-    }
+    'jermaine': { juice: "Beet Vitality", breakfast: "Wild Salmon Bowl", lunch: "Sardine Salad" },
+    'sophia': { juice: "Orange Immune", breakfast: "Omega Scramble", lunch: "Ceviche" }
 };
 MEAL_DB['J'] = MEAL_DB['jermaine']; MEAL_DB['S'] = MEAL_DB['sophia'];
 
@@ -233,29 +227,43 @@ const MACRO_VALS = {
     'hyd': { p:0, c:0, f:0, fib:0, omega3:0, polyphenols:0 },
     'juice': { p:2, c:15, f:0, fib:2, omega3:50, polyphenols:200 },
     'train': { p:25, c:10, f:2, fib:0, omega3:0, polyphenols:0 },
-    'lunch': { p:45, c:30, f:15, fib:8, omega3:1500, polyphenols:150 },
-    'breakfast': { p:45, c:10, f:25, fib:5, omega3:2000, polyphenols:100 },
-    'snack': { p:15, c:15, f:10, fib:5, omega3:500, polyphenols:250 },
-    'dinner': { p:50, c:30, f:15, fib:10, omega3:2500, polyphenols:150 }
+    'lunch': { p:45, c:30, f:15, fib:8, omega3:1500, polyphenols:150 }
 };
 
-function getCaDate() { let d = new Date(); d.setHours(12, 0, 0, 0); return d; }
-function getDateKey(d) { return d.toISOString().split('T')[0]; }
+// --- SAFE DATE ENGINE ---
+function getSafeDateKey(dateObj) {
+    try {
+        if(!dateObj || isNaN(dateObj.getTime())) return new Date().toISOString().split('T')[0];
+        return dateObj.toISOString().split('T')[0];
+    } catch(e) {
+        return new Date().toISOString().split('T')[0];
+    }
+}
 
-// --- MANUAL START FUNCTION ---
+function getCaDate() {
+    let d = new Date();
+    d.setHours(12, 0, 0, 0);
+    return d;
+}
+
+// --- SYSTEM BOOT ---
 let centurion = null;
 function startSystem() {
     try {
-        document.getElementById('start-overlay').style.display = 'none';
-        centurion = new CenturionCore();
+        document.getElementById('bootStatus').innerText = "Initializing Core...";
+        setTimeout(() => {
+            document.getElementById('start-overlay').style.display = 'none';
+            centurion = new CenturionCore();
+        }, 500);
     } catch(e) {
-        alert("CRITICAL ERROR: " + e.message);
+        alert("BOOT FAILED: " + e.message);
     }
 }
 
 class CenturionCore {
     constructor() {
         this.user = localStorage.getItem('centurion_active_user') || 'jermaine';
+        this.dayOffset = 0;
         this.cache = JSON.parse(localStorage.getItem(`centurion_oura_cache_${this.user}`)) || { history: [] };
         this.checkedItems = JSON.parse(localStorage.getItem(`centurion_checked_${this.user}`)) || {};
         this.bios = JSON.parse(localStorage.getItem(`centurion_bios_${this.user}`)) || {};
@@ -265,7 +273,6 @@ class CenturionCore {
     }
 
     init() {
-        this.log("System Initialized.");
         this.updateUI(); 
         this.render();   
         this.fetchOuraData(); 
@@ -274,6 +281,7 @@ class CenturionCore {
     log(msg, type='') {
         const box = document.getElementById('dataLog');
         if(box) {
+            box.style.display = 'block';
             const line = document.createElement('div');
             line.className = 'log-line ' + type;
             line.innerText = msg;
@@ -283,13 +291,12 @@ class CenturionCore {
     }
 
     switchUser(uID) {
-        if(this.user === uID) return;
         this.user = uID;
         localStorage.setItem('centurion_active_user', uID);
         this.cache = JSON.parse(localStorage.getItem(`centurion_oura_cache_${uID}`)) || { history: [] };
+        this.checkedItems = JSON.parse(localStorage.getItem(`centurion_checked_${uID}`)) || {};
         this.bios = JSON.parse(localStorage.getItem(`centurion_bios_${uID}`)) || {};
         this.aiInsights = JSON.parse(localStorage.getItem(`centurion_ai_insights_${uID}`)) || {};
-        
         this.updateUI();
         this.render(); 
         this.fetchOuraData();
@@ -297,7 +304,8 @@ class CenturionCore {
 
     updateUI() {
         document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
-        document.getElementById(`btn-${this.user}`).classList.add('active');
+        const btn = document.getElementById(`btn-${this.user}`);
+        if(btn) btn.classList.add('active');
         document.getElementById('ouraBar').innerHTML = `💍 SWITCHING...`;
     }
 
@@ -320,12 +328,14 @@ class CenturionCore {
     async fetchOuraData() {
         const fetchID = this.user; 
         const token = TOKENS[fetchID];
-        const endD = new Date(); 
-        const startD = new Date(); startD.setDate(endD.getDate() - 7);
-        const range = `start_date=${getDateKey(startD)}&end_date=${getDateKey(endD)}`;
+        
+        let endD = new Date(); 
+        let startD = new Date(); 
+        startD.setDate(endD.getDate() - 7);
+        
+        const range = `start_date=${getSafeDateKey(startD)}&end_date=${getSafeDateKey(endD)}`;
         
         document.getElementById('ouraBar').innerHTML = "💍 SYNCING...";
-        this.log("Fetching from Oura...");
         
         try {
             const [rRes, sRes] = await Promise.all([
@@ -333,9 +343,6 @@ class CenturionCore {
                 fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } })
             ]);
             
-            if(!rRes.ok) throw new Error("Readiness: " + rRes.status);
-            if(!sRes.ok) throw new Error("Sleep: " + sRes.status);
-
             const rData = await rRes.json();
             const sData = await sRes.json();
             
@@ -361,44 +368,16 @@ class CenturionCore {
                     };
                 }).reverse();
                 
-                this.log(`Received ${hist.length} days of data.`);
                 localStorage.setItem(`centurion_oura_cache_${fetchID}`, JSON.stringify({history: hist, lastFetch: Date.now()}));
                 this.cache = { history: hist };
                 document.getElementById('ouraBar').innerHTML = `💍 UPDATED`;
                 this.render();
-            } else {
-                this.log("Oura returned no data.", 'log-err');
             }
         } catch(e) { 
             console.error(e);
-            this.log("Sync Failed: " + e.message, 'log-err');
+            this.log("Sync Fail: " + e.message, 'log-err');
             document.getElementById('ouraBar').innerHTML = "💍 ERROR"; 
         }
-    }
-
-    // ... (Standard Render, AI, Bio methods) ...
-    // Keep exact logic from previous versions, just wrapped in class
-    
-    changeDate(d) {
-        this.dayOffset += d;
-        if(this.dayOffset > 0) this.dayOffset = 0;
-        this.render();
-    }
-
-    toggleItem(id) {
-        const dk = getDateKey(this.getCurrentDate());
-        if(!this.checkedItems[dk]) this.checkedItems[dk] = [];
-        const idx = this.checkedItems[dk].indexOf(id);
-        if(idx > -1) this.checkedItems[dk].splice(idx, 1);
-        else this.checkedItems[dk].push(id);
-        localStorage.setItem(`centurion_checked_${this.user}`, JSON.stringify(this.checkedItems));
-        this.render();
-    }
-
-    getCurrentDate() {
-        const d = getCaDate();
-        d.setDate(d.getDate() + this.dayOffset);
-        return d;
     }
 
     async updateAI() {
@@ -406,7 +385,7 @@ class CenturionCore {
         if(now - this.lastCall < 10000) { alert("Cooling down..."); return; }
         this.lastCall = now;
 
-        const dk = getDateKey(this.getCurrentDate());
+        const dk = getSafeDateKey(this.getCurrentDate());
         const aiContainer = document.getElementById('ai-container');
         const selectedModel = document.getElementById('modelSelect').value;
         
@@ -451,14 +430,26 @@ class CenturionCore {
         this.render();
     }
 
-    render() {
-        let rawOura = { score: "-", sleep: "-", deep: "-", rem: "-" };
-        let displayDate = "NO DATA";
+    changeDate(d) {
+        this.dayOffset += d;
+        if(this.dayOffset > 0) this.dayOffset = 0;
+        this.render();
+    }
 
-        if(this.cache.history && this.cache.history.length > 0) {
-            rawOura = this.cache.history[0]; 
-            displayDate = rawOura.date;
+    render() {
+        const d = this.getCurrentDate();
+        const dk = getSafeDateKey(d);
+        const today = getSafeDateKey(getCaDate());
+        
+        const displayDate = (dk === today) ? "TODAY" : dk.substring(5);
+        document.getElementById('dateDisplay').innerText = displayDate;
+        document.getElementById('btn-next').classList.toggle('disabled', dk === today);
+
+        let rawOura = this.cache.history.find(d => d.date === dk);
+        if (!rawOura && dk === today && this.cache.history.length > 0) {
+             rawOura = this.cache.history[0]; 
         }
+        rawOura = rawOura || { score: "-", sleep: "-", deep: "-", rem: "-" };
 
         const u = USERS[this.user];
         const scoreVal = parseInt(rawOura.score) || 0;
@@ -472,9 +463,6 @@ class CenturionCore {
             else statusMsg = "RECOVERY REQUIRED.";
         }
 
-        const dk = getDateKey(this.getCurrentDate());
-        const meals = MEAL_DB[this.user];
-        const checks = this.checkedItems[dk] || [];
         const { totals } = this.calculateDailyTotals(dk);
 
         const html = `
@@ -486,13 +474,13 @@ class CenturionCore {
             <div class="tactical-box" style="border-left-color:${rColor}">
                 <div class="tac-label" style="color:${rColor}">USER: ${u.name.toUpperCase()}</div>
                 <div class="tac-cmd">${statusMsg}</div>
-                <div class="tac-meta">DATA DATE: ${displayDate}</div>
+                <div class="tac-meta">VO2: ${this.bios.vo2 || '--'} | APOB: ${this.bios.marker || '--'}</div>
             </div>
         </div>
 
         <div id="ai-container"></div>
 
-        <div class="section-label">SLEEP ARCHITECTURE (LATEST)</div>
+        <div class="section-label">SLEEP ARCHITECTURE</div>
         <div class="sleep-grid">
             <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-purple); stroke-dashoffset:${158-(Math.min(safeNum(rawOura.sleep),9)/9)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.sleep}</div><span class="orb-unit">HRS</span></div></div><div class="orb-label">TOTAL</div></div>
             <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:#007aff; stroke-dashoffset:${158-(Math.min(safeNum(rawOura.deep),120)/120)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.deep}</div><span class="orb-unit">DEEP</span></div></div><div class="orb-label">DEEP</div></div>
@@ -518,9 +506,9 @@ class CenturionCore {
         <div class="timeline-container">
             <div class="section-header"><span>CHRONO-PROTOCOL</span></div>
             <div class="time-slot"><div class="ts-time">7 AM</div><div class="ts-card ${this.checkedItems[dk]?.includes('hyd')?'checked':''}"><div class="ts-title">Hydration</div><div class="ts-desc">Sea Moss Gel (2 tbsp)</div><button class="check-btn" onclick="centurion.toggleItem('hyd')">${this.checkedItems[dk]?.includes('hyd')?'✓':'○'}</button></div></div>
-            <div class="time-slot"><div class="ts-time">8 AM</div><div class="ts-card ${this.checkedItems[dk]?.includes('juice')?'checked':''}"><div class="ts-title">Juice Protocol</div><div class="ts-desc">${meals.juice}</div><button class="check-btn" onclick="centurion.toggleItem('juice')">${this.checkedItems[dk]?.includes('juice')?'✓':'○'}</button></div></div>
+            <div class="time-slot"><div class="ts-time">8 AM</div><div class="ts-card ${this.checkedItems[dk]?.includes('juice')?'checked':''}"><div class="ts-title">Juice Protocol</div><div class="ts-desc">${MEAL_DB[this.user].juice}</div><button class="check-btn" onclick="centurion.toggleItem('juice')">${this.checkedItems[dk]?.includes('juice')?'✓':'○'}</button></div></div>
             <div class="time-slot"><div class="ts-time">9 AM</div><div class="ts-card ${this.checkedItems[dk]?.includes('train')?'checked':''}"><div class="ts-title">Training</div><div class="ts-desc">${scoreVal>=80?'Zone 5 / Strength':'Zone 2 Recovery'}</div><button class="check-btn" onclick="centurion.toggleItem('train')">${this.checkedItems[dk]?.includes('train')?'✓':'○'}</button></div></div>
-            <div class="time-slot"><div class="ts-time">1 PM</div><div class="ts-card ${this.checkedItems[dk]?.includes('lunch')?'checked':''}"><div class="ts-title">Lunch</div><div class="ts-desc">${meals.lunch}</div><button class="check-btn" onclick="centurion.toggleItem('lunch')">${this.checkedItems[dk]?.includes('lunch')?'✓':'○'}</button></div></div>
+            <div class="time-slot"><div class="ts-time">1 PM</div><div class="ts-card ${this.checkedItems[dk]?.includes('lunch')?'checked':''}"><div class="ts-title">Lunch</div><div class="ts-desc">${MEAL_DB[this.user].lunch}</div><button class="check-btn" onclick="centurion.toggleItem('lunch')">${this.checkedItems[dk]?.includes('lunch')?'✓':'○'}</button></div></div>
         </div>
         `;
 
