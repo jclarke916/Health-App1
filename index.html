@@ -1225,7 +1225,10 @@ async render() {
     const colorDots = (colors) => {
         if(!colors || colors.length === 0) return '';
         return `<div class="color-dots">
-            ${colors.map(c => `<div class="color-dot" style="background:${COLOR_MAP[c].color}" title="${COLOR_MAP[c].compound}"></div>`).join('')}
+            ${colors.map(c => {
+                if (!COLOR_MAP[c]) return '';
+                return `<div class="color-dot" style="background:${COLOR_MAP[c].color}" title="${COLOR_MAP[c].compound}"></div>`;
+            }).join('')}
         </div>`;
     };
 
@@ -1478,17 +1481,30 @@ async render() {
             cacheSize: this.cache?.history?.length
         });
         
-        // Display error to user
+        // Display error directly to DOM
         const content = document.getElementById('dayContent');
         if (content) {
-            content.innerHTML = `
-                <div style="padding: 20px; text-align: center;">
-                    <h2 style="color: var(--alert);">⚠️ Render Error</h2>
-                    <p style="color: #999;">${error.message}</p>
-                    <button onclick="debugCenturion.errors()" style="padding: 10px 20px; background: var(--acid); color: #000; border: none; border-radius: 8px; margin: 10px; cursor: pointer;">View Error Log</button>
-                    <button onclick="location.reload()" style="padding: 10px 20px; background: var(--cyan); color: #000; border: none; border-radius: 8px; margin: 10px; cursor: pointer;">Reload App</button>
+            content.style.cssText = 'padding: 20px; text-align: center; color: #fff;';
+            const errorDiv = document.createElement('div');
+            errorDiv.innerHTML = `
+                <h2 style="color: var(--alert); margin: 20px 0;">⚠️ Render Error</h2>
+                <p style="color: #999; margin: 10px 0; font-size: 0.9rem;">${error.message}</p>
+                <div style="margin: 20px 0;">
+                    <button onclick="location.reload()" style="padding: 15px 30px; background: var(--acid); color: #000; border: none; border-radius: 8px; margin: 10px; cursor: pointer; font-weight: bold;">
+                        🔄 RELOAD APP
+                    </button>
+                </div>
+                <div style="margin: 20px 0;">
+                    <button onclick="debugCenturion.errors()" style="padding: 15px 30px; background: var(--cyan); color: #000; border: none; border-radius: 8px; margin: 10px; cursor: pointer; font-weight: bold;">
+                        📋 VIEW ERRORS
+                    </button>
+                </div>
+                <div style="margin-top: 30px; padding: 15px; background: rgba(255,69,58,0.1); border-radius: 8px; text-align: left;">
+                    <div style="color: var(--alert); font-weight: bold; margin-bottom: 10px;">Stack Trace:</div>
+                    <pre style="color: #666; font-size: 0.7rem; overflow-x: auto; white-space: pre-wrap;">${error.stack}</pre>
                 </div>
             `;
+            content.appendChild(errorDiv);
         }
     }
 }
