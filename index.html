@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v10038 SCANNER</title>
+    <title>The Centurion | v10039 FINAL LINK</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -61,14 +61,15 @@
         /* AI SECTION */
         .ai-section { padding: 16px; }
         .ai-card { background: #080808; border: 1px solid #333; padding: 15px; border-radius: 12px; }
-        .ai-btn { width: 100%; background: var(--acid); color: #000; font-weight: 900; padding: 12px; border: none; border-radius: 6px; cursor: pointer; margin-top: 10px; font-size: 0.7rem; }
+        .ai-select { width: 100%; background: #111; color: #fff; border: 1px solid #444; padding: 8px; font-size: 0.65rem; margin-bottom: 10px; border-radius: 4px; }
+        .ai-btn { width: 100%; background: var(--acid); color: #000; font-weight: 900; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.7rem; }
     </style>
 </head>
 <body>
 
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v10038</div>
+            <div class="app-name">CENTURION v10039</div>
             <div class="user-switch">
                 <button id="btn-jermaine" class="u-badge active" onclick="centurion.switchUser('jermaine')">JER</button>
                 <button id="btn-sophia" class="u-badge" onclick="centurion.switchUser('sophia')">SOPH</button>
@@ -78,7 +79,7 @@
         <div class="scanner-box">
             <button class="scan-btn" onclick="centurion.scanCloud()">SCAN CLOUD DATA</button>
             <div id="entryList" class="entry-list">
-                <div style="text-align:center; padding:10px; color:#444; font-size:0.6rem;">Click SCAN to find your sleep data.</div>
+                <div style="text-align:center; padding:10px; color:#444; font-size:0.6rem;">Click SCAN to find data.</div>
             </div>
         </div>
     </div>
@@ -90,8 +91,8 @@
                 <div class="ring-val" id="scoreVal">--</div>
             </div>
             <div class="tactical-box">
-                <div class="tac-label" id="dateLabel">NO DATA SELECTED</div>
-                <div class="tac-cmd" id="statusMsg">SELECT AN ENTRY ABOVE</div>
+                <div class="tac-label" id="dateLabel">NO DATA</div>
+                <div class="tac-cmd" id="statusMsg">SELECT AN ENTRY</div>
             </div>
         </div>
 
@@ -103,8 +104,15 @@
 
         <div class="ai-section">
             <div class="ai-card">
-                <div style="color:var(--cyan); font-weight:900; font-size:0.7rem; margin-bottom:5px;">GEMINI COACH (1.5-flash-8b)</div>
-                <div id="aiOutput" style="font-size:0.7rem; color:#ddd; min-height:20px;">Waiting for data...</div>
+                <div style="color:var(--cyan); font-weight:900; font-size:0.7rem; margin-bottom:5px;">AI COACH</div>
+                
+                <select id="aiModel" class="ai-select">
+                    <option value="gemini-2.0-flash-lite-preview-02-05">gemini-2.0-flash-lite (Your Account)</option>
+                    <option value="gemini-1.5-flash">gemini-1.5-flash</option>
+                    <option value="gemini-pro">gemini-pro</option>
+                </select>
+
+                <div id="aiOutput" style="font-size:0.7rem; color:#ddd; min-height:20px; margin-bottom:10px;">Load data above, then click Generate.</div>
                 <button class="ai-btn" onclick="centurion.runAI()">GENERATE ANALYSIS</button>
             </div>
         </div>
@@ -112,10 +120,9 @@
 
 <script>
 // ==========================================
-// V10038: THE DATA SCANNER
-// - Fetches last 5 days
-// - Lists them for user selection
-// - Bypasses "Today" date matching logic
+// V10039: THE FINAL LINK
+// - Scanner confirmed working
+// - AI Model Switcher added to fix 404
 // ==========================================
 
 const TOKENS = { 'jermaine': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'sophia': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
@@ -138,35 +145,31 @@ class CenturionCore {
         const list = document.getElementById('entryList');
         list.innerHTML = '<div style="text-align:center; padding:10px; color:#fff;">Scanning Oura Cloud...</div>';
         
-        // Date Range: Last 5 days + Tomorrow (to catch timezone shifts)
+        // Date Range: Wide net to catch timezone issues
         const d = new Date();
         d.setDate(d.getDate() + 1);
         const end = d.toISOString().split('T')[0];
-        d.setDate(d.getDate() - 6); // Go back 6 days
+        d.setDate(d.getDate() - 6); 
         const start = d.toISOString().split('T')[0];
 
         try {
-            // Fetch Sleep Sessions (Best for Duration)
-            const sRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${start}&end_date=${end}`)}`, {
-                headers: { 'Authorization': `Bearer ${TOKENS[this.user]}` }
-            });
-            const sJson = await sRes.json();
+            // Parallel Fetch
+            const [sRes, rRes] = await Promise.all([
+                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${start}&end_date=${end}`)}`, { headers: { 'Authorization': `Bearer ${TOKENS[this.user]}` } }),
+                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${start}&end_date=${end}`)}`, { headers: { 'Authorization': `Bearer ${TOKENS[this.user]}` } })
+            ]);
 
-            // Fetch Readiness (Best for Score)
-            const rRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${start}&end_date=${end}`)}`, {
-                headers: { 'Authorization': `Bearer ${TOKENS[this.user]}` }
-            });
+            const sJson = await sRes.json();
             const rJson = await rRes.json();
 
             if (!sJson.data || sJson.data.length === 0) {
-                list.innerHTML = '<div style="text-align:center; padding:10px; color:var(--alert);">No Data Found. Check Oura App Backup.</div>';
+                list.innerHTML = '<div style="text-align:center; padding:10px; color:var(--alert);">No Data Found.</div>';
                 return;
             }
 
-            // Build List
             list.innerHTML = '';
             
-            // Merge Data (Match by Day)
+            // Map & Sort Data
             const entries = sJson.data.map(session => {
                 const day = session.day;
                 const readiness = rJson.data ? rJson.data.find(r => r.day === day) : null;
@@ -175,16 +178,18 @@ class CenturionCore {
                     score: readiness ? readiness.score : 0,
                     totalSec: session.total_sleep_duration,
                     deepSec: session.deep_sleep_duration,
-                    remSec: session.rem_sleep_duration,
-                    raw: session
+                    remSec: session.rem_sleep_duration
                 };
-            }).sort((a, b) => b.date.localeCompare(a.date)); // Sort newest first
+            }).sort((a, b) => b.date.localeCompare(a.date));
 
             entries.forEach(e => {
-                const hrs = (e.totalSec / 3600).toFixed(1);
+                // Calculate display time
+                const h = Math.floor(e.totalSec / 3600);
+                const m = Math.round((e.totalSec % 3600) / 60);
+                
                 const item = document.createElement('div');
                 item.className = 'entry-item';
-                item.innerHTML = `<span>${e.date}</span><span>${hrs} hrs | Score: ${e.score || '-'}</span>`;
+                item.innerHTML = `<span>${e.date}</span><span>${h}h ${m}m | Score: ${e.score || '-'}</span>`;
                 item.onclick = () => this.loadData(e, item);
                 list.appendChild(item);
             });
@@ -195,60 +200,51 @@ class CenturionCore {
     }
 
     loadData(data, element) {
-        // Highlight in list
         document.querySelectorAll('.entry-item').forEach(el => el.classList.remove('active'));
         element.classList.add('active');
 
-        // Activate Dashboard
         this.activeData = data;
         document.getElementById('dashboard').style.opacity = '1';
 
-        // Render Values
-        const hrs = (data.totalSec / 3600).toFixed(1); // e.g. 5.6
-        const deepM = Math.round(data.deepSec / 60);
-        const remM = Math.round(data.remSec / 60);
-        
-        // Calculate Hours/Min for display like "5h 37m"
         const h = Math.floor(data.totalSec / 3600);
         const m = Math.round((data.totalSec % 3600) / 60);
-        const prettyTime = `${h}h ${m}m`;
-
+        
         document.getElementById('scoreVal').innerText = data.score || "-";
-        document.getElementById('sleepVal').innerText = prettyTime;
-        document.getElementById('deepVal').innerText = deepM + "m";
-        document.getElementById('remVal').innerText = remM + "m";
+        document.getElementById('sleepVal').innerText = `${h}h ${m}m`;
+        document.getElementById('deepVal').innerText = Math.round(data.deepSec / 60) + "m";
+        document.getElementById('remVal').innerText = Math.round(data.remSec / 60) + "m";
         
         document.getElementById('dateLabel').innerText = `DATA: ${data.date}`;
-        document.getElementById('statusMsg').innerText = data.score >= 80 ? "OPTIMAL READINESS" : "RECOVERY REQUIRED";
+        document.getElementById('statusMsg').innerText = data.score >= 80 ? "OPTIMAL" : "RECOVERY";
 
-        // Ring Animation
         const offset = 220 - (Math.min(data.score, 100) / 100) * 220;
         document.getElementById('ringFg').style.strokeDashoffset = offset;
-        
-        // Clear AI
-        document.getElementById('aiOutput').innerText = "Data loaded. Click Generate.";
+        document.getElementById('aiOutput').innerText = "Data loaded. Ready for AI.";
     }
 
     async runAI() {
-        if(!this.activeData) { alert("Select a date from the list first."); return; }
+        if(!this.activeData) { alert("Select a date first."); return; }
         
         const ui = document.getElementById('aiOutput');
-        ui.innerText = "Gemini 1.5-Flash-8b is thinking...";
+        const model = document.getElementById('aiModel').value;
+        ui.innerText = `Connecting to ${model}...`;
         
-        const prompt = `I slept ${this.activeData.totalSec/3600} hours. Score ${this.activeData.score}. Deep ${this.activeData.deepSec/60}m. Give me 1 sentence of tough love coaching.`;
+        const hours = (this.activeData.totalSec / 3600).toFixed(1);
+        const prompt = `I slept ${hours} hours. Readiness Score ${this.activeData.score}. Deep sleep ${Math.round(this.activeData.deepSec/60)} min. Give me 1 sentence of tough love coaching.`;
 
         try {
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-8b:generateContent?key=${API_KEY}`, {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${API_KEY}`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
             });
+            
             const json = await res.json();
             
             if(json.candidates) {
-                ui.innerText = json.candidates[0].content.parts[0].text;
+                ui.innerHTML = `<span style="color:var(--acid)">${json.candidates[0].content.parts[0].text}</span>`;
             } else {
-                ui.innerText = "AI Error: " + JSON.stringify(json);
+                ui.innerText = "Error: " + (json.error ? json.error.message : JSON.stringify(json));
             }
         } catch(e) {
             ui.innerText = "Connection Error: " + e.message;
