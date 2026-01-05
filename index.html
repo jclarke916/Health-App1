@@ -561,6 +561,12 @@ const WORKOUTS = {
     'repair_s': { title: "Yoga Flow", sub: "Parasympathetic", mech: "Vinyasa 45m, HRV optimization", postWorkout: "Hydration" }
 };
 
+// Backward compatibility - add full name keys
+WORKOUTS['anabolic_jermaine'] = WORKOUTS['anabolic_j'];
+WORKOUTS['repair_jermaine'] = WORKOUTS['repair_j'];
+WORKOUTS['anabolic_sophia'] = WORKOUTS['anabolic_s'];
+WORKOUTS['repair_sophia'] = WORKOUTS['repair_s'];
+
 function getCaDate() { let d = new Date(); d.setHours(12, 0, 0, 0); return d; }
 function getDateKey(d) { return d.toISOString().split('T')[0]; }
 
@@ -1078,7 +1084,16 @@ Be direct, data-driven, and motivating. No fluff.`;
             
             const mode = scoreVal >= 80 ? "anabolic" : "repair";
             const wKey = `${mode}_${this.user.toLowerCase()}`;
-            const workout = WORKOUTS[wKey];
+            const workout = WORKOUTS[wKey] || WORKOUTS[`${mode}_jermaine`] || { title: "Training", sub: "Workout", mech: "See protocol" };
+            
+            if (!workout || !workout.title) {
+                window.errorLogger.log('WORKOUT ERROR', { 
+                    wKey, 
+                    availableKeys: Object.keys(WORKOUTS),
+                    user: this.user,
+                    mode 
+                });
+            }
 
             const checks = this.checkedItems[dk] || [];
         
