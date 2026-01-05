@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v10017 SELECTOR</title>
+    <title>The Centurion | v10018 HUNTER</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -33,10 +33,15 @@
         .u-badge.active { background: var(--text); color: #000; }
         .bio-btn { background: rgba(255,255,255,0.1); border: 1px solid var(--border); color: var(--muted); padding: 4px 8px; border-radius: 8px; font-size: 0.55rem; font-weight: 700; cursor: pointer; margin-right: 10px; }
 
-        /* MODEL SELECTOR (NEW) */
-        .model-selector-box { padding: 10px 16px; background: #111; border-bottom: 1px solid #222; display: flex; gap: 10px; align-items: center; }
-        .model-select { background: #000; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px; font-family: var(--font-data); font-size: 0.7rem; flex: 1; }
-        .model-btn { background: var(--cyan); color: #000; border: none; padding: 8px 12px; border-radius: 4px; font-weight: 700; font-size: 0.7rem; cursor: pointer; }
+        /* MODEL LIST (NEW) */
+        .model-list-box { padding: 10px 16px; background: #111; border-bottom: 1px solid #222; max-height: 150px; overflow-y: auto; }
+        .model-item { 
+            display: block; width: 100%; text-align: left; padding: 8px; margin-bottom: 4px;
+            background: #222; border: 1px solid #333; color: #aaa; 
+            font-family: var(--font-data); font-size: 0.65rem; cursor: pointer;
+        }
+        .model-item:hover { background: #333; color: #fff; }
+        .model-item.active { border-color: var(--acid); color: var(--acid); background: rgba(204, 255, 0, 0.1); }
 
         /* DATE NAV */
         .date-nav { display: flex; justify-content: center; align-items: center; gap: 20px; font-family: var(--font-data); font-size: 0.8rem; font-weight: 700; color: #fff; padding-top: 5px; }
@@ -72,12 +77,15 @@
         }
         .ai-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 0.65rem; color: var(--cyan); font-weight: 900; letter-spacing: 1px; }
         .ai-content { font-size: 0.75rem; line-height: 1.5; color: #ddd; word-break: break-word; }
+        .ai-refresh { background: rgba(0,240,255,0.1); border: 1px solid var(--cyan); color: var(--cyan); padding: 6px 12px; border-radius: 6px; font-size: 0.6rem; font-weight: 700; cursor: pointer; margin-top: 10px; display: inline-block; }
         .ai-loading { display: inline-block; width: 12px; height: 12px; border: 2px solid rgba(0,240,255,0.3); border-top-color: var(--cyan); border-radius: 50%; animation: spin 0.8s linear infinite; }
 
         /* GRIDS */
         .section-label { font-size: 0.55rem; font-weight: 900; color: var(--muted); letter-spacing: 1px; margin: 20px 16px 10px; text-transform: uppercase; }
-        .sleep-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 20px; }
         .telemetry-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 10px; }
+        .sleep-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 20px; }
+        .macro-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 30px; }
+        
         .orb-card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 10px 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
         .orb-container { width: 60px; height: 60px; position: relative; display: flex; align-items: center; justify-content: center; margin-bottom: 5px; }
         .orb-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
@@ -117,7 +125,7 @@
 
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v10017</div>
+            <div class="app-name">CENTURION v10018</div>
             <div style="display:flex; gap:10px; align-items:center;">
                 <button class="bio-btn" onclick="centurion.openBio()">BIO</button>
                 <div class="user-switch">
@@ -127,14 +135,9 @@
             </div>
         </div>
         
-        <div class="model-selector-box">
-            <select id="modelSelect" class="model-select">
-                <option value="gemini-1.5-flash">gemini-1.5-flash (Fast)</option>
-                <option value="gemini-1.5-flash-latest">gemini-1.5-flash-latest</option>
-                <option value="gemini-pro">gemini-pro (Legacy)</option>
-                <option value="gemini-1.5-pro">gemini-1.5-pro (Heavy)</option>
-            </select>
-            <button class="model-btn" onclick="centurion.updateAI()">RETRY</button>
+        <div style="padding:0 16px; margin-top:5px; font-size:0.6rem; color:#666;">AVAILABLE MODELS (CLICK TO ACTIVATE):</div>
+        <div id="modelList" class="model-list-box">
+            <div style="padding:10px; color:#fff;">Fetching Models...</div>
         </div>
 
         <div class="date-nav">
@@ -166,8 +169,7 @@
 
 <script>
 // ==========================================
-// V10017: THE SELECTOR EDITION
-// - Manual Model Switching to solve "Not Found" vs "Quota"
+// V10018: THE MODEL HUNTER
 // ==========================================
 
 const TOKENS = { 'jermaine': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'sophia': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
@@ -215,6 +217,7 @@ class CenturionCore {
         this.checkedItems = JSON.parse(localStorage.getItem(`centurion_checked_${this.user}`)) || {};
         this.bios = JSON.parse(localStorage.getItem(`centurion_bios_${this.user}`)) || {};
         this.aiInsights = JSON.parse(localStorage.getItem(`centurion_ai_insights_${this.user}`)) || {};
+        this.selectedModel = localStorage.getItem('centurion_ai_model_pref') || 'gemini-1.5-flash';
         this.init();
     }
 
@@ -222,6 +225,45 @@ class CenturionCore {
         this.updateUI(); 
         this.render();   
         this.fetchOuraData(); 
+        this.fetchModelList(); // NEW: Fetch models on boot
+    }
+
+    // --- NEW: FETCH AVAILABLE MODELS ---
+    async fetchModelList() {
+        const listEl = document.getElementById('modelList');
+        try {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`;
+            const res = await fetch(url);
+            if(!res.ok) throw new Error("List Failed");
+            
+            const data = await res.json();
+            if(!data.models) throw new Error("No Data");
+
+            listEl.innerHTML = ''; // Clear loading
+            
+            data.models.forEach(m => {
+                if(m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent')) {
+                    const cleanName = m.name.replace('models/', '');
+                    const item = document.createElement('button');
+                    item.className = 'model-item';
+                    if(cleanName === this.selectedModel) item.classList.add('active');
+                    item.innerText = `${cleanName} (Ver: ${m.version})`;
+                    item.onclick = () => {
+                        this.selectedModel = cleanName;
+                        localStorage.setItem('centurion_ai_model_pref', cleanName);
+                        // Refresh UI
+                        document.querySelectorAll('.model-item').forEach(b => b.classList.remove('active'));
+                        item.classList.add('active');
+                        // Force update AI
+                        this.forceRefreshAI();
+                    };
+                    listEl.appendChild(item);
+                }
+            });
+
+        } catch(e) {
+            listEl.innerHTML = `<div style="color:var(--alert);padding:10px;">Failed to fetch model list. Check API Key.</div>`;
+        }
     }
 
     switchUser(uID) {
@@ -232,7 +274,6 @@ class CenturionCore {
         this.checkedItems = JSON.parse(localStorage.getItem(`centurion_checked_${uID}`)) || {};
         this.bios = JSON.parse(localStorage.getItem(`centurion_bios_${uID}`)) || {};
         this.aiInsights = JSON.parse(localStorage.getItem(`centurion_ai_insights_${uID}`)) || {};
-        
         this.dayOffset = 0;
         this.updateUI();
         this.render(); 
@@ -352,13 +393,14 @@ class CenturionCore {
     async updateAI() {
         const dk = getDateKey(this.getCurrentDate());
         const aiContainer = document.getElementById('ai-container');
-        const selectedModel = document.getElementById('modelSelect').value;
         
-        // Clear old insights if switching model
-        if(this.aiInsights[dk] && this.aiInsights[dk].includes("offline")) delete this.aiInsights[dk];
+        // Clear old errors if any
+        if(this.aiInsights[dk] && (this.aiInsights[dk].includes("offline") || this.aiInsights[dk].includes("Error"))) {
+            delete this.aiInsights[dk];
+        }
 
         if(this.aiInsights[dk]) {
-            if(aiContainer) aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header"><span>🧠 GEMINI COACH (${selectedModel})</span></div><div class="ai-content">${this.aiInsights[dk].replace(/\*\*/g, '<strong>').replace(/\*/g, '')}</div></div>`;
+            if(aiContainer) aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header"><span>🧠 GEMINI COACH (${this.selectedModel})</span></div><div class="ai-content">${this.aiInsights[dk].replace(/\*\*/g, '<strong>').replace(/\*/g, '')}</div><button class="ai-refresh" onclick="centurion.forceRefreshAI()">🔄 REGENERATE</button></div>`;
             return;
         }
 
@@ -369,12 +411,12 @@ class CenturionCore {
         
         if(scoreVal === 0) { if(aiContainer) aiContainer.innerHTML = ''; return; }
 
-        aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header"><span class="ai-loading"></span><span>ANALYZING WITH ${selectedModel}...</span></div><div class="ai-content">Checking metrics...</div></div>`;
+        aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header"><span class="ai-loading"></span><span>ANALYZING (${this.selectedModel})...</span></div><div class="ai-content">Checking metrics...</div></div>`;
 
         const contextPrompt = `Expert longevity analysis for ${u.name}. TODAY: Readiness ${scoreVal}, Sleep ${rawOura.sleep}h. One sentence advice.`;
 
         try {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${GEMINI_API_KEY}`;
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.selectedModel}:generateContent?key=${GEMINI_API_KEY}`;
             const response = await fetch(url, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -393,15 +435,21 @@ class CenturionCore {
             this.aiInsights[dk] = insight;
             localStorage.setItem(`centurion_ai_insights_${this.user}`, JSON.stringify(this.aiInsights));
             
-            if(aiContainer) aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header"><span>✅ ONLINE: ${selectedModel}</span></div><div class="ai-content">${insight.replace(/\*\*/g, '<strong>').replace(/\*/g, '')}</div></div>`;
+            if(aiContainer) aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header"><span>✅ GEMINI COACH (${this.selectedModel})</span></div><div class="ai-content">${insight.replace(/\*\*/g, '<strong>').replace(/\*/g, '')}</div><button class="ai-refresh" onclick="centurion.forceRefreshAI()">🔄 REGENERATE</button></div>`;
 
         } catch(e) {
             let userMsg = e.message;
-            if(userMsg.includes("429")) userMsg = "Quota Exceeded (Try 'Flash')";
-            if(userMsg.includes("not found")) userMsg = "Model Not Found (Try 'Pro')";
+            if(userMsg.includes("429")) userMsg = "Quota Exceeded (Try a Flash model)";
+            if(userMsg.includes("not found")) userMsg = "Model Not Found (Select another)";
             
-            if(aiContainer) aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header" style="color:var(--alert)">⚠️ FAIL: ${selectedModel}</div><div class="ai-content">${userMsg} <br><strong>ACTION: Select a different model above and click RETRY.</strong></div></div>`;
+            if(aiContainer) aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header" style="color:var(--alert)">⚠️ FAIL: ${this.selectedModel}</div><div class="ai-content">${userMsg} <br><strong>ACTION: Click a different model in the list above.</strong></div></div>`;
         }
+    }
+
+    forceRefreshAI() {
+        const dk = getDateKey(this.getCurrentDate());
+        delete this.aiInsights[dk];
+        this.updateAI();
     }
 
     openBio() { document.getElementById('bioModal').classList.add('active'); }
@@ -467,10 +515,25 @@ class CenturionCore {
             <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-zone5); stroke-dashoffset:${158-(Math.min(safeNum(rawOura.high),30)/30)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.high}</div><span class="orb-unit">Z5 MIN</span></div></div><div class="orb-label">PEAK</div></div>
             <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--acid)"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.rhr}</div><span class="orb-unit">BPM</span></div></div><div class="orb-label">RHR</div></div>
         </div>
+
+        <div class="section-label">MACRO ADHERENCE</div>
+        <div class="macro-grid">
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:#fff; stroke-dashoffset:${158-(Math.min(totals.p/u.goals.pro,1)*158)}"></circle></svg><div class="orb-val-box"><div class="orb-val">${totals.p}</div><span class="orb-unit">PRO</span></div></div><div class="orb-label">PROTEIN</div></div>
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:#00d4ff; stroke-dashoffset:${158-(Math.min(totals.omega3/u.goals.omega3,1)*158)}"></circle></svg><div class="orb-val-box"><div class="orb-val">${Math.round(totals.omega3/100)/10}</div><span class="orb-unit">Ω-3g</span></div></div><div class="orb-label">OMEGA-3</div></div>
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:#bf5af2; stroke-dashoffset:${158-(Math.min(totals.polyphenols/u.goals.polyphenols,1)*158)}"></circle></svg><div class="orb-val-box"><div class="orb-val">${totals.polyphenols}</div><span class="orb-unit">POLY</span></div></div><div class="orb-label">POLYPHENOLS</div></div>
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:#30d158; stroke-dashoffset:${158-(Math.min(totals.fib/u.goals.fib,1)*158)}"></circle></svg><div class="orb-val-box"><div class="orb-val">${totals.fib}</div><span class="orb-unit">FIB</span></div></div><div class="orb-label">FIBER</div></div>
+        </div>
+
+        <div class="timeline-container">
+            <div class="section-header"><span>CHRONO-PROTOCOL</span></div>
+            <div class="time-slot"><div class="ts-time">7 AM</div><div class="ts-card ${this.checkedItems[dk]?.includes('hyd')?'checked':''}"><div class="ts-title">Hydration</div><div class="ts-desc">Sea Moss Gel (2 tbsp)</div><button class="check-btn" onclick="centurion.toggleItem('hyd')">${this.checkedItems[dk]?.includes('hyd')?'✓':'○'}</button></div></div>
+            <div class="time-slot"><div class="ts-time">8 AM</div><div class="ts-card ${this.checkedItems[dk]?.includes('juice')?'checked':''}"><div class="ts-title">Juice Protocol</div><div class="ts-desc">${meals.juice}</div><button class="check-btn" onclick="centurion.toggleItem('juice')">${this.checkedItems[dk]?.includes('juice')?'✓':'○'}</button></div></div>
+            <div class="time-slot"><div class="ts-time">9 AM</div><div class="ts-card ${this.checkedItems[dk]?.includes('train')?'checked':''}"><div class="ts-title">Training</div><div class="ts-desc">${scoreVal>=80?'Zone 5 / Strength':'Zone 2 Recovery'}</div><button class="check-btn" onclick="centurion.toggleItem('train')">${this.checkedItems[dk]?.includes('train')?'✓':'○'}</button></div></div>
+            <div class="time-slot"><div class="ts-time">1 PM</div><div class="ts-card ${this.checkedItems[dk]?.includes('lunch')?'checked':''}"><div class="ts-title">Lunch</div><div class="ts-desc">${meals.lunch}</div><button class="check-btn" onclick="centurion.toggleItem('lunch')">${this.checkedItems[dk]?.includes('lunch')?'✓':'○'}</button></div></div>
+        </div>
         `;
 
         document.getElementById('dayContent').innerHTML = html;
-        // Don't auto-update AI yet, let user trigger it if needed
     }
 }
 
