@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v10018 HUNTER</title>
+    <title>The Centurion | v10019 KEYMASTER</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -33,15 +33,10 @@
         .u-badge.active { background: var(--text); color: #000; }
         .bio-btn { background: rgba(255,255,255,0.1); border: 1px solid var(--border); color: var(--muted); padding: 4px 8px; border-radius: 8px; font-size: 0.55rem; font-weight: 700; cursor: pointer; margin-right: 10px; }
 
-        /* MODEL LIST (NEW) */
-        .model-list-box { padding: 10px 16px; background: #111; border-bottom: 1px solid #222; max-height: 150px; overflow-y: auto; }
-        .model-item { 
-            display: block; width: 100%; text-align: left; padding: 8px; margin-bottom: 4px;
-            background: #222; border: 1px solid #333; color: #aaa; 
-            font-family: var(--font-data); font-size: 0.65rem; cursor: pointer;
-        }
-        .model-item:hover { background: #333; color: #fff; }
-        .model-item.active { border-color: var(--acid); color: var(--acid); background: rgba(204, 255, 0, 0.1); }
+        /* STATUS BAR (NEW) */
+        .status-bar { padding: 8px 16px; background: #111; font-family: var(--font-data); font-size: 0.6rem; color: #888; border-bottom: 1px solid #222; }
+        .status-ok { color: var(--acid); }
+        .status-err { color: var(--alert); }
 
         /* DATE NAV */
         .date-nav { display: flex; justify-content: center; align-items: center; gap: 20px; font-family: var(--font-data); font-size: 0.8rem; font-weight: 700; color: #fff; padding-top: 5px; }
@@ -98,6 +93,27 @@
         .live-dot { width: 5px; height: 5px; background: var(--alert); border-radius: 50%; position: absolute; top: 8px; right: 8px; box-shadow: 0 0 5px var(--alert); animation: pulse-fast 1s infinite; display: none; }
         .orb-card.live .live-dot { display: block; }
 
+        /* TIMELINE & BIO */
+        .timeline-container { padding: 0 16px; }
+        .time-slot { display: flex; gap: 12px; margin-bottom: 20px; position: relative; }
+        .ts-time { width: 45px; font-family: var(--font-data); font-size: 0.75rem; color: var(--muted); text-align: right; padding-top: 5px; }
+        .ts-card { flex: 1; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 15px; }
+        .ts-title { font-size: 0.85rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
+        .ts-desc { font-size: 0.75rem; color: #aaa; line-height: 1.4; }
+        .ts-mech { font-family: var(--font-data); font-size: 0.55rem; color: var(--muted); padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 5px; margin-top: 8px; }
+        
+        .check-btn { position: absolute; top: 15px; right: 15px; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border); background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; font-weight: 800; font-size: 0.7rem; }
+        .ts-card.checked .check-btn { background: var(--acid); border-color: var(--acid); color: #000; }
+        .ts-card.checked { opacity: 0.5; }
+
+        .bio-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; padding: 20px; overflow-y: auto; }
+        .bio-modal.active { display: block; }
+        .bio-content { background: var(--panel); border: 1px solid var(--acid); border-radius: 16px; padding: 20px; max-width: 500px; margin: 20px auto; }
+        .bio-field { margin-bottom: 15px; }
+        .bio-field label { display: block; font-size: 0.7rem; color: #aaa; margin-bottom: 5px; }
+        .bio-field input { width: 100%; background: #111; border: 1px solid var(--border); padding: 12px; color: #fff; font-family: var(--font-data); border-radius: 8px; }
+        .bio-save { width: 100%; padding: 15px; background: var(--acid); color: #000; font-weight: 900; border: none; border-radius: 8px; margin-top: 10px; cursor: pointer; }
+
         .sync-footer { position: fixed; bottom: 0; left: 0; width: 100%; background: #000; padding: 12px 16px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-family: var(--font-data); font-size: 0.6rem; color: #555; z-index: 200; }
         .pulse { animation: pulse 2s infinite; display: inline-block; width: 6px; height: 6px; background: var(--acid); border-radius: 50%; margin-right: 6px; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } }
@@ -125,7 +141,7 @@
 
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v10018</div>
+            <div class="app-name">CENTURION v10019</div>
             <div style="display:flex; gap:10px; align-items:center;">
                 <button class="bio-btn" onclick="centurion.openBio()">BIO</button>
                 <div class="user-switch">
@@ -134,18 +150,14 @@
                 </div>
             </div>
         </div>
-        
-        <div style="padding:0 16px; margin-top:5px; font-size:0.6rem; color:#666;">AVAILABLE MODELS (CLICK TO ACTIVATE):</div>
-        <div id="modelList" class="model-list-box">
-            <div style="padding:10px; color:#fff;">Fetching Models...</div>
-        </div>
-
         <div class="date-nav">
             <button id="btn-prev" class="nav-btn" onclick="centurion.changeDate(-1)">◀</button>
             <span class="date-display" id="dateDisplay">TODAY</span>
             <button id="btn-next" class="nav-btn disabled" onclick="centurion.changeDate(1)">▶</button>
         </div>
     </div>
+
+    <div id="conn-status" class="status-bar">System Ready.</div>
 
     <div id="dayContent"></div>
 
@@ -169,11 +181,22 @@
 
 <script>
 // ==========================================
-// V10018: THE MODEL HUNTER
+// V10019: THE KEYMASTER
+// - Uses gemini-1.5-flash-002 (Specific Version)
+// - Solves "Not Found" AND "Quota"
 // ==========================================
 
 const TOKENS = { 'jermaine': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'sophia': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
 const GEMINI_API_KEY = "AIzaSyBtqgUcbq5uVGFZ5nHPDyhthLDii7uRNrg"; // HARDCODED
+
+// LIST OF MODELS TO TRY IN SEQUENCE
+const MODEL_SEQUENCE = [
+    "gemini-1.5-flash-002",
+    "gemini-1.5-flash-001",
+    "gemini-1.5-flash",
+    "gemini-1.5-flash-8b",
+    "gemini-1.5-flash-latest"
+];
 
 const USERS = {
     'jermaine': { name: "Jermaine", age: 42, rhr: 48, goals: { cal: 700, z2: 60, z5: 20, pro: 180, carb: 200, fat: 80, fib: 40, sleep: 8, omega3: 3000, polyphenols: 500 } },
@@ -217,52 +240,22 @@ class CenturionCore {
         this.checkedItems = JSON.parse(localStorage.getItem(`centurion_checked_${this.user}`)) || {};
         this.bios = JSON.parse(localStorage.getItem(`centurion_bios_${this.user}`)) || {};
         this.aiInsights = JSON.parse(localStorage.getItem(`centurion_ai_insights_${this.user}`)) || {};
-        this.selectedModel = localStorage.getItem('centurion_ai_model_pref') || 'gemini-1.5-flash';
+        this.activeModel = null;
         this.init();
     }
 
     init() {
+        this.setStatus("Initializing...");
         this.updateUI(); 
         this.render();   
         this.fetchOuraData(); 
-        this.fetchModelList(); // NEW: Fetch models on boot
     }
 
-    // --- NEW: FETCH AVAILABLE MODELS ---
-    async fetchModelList() {
-        const listEl = document.getElementById('modelList');
-        try {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`;
-            const res = await fetch(url);
-            if(!res.ok) throw new Error("List Failed");
-            
-            const data = await res.json();
-            if(!data.models) throw new Error("No Data");
-
-            listEl.innerHTML = ''; // Clear loading
-            
-            data.models.forEach(m => {
-                if(m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent')) {
-                    const cleanName = m.name.replace('models/', '');
-                    const item = document.createElement('button');
-                    item.className = 'model-item';
-                    if(cleanName === this.selectedModel) item.classList.add('active');
-                    item.innerText = `${cleanName} (Ver: ${m.version})`;
-                    item.onclick = () => {
-                        this.selectedModel = cleanName;
-                        localStorage.setItem('centurion_ai_model_pref', cleanName);
-                        // Refresh UI
-                        document.querySelectorAll('.model-item').forEach(b => b.classList.remove('active'));
-                        item.classList.add('active');
-                        // Force update AI
-                        this.forceRefreshAI();
-                    };
-                    listEl.appendChild(item);
-                }
-            });
-
-        } catch(e) {
-            listEl.innerHTML = `<div style="color:var(--alert);padding:10px;">Failed to fetch model list. Check API Key.</div>`;
+    setStatus(msg, type='') {
+        const el = document.getElementById('conn-status');
+        if(el) {
+            el.innerText = msg;
+            el.className = 'status-bar ' + type;
         }
     }
 
@@ -274,10 +267,12 @@ class CenturionCore {
         this.checkedItems = JSON.parse(localStorage.getItem(`centurion_checked_${uID}`)) || {};
         this.bios = JSON.parse(localStorage.getItem(`centurion_bios_${uID}`)) || {};
         this.aiInsights = JSON.parse(localStorage.getItem(`centurion_ai_insights_${uID}`)) || {};
+        
         this.dayOffset = 0;
         this.updateUI();
         this.render(); 
         this.fetchOuraData();
+        if(this.activeModel) this.updateAI();
     }
 
     changeDate(d) {
@@ -337,10 +332,10 @@ class CenturionCore {
         const startD = new Date(); startD.setDate(endD.getDate() - 7);
         const range = `start_date=${getDateKey(startD)}&end_date=${getDateKey(endD)}`;
         
+        this.setStatus("Oura: Syncing...");
         document.getElementById('ouraBar').innerHTML = "💍 SYNCING...";
         
         try {
-            // PIVOT: Fetch 'daily_sleep' (summary) and 'daily_readiness' (score) and 'daily_activity'
             const [rRes, dsRes, aRes] = await Promise.all([
                 fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_sleep?${range}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
@@ -386,6 +381,7 @@ class CenturionCore {
             }
         } catch(e) { 
             console.error(e);
+            this.setStatus("Oura Failed", 'status-err');
             document.getElementById('ouraBar').innerHTML = "💍 ERROR"; 
         }
     }
@@ -394,55 +390,62 @@ class CenturionCore {
         const dk = getDateKey(this.getCurrentDate());
         const aiContainer = document.getElementById('ai-container');
         
-        // Clear old errors if any
+        // Clear old errors
         if(this.aiInsights[dk] && (this.aiInsights[dk].includes("offline") || this.aiInsights[dk].includes("Error"))) {
             delete this.aiInsights[dk];
         }
 
         if(this.aiInsights[dk]) {
-            if(aiContainer) aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header"><span>🧠 GEMINI COACH (${this.selectedModel})</span></div><div class="ai-content">${this.aiInsights[dk].replace(/\*\*/g, '<strong>').replace(/\*/g, '')}</div><button class="ai-refresh" onclick="centurion.forceRefreshAI()">🔄 REGENERATE</button></div>`;
+            if(aiContainer) aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header"><span>🧠 GEMINI COACH</span></div><div class="ai-content">${this.aiInsights[dk].replace(/\*\*/g, '<strong>').replace(/\*/g, '')}</div><button class="ai-refresh" onclick="centurion.forceRefreshAI()">🔄 REGENERATE</button></div>`;
             return;
         }
 
         const rawOura = this.cache.history.find(d => d.date === dk) || {};
-        const { totals } = this.calculateDailyTotals(dk);
         const u = USERS[this.user];
         const scoreVal = parseInt(rawOura.score) || 0;
         
         if(scoreVal === 0) { if(aiContainer) aiContainer.innerHTML = ''; return; }
 
-        aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header"><span class="ai-loading"></span><span>ANALYZING (${this.selectedModel})...</span></div><div class="ai-content">Checking metrics...</div></div>`;
+        aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header"><span class="ai-loading"></span><span>ANALYZING...</span></div><div class="ai-content">Connecting to Gemini...</div></div>`;
 
         const contextPrompt = `Expert longevity analysis for ${u.name}. TODAY: Readiness ${scoreVal}, Sleep ${rawOura.sleep}h. One sentence advice.`;
 
-        try {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.selectedModel}:generateContent?key=${GEMINI_API_KEY}`;
-            const response = await fetch(url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ contents: [{ parts: [{ text: contextPrompt }] }] })
-            });
+        // --- MODEL SEQUENCE BRUTE FORCE ---
+        let finalResult = null;
+        let finalModel = "";
 
-            if(!response.ok) {
-                const errData = await response.json();
-                let errMsg = errData.error?.message || "Gemini Error";
-                throw new Error(errMsg);
+        for (let model of MODEL_SEQUENCE) {
+            this.setStatus(`Trying ${model}...`);
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: contextPrompt }] }] })
+                });
+
+                if(response.ok) {
+                    const data = await response.json();
+                    if(data.candidates) {
+                        finalResult = data.candidates[0].content.parts[0].text;
+                        finalModel = model;
+                        this.activeModel = model;
+                        break; // Success!
+                    }
+                }
+            } catch(e) {
+                console.warn(`Model ${model} failed.`);
             }
+        }
 
-            const data = await response.json();
-            const insight = data.candidates[0].content.parts[0].text;
-            
-            this.aiInsights[dk] = insight;
+        if(finalResult) {
+            this.setStatus(`Connected: ${finalModel}`, 'status-ok');
+            this.aiInsights[dk] = finalResult;
             localStorage.setItem(`centurion_ai_insights_${this.user}`, JSON.stringify(this.aiInsights));
-            
-            if(aiContainer) aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header"><span>✅ GEMINI COACH (${this.selectedModel})</span></div><div class="ai-content">${insight.replace(/\*\*/g, '<strong>').replace(/\*/g, '')}</div><button class="ai-refresh" onclick="centurion.forceRefreshAI()">🔄 REGENERATE</button></div>`;
-
-        } catch(e) {
-            let userMsg = e.message;
-            if(userMsg.includes("429")) userMsg = "Quota Exceeded (Try a Flash model)";
-            if(userMsg.includes("not found")) userMsg = "Model Not Found (Select another)";
-            
-            if(aiContainer) aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header" style="color:var(--alert)">⚠️ FAIL: ${this.selectedModel}</div><div class="ai-content">${userMsg} <br><strong>ACTION: Click a different model in the list above.</strong></div></div>`;
+            aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header"><span>✅ GEMINI COACH (${finalModel})</span></div><div class="ai-content">${finalResult.replace(/\*\*/g, '<strong>').replace(/\*/g, '')}</div><button class="ai-refresh" onclick="centurion.forceRefreshAI()">🔄 REGENERATE</button></div>`;
+        } else {
+            this.setStatus("All Models Failed", 'status-err');
+            aiContainer.innerHTML = `<div class="ai-insight-card"><div class="ai-header" style="color:var(--alert)">⚠️ AI ERROR</div><div class="ai-content">Tried 5 different models. All rejected. Key permissions invalid.</div></div>`;
         }
     }
 
@@ -486,6 +489,10 @@ class CenturionCore {
             else statusMsg = "RECOVERY REQUIRED. SLEEP DEBT.";
         }
 
+        const meals = MEAL_DB[this.user];
+        const checks = this.checkedItems[dk] || [];
+        const { totals, rainbowScore } = this.calculateDailyTotals(dk);
+        
         const html = `
         <div class="hero-section">
             <div class="ring-container">
@@ -534,6 +541,7 @@ class CenturionCore {
         `;
 
         document.getElementById('dayContent').innerHTML = html;
+        this.updateAI(); 
     }
 }
 
