@@ -1000,12 +1000,15 @@ async fetchOuraData() {
             throw new Error('No readiness data returned from Oura API');
         }
     } catch(e) { 
-        window.errorLogger.log('OURA FETCH ERROR', {
+        const errorDetails = {
             message: e.message,
             stack: e.stack,
-            user: fetchID
-        });
-        console.error("Oura sync error:", e);
+            user: fetchID,
+            toString: e.toString()
+        };
+        window.errorLogger.log('OURA FETCH ERROR', errorDetails);
+        console.error("Oura sync error:", errorDetails);
+        window.showError('OURA SYNC ERROR', errorDetails);
         document.getElementById('ouraBar').innerHTML = "💍 SYNC TIMEOUT"; 
     }
 }
@@ -1093,10 +1096,19 @@ Be direct, data-driven, and motivating. No fluff.`;
         });
 
         if(!response.ok) {
-            const errData = await response.json();
+            const errData = await response.json().catch(() => ({}));
             let errMsg = "Gemini API Error";
             if(errData.error && errData.error.message) errMsg = errData.error.message;
-            console.error("❌ Gemini API error:", response.status, errMsg);
+            
+            const fullError = {
+                status: response.status,
+                statusText: response.statusText,
+                message: errMsg,
+                fullResponse: errData
+            };
+            
+            console.error("❌ Gemini API error:", fullError);
+            window.showError('GEMINI API ERROR', fullError);
             throw new Error(errMsg);
         }
 
