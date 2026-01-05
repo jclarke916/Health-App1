@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v5.4 HYBRID ENGINE</title>
+    <title>The Centurion | v5.5 DECOUPLED</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -51,7 +51,6 @@
         .tac-cmd { font-size: 0.8rem; font-weight: 700; color: #fff; line-height: 1.3; }
         .tac-meta { font-family: var(--font-data); font-size: 0.55rem; color: var(--text-muted); margin-top: 4px; }
 
-        /* GRIDS */
         .section-label { font-size: 0.55rem; font-weight: 900; color: var(--text-muted); letter-spacing: 1px; margin: 20px 16px 10px; text-transform: uppercase; }
         .telemetry-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 10px; }
         .sleep-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 20px; }
@@ -81,11 +80,6 @@
         .check-btn { position: absolute; top: 15px; right: 15px; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border); background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; font-weight: 800; font-size: 0.7rem; }
         .ts-card.checked .check-btn { background: var(--acid); border-color: var(--acid); color: #000; }
         .ts-card.checked { opacity: 0.5; }
-
-        .summary-card { background: linear-gradient(135deg, rgba(204, 255, 0, 0.05) 0%, rgba(0, 240, 255, 0.03) 100%); border: 2px solid var(--acid); box-shadow: 0 0 20px rgba(204, 255, 0, 0.1); }
-        .summary-score { font-family: var(--font-data); font-size: 3rem; font-weight: 900; line-height: 1; margin: 10px 0; background: linear-gradient(135deg, var(--acid) 0%, var(--cyan) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .summary-grade { display: inline-block; padding: 4px 12px; border-radius: 6px; font-weight: 900; font-size: 0.7rem; margin-left: 10px; }
-        .grade-s { background: var(--acid); color: #000; } .grade-a { border: 1px solid var(--cyan); color: var(--cyan); } .grade-b { border: 1px solid var(--gold); color: var(--gold); } .grade-c { border: 1px solid var(--alert); color: var(--alert); }
 
         .bio-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; padding: 20px; overflow-y: auto; }
         .bio-modal.active { display: block; }
@@ -122,7 +116,7 @@
 
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v5.4 (HYBRID)</div>
+            <div class="app-name">CENTURION v5.5 (DECOUPLED)</div>
             <div style="display:flex; gap:10px; align-items:center;">
                 <button class="bio-btn" onclick="centurion.openBio()">BIO</button>
                 <div class="user-switch">
@@ -160,7 +154,7 @@
 
 <script>
 // ==========================================
-// V5.4: HYBRID SLEEP ENGINE
+// V5.5: DECOUPLED DATA STREAMS
 // ==========================================
 
 const TOKENS = { 'jermaine': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'sophia': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
@@ -284,7 +278,7 @@ class CenturionCore {
         return { totals, rainbowScore };
     }
 
-    // --- HYBRID FETCH LOGIC ---
+    // --- DECOUPLED FETCH LOGIC ---
     async fetchOuraData() {
         const fetchID = this.user; 
         const token = TOKENS[fetchID];
@@ -294,7 +288,7 @@ class CenturionCore {
         document.getElementById('ouraBar').innerHTML = "💍 HANDSHAKE...";
         
         try {
-            // Fetch ALL 4 Endpoints to ensure coverage
+            // Fetch daily_sleep (for Score) and sessions (for Duration) independently
             const [rRes, aRes, dsRes, sRes] = await Promise.all([
                 fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}${cb}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}${cb}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
@@ -304,8 +298,8 @@ class CenturionCore {
             
             const rData = await rRes.json();
             const aData = await aRes.json();
-            const dsData = await dsRes.json(); // Daily Sleep (Summaries)
-            const sData = await sRes.json();   // Sleep (Sessions)
+            const dsData = await dsRes.json(); // SOURCE 1: Scores
+            const sData = await sRes.json();   // SOURCE 2: Durations
             
             if(this.user !== fetchID) return;
             
@@ -314,32 +308,33 @@ class CenturionCore {
                     const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
                     const dailySleep = dsData.data ? dsData.data.find(ds => ds.day === day.day) : null;
                     
-                    // Session Fallback: Sum up sessions if Daily Sleep duration is missing
+                    // Session Calculation: Sum all sleep sessions for the day
                     const sessions = sData.data ? sData.data.filter(s => s.day === day.day) : [];
-                    let totalSec = 0, deepSec = 0, remSec = 0;
+                    let sessionDuration = 0, sessionDeep = 0, sessionRem = 0;
                     
                     if(sessions.length > 0) {
                         sessions.forEach(sess => {
-                            totalSec += (sess.total_sleep_duration || 0);
-                            deepSec += (sess.deep_sleep_duration || 0);
-                            remSec += (sess.rem_sleep_duration || 0);
+                            sessionDuration += (sess.total_sleep_duration || 0);
+                            sessionDeep += (sess.deep_sleep_duration || 0);
+                            sessionRem += (sess.rem_sleep_duration || 0);
                         });
                     }
 
-                    // HYBRID MERGE: Use Daily Sleep for Score, Sessions for Duration if needed
+                    // --- DECOUPLED MAPPING ---
+                    // 1. Get Score from Daily Sleep
+                    const sleepScoreVal = dailySleep ? dailySleep.score : "-";
+
+                    // 2. Get Duration from Sessions (Primary) or Daily Sleep (Secondary)
                     let sleepHours = "-", deepMin = "-", remMin = "-";
                     
-                    // Try Daily Sleep First
-                    if(dailySleep && dailySleep.total_sleep_duration > 0) {
+                    if(sessionDuration > 0) {
+                        sleepHours = (sessionDuration / 3600).toFixed(1);
+                        deepMin = Math.round(sessionDeep / 60);
+                        remMin = Math.round(sessionRem / 60);
+                    } else if(dailySleep && dailySleep.total_sleep_duration > 0) {
                         sleepHours = (dailySleep.total_sleep_duration / 3600).toFixed(1);
                         deepMin = Math.round(dailySleep.deep_sleep_duration / 60);
                         remMin = Math.round(dailySleep.rem_sleep_duration / 60);
-                    } 
-                    // Fallback to Session Sums
-                    else if(totalSec > 0) {
-                        sleepHours = (totalSec / 3600).toFixed(1);
-                        deepMin = Math.round(deepSec / 60);
-                        remMin = Math.round(remSec / 60);
                     }
 
                     return { 
@@ -349,7 +344,12 @@ class CenturionCore {
                         high: act ? Math.round(act.high_activity_time/60) : 0, 
                         med: act ? Math.round(act.medium_activity_time/60) : 0,
                         rhr: day.contributors?.resting_heart_rate || "-",
-                        sleep: sleepHours, deep: deepMin, rem: remMin
+                        
+                        // Separated Fields
+                        sleep_score: sleepScoreVal,
+                        sleep_hours: sleepHours,
+                        deep_min: deepMin,
+                        rem_min: remMin
                     };
                 }).reverse();
                 
@@ -385,7 +385,11 @@ class CenturionCore {
         document.getElementById('dateDisplay').innerText = displayDate;
         document.getElementById('btn-next').classList.toggle('disabled', dk === today);
 
-        const rawOura = this.cache.history.find(d => d.date === dk) || { score: "-", cal: "-", high: 0, med: 0, rhr: "-", sleep: "-", deep: "-", rem: "-" };
+        const rawOura = this.cache.history.find(d => d.date === dk) || { 
+            score: "-", cal: "-", high: 0, med: 0, rhr: "-", 
+            sleep_score: "-", sleep_hours: "-", deep_min: "-", rem_min: "-" 
+        };
+        
         const u = USERS[this.user];
         const scoreVal = parseInt(rawOura.score) || 0;
         const rColor = scoreVal >= 80 ? 'var(--acid)' : scoreVal >= 60 ? 'var(--gold)' : 'var(--alert)';
@@ -418,9 +422,9 @@ class CenturionCore {
 
         <div class="section-label">SLEEP ARCHITECTURE</div>
         <div class="sleep-grid">
-            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-purple); stroke-dashoffset:${158-(Math.min(safeNum(rawOura.sleep),9)/9)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.sleep}</div><span class="orb-unit">HRS</span></div></div><div class="orb-label">TOTAL</div></div>
-            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:#007aff; stroke-dashoffset:${158-(Math.min(safeNum(rawOura.deep),120)/120)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.deep}</div><span class="orb-unit">DEEP</span></div></div><div class="orb-label">DEEP</div></div>
-            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--purple); stroke-dashoffset:${158-(Math.min(safeNum(rawOura.rem),120)/120)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.rem}</div><span class="orb-unit">REM</span></div></div><div class="orb-label">REM</div></div>
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:url(#grad-purple); stroke-dashoffset:${158-(Math.min(safeNum(rawOura.sleep_hours),9)/9)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.sleep_hours}</div><span class="orb-unit">HRS</span></div></div><div class="orb-label">TOTAL</div></div>
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:#007aff; stroke-dashoffset:${158-(Math.min(safeNum(rawOura.deep_min),120)/120)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.deep_min}</div><span class="orb-unit">DEEP</span></div></div><div class="orb-label">DEEP</div></div>
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="30" cy="30" r="25"></circle><circle class="orb-fg" cx="30" cy="30" r="25" style="stroke:var(--purple); stroke-dashoffset:${158-(Math.min(safeNum(rawOura.rem_min),120)/120)*158}"></circle></svg><div class="orb-val-box"><div class="orb-val">${rawOura.rem_min}</div><span class="orb-unit">REM</span></div></div><div class="orb-label">REM</div></div>
         </div>
 
         <div class="section-label">CARDIO-METABOLIC STATUS</div>
