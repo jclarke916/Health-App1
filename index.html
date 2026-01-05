@@ -641,7 +641,7 @@ class CenturionCore {
         document.getElementById('ouraBar').innerHTML = "💍 SYNCING...";
         
         try {
-            // Using daily_sleep (more reliable summary endpoint) instead of sleep (sessions)
+            // Try daily_sleep first (more reliable summary)
             const [rRes, aRes, sRes] = await Promise.all([
                 fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?${range}${cb}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?${range}${cb}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
@@ -650,12 +650,19 @@ class CenturionCore {
             
             const rData = await rRes.json();
             const aData = await aRes.json();
-            const sData = await sRes.json();
+            let sData = await sRes.json();
+            
+            // If daily_sleep fails, fallback to sleep endpoint
+            if(!sData.data || sData.data.length === 0) {
+                console.log("⚠️ daily_sleep returned no data, trying sleep endpoint...");
+                const sleepFallback = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?${range}${cb}`)}`, { headers: { 'Authorization': `Bearer ${token}` } });
+                sData = await sleepFallback.json();
+            }
             
             if(this.user !== fetchID) return;
             
             if(rData.data) {
-                console.log(`📊 Oura sync: ${rData.data.length} days | Readiness + Activity + Daily Sleep`);
+                console.log(`📊 Oura sync: ${rData.data.length} days | Readiness + Activity + Sleep`);
                 
                 const hist = rData.data.map(day => {
                     const act = aData.data ? aData.data.find(ac => ac.day === day.day) : null;
@@ -696,7 +703,7 @@ class CenturionCore {
                 this.render();
             }
         } catch(e) { 
-            console.error(e);
+            console.error("Oura sync error:", e);
             document.getElementById('ouraBar').innerHTML = "💍 SYNC TIMEOUT"; 
         }
     }
