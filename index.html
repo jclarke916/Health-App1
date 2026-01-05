@@ -273,6 +273,52 @@
 
 <script>
 // ==========================================
+// IMMEDIATE ERROR DISPLAY - Shows errors on screen
+// ==========================================
+(function() {
+    const errorContainer = document.createElement('div');
+    errorContainer.id = 'emergency-errors';
+    errorContainer.style.cssText = 'position:fixed;top:60px;left:0;right:0;background:#000;color:#fff;padding:20px;z-index:9999;font-family:monospace;font-size:12px;max-height:80vh;overflow-y:auto;display:none;';
+    document.body.appendChild(errorContainer);
+    
+    window.showError = function(type, data) {
+        errorContainer.style.display = 'block';
+        const errorDiv = document.createElement('div');
+        errorDiv.style.cssText = 'margin:10px 0;padding:10px;background:#ff453a;border-radius:5px;';
+        errorDiv.innerHTML = `
+            <div style="font-weight:bold;color:#fff;">${type}</div>
+            <div style="margin-top:5px;color:#fff;white-space:pre-wrap;">${JSON.stringify(data, null, 2)}</div>
+        `;
+        errorContainer.insertBefore(errorDiv, errorContainer.firstChild);
+    };
+    
+    // Override console.error immediately
+    const originalError = console.error;
+    console.error = function(...args) {
+        window.showError('CONSOLE ERROR', args);
+        originalError.apply(console, args);
+    };
+    
+    // Catch all errors immediately
+    window.addEventListener('error', function(e) {
+        window.showError('UNCAUGHT ERROR', {
+            message: e.message,
+            filename: e.filename,
+            line: e.lineno,
+            col: e.colno,
+            stack: e.error?.stack
+        });
+    });
+    
+    window.addEventListener('unhandledrejection', function(e) {
+        window.showError('UNHANDLED PROMISE', {
+            reason: e.reason,
+            promise: String(e.promise)
+        });
+    });
+})();
+
+// ==========================================
 // ERROR LOGGER - COMPREHENSIVE DEBUG SYSTEM
 // ==========================================
 class ErrorLogger {
