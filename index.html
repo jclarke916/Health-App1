@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v13.11 RAINBOW FIX</title>
+    <title>The Centurion | v13.12 WEIGHTED GRADE</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -40,8 +40,8 @@
 
         /* HERO */
         .hero-section { padding: 20px 16px; display: flex; align-items: center; justify-content: space-between; }
-        .grade-box { position: relative; width: 90px; height: 90px; display: flex; align-items: center; justify-content: center; border: 4px solid var(--border); border-radius: 50%; }
-        .grade-val { font-family: var(--font-data); font-size: 2.5rem; font-weight: 900; color: #fff; }
+        .grade-box { position: relative; width: 90px; height: 90px; display: flex; align-items: center; justify-content: center; border: 4px solid var(--border); border-radius: 50%; transition: all 0.5s ease; }
+        .grade-val { font-family: var(--font-data); font-size: 2.5rem; font-weight: 900; color: #fff; transition: color 0.5s ease; }
         .grade-label { position: absolute; bottom: -20px; font-size: 0.5rem; font-weight: 700; color: var(--muted); }
         .tactical-box { flex: 1; margin-left: 20px; border-left: 3px solid var(--acid); padding: 10px; background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, transparent 100%); }
         .tac-label { font-size: 0.55rem; color: var(--acid); font-weight: 900; letter-spacing: 1px; margin-bottom: 4px; text-transform: uppercase; }
@@ -123,7 +123,7 @@
 
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v13.11</div>
+            <div class="app-name">CENTURION v13.12</div>
             <div style="display:flex; gap:10px;">
                 <button onclick="centurion.openBio()" class="bio-btn">BIO</button>
                 <div class="user-switch">
@@ -232,10 +232,9 @@
 
 <script>
 // ==========================================
-// V13.10: CLOSED LOOP
-// - Guaranteed 100% Targets if all meals checked
-// - Balanced Macros across A/B Menus
-// - Sea Moss & Kombucha Standardized
+// V13.12: WEIGHTED GRADE
+// - Score Calculation: 30% Sleep, 20% Train, 40% Nutri, 10% Rainbow
+// - Dynamic A/B Menu & Guaranteed Targets
 // ==========================================
 
 const TOKENS = { 'jermaine': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'sophia': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
@@ -272,7 +271,7 @@ const MENUS = {
             { id:'hyd', time:'7 AM', title:'Hydration', desc:'Sea Moss Gel + Lemon', why:'THYROID & MINERALS', colors:['yellow'], macros:{p:0,f:0}, micros:'92 Minerals' },
             { id:'juice', time:'8 AM', title:'Juice', desc:'Orange Immune', why:'IMMUNE', colors:['orange'], macros:{p:2,poly:200}, micros:'Bioflavonoids' },
             { id:'breakfast', time:'9 AM', title:'Omega Scramble', desc:'Eggs, Avo, Blueberries, Smoked Salmon', why:'COGNITIVE', colors:['green','yellow','purple'], macros:{p:35,f:8,o:1000,poly:100}, micros:'Choline' },
-            { id:'lunch', time:'1 PM', title:'Lunch', desc:'Ceviche + Lentils', why:'LEAN PROTEIN', colors:['white','green'], macros:{p:45,f:12,o:500}, micros:'Selenium' },
+            { id:'lunch', time:'1 PM', title:'Lunch', desc:'Ceviche + Lentils', why:'LEAN PROTEIN', colors:['white','green','red'], macros:{p:45,f:12,o:500}, micros:'Selenium' },
             { id:'snack', time:'4 PM', title:'Gut Snack', desc:'Kombucha + Dark Choc', why:'GUT & POLYPHENOLS', colors:['white'], macros:{p:5,f:3,poly:250}, micros:'Probiotics' },
             { id:'dinner', time:'6 PM', title:'Dinner', desc:'Salmon & Beans', why:'OMEGA-3 & DIGESTION', colors:['red','white'], macros:{p:45,f:12,o:1000}, micros:'Iodine' }
         ],
@@ -483,8 +482,6 @@ class CenturionCore {
         else if(scoreVal < 70) statusMsg = "RECOVERY REQUIRED";
         this.setText('statusMsg', statusMsg);
 
-        this.renderGrade(scoreVal, h);
-
         const so = document.getElementById('sleepOrb');
         if(so) so.style.strokeDashoffset = 100 - (Math.min((data.totalSec/3600), 8) / 8) * 100;
         
@@ -505,12 +502,13 @@ class CenturionCore {
         this.renderBio(); 
     }
 
-    renderGrade(score, sleepHrs) {
+    renderGrade(totalScore) {
         let grade = 'C';
         let color = 'var(--alert)';
-        if (score >= 85 && sleepHrs >= 7) { grade = 'S'; color = 'var(--acid)'; }
-        else if (score >= 80 && sleepHrs >= 6.5) { grade = 'A'; color = 'var(--cyan)'; }
-        else if (score >= 70) { grade = 'B'; color = 'var(--gold)'; }
+        
+        if (totalScore >= 95) { grade = 'S'; color = 'var(--cyan)'; }
+        else if (totalScore >= 85) { grade = 'A'; color = 'var(--acid)'; }
+        else if (totalScore >= 70) { grade = 'B'; color = 'var(--gold)'; }
         
         this.setText('dayGrade', grade);
         const dg = document.getElementById('dayGrade');
@@ -584,6 +582,25 @@ class CenturionCore {
             rainbowHtml += `<div class="rainbow-seg" style="background:${bg}; width:${colorsHit.has(c)?'16.66%':'0%'}"></div>`;
         });
         document.getElementById('rainbowTrack').innerHTML = rainbowHtml;
+
+        // --- WEIGHTED GRADE CALCULATION ---
+        const data = this.history[this.currentIndex];
+        
+        // 1. Sleep (30%) - Based on 8h goal
+        const sleepScore = Math.min((data.totalSec / 28800), 1) * 30; // 28800s = 8h
+        
+        // 2. Train (20%) - Based on Zone 2 goal
+        const z2Score = Math.min((data.med / goals.z2), 1) * 20;
+        
+        // 3. Nutrition (40%) - Protein & Fiber
+        const protScore = Math.min((totals.p / goals.pro), 1) * 20;
+        const fibScore = Math.min((totals.f / goals.fib), 1) * 20;
+        
+        // 4. Rainbow (10%)
+        const rainScore = (colorsHit.size / 6) * 10;
+        
+        const totalGrade = Math.round(sleepScore + z2Score + protScore + fibScore + rainScore);
+        this.renderGrade(totalGrade);
     }
 
     toggleTask(id) {
