@@ -736,36 +736,55 @@ class CenturionCore {
     }
 
     async runAI() {
-        if(this.history.length === 0) return;
-        const data = this.history[this.currentIndex];
-        const ui = document.getElementById('aiOutput');
-        
-        const models = ['gemini-1.5-flash-8b', 'gemini-2.0-flash-exp', 'gemini-1.5-flash', 'gemini-2.5-flash', 'gemini-pro'];
-        const safePrompt = `You are a longevity performance coach, not a doctor. Focus on habits, data correlation, and optimization protocols. Do not provide medical diagnoses. User: ${USERS[this.user].name}. Stats: Sleep ${data.totalSec/3600}h, Score ${data.score}. Give 1 specific tough love habit tip.`;
+    if(this.history.length === 0) return;
+    const data = this.history[this.currentIndex];
+    const ui = document.getElementById('aiOutput');
+    
+    // Only using the stable models found in your screenshot
+    const models = [
+        'gemini-2.5-pro', 
+        'gemini-2.5-flash', 
+        'gemini-2.0-flash', 
+        'gemini-2.5-flash-lite'
+    ];
 
-        let success = false;
-        for (let m of models) {
-            if(ui) ui.innerHTML = `<span style="color:#888">Connecting to ${m}...</span>`;
-            try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${API_KEY}`, {
-                    method: 'POST', headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ contents: [{ parts: [{ text: safePrompt }] }] })
-                });
-                if (res.ok) {
-                    const json = await res.json();
-                    if(json.candidates) {
-                        if(ui) ui.innerHTML = `<span style="color:var(--acid)">[${m}]</span> ${json.candidates[0].content.parts[0].text}`;
-                        success = true; break;
-                    }
+    const safePrompt = `You are a longevity performance coach, not a doctor. Focus on habits and data optimization. User: ${USERS[this.user].name}. Stats: Sleep ${data.totalSec/3600}h, Score ${data.score}. Give 1 specific tough love habit tip.`;
+
+    let success = false;
+
+    for (let m of models) {
+        if(ui) ui.innerHTML = `<span style="color:#888">Requesting ${m}...</span>`;
+        try {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${API_KEY}`, {
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ contents: [{ parts: [{ text: safePrompt }] }] })
+            });
+
+            if (res.ok) {
+                const json = await res.json();
+                if(json.candidates && json.candidates[0].content) {
+                    const text = json.candidates[0].content.parts[0].text;
+                    if(ui) ui.innerHTML = `<span style="color:var(--acid)">[${m}]</span> ${text}`;
+                    success = true; 
+                    break; 
                 }
-            } catch(e) {}
-        }
-
-        if (!success && ui) {
-            let advice = data.score >= 80 ? "System Optimal. Go for a PR." : "Prioritize sleep tonight.";
-            ui.innerHTML = `<span style="color:var(--cyan)">[CENTURION PRIME]</span> ${advice}`;
+            } else if (res.status === 429) {
+                // Rate limit hit: wait 2 seconds before trying the next model
+                if(ui) ui.innerHTML = `<span style="color:var(--gold)">Rate limit on ${m}. Cooling down...</span>`;
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            } else {
+                console.warn(`Model ${m} failed with status: ${res.status}`);
+            }
+        } catch(e) {
+            console.error(`Error with model ${m}:`, e);
         }
     }
+
+    if (!success && ui) {
+        ui.innerHTML = `<span style="color:var(--alert)">[SYSTEM BUSY]</span> All models are currently at capacity. Please try again in 60 seconds.`;
+    }
+}
 
     openBio() { 
         document.getElementById('in-pbf').value = this.bios.pbf || '';
