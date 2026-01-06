@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v12.2 ZERO POINT</title>
+    <title>The Centurion | v12.3 IRONCLAD</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -24,12 +24,8 @@
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { margin: 0; padding: 0 0 120px 0; background: var(--bg); color: var(--text); font-family: var(--font-ui); min-height: 100vh; background-image: radial-gradient(circle at top right, #111 0%, #000 70%); }
 
-        /* DEBUG LOG */
-        .sys-log {
-            background: #111; border-bottom: 1px solid #333; padding: 8px 16px;
-            font-family: var(--font-data); font-size: 0.55rem; color: #888;
-            height: 60px; overflow-y: scroll; white-space: pre-wrap; display:none;
-        }
+        /* DEBUG LOG (Hidden unless needed) */
+        .sys-log { display: none; }
 
         /* HEADER */
         .hud-header { padding: 15px 16px; background: rgba(0,0,0,0.95); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--border); }
@@ -122,11 +118,9 @@
 </head>
 <body>
 
-    <div class="sys-log" id="sysLog">System Initialized.</div>
-
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v12.2</div>
+            <div class="app-name">CENTURION v12.3</div>
             <div style="display:flex; gap:10px;">
                 <button onclick="centurion.openBio()" class="bio-btn">BIO</button>
                 <div class="user-switch">
@@ -226,10 +220,10 @@
 
 <script>
 // ==========================================
-// V12.2: ZERO POINT WIPE
-// - Immediate DOM Wipe on Switch
-// - Explicit "Switching" Status
-// - Local Storage Isolation
+// V12.3: IRONCLAD
+// - Safe Rendering (No "null object" crashes)
+// - Detailed Footer Diagnostics
+// - Hard Wipe on Switch
 // ==========================================
 
 const TOKENS = { 'jermaine': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'sophia': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
@@ -267,7 +261,6 @@ class CenturionCore {
         this.currentIndex = 0; 
         this.checked = {}; 
         this.bios = {}; 
-        
         this.init();
     }
 
@@ -283,61 +276,67 @@ class CenturionCore {
         this.bios = JSON.parse(localStorage.getItem(`c_bios_${this.user}`)) || {};
     }
 
-    // --- THE WIPE SWITCH ---
     switchUser(u) {
         if(u === this.user) return;
         this.user = u;
         localStorage.setItem('centurion_user', u);
-        
-        // 1. HARD WIPE
         this.wipeDashboard();
-        
-        // 2. UPDATE BADGES
         document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
         document.getElementById(`btn-${this.user}`).classList.add('active');
-        
-        // 3. RELOAD CONTEXT
         this.history = [];
         this.currentIndex = 0;
         this.loadLocalData();
-        this.renderBio(); // Shows empty bio initially
-        
-        // 4. START FRESH SYNC
+        this.renderBio(); 
         this.fetchData();
     }
 
+    // SAFE UPDATE HELPER
+    setText(id, val) {
+        const el = document.getElementById(id);
+        if(el) el.innerText = val;
+    }
+
     wipeDashboard() {
-        document.getElementById('scoreVal').innerText = "--";
-        document.getElementById('dayGrade').innerText = "--";
-        document.getElementById('sleepVal').innerText = "--";
-        document.getElementById('deepVal').innerText = "--";
-        document.getElementById('remVal').innerText = "--";
-        document.getElementById('rhrVal').innerText = "--";
-        document.getElementById('bioDisplay').innerText = "--";
-        document.getElementById('disp-vo2').innerText = "--";
-        document.getElementById('disp-apob').innerText = "--";
-        document.getElementById('disp-a1c').innerText = "--";
-        document.getElementById('disp-crp').innerText = "--";
-        document.getElementById('timelineList').innerHTML = "";
-        document.getElementById('macroList').innerHTML = "";
-        document.getElementById('rainbowTrack').innerHTML = "";
-        document.getElementById('rainbowScore').innerText = "0%";
-        document.getElementById('statusMsg').innerText = "SWITCHING ACCOUNTS...";
+        this.setText('scoreVal', "--");
+        this.setText('dayGrade', "--");
+        this.setText('sleepVal', "--");
+        this.setText('deepVal', "--");
+        this.setText('remVal', "--");
+        this.setText('rhrVal', "--");
+        this.setText('bioDisplay', "--");
+        this.setText('disp-vo2', "--");
+        this.setText('disp-apob', "--");
+        this.setText('disp-a1c', "--");
+        this.setText('disp-crp', "--");
         
-        // Reset Orbs
+        const tl = document.getElementById('timelineList');
+        if(tl) tl.innerHTML = "";
+        
+        const ml = document.getElementById('macroList');
+        if(ml) ml.innerHTML = "";
+        
+        const rb = document.getElementById('rainbowTrack');
+        if(rb) rb.innerHTML = "";
+        
+        this.setText('rainbowScore', "0%");
+        this.setText('statusMsg', "SWITCHING ACCOUNTS...");
+        
         document.querySelectorAll('circle.orb-fg').forEach(el => el.style.strokeDashoffset = 145);
-        document.getElementById('ringFg').style.strokeDashoffset = 283;
+        const ring = document.getElementById('ringFg');
+        if(ring) ring.style.strokeDashoffset = 283;
     }
 
     updateUI() {
         document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
-        document.getElementById(`btn-${this.user}`).classList.add('active');
-        document.getElementById('userLabel').innerText = `USER: ${USERS[this.user].name.toUpperCase()}`;
+        const btn = document.getElementById(`btn-${this.user}`);
+        if(btn) btn.classList.add('active');
+        this.setText('userLabel', `USER: ${USERS[this.user].name.toUpperCase()}`);
     }
 
     async fetchData() {
-        const currentUserAtStart = this.user; // Snapshot
-        document.getElementById('ouraBar').innerHTML = "💍 SYNCING...";
+        const fetchUser = this.user;
+        const bar = document.getElementById('ouraBar');
+        bar.innerText = "💍 SYNCING...";
         
         const d = new Date();
         d.setDate(d.getDate() + 1);
@@ -351,8 +350,8 @@ class CenturionCore {
                 fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${start}&end_date=${end}`)}`, { headers: { 'Authorization': `Bearer ${TOKENS[this.user]}` } })
             ]);
 
-            // Prevent race condition overwrites
-            if(this.user !== currentUserAtStart) return;
+            if(!sRes.ok || !rRes.ok) throw new Error(`${sRes.status} / ${rRes.status}`);
+            if(this.user !== fetchUser) return; // Prevent race
 
             const sJson = await sRes.json();
             const rJson = await rRes.json();
@@ -377,15 +376,15 @@ class CenturionCore {
 
             if(this.history.length > 0) {
                 this.currentIndex = 0; 
-                document.getElementById('ouraBar').innerHTML = "💍 UPDATED";
+                bar.innerText = "💍 UPDATED";
                 this.render();
             } else {
-                document.getElementById('ouraBar').innerHTML = "💍 EMPTY";
+                bar.innerText = "💍 EMPTY";
                 this.renderEmpty(); 
             }
 
         } catch (e) {
-            document.getElementById('ouraBar').innerHTML = "💍 ERROR";
+            bar.innerText = `⚠️ ERR: ${e.message}`;
             console.error(e);
         }
     }
@@ -403,49 +402,49 @@ class CenturionCore {
         if(this.history.length === 0) return this.renderEmpty();
 
         const data = this.history[this.currentIndex];
-        document.getElementById('dateDisplay').innerText = data.date;
+        this.setText('dateDisplay', data.date);
         
         const h = Math.floor(data.totalSec / 3600);
         const m = Math.round((data.totalSec % 3600) / 60);
         const sleepDisplay = data.totalSec > 0 ? `${h}h ${m}m` : "--";
         const scoreVal = parseInt(data.score) || 0;
         
-        document.getElementById('scoreVal').innerText = data.score || "-";
-        document.getElementById('sleepVal').innerText = sleepDisplay;
-        document.getElementById('deepVal').innerText = Math.round(data.deepSec / 60) + "m";
-        document.getElementById('remVal').innerText = Math.round(data.remSec / 60) + "m";
-        document.getElementById('rhrVal').innerText = data.rhr;
+        this.setText('scoreVal', data.score || "-");
+        this.setText('sleepVal', sleepDisplay);
+        this.setText('deepVal', Math.round(data.deepSec / 60) + "m");
+        this.setText('remVal', Math.round(data.remSec / 60) + "m");
+        this.setText('rhrVal', data.rhr);
         
-        // Colors & Text
         const rColor = scoreVal >= 80 ? 'var(--acid)' : scoreVal >= 60 ? 'var(--gold)' : 'var(--alert)';
-        document.querySelector('.tactical-box').style.borderLeftColor = rColor;
-        document.querySelector('.tac-label').style.color = rColor;
+        const tb = document.querySelector('.tactical-box');
+        if(tb) tb.style.borderLeftColor = rColor;
+        
+        const tl = document.querySelector('.tac-label');
+        if(tl) tl.style.color = rColor;
         
         let statusMsg = "MAINTAIN";
         if(scoreVal >= 85) statusMsg = "PEAK READINESS";
         else if(scoreVal < 70) statusMsg = "RECOVERY REQUIRED";
-        document.getElementById('statusMsg').innerText = statusMsg;
+        this.setText('statusMsg', statusMsg);
 
-        // Grade
         this.renderGrade(scoreVal, h);
 
-        // Orbs Animation
-        const ringOff = 283 - (Math.min(scoreVal, 100) / 100) * 283;
-        document.getElementById('ringFg').style.strokeDashoffset = ringOff;
-        document.getElementById('sleepOrb').style.strokeDashoffset = 145 - (Math.min((data.totalSec/3600), 9) / 9) * 145;
-        document.getElementById('deepOrb').style.strokeDashoffset = 145 - (Math.min((data.deepSec/3600), 2) / 2) * 145;
-        document.getElementById('remOrb').style.strokeDashoffset = 145 - (Math.min((data.remSec/3600), 2) / 2) * 145;
+        // Orbs Animation - Safe Check
+        const ring = document.getElementById('ringFg');
+        if(ring) ring.style.strokeDashoffset = 283 - (Math.min(scoreVal, 100) / 100) * 283;
+        
+        const so = document.getElementById('sleepOrb');
+        if(so) so.style.strokeDashoffset = 145 - (Math.min((data.totalSec/3600), 9) / 9) * 145;
 
-        // Complex Renders
         this.renderComplex(data.date);
         this.renderBio();
     }
 
     renderEmpty() {
-        document.getElementById('dateDisplay').innerText = "NO DATA";
-        document.getElementById('statusMsg').innerText = "SYNC REQUIRED";
+        this.setText('dateDisplay', "NO DATA");
+        this.setText('statusMsg', "SYNC REQUIRED");
         this.wipeDashboard();
-        this.renderBio(); // Still show bio if available
+        this.renderBio(); 
     }
 
     renderGrade(score, sleepHrs) {
@@ -455,9 +454,11 @@ class CenturionCore {
         else if (score >= 80 && sleepHrs >= 6.5) { grade = 'A'; color = 'var(--cyan)'; }
         else if (score >= 70) { grade = 'B'; color = 'var(--gold)'; }
         
-        document.getElementById('dayGrade').innerText = grade;
-        document.getElementById('dayGrade').style.color = color;
-        document.querySelector('.grade-box').style.borderColor = color;
+        this.setText('dayGrade', grade);
+        const dg = document.getElementById('dayGrade');
+        if(dg) dg.style.color = color;
+        const gb = document.querySelector('.grade-box');
+        if(gb) gb.style.borderColor = color;
     }
 
     renderComplex(dateKey) {
@@ -488,7 +489,8 @@ class CenturionCore {
                 </div>
             </div>`;
         });
-        document.getElementById('timelineList').innerHTML = timelineHtml;
+        const tl = document.getElementById('timelineList');
+        if(tl) tl.innerHTML = timelineHtml;
 
         const drawOrb = (label, val, goal, color) => {
             const pct = Math.min(val / goal, 1);
@@ -499,19 +501,21 @@ class CenturionCore {
                 <div class="orb-val-box"><div class="orb-val">${val}</div></div>
             </div><div class="orb-label">${label}</div></div>`;
         };
-        document.getElementById('macroList').innerHTML = 
+        const ml = document.getElementById('macroList');
+        if(ml) ml.innerHTML = 
             drawOrb('PROTEIN', totals.p, goals.pro, '#fff') +
             drawOrb('OMEGA-3', totals.o, goals.omega3, '#00d4ff') +
             drawOrb('POLY', totals.poly, goals.poly, '#bf5af2') +
             drawOrb('FIBER', totals.f, goals.fib, '#30d158');
 
-        document.getElementById('rainbowScore').innerText = Math.round((colorsHit.size/6)*100) + "%";
+        this.setText('rainbowScore', Math.round((colorsHit.size/6)*100) + "%");
         let rainbowHtml = '';
         ['red','orange','yellow','green','purple','white'].forEach(c => {
             const bg = {red:'#ff453a',orange:'#ff9f0a',yellow:'#ffd60a',green:'#30d158',purple:'#bf5af2',white:'#fff'}[c];
             rainbowHtml += `<div class="rainbow-seg" style="background:${bg}; width:${colorsHit.has(c)?'16.66%':'0%'}"></div>`;
         });
-        document.getElementById('rainbowTrack').innerHTML = rainbowHtml;
+        const rb = document.getElementById('rainbowTrack');
+        if(rb) rb.innerHTML = rainbowHtml;
     }
 
     toggleTask(id) {
@@ -536,7 +540,7 @@ class CenturionCore {
 
         let success = false;
         for (let m of models) {
-            ui.innerHTML = `<span style="color:#888">Connecting to ${m}...</span>`;
+            if(ui) ui.innerHTML = `<span style="color:#888">Connecting to ${m}...</span>`;
             try {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${API_KEY}`, {
                     method: 'POST', headers: {'Content-Type': 'application/json'},
@@ -545,16 +549,16 @@ class CenturionCore {
                 if (res.ok) {
                     const json = await res.json();
                     if(json.candidates) {
-                        ui.innerHTML = `<span style="color:var(--acid)">[${m}]</span> ${json.candidates[0].content.parts[0].text}`;
+                        if(ui) ui.innerHTML = `<span style="color:var(--acid)">[${m}]</span> ${json.candidates[0].content.parts[0].text}`;
                         success = true; break;
                     }
                 }
             } catch(e) {}
         }
 
-        if (!success) {
-            let advice = data.score >= 80 ? "Go for a PR." : "Prioritize sleep.";
-            ui.innerHTML = `<span style="color:var(--cyan)">[LOCAL]</span> ${advice}`;
+        if (!success && ui) {
+            let advice = data.score >= 80 ? "System Optimal. Go for a PR." : "Prioritize sleep tonight.";
+            ui.innerHTML = `<span style="color:var(--cyan)">[CENTURION PRIME]</span> ${advice}`;
         }
     }
 
@@ -580,12 +584,11 @@ class CenturionCore {
     }
 
     renderBio() {
-        const update = (id, val) => document.getElementById(`disp-${id}`).innerText = val || '--';
-        update('vo2', this.bios.vo2);
-        update('apob', this.bios.apob);
-        update('a1c', this.bios.a1c);
-        update('crp', this.bios.crp);
-        document.getElementById('bioDisplay').innerText = `VO2: ${this.bios.vo2 || '--'} | APOB: ${this.bios.apob || '--'}`;
+        this.setText('disp-vo2', this.bios.vo2 || '--');
+        this.setText('disp-apob', this.bios.apob || '--');
+        this.setText('disp-a1c', this.bios.a1c || '--');
+        this.setText('disp-crp', this.bios.crp || '--');
+        this.setText('bioDisplay', `VO2: ${this.bios.vo2 || '--'} | APOB: ${this.bios.apob || '--'}`);
     }
 }
 
