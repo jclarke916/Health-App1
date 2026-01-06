@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v11.7 UNIVERSAL</title>
+    <title>The Centurion | v12.0 FAILSAFE</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -23,6 +23,15 @@
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { margin: 0; padding: 0 0 120px 0; background: var(--bg); color: var(--text); font-family: var(--font-ui); min-height: 100vh; background-image: radial-gradient(circle at top right, #111 0%, #000 70%); }
+
+        /* DEBUG LOG */
+        .sys-log {
+            background: #111; border-bottom: 1px solid #333; padding: 8px 16px;
+            font-family: var(--font-data); font-size: 0.55rem; color: #888;
+            height: 60px; overflow-y: scroll; white-space: pre-wrap; display:none;
+        }
+        .log-ok { color: var(--acid); }
+        .log-err { color: var(--alert); }
 
         /* HEADER */
         .hud-header { padding: 15px 16px; background: rgba(0,0,0,0.95); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--border); }
@@ -54,8 +63,7 @@
         /* SECTIONS */
         .section-header { display: flex; justify-content: space-between; align-items: center; margin: 25px 16px 10px; }
         .section-label { font-size: 0.55rem; font-weight: 900; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
-        .tooltip-icon { color: var(--cyan); font-size: 0.6rem; cursor: help; border: 1px solid #333; padding: 2px 6px; border-radius: 4px; }
-
+        
         /* GRIDS */
         .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 10px; }
         .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 10px; }
@@ -68,7 +76,6 @@
         .orb-val-box { position: absolute; text-align: center; }
         .orb-val { font-family: var(--font-data); font-size: 0.7rem; font-weight: 700; color: #fff; }
         .orb-label { font-size: 0.45rem; font-weight: 700; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-top: 4px; }
-        .orb-sub { font-size: 0.4rem; color: #555; margin-top: 2px; }
 
         /* RAINBOW BAR */
         .rainbow-container { padding: 0 16px; margin-bottom: 20px; }
@@ -117,9 +124,11 @@
 </head>
 <body>
 
+    <div class="sys-log" id="sysLog"></div>
+
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v11.7</div>
+            <div class="app-name">CENTURION v12.0</div>
             <div style="display:flex; gap:10px;">
                 <button onclick="centurion.openBio()" class="bio-btn">BIO</button>
                 <div class="user-switch">
@@ -159,9 +168,9 @@
 
 <script>
 // ==========================================
-// V11.7: UNIVERSAL KEY
-// - Auto-Cascades through 5 models
-// - Includes "Cockroach" gemini-pro backup
+// V12.0: FAILSAFE EDITION
+// - Tries 1.5-8b, 2.0-exp, 1.5-flash
+// - FALLS BACK TO LOCAL LOGIC if all fail
 // ==========================================
 
 const TOKENS = { 'jermaine': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'sophia': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
@@ -170,14 +179,6 @@ const API_KEY = "AIzaSyBtqgUcbq5uVGFZ5nHPDyhthLDii7uRNrg";
 const USERS = {
     'jermaine': { name: "Jermaine", goals: { pro: 180, omega3: 3000, poly: 500, fib: 40 } },
     'sophia': { name: "Sophia", goals: { pro: 120, omega3: 2500, poly: 400, fib: 35 } }
-};
-
-const MACRO_VALS = {
-    'hyd': { p:0, o:0, poly:0, f:0 },
-    'juice': { p:2, o:50, poly:200, f:2 },
-    'train': { p:25, o:0, poly:0, f:0 },
-    'lunch': { p:45, o:1500, poly:150, f:8 },
-    'dinner': { p:50, o:2500, poly:150, f:10 }
 };
 
 const PROTOCOL = {
@@ -213,6 +214,17 @@ class CenturionCore {
     async init() {
         this.updateUI();
         await this.fetchData();
+    }
+
+    log(msg, type='') {
+        const box = document.getElementById('sysLog');
+        if(box) {
+            box.style.display = 'block';
+            const line = document.createElement('div');
+            line.className = type;
+            line.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            box.prepend(line);
+        }
     }
 
     switchUser(u) {
@@ -368,7 +380,7 @@ class CenturionCore {
         <div class="ai-section">
             <div class="ai-card">
                 <div style="color:var(--cyan); font-weight:900; font-size:0.7rem; margin-bottom:5px;">GEMINI COACH</div>
-                <div id="aiOutput" style="font-size:0.7rem; line-height:1.5; color:#ddd; min-height:20px; margin-bottom:15px; white-space:pre-line;">Data Loaded. Ready for analysis.</div>
+                <div id="aiOutput" style="font-size:0.7rem; line-height:1.5; color:#ddd; min-height:20px; margin-bottom:15px; white-space:pre-line;">Data Loaded. Ready.</div>
                 <button class="ai-btn" onclick="centurion.runAI()">GENERATE COACHING</button>
             </div>
         </div>
@@ -403,7 +415,6 @@ class CenturionCore {
         let totals = { p:0, o:0, poly:0, f:0 };
         let colorsHit = new Set();
 
-        // 1. Timeline
         let timelineHtml = '';
         tasks.forEach(t => {
             const isDone = done.includes(t.id);
@@ -426,7 +437,6 @@ class CenturionCore {
         });
         document.getElementById('timelineList').innerHTML = timelineHtml;
 
-        // 2. Macros
         const drawOrb = (label, val, goal, color) => {
             const pct = Math.min(val / goal, 1);
             return `
@@ -442,7 +452,6 @@ class CenturionCore {
             drawOrb('POLY', totals.poly, goals.poly, '#bf5af2') +
             drawOrb('FIBER', totals.f, goals.fib, '#30d158');
 
-        // 3. Rainbow
         document.getElementById('rainbowScore').innerText = Math.round((colorsHit.size/6)*100) + "%";
         let rainbowHtml = '';
         ['red','orange','yellow','green','purple','white'].forEach(c => {
@@ -464,24 +473,26 @@ class CenturionCore {
         this.renderComplex(dateKey);
     }
 
+    // --- FAILSAFE AI ENGINE ---
     async runAI() {
         if(this.history.length === 0) return;
         const data = this.history[this.currentIndex];
         const ui = document.getElementById('aiOutput');
         
-        // AUTO-CASCADE CHAIN
+        // Models visible in screenshot
         const models = [
-            'gemini-2.0-flash-lite-preview-02-05',
+            'gemini-1.5-flash-8b', // Trying this one first as requested
             'gemini-2.0-flash-exp',
-            'gemini-1.5-pro',
-            'gemini-2.5-flash',
-            'gemini-pro' // The Universal Backup (1.0)
+            'gemini-1.5-flash',
+            'gemini-2.5-flash'
         ];
 
         const prompt = `Longevity coach analysis for ${USERS[this.user].name}. Stats: Sleep ${data.totalSec/3600}h, Deep ${Math.round(data.deepSec/60)}m, Score ${data.score}. Give 1 specific tough love tip.`;
 
+        let success = false;
+
         for (let m of models) {
-            ui.innerHTML = `<span style="color:#888">Trying ${m}...</span>`;
+            ui.innerHTML = `<span style="color:#888">Connecting to ${m}...</span>`;
             try {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${API_KEY}`, {
                     method: 'POST',
@@ -489,21 +500,27 @@ class CenturionCore {
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
                 
-                if (!res.ok) {
-                    if (res.status === 429) { continue; } // Try next model if rate limited
-                    throw new Error(`${res.status} ${res.statusText}`);
+                if (res.ok) {
+                    const json = await res.json();
+                    if(json.candidates) {
+                        ui.innerHTML = `<span style="color:var(--acid)">[${m}]</span> ${json.candidates[0].content.parts[0].text}`;
+                        success = true;
+                        break; // Stop loop, we found a winner
+                    }
                 }
-
-                const json = await res.json();
-                if(json.candidates) {
-                    ui.innerHTML = `<span style="color:var(--acid)">[${m}]</span> ${json.candidates[0].content.parts[0].text}`;
-                    return; // Success! Exit function.
-                }
-            } catch(e) {
-                console.log(`${m} failed: ${e.message}`);
-            }
+            } catch(e) { console.log(e); }
         }
-        ui.innerHTML = `<span style="color:var(--alert)">ALL MODELS FAILED.</span> Check quotas or API key permissions.`;
+
+        // FAILSAFE: If ALL models failed, generate LOCAL advice
+        if (!success) {
+            this.log("AI Failed. Engaging Local Protocol.", 'log-err');
+            let advice = "";
+            if(data.score >= 80) advice = "System Optimal. Push zone 5 intensity today. Your recovery supports high output.";
+            else if(data.score >= 70) advice = "Systems Nominal. Maintain baseline. Focus on hitting protein goals.";
+            else advice = "System Warning. Deep recovery needed. No heavy lifting. Prioritize 8h sleep tonight.";
+            
+            ui.innerHTML = `<span style="color:var(--cyan)">[CENTURION PRIME]</span> ${advice}`;
+        }
     }
 
     openBio() { 
