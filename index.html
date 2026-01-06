@@ -736,38 +736,60 @@ class CenturionCore {
     }
 
  async runAI() {
-    if (this.history.length === 0) return;
-    const data = this.history[this.currentIndex];
     const ui = document.getElementById('aiOutput');
+    const st = document.getElementById('aiStatus');
+    const btn = document.getElementById('aiBtn');
+    
+    // Safety check
+    if (!ui || !btn) return;
+    if (this.history.length === 0) {
+        ui.innerText = "No Oura data found.";
+        return;
+    }
 
-    const MODEL = 'gemini-2.5-flash';
-    const safePrompt = `You are a longevity performance coach, not a doctor...`;
+    const data = this.history[this.currentIndex];
+    
+    // 1. TARGET THE MOST RELIABLE MODEL (Highest Quota)
+    const MODEL = 'gemini-2.5-flash-lite'; 
+    const safePrompt = `You are a longevity coach for ${USERS[this.user].name}. Readiness: ${data.score}. Sleep: ${Math.floor(data.totalSec/3600)}h. Give 1 short, high-impact habit tip.`;
+
+    // 2. UI LOADING STATE
+    btn.disabled = true;
+    btn.innerText = "ANALYZING...";
+    if (st) st.innerText = "CONNECTING...";
 
     try {
+        // 3. SINGLE API CALL
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ contents: [{ parts: [{ text: safePrompt }] }] })
         });
 
-        if (res.status === 429) {
-            if (ui) ui.innerHTML = `<span style="color:var(--cyan)">[CENTURION PRIME]</span> Throttled. Retrying shortly.`;
-            return; // do NOT try other models
-        }
-
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-        const json = await res.json();
-        if (json.candidates && ui) {
-            ui.innerHTML = `<span style="color:var(--acid)">[${MODEL}]</span> ${json.candidates[0].content.parts[0].text}`;
+        // 4. HANDLE SUCCESS
+        if (res.ok) {
+            const json = await res.json();
+            if (json.candidates && json.candidates.length > 0) {
+                ui.innerHTML = `<span style="color:var(--acid)">[CENTURION AI]</span> ${json.candidates[0].content.parts[0].text}`;
+                if (st) st.innerText = "OPTIMIZED";
+            }
+        } else {
+            // 5. HANDLE FAILURE (Rate Limit or Busy)
+            throw new Error(`HTTP ${res.status}`);
         }
 
     } catch (e) {
-        if (ui) {
-            let advice = data.score >= 80 ? "System Optimal. Go for a PR." : "Prioritize sleep tonight.";
-            ui.innerHTML = `<span style="color:var(--cyan)">[CENTURION PRIME]</span> ${advice}`;
-        }
+        // 6. INSTANT FALLBACK (No waiting, just show advice)
+        console.error(e);
+        let fallbackTip = data.score >= 80 ? "Biometrics optimal. Push for a PR today." : "Recovery deficit detected. Prioritize sleep tonight.";
+        
+        ui.innerHTML = `<span style="color:var(--cyan)">[OFFLINE MODE]</span> System busy (${e.message}). <br><br><b>Protocol:</b> ${fallbackTip}`;
+        if (st) st.innerText = "STANDBY";
     }
+
+    // 7. RESET BUTTON
+    btn.disabled = false;
+    btn.innerText = "GENERATE COACHING";
 }
 
     openBio() { 
