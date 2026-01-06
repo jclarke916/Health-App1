@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v12.4 CLEAN SLATE</title>
+    <title>The Centurion | v13.0 HEARTBEAT</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -25,13 +25,7 @@
         body { margin: 0; padding: 0 0 120px 0; background: var(--bg); color: var(--text); font-family: var(--font-ui); min-height: 100vh; background-image: radial-gradient(circle at top right, #111 0%, #000 70%); }
 
         /* DEBUG LOG */
-        .sys-log {
-            background: #111; border-bottom: 1px solid #333; padding: 8px 16px;
-            font-family: var(--font-data); font-size: 0.55rem; color: #888;
-            height: 60px; overflow-y: scroll; white-space: pre-wrap; display:none;
-        }
-        .log-ok { color: var(--acid); }
-        .log-err { color: var(--alert); }
+        .sys-log { display: none; }
 
         /* HEADER */
         .hud-header { padding: 15px 16px; background: rgba(0,0,0,0.95); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--border); }
@@ -63,21 +57,39 @@
         /* SECTIONS */
         .section-header { display: flex; justify-content: space-between; align-items: center; margin: 25px 16px 10px; }
         .section-label { font-size: 0.55rem; font-weight: 900; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
-        .tooltip-icon { color: var(--cyan); font-size: 0.6rem; cursor: help; border: 1px solid #333; padding: 2px 6px; border-radius: 4px; }
-
+        
         /* GRIDS */
         .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 10px; }
         .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 10px; }
         
+        /* ORB CARDS */
         .orb-card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 10px 5px; display: flex; flex-direction: column; align-items: center; position: relative; }
         .orb-container { width: 50px; height: 50px; position: relative; display: flex; align-items: center; justify-content: center; margin-bottom: 5px; }
+        
+        /* CIRCLE SVGS */
         .orb-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
         .orb-bg { fill: none; stroke: #222; stroke-width: 4; }
         .orb-fg { fill: none; stroke: var(--cyan); stroke-width: 4; stroke-dasharray: 145; stroke-dashoffset: 145; transition: stroke-dashoffset 1s ease; stroke-linecap: round; }
+        
+        /* HEART SVGS */
+        .heart-svg { width: 100%; height: 100%; overflow: visible; }
+        .heart-bg { fill: none; stroke: #222; stroke-width: 2; }
+        .heart-fg { fill: none; stroke: var(--alert); stroke-width: 2; stroke-dasharray: 100; stroke-dashoffset: 100; transition: stroke-dashoffset 1s ease; }
+        .heart-full { fill: var(--alert); stroke: none; opacity: 0.2; } /* Background fill */
+        
+        .beating { animation: heartbeat 1.5s infinite; transform-origin: center; }
+        @keyframes heartbeat {
+            0% { transform: scale(1); }
+            15% { transform: scale(1.15); }
+            30% { transform: scale(1); }
+            45% { transform: scale(1.15); }
+            60% { transform: scale(1); }
+            100% { transform: scale(1); }
+        }
+
         .orb-val-box { position: absolute; text-align: center; }
         .orb-val { font-family: var(--font-data); font-size: 0.7rem; font-weight: 700; color: #fff; }
         .orb-label { font-size: 0.45rem; font-weight: 700; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-top: 4px; }
-        .orb-sub { font-size: 0.4rem; color: #555; margin-top: 2px; }
 
         /* RAINBOW BAR */
         .rainbow-container { padding: 0 16px; margin-bottom: 20px; }
@@ -95,14 +107,6 @@
         .check-btn { position: absolute; top: 12px; right: 12px; width: 20px; height: 20px; border-radius: 50%; border: 1px solid #444; background: transparent; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.7rem; color: #000; }
         .ts-card.checked { border-color: var(--acid); background: rgba(204,255,0,0.05); }
         .ts-card.checked .check-btn { background: var(--acid); border-color: var(--acid); }
-
-        /* BIOMARKER GRID */
-        .bio-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 20px; }
-        .bio-card { background: #111; padding: 10px; border-radius: 8px; border: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
-        .bio-name { font-size: 0.6rem; color: #888; font-weight: 700; }
-        .bio-val { font-family: var(--font-data); font-size: 0.7rem; color: #fff; }
-        .bio-status { width: 6px; height: 6px; border-radius: 50%; background: #333; margin-left: 8px; }
-        .status-ok { background: var(--acid); box-shadow: 0 0 5px var(--acid); }
 
         /* AI CARD */
         .ai-section { padding: 16px; margin-bottom: 80px; }
@@ -126,11 +130,9 @@
 </head>
 <body>
 
-    <div class="sys-log" id="sysLog">System Initialized.</div>
-
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v12.4</div>
+            <div class="app-name">CENTURION v13.0</div>
             <div style="display:flex; gap:10px;">
                 <button onclick="centurion.openBio()" class="bio-btn">BIO</button>
                 <div class="user-switch">
@@ -176,12 +178,50 @@
             </div>
         </div>
 
-        <div class="section-header"><span class="section-label">BIOMARKER PANEL</span></div>
-        <div class="bio-grid">
-            <div class="bio-card"><span class="bio-name">VO2 MAX</span><div><span class="bio-val" id="disp-vo2">--</span><span class="bio-status status-ok"></span></div></div>
-            <div class="bio-card"><span class="bio-name">APOB</span><div><span class="bio-val" id="disp-apob">--</span><span class="bio-status status-ok"></span></div></div>
-            <div class="bio-card"><span class="bio-name">HBA1C</span><div><span class="bio-val" id="disp-a1c">--</span><span class="bio-status status-ok"></span></div></div>
-            <div class="bio-card"><span class="bio-name">HS-CRP</span><div><span class="bio-val" id="disp-crp">--</span><span class="bio-status status-ok"></span></div></div>
+        <div class="section-header"><span class="section-label">CARDIO STATUS</span></div>
+        <div class="grid-4">
+            <div class="orb-card">
+                <div class="orb-container">
+                    <svg class="heart-svg beating" viewBox="0 0 24 24">
+                        <path class="heart-bg" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" style="stroke:var(--alert); fill:rgba(255, 69, 58, 0.2);"></path>
+                    </svg>
+                    <div class="orb-val-box"><div class="orb-val" id="rhrVal">--</div></div>
+                </div>
+                <div class="orb-label">RHR</div>
+            </div>
+            
+            <div class="orb-card">
+                <div class="orb-container">
+                    <svg class="heart-svg" viewBox="0 0 24 24">
+                        <path class="heart-bg" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path>
+                        <path class="heart-fg" id="z2Heart" pathLength="100" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" style="stroke:var(--cyan)"></path>
+                    </svg>
+                    <div class="orb-val-box"><div class="orb-val" id="z2Val">--</div></div>
+                </div>
+                <div class="orb-label">Z2</div>
+            </div>
+
+            <div class="orb-card">
+                <div class="orb-container">
+                    <svg class="heart-svg" viewBox="0 0 24 24">
+                        <path class="heart-bg" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path>
+                        <path class="heart-fg" id="z5Heart" pathLength="100" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" style="stroke:var(--gold)"></path>
+                    </svg>
+                    <div class="orb-val-box"><div class="orb-val" id="z5Val">--</div></div>
+                </div>
+                <div class="orb-label">Z5</div>
+            </div>
+
+            <div class="orb-card">
+                <div class="orb-container">
+                    <svg class="heart-svg" viewBox="0 0 24 24">
+                        <path class="heart-bg" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path>
+                        <path class="heart-fg" id="calHeart" pathLength="100" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" style="stroke:#fff"></path>
+                    </svg>
+                    <div class="orb-val-box"><div class="orb-val" id="calVal">--</div></div>
+                </div>
+                <div class="orb-label">CAL</div>
+            </div>
         </div>
 
         <div class="section-header"><span class="section-label">PHYTONUTRIENT DIVERSITY</span></div>
@@ -230,18 +270,18 @@
 
 <script>
 // ==========================================
-// V12.4: CLEAN SLATE
-// - Hard DOM Reset on Toggle
-// - Cache Busting Timestamps on API calls
-// - no-store fetch mode
+// V13.0: HEARTBEAT
+// - Bio Panel Hidden (Accessible via Button)
+// - Cardio Hearts (Beating RHR, Progressive Zones)
+// - Robust Clean Slate Logic
 // ==========================================
 
 const TOKENS = { 'jermaine': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'sophia': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
 const API_KEY = "AIzaSyBtqgUcbq5uVGFZ5nHPDyhthLDii7uRNrg"; 
 
 const USERS = {
-    'jermaine': { name: "Jermaine", goals: { pro: 180, omega3: 3000, poly: 500, fib: 40 } },
-    'sophia': { name: "Sophia", goals: { pro: 120, omega3: 2500, poly: 400, fib: 35 } }
+    'jermaine': { name: "Jermaine", goals: { pro: 180, omega3: 3000, poly: 500, fib: 40, z2: 60, z5: 15, cal: 700 } },
+    'sophia': { name: "Sophia", goals: { pro: 120, omega3: 2500, poly: 400, fib: 35, z2: 45, z5: 10, cal: 450 } }
 };
 
 const PROTOCOL = {
@@ -286,34 +326,26 @@ class CenturionCore {
         this.bios = JSON.parse(localStorage.getItem(`c_bios_${this.user}`)) || {};
     }
 
-    // --- SCORCHED EARTH SWITCH ---
     switchUser(u) {
         if(u === this.user) return;
         this.user = u;
         localStorage.setItem('centurion_user', u);
-        
-        // 1. CLEAR MEMORY
+        this.wipeDashboard();
+        document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
+        document.getElementById(`btn-${this.user}`).classList.add('active');
         this.history = [];
         this.currentIndex = 0;
         this.loadLocalData();
-        
-        // 2. CLEAR UI INSTANTLY
-        this.wipeDashboard();
-        this.updateUI();
-        this.renderBio();
-        
-        // 3. START FRESH FETCH WITH CACHE BUSTING
+        this.renderBio(); 
         this.fetchData();
     }
 
-    // SAFE UPDATE HELPER
     setText(id, val) {
         const el = document.getElementById(id);
         if(el) el.innerText = val;
     }
 
     wipeDashboard() {
-        this.setText('statusMsg', "CLEARING CACHE...");
         this.setText('scoreVal', "--");
         this.setText('dayGrade', "--");
         this.setText('sleepVal', "--");
@@ -321,19 +353,13 @@ class CenturionCore {
         this.setText('remVal', "--");
         this.setText('rhrVal', "--");
         this.setText('bioDisplay', "--");
-        this.setText('disp-vo2', "--");
-        this.setText('disp-apob', "--");
-        this.setText('disp-a1c', "--");
-        this.setText('disp-crp', "--");
-        
         document.getElementById('timelineList').innerHTML = "";
         document.getElementById('macroList').innerHTML = "";
         document.getElementById('rainbowTrack').innerHTML = "";
         this.setText('rainbowScore', "0%");
-        
+        this.setText('statusMsg', "SWITCHING ACCOUNTS...");
         document.querySelectorAll('circle.orb-fg').forEach(el => el.style.strokeDashoffset = 145);
-        const ring = document.getElementById('ringFg');
-        if(ring) ring.style.strokeDashoffset = 283;
+        document.querySelectorAll('path.heart-fg').forEach(el => el.style.strokeDashoffset = 100);
     }
 
     updateUI() {
@@ -353,40 +379,38 @@ class CenturionCore {
         const end = d.toISOString().split('T')[0];
         d.setDate(d.getDate() - 8); 
         const start = d.toISOString().split('T')[0];
-        
-        // CACHE BUSTER
         const ts = Date.now();
 
         try {
-            const [sRes, rRes] = await Promise.all([
-                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${start}&end_date=${end}&t=${ts}`)}`, { 
-                    headers: { 'Authorization': `Bearer ${TOKENS[this.user]}` },
-                    cache: 'no-store'
-                }),
-                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${start}&end_date=${end}&t=${ts}`)}`, { 
-                    headers: { 'Authorization': `Bearer ${TOKENS[this.user]}` },
-                    cache: 'no-store'
-                })
+            const [sRes, rRes, aRes] = await Promise.all([
+                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${start}&end_date=${end}&t=${ts}`)}`, { headers: { 'Authorization': `Bearer ${TOKENS[this.user]}` }, cache: 'no-store' }),
+                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${start}&end_date=${end}&t=${ts}`)}`, { headers: { 'Authorization': `Bearer ${TOKENS[this.user]}` }, cache: 'no-store' }),
+                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${start}&end_date=${end}&t=${ts}`)}`, { headers: { 'Authorization': `Bearer ${TOKENS[this.user]}` }, cache: 'no-store' })
             ]);
 
-            if(!sRes.ok || !rRes.ok) throw new Error(`${sRes.status} / ${rRes.status}`);
-            if(this.user !== fetchUser) return; // Prevent race
+            if(!sRes.ok || !rRes.ok) throw new Error("API Error");
+            if(this.user !== fetchUser) return;
 
             const sJson = await sRes.json();
             const rJson = await rRes.json();
+            const aJson = await aRes.json(); // Activity Data
 
             let rawHist = [];
             if(sJson.data) {
                 rawHist = sJson.data.map(session => {
                     const day = session.day;
                     const readiness = rJson.data ? rJson.data.find(r => r.day === day) : null;
+                    const activity = aJson.data ? aJson.data.find(a => a.day === day) : null;
                     return {
                         date: day,
                         score: readiness ? readiness.score : 0,
                         totalSec: session.total_sleep_duration,
                         deepSec: session.deep_sleep_duration,
                         remSec: session.rem_sleep_duration,
-                        rhr: readiness && readiness.contributors ? readiness.contributors.resting_heart_rate : '-'
+                        rhr: readiness && readiness.contributors ? readiness.contributors.resting_heart_rate : '-',
+                        cal: activity ? activity.active_calories : 0,
+                        high: activity ? (activity.high_activity_time || 0) / 60 : 0,
+                        med: activity ? (activity.medium_activity_time || 0) / 60 : 0
                     };
                 }).sort((a, b) => b.date.localeCompare(a.date)); 
             }
@@ -434,12 +458,31 @@ class CenturionCore {
         this.setText('remVal', Math.round(data.remSec / 60) + "m");
         this.setText('rhrVal', data.rhr);
         
-        const rColor = scoreVal >= 80 ? 'var(--acid)' : scoreVal >= 60 ? 'var(--gold)' : 'var(--alert)';
-        const tb = document.querySelector('.tactical-box');
-        if(tb) tb.style.borderLeftColor = rColor;
+        // Cardio Heart Vals
+        const goals = USERS[this.user].goals;
+        const z2Min = Math.round(data.med);
+        const z5Min = Math.round(data.high);
+        const cal = data.cal;
         
-        const tl = document.querySelector('.tac-label');
-        if(tl) tl.style.color = rColor;
+        this.setText('z2Val', z2Min);
+        this.setText('z5Val', z5Min);
+        this.setText('calVal', cal);
+
+        // Heart Progress (0 to 100 dashoffset)
+        const updateHeart = (id, val, goal) => {
+            const el = document.getElementById(id);
+            if(el) {
+                const pct = Math.min(val / goal, 1);
+                el.style.strokeDashoffset = 100 - (pct * 100);
+            }
+        };
+        updateHeart('z2Heart', z2Min, goals.z2);
+        updateHeart('z5Heart', z5Min, goals.z5);
+        updateHeart('calHeart', cal, goals.cal);
+
+        const rColor = scoreVal >= 80 ? 'var(--acid)' : scoreVal >= 60 ? 'var(--gold)' : 'var(--alert)';
+        document.querySelector('.tactical-box').style.borderLeftColor = rColor;
+        document.querySelector('.tac-label').style.color = rColor;
         
         let statusMsg = "MAINTAIN";
         if(scoreVal >= 85) statusMsg = "PEAK READINESS";
@@ -453,6 +496,12 @@ class CenturionCore {
         
         const so = document.getElementById('sleepOrb');
         if(so) so.style.strokeDashoffset = 145 - (Math.min((data.totalSec/3600), 9) / 9) * 145;
+        
+        const do_ = document.getElementById('deepOrb');
+        if(do_) do_.style.strokeDashoffset = 145 - (Math.min((data.deepSec/3600), 2) / 2) * 145;
+        
+        const ro = document.getElementById('remOrb');
+        if(ro) ro.style.strokeDashoffset = 145 - (Math.min((data.remSec/3600), 2) / 2) * 145;
 
         this.renderComplex(data.date);
         this.renderBio();
@@ -602,10 +651,7 @@ class CenturionCore {
     }
 
     renderBio() {
-        this.setText('disp-vo2', this.bios.vo2 || '--');
-        this.setText('disp-apob', this.bios.apob || '--');
-        this.setText('disp-a1c', this.bios.a1c || '--');
-        this.setText('disp-crp', this.bios.crp || '--');
+        // Just used to keep state sync, visually removed from main dashboard
         this.setText('bioDisplay', `VO2: ${this.bios.vo2 || '--'} | APOB: ${this.bios.apob || '--'}`);
     }
 }
