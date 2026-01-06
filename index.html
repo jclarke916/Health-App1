@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v12.1 CONTEXT SWITCH</title>
+    <title>The Centurion | v12.2 ZERO POINT</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -28,10 +28,8 @@
         .sys-log {
             background: #111; border-bottom: 1px solid #333; padding: 8px 16px;
             font-family: var(--font-data); font-size: 0.55rem; color: #888;
-            height: 60px; overflow-y: scroll; white-space: pre-wrap;
+            height: 60px; overflow-y: scroll; white-space: pre-wrap; display:none;
         }
-        .log-ok { color: var(--acid); }
-        .log-err { color: var(--alert); }
 
         /* HEADER */
         .hud-header { padding: 15px 16px; background: rgba(0,0,0,0.95); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--border); }
@@ -63,8 +61,7 @@
         /* SECTIONS */
         .section-header { display: flex; justify-content: space-between; align-items: center; margin: 25px 16px 10px; }
         .section-label { font-size: 0.55rem; font-weight: 900; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
-        .tooltip-icon { color: var(--cyan); font-size: 0.6rem; cursor: help; border: 1px solid #333; padding: 2px 6px; border-radius: 4px; }
-
+        
         /* GRIDS */
         .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 10px; }
         .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 10px; }
@@ -77,7 +74,6 @@
         .orb-val-box { position: absolute; text-align: center; }
         .orb-val { font-family: var(--font-data); font-size: 0.7rem; font-weight: 700; color: #fff; }
         .orb-label { font-size: 0.45rem; font-weight: 700; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-top: 4px; }
-        .orb-sub { font-size: 0.4rem; color: #555; margin-top: 2px; }
 
         /* RAINBOW BAR */
         .rainbow-container { padding: 0 16px; margin-bottom: 20px; }
@@ -130,7 +126,7 @@
 
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v12.1</div>
+            <div class="app-name">CENTURION v12.2</div>
             <div style="display:flex; gap:10px;">
                 <button onclick="centurion.openBio()" class="bio-btn">BIO</button>
                 <div class="user-switch">
@@ -147,7 +143,67 @@
         </div>
     </div>
 
-    <div id="dayContent" style="opacity:0; transition:opacity 0.5s;"></div>
+    <div id="dashboard" style="opacity:1; transition:opacity 0.2s;">
+        <div class="hero-section">
+            <div class="grade-box" style="border-color:var(--border)">
+                <div class="grade-val" id="dayGrade">--</div>
+                <div class="grade-label">DAY GRADE</div>
+            </div>
+            <div class="tactical-box">
+                <div class="tac-label" id="userLabel">USER: --</div>
+                <div class="tac-cmd" id="statusMsg">INITIALIZING...</div>
+                <div class="tac-meta" id="bioDisplay">--</div>
+            </div>
+        </div>
+
+        <div class="section-header"><span class="section-label">SLEEP ARCHITECTURE</span></div>
+        <div class="grid-3">
+            <div class="orb-card">
+                <div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle><circle class="orb-fg" id="sleepOrb" cx="25" cy="25" r="20" style="stroke:url(#grad-purple); stroke-dashoffset:145"></circle></svg><div class="orb-val-box"><div class="orb-val" id="sleepVal">--</div></div></div>
+                <div class="orb-label">TOTAL</div>
+            </div>
+            <div class="orb-card">
+                <div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle><circle class="orb-fg" id="deepOrb" cx="25" cy="25" r="20" style="stroke:#007aff; stroke-dashoffset:145"></circle></svg><div class="orb-val-box"><div class="orb-val" id="deepVal">--</div></div></div>
+                <div class="orb-label">DEEP</div>
+            </div>
+            <div class="orb-card">
+                <div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle><circle class="orb-fg" id="remOrb" cx="25" cy="25" r="20" style="stroke:var(--purple); stroke-dashoffset:145"></circle></svg><div class="orb-val-box"><div class="orb-val" id="remVal">--</div></div></div>
+                <div class="orb-label">REM</div>
+            </div>
+        </div>
+
+        <div class="section-header"><span class="section-label">BIOMARKER PANEL</span></div>
+        <div class="bio-grid">
+            <div class="bio-card"><span class="bio-name">VO2 MAX</span><div><span class="bio-val" id="disp-vo2">--</span><span class="bio-status status-ok"></span></div></div>
+            <div class="bio-card"><span class="bio-name">APOB</span><div><span class="bio-val" id="disp-apob">--</span><span class="bio-status status-ok"></span></div></div>
+            <div class="bio-card"><span class="bio-name">HBA1C</span><div><span class="bio-val" id="disp-a1c">--</span><span class="bio-status status-ok"></span></div></div>
+            <div class="bio-card"><span class="bio-name">HS-CRP</span><div><span class="bio-val" id="disp-crp">--</span><span class="bio-status status-ok"></span></div></div>
+        </div>
+
+        <div class="section-header"><span class="section-label">PHYTONUTRIENT DIVERSITY</span></div>
+        <div class="rainbow-container">
+            <div style="display:flex; justify-content:space-between; font-size:0.6rem; color:#fff; font-weight:700;">
+                <span>RAINBOW SCORE</span>
+                <span id="rainbowScore">0%</span>
+            </div>
+            <div class="rainbow-track" id="rainbowTrack"></div>
+            <div class="rainbow-meta">Based on logged meals below</div>
+        </div>
+
+        <div class="section-label" style="margin-left:16px;">NUTRITION PROTOCOL</div>
+        <div class="timeline-container" id="timelineList"></div>
+
+        <div class="section-label" style="margin-left:16px;">MACRO TOTALS</div>
+        <div class="grid-4" id="macroList"></div>
+
+        <div class="ai-section">
+            <div class="ai-card">
+                <div style="color:var(--cyan); font-weight:900; font-size:0.7rem; margin-bottom:5px;">GEMINI COACH</div>
+                <div id="aiOutput" style="font-size:0.7rem; line-height:1.5; color:#ddd; min-height:20px; margin-bottom:15px; white-space:pre-line;">Data Loaded. Ready.</div>
+                <button class="ai-btn" onclick="centurion.runAI()">GENERATE COACHING</button>
+            </div>
+        </div>
+    </div>
 
     <div id="bioModal" class="modal">
         <div class="modal-content">
@@ -170,10 +226,10 @@
 
 <script>
 // ==========================================
-// V12.1: CONTEXT SWITCHER
-// - Immediate UI Reset on Switch
-// - Solves "Sticky Data" bug
-// - Includes Failsafe AI (Local Protocol)
+// V12.2: ZERO POINT WIPE
+// - Immediate DOM Wipe on Switch
+// - Explicit "Switching" Status
+// - Local Storage Isolation
 // ==========================================
 
 const TOKENS = { 'jermaine': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'sophia': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
@@ -209,55 +265,79 @@ class CenturionCore {
         this.user = localStorage.getItem('centurion_user') || 'jermaine';
         this.history = []; 
         this.currentIndex = 0; 
-        this.checked = JSON.parse(localStorage.getItem(`c_checked_${this.user}`)) || {};
-        this.bios = JSON.parse(localStorage.getItem(`c_bios_${this.user}`)) || {};
+        this.checked = {}; 
+        this.bios = {}; 
+        
         this.init();
     }
 
     async init() {
+        this.loadLocalData();
         this.updateUI();
         await this.fetchData();
+        this.renderBio();
     }
 
-    log(msg, type='') {
-        const box = document.getElementById('sysLog');
-        if(box) {
-            const line = document.createElement('div');
-            line.className = type;
-            line.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
-            box.prepend(line);
-        }
+    loadLocalData() {
+        this.checked = JSON.parse(localStorage.getItem(`c_checked_${this.user}`)) || {};
+        this.bios = JSON.parse(localStorage.getItem(`c_bios_${this.user}`)) || {};
     }
 
-    // --- CRITICAL FIX: CONTEXT SWITCHING ---
+    // --- THE WIPE SWITCH ---
     switchUser(u) {
         if(u === this.user) return;
         this.user = u;
         localStorage.setItem('centurion_user', u);
         
-        // 1. CLEAR MEMORY
+        // 1. HARD WIPE
+        this.wipeDashboard();
+        
+        // 2. UPDATE BADGES
+        document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
+        document.getElementById(`btn-${this.user}`).classList.add('active');
+        
+        // 3. RELOAD CONTEXT
         this.history = [];
         this.currentIndex = 0;
-        this.checked = JSON.parse(localStorage.getItem(`c_checked_${u}`)) || {};
-        this.bios = JSON.parse(localStorage.getItem(`c_bios_${u}`)) || {};
+        this.loadLocalData();
+        this.renderBio(); // Shows empty bio initially
         
-        // 2. CLEAR UI INSTANTLY
-        this.updateUI();
-        this.render(); // This renders empty state because history is []
-        
-        // 3. START NEW FETCH
+        // 4. START FRESH SYNC
         this.fetchData();
+    }
+
+    wipeDashboard() {
+        document.getElementById('scoreVal').innerText = "--";
+        document.getElementById('dayGrade').innerText = "--";
+        document.getElementById('sleepVal').innerText = "--";
+        document.getElementById('deepVal').innerText = "--";
+        document.getElementById('remVal').innerText = "--";
+        document.getElementById('rhrVal').innerText = "--";
+        document.getElementById('bioDisplay').innerText = "--";
+        document.getElementById('disp-vo2').innerText = "--";
+        document.getElementById('disp-apob').innerText = "--";
+        document.getElementById('disp-a1c').innerText = "--";
+        document.getElementById('disp-crp').innerText = "--";
+        document.getElementById('timelineList').innerHTML = "";
+        document.getElementById('macroList').innerHTML = "";
+        document.getElementById('rainbowTrack').innerHTML = "";
+        document.getElementById('rainbowScore').innerText = "0%";
+        document.getElementById('statusMsg').innerText = "SWITCHING ACCOUNTS...";
+        
+        // Reset Orbs
+        document.querySelectorAll('circle.orb-fg').forEach(el => el.style.strokeDashoffset = 145);
+        document.getElementById('ringFg').style.strokeDashoffset = 283;
     }
 
     updateUI() {
         document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
         document.getElementById(`btn-${this.user}`).classList.add('active');
+        document.getElementById('userLabel').innerText = `USER: ${USERS[this.user].name.toUpperCase()}`;
     }
 
     async fetchData() {
-        const fetchUser = this.user; // Track who we started fetching for
+        const currentUserAtStart = this.user; // Snapshot
         document.getElementById('ouraBar').innerHTML = "💍 SYNCING...";
-        this.log(`Syncing ${fetchUser}...`);
         
         const d = new Date();
         d.setDate(d.getDate() + 1);
@@ -271,8 +351,8 @@ class CenturionCore {
                 fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${start}&end_date=${end}`)}`, { headers: { 'Authorization': `Bearer ${TOKENS[this.user]}` } })
             ]);
 
-            // RACE CONDITION GUARD: If user switched while fetching, abort.
-            if(this.user !== fetchUser) return;
+            // Prevent race condition overwrites
+            if(this.user !== currentUserAtStart) return;
 
             const sJson = await sRes.json();
             const rJson = await rRes.json();
@@ -301,7 +381,7 @@ class CenturionCore {
                 this.render();
             } else {
                 document.getElementById('ouraBar').innerHTML = "💍 EMPTY";
-                this.render(); 
+                this.renderEmpty(); 
             }
 
         } catch (e) {
@@ -320,107 +400,64 @@ class CenturionCore {
     }
 
     render() {
-        let data = { date: 'NO DATA', score: 0, totalSec: 0, deepSec: 0, remSec: 0, rhr: '-' };
-        if(this.history.length > 0 && this.history[this.currentIndex]) {
-            data = this.history[this.currentIndex];
-        }
+        if(this.history.length === 0) return this.renderEmpty();
 
+        const data = this.history[this.currentIndex];
         document.getElementById('dateDisplay').innerText = data.date;
-        const u = USERS[this.user];
+        
         const h = Math.floor(data.totalSec / 3600);
         const m = Math.round((data.totalSec % 3600) / 60);
         const sleepDisplay = data.totalSec > 0 ? `${h}h ${m}m` : "--";
         const scoreVal = parseInt(data.score) || 0;
-        const rColor = scoreVal >= 80 ? 'var(--acid)' : scoreVal >= 60 ? 'var(--gold)' : 'var(--alert)';
         
-        let statusMsg = "GATHERING DATA...";
-        if(scoreVal > 0) {
-            if(scoreVal >= 85) statusMsg = "PEAK READINESS.";
-            else if(scoreVal >= 70) statusMsg = "MAINTAIN.";
-            else statusMsg = "RECOVERY REQUIRED.";
-        }
+        document.getElementById('scoreVal').innerText = data.score || "-";
+        document.getElementById('sleepVal').innerText = sleepDisplay;
+        document.getElementById('deepVal').innerText = Math.round(data.deepSec / 60) + "m";
+        document.getElementById('remVal').innerText = Math.round(data.remSec / 60) + "m";
+        document.getElementById('rhrVal').innerText = data.rhr;
+        
+        // Colors & Text
+        const rColor = scoreVal >= 80 ? 'var(--acid)' : scoreVal >= 60 ? 'var(--gold)' : 'var(--alert)';
+        document.querySelector('.tactical-box').style.borderLeftColor = rColor;
+        document.querySelector('.tac-label').style.color = rColor;
+        
+        let statusMsg = "MAINTAIN";
+        if(scoreVal >= 85) statusMsg = "PEAK READINESS";
+        else if(scoreVal < 70) statusMsg = "RECOVERY REQUIRED";
+        document.getElementById('statusMsg').innerText = statusMsg;
 
-        const html = `
-        <div class="hero-section">
-            <div class="grade-box" style="border-color:${this.getGradeColor(scoreVal, h)}">
-                <div class="grade-val" style="color:${this.getGradeColor(scoreVal, h)}">${this.getGrade(scoreVal, h)}</div>
-                <div class="grade-label">DAY GRADE</div>
-            </div>
-            <div class="tactical-box" style="border-left-color:${rColor}">
-                <div class="tac-label" style="color:${rColor}">USER: ${u.name.toUpperCase()}</div>
-                <div class="tac-cmd">${statusMsg}</div>
-                <div class="tac-meta">RHR: ${data.rhr} | VO2: ${this.bios.vo2 || '--'}</div>
-            </div>
-        </div>
+        // Grade
+        this.renderGrade(scoreVal, h);
 
-        <div class="section-header"><span class="section-label">SLEEP ARCHITECTURE</span></div>
-        <div class="grid-3">
-            <div class="orb-card">
-                <div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle><circle class="orb-fg" cx="25" cy="25" r="20" style="stroke:url(#grad-purple); stroke-dashoffset:${145 - (Math.min((data.totalSec/3600), 9) / 9) * 145}"></circle></svg><div class="orb-val-box"><div class="orb-val">${sleepDisplay}</div></div></div>
-                <div class="orb-label">TOTAL</div>
-            </div>
-            <div class="orb-card">
-                <div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle><circle class="orb-fg" cx="25" cy="25" r="20" style="stroke:#007aff; stroke-dashoffset:${145 - (Math.min((data.deepSec/3600), 2) / 2) * 145}"></circle></svg><div class="orb-val-box"><div class="orb-val">${Math.round(data.deepSec/60)}m</div></div></div>
-                <div class="orb-label">DEEP</div>
-            </div>
-            <div class="orb-card">
-                <div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle><circle class="orb-fg" cx="25" cy="25" r="20" style="stroke:var(--purple); stroke-dashoffset:${145 - (Math.min((data.remSec/3600), 2) / 2) * 145}"></circle></svg><div class="orb-val-box"><div class="orb-val">${Math.round(data.remSec/60)}m</div></div></div>
-                <div class="orb-label">REM</div>
-            </div>
-        </div>
+        // Orbs Animation
+        const ringOff = 283 - (Math.min(scoreVal, 100) / 100) * 283;
+        document.getElementById('ringFg').style.strokeDashoffset = ringOff;
+        document.getElementById('sleepOrb').style.strokeDashoffset = 145 - (Math.min((data.totalSec/3600), 9) / 9) * 145;
+        document.getElementById('deepOrb').style.strokeDashoffset = 145 - (Math.min((data.deepSec/3600), 2) / 2) * 145;
+        document.getElementById('remOrb').style.strokeDashoffset = 145 - (Math.min((data.remSec/3600), 2) / 2) * 145;
 
-        <div class="section-header"><span class="section-label">BIOMARKER PANEL</span></div>
-        <div class="bio-grid">
-            <div class="bio-card"><span class="bio-name">VO2 MAX</span><div><span class="bio-val">${this.bios.vo2 || '--'}</span><span class="bio-status status-ok"></span></div></div>
-            <div class="bio-card"><span class="bio-name">APOB</span><div><span class="bio-val">${this.bios.apob || '--'}</span><span class="bio-status status-ok"></span></div></div>
-            <div class="bio-card"><span class="bio-name">HBA1C</span><div><span class="bio-val">${this.bios.a1c || '--'}</span><span class="bio-status status-ok"></span></div></div>
-            <div class="bio-card"><span class="bio-name">HS-CRP</span><div><span class="bio-val">${this.bios.crp || '--'}</span><span class="bio-status status-ok"></span></div></div>
-        </div>
-
-        <div class="section-header"><span class="section-label">PHYTONUTRIENT DIVERSITY</span></div>
-        <div class="rainbow-container">
-            <div style="display:flex; justify-content:space-between; font-size:0.6rem; color:#fff; font-weight:700;">
-                <span>RAINBOW SCORE</span>
-                <span id="rainbowScore">0%</span>
-            </div>
-            <div class="rainbow-track" id="rainbowTrack"></div>
-            <div class="rainbow-meta">Based on logged meals below</div>
-        </div>
-
-        <div class="section-label" style="margin-left:16px;">NUTRITION PROTOCOL</div>
-        <div class="timeline-container" id="timelineList"></div>
-
-        <div class="section-label" style="margin-left:16px;">MACRO TOTALS</div>
-        <div class="grid-4" id="macroList"></div>
-
-        <div class="ai-section">
-            <div class="ai-card">
-                <div style="color:var(--cyan); font-weight:900; font-size:0.7rem; margin-bottom:5px;">GEMINI COACH</div>
-                <div id="aiOutput" style="font-size:0.7rem; line-height:1.5; color:#ddd; min-height:20px; margin-bottom:15px; white-space:pre-line;">Data Loaded. Ready.</div>
-                <button class="ai-btn" onclick="centurion.runAI()">GENERATE COACHING</button>
-            </div>
-        </div>
-        `;
-
-        const container = document.getElementById('dayContent');
-        container.innerHTML = html;
-        container.style.opacity = '1';
-
-        if(data.date !== 'NO DATA') this.renderComplex(data.date);
+        // Complex Renders
+        this.renderComplex(data.date);
+        this.renderBio();
     }
 
-    getGrade(score, sleepHrs) {
-        if (score >= 85 && sleepHrs >= 7) return 'S';
-        if (score >= 80 && sleepHrs >= 6.5) return 'A';
-        if (score >= 70) return 'B';
-        return 'C';
+    renderEmpty() {
+        document.getElementById('dateDisplay').innerText = "NO DATA";
+        document.getElementById('statusMsg').innerText = "SYNC REQUIRED";
+        this.wipeDashboard();
+        this.renderBio(); // Still show bio if available
     }
 
-    getGradeColor(score, sleepHrs) {
-        if (score >= 85 && sleepHrs >= 7) return 'var(--acid)';
-        if (score >= 80 && sleepHrs >= 6.5) return 'var(--cyan)';
-        if (score >= 70) return 'var(--gold)';
-        return 'var(--alert)';
+    renderGrade(score, sleepHrs) {
+        let grade = 'C';
+        let color = 'var(--alert)';
+        if (score >= 85 && sleepHrs >= 7) { grade = 'S'; color = 'var(--acid)'; }
+        else if (score >= 80 && sleepHrs >= 6.5) { grade = 'A'; color = 'var(--cyan)'; }
+        else if (score >= 70) { grade = 'B'; color = 'var(--gold)'; }
+        
+        document.getElementById('dayGrade').innerText = grade;
+        document.getElementById('dayGrade').style.color = color;
+        document.querySelector('.grade-box').style.borderColor = color;
     }
 
     renderComplex(dateKey) {
@@ -489,46 +526,35 @@ class CenturionCore {
         this.renderComplex(dateKey);
     }
 
-    // --- FAILSAFE AI ENGINE ---
     async runAI() {
         if(this.history.length === 0) return;
         const data = this.history[this.currentIndex];
         const ui = document.getElementById('aiOutput');
         
-        const models = ['gemini-1.5-flash-8b', 'gemini-2.0-flash-exp', 'gemini-1.5-flash', 'gemini-2.5-flash'];
+        const models = ['gemini-1.5-flash-8b', 'gemini-2.0-flash-exp', 'gemini-1.5-flash', 'gemini-2.5-flash', 'gemini-pro'];
         const prompt = `Longevity coach analysis for ${USERS[this.user].name}. Stats: Sleep ${data.totalSec/3600}h, Deep ${Math.round(data.deepSec/60)}m, Score ${data.score}. Give 1 specific tough love tip.`;
 
         let success = false;
-
         for (let m of models) {
             ui.innerHTML = `<span style="color:#888">Connecting to ${m}...</span>`;
             try {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${API_KEY}`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
-                
                 if (res.ok) {
                     const json = await res.json();
                     if(json.candidates) {
                         ui.innerHTML = `<span style="color:var(--acid)">[${m}]</span> ${json.candidates[0].content.parts[0].text}`;
-                        success = true;
-                        break; // Stop loop, we found a winner
+                        success = true; break;
                     }
                 }
-            } catch(e) { console.log(e); }
+            } catch(e) {}
         }
 
-        // FAILSAFE: If ALL models failed, generate LOCAL advice
         if (!success) {
-            this.log("AI Failed. Engaging Local Protocol.", 'log-err');
-            let advice = "";
-            if(data.score >= 80) advice = "System Optimal. Push zone 5 intensity today. Your recovery supports high output.";
-            else if(data.score >= 70) advice = "Systems Nominal. Maintain baseline. Focus on hitting protein goals.";
-            else advice = "System Warning. Deep recovery needed. No heavy lifting. Prioritize 8h sleep tonight.";
-            
-            ui.innerHTML = `<span style="color:var(--cyan)">[CENTURION PRIME]</span> ${advice}`;
+            let advice = data.score >= 80 ? "Go for a PR." : "Prioritize sleep.";
+            ui.innerHTML = `<span style="color:var(--cyan)">[LOCAL]</span> ${advice}`;
         }
     }
 
@@ -550,7 +576,16 @@ class CenturionCore {
         };
         localStorage.setItem(`c_bios_${this.user}`, JSON.stringify(this.bios));
         this.closeBio();
-        this.render();
+        this.renderBio();
+    }
+
+    renderBio() {
+        const update = (id, val) => document.getElementById(`disp-${id}`).innerText = val || '--';
+        update('vo2', this.bios.vo2);
+        update('apob', this.bios.apob);
+        update('a1c', this.bios.a1c);
+        update('crp', this.bios.crp);
+        document.getElementById('bioDisplay').innerText = `VO2: ${this.bios.vo2 || '--'} | APOB: ${this.bios.apob || '--'}`;
     }
 }
 
