@@ -735,37 +735,40 @@ class CenturionCore {
         card.classList.toggle('expanded');
     }
 
-    async runAI() {
-        if(this.history.length === 0) return;
-        const data = this.history[this.currentIndex];
-        const ui = document.getElementById('aiOutput');
-        
-        const models = ['gemini-1.5-flash-8b', 'gemini-2.0-flash-exp', 'gemini-1.5-flash', 'gemini-2.5-flash', 'gemini-pro'];
-        const safePrompt = `You are a longevity performance coach, not a doctor. Focus on habits, data correlation, and optimization protocols. Do not provide medical diagnoses. User: ${USERS[this.user].name}. Stats: Sleep ${data.totalSec/3600}h, Score ${data.score}. Give 1 specific tough love habit tip.`;
+ async runAI() {
+    if (this.history.length === 0) return;
+    const data = this.history[this.currentIndex];
+    const ui = document.getElementById('aiOutput');
 
-        let success = false;
-        for (let m of models) {
-            if(ui) ui.innerHTML = `<span style="color:#888">Connecting to ${m}...</span>`;
-            try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${API_KEY}`, {
-                    method: 'POST', headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ contents: [{ parts: [{ text: safePrompt }] }] })
-                });
-                if (res.ok) {
-                    const json = await res.json();
-                    if(json.candidates) {
-                        if(ui) ui.innerHTML = `<span style="color:var(--acid)">[${m}]</span> ${json.candidates[0].content.parts[0].text}`;
-                        success = true; break;
-                    }
-                }
-            } catch(e) {}
+    const MODEL = 'gemini-2.5-flash';
+    const safePrompt = `You are a longevity performance coach, not a doctor...`;
+
+    try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ contents: [{ parts: [{ text: safePrompt }] }] })
+        });
+
+        if (res.status === 429) {
+            if (ui) ui.innerHTML = `<span style="color:var(--cyan)">[CENTURION PRIME]</span> Throttled. Retrying shortly.`;
+            return; // do NOT try other models
         }
 
-        if (!success && ui) {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const json = await res.json();
+        if (json.candidates && ui) {
+            ui.innerHTML = `<span style="color:var(--acid)">[${MODEL}]</span> ${json.candidates[0].content.parts[0].text}`;
+        }
+
+    } catch (e) {
+        if (ui) {
             let advice = data.score >= 80 ? "System Optimal. Go for a PR." : "Prioritize sleep tonight.";
             ui.innerHTML = `<span style="color:var(--cyan)">[CENTURION PRIME]</span> ${advice}`;
         }
     }
+}
 
     openBio() { 
         document.getElementById('in-pbf').value = this.bios.pbf || '';
