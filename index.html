@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v13.17 SMART CALORIES</title>
+    <title>The Centurion | v13.19 OPTIMIZED RECOVERY</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -38,13 +38,17 @@
         .nav-btn { background: transparent; border: 1px solid var(--border); color: var(--gold); padding: 8px 20px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: 900; }
         .date-display { min-width: 120px; text-align: center; letter-spacing: 1px; color: var(--acid); }
 
-        /* HERO & L-SCORE */
-        .hero-section { padding: 20px 16px; display: flex; align-items: center; justify-content: space-between; }
-        .grade-box { position: relative; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; border: 4px solid var(--border); border-radius: 50%; transition: all 0.5s ease; background: #050505; }
-        .grade-val { font-family: var(--font-data); font-size: 2.2rem; font-weight: 900; color: #fff; transition: color 0.5s ease; letter-spacing: -2px; }
-        .grade-label { position: absolute; bottom: -22px; font-size: 0.5rem; font-weight: 900; color: var(--muted); letter-spacing: 1px; }
+        /* HERO & SCORES */
+        .hero-section { padding: 20px 16px; display: flex; align-items: center; justify-content: space-between; gap: 15px; }
         
-        .tactical-box { flex: 1; margin-left: 20px; border-left: 3px solid var(--acid); padding: 10px; background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, transparent 100%); }
+        .score-card { flex: 1; height: 90px; border: 1px solid var(--border); border-radius: 12px; background: var(--panel); display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+        .score-val { font-family: var(--font-data); font-size: 2.0rem; font-weight: 900; color: #fff; line-height: 1; }
+        .score-label { font-size: 0.5rem; font-weight: 900; color: var(--muted); letter-spacing: 1px; margin-top: 5px; text-transform: uppercase; }
+        
+        .l-score-box { border-color: var(--cyan); box-shadow: 0 0 10px rgba(0,240,255,0.1); }
+        .l-score-val { color: var(--cyan); }
+
+        .tactical-box { flex: 1.5; border-left: 3px solid var(--acid); padding: 10px; background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, transparent 100%); }
         .tac-label { font-size: 0.55rem; color: var(--acid); font-weight: 900; letter-spacing: 1px; margin-bottom: 4px; text-transform: uppercase; }
         .tac-cmd { font-size: 0.8rem; font-weight: 700; color: #fff; line-height: 1.3; }
         .tac-meta { font-family: var(--font-data); font-size: 0.55rem; color: var(--muted); margin-top: 4px; }
@@ -79,21 +83,20 @@
         .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
         .cal-status { font-family: var(--font-data); font-size: 0.65rem; font-weight: 700; color: var(--cyan); }
         .cal-track { 
-            position: relative; height: 14px; background: #1a1a1a; border-radius: 7px; overflow: hidden; 
-            border: 1px solid #333;
+            position: relative; height: 14px; background: #1a1a1a; border-radius: 2px; overflow: hidden; 
+            border: 1px solid #333; margin-bottom: 4px;
         }
-        /* The Maintenance Marker (TDEE) */
         .cal-target-line { 
-            position: absolute; left: 71.4%; /* 100% / 1.4 scale = 71.4% */
+            position: absolute; left: 71.4%; 
             top: 0; bottom: 0; width: 2px; background: #fff; z-index: 10; 
-            box-shadow: 0 0 8px rgba(255,255,255,0.8);
+            box-shadow: 0 0 5px rgba(255,255,255,0.8);
         }
         .cal-fill { 
             position: absolute; left: 0; top: 0; height: 100%; 
-            background: var(--cyan); transition: width 0.5s ease, background-color 0.3s ease; 
+            background: var(--cyan); transition: width 0.5s ease; 
             border-right: 2px solid rgba(0,0,0,0.5);
         }
-        .cal-labels { display: flex; justify-content: space-between; font-size: 0.5rem; color: #555; margin-top: 4px; text-transform: uppercase; font-weight: 700; padding: 0 2px; }
+        .cal-scale { display: flex; justify-content: space-between; font-family: var(--font-data); font-size: 0.5rem; color: #444; padding: 0 2px; }
 
         /* RAINBOW */
         .rainbow-container { padding: 0 16px; margin-bottom: 20px; }
@@ -148,7 +151,7 @@
 
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v13.17</div>
+            <div class="app-name">CENTURION v13.19</div>
             <div style="display:flex; gap:10px;">
                 <button onclick="centurion.openBio()" class="bio-btn">BIO</button>
                 <div class="user-switch">
@@ -167,9 +170,13 @@
 
     <div id="dashboard" style="opacity:1; transition:opacity 0.2s;">
         <div class="hero-section">
-            <div class="grade-box" style="border-color:var(--border)">
-                <div class="grade-val" id="dayGrade">--</div>
-                <div class="grade-label">L-SCORE</div>
+            <div class="score-card l-score-box">
+                <div class="score-val l-score-val" id="lScoreVal">--</div>
+                <div class="score-label">L-SCORE</div>
+            </div>
+            <div class="score-card">
+                <div class="score-val" id="dayGrade">--</div>
+                <div class="score-label">DAILY</div>
             </div>
             <div class="tactical-box">
                 <div class="tac-label" id="userLabel">USER: --</div>
@@ -180,26 +187,17 @@
 
         <div class="section-header">
             <span class="section-label">SLEEP ARCHITECTURE</span>
-            <span class="tooltip-icon" onclick="alert('Targets: 8h+ Total, 90m Deep, 90m REM.\n\nMechanisms:\n- Deep: HGH Release, Glymphatic Clearance\n- REM: Emotional Processing, Memory Consolidation')">?</span>
+            <span class="tooltip-icon" onclick="alert('Targets: 8h+ Total, 90m Deep, 90m REM.')">?</span>
         </div>
         <div class="grid-3">
-            <div class="orb-card">
-                <div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle><circle class="orb-fg" id="sleepOrb" cx="25" cy="25" r="20" style="stroke:var(--purple); stroke-dashoffset:100" pathLength="100"></circle></svg><div class="orb-val-box"><div class="orb-val" id="sleepVal">--</div></div></div>
-                <div class="orb-label">TOTAL (8h)</div>
-            </div>
-            <div class="orb-card">
-                <div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle><circle class="orb-fg" id="deepOrb" cx="25" cy="25" r="20" style="stroke:#007aff; stroke-dashoffset:100" pathLength="100"></circle></svg><div class="orb-val-box"><div class="orb-val" id="deepVal">--</div></div></div>
-                <div class="orb-label">DEEP (1.5h)</div>
-            </div>
-            <div class="orb-card">
-                <div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle><circle class="orb-fg" id="remOrb" cx="25" cy="25" r="20" style="stroke:var(--purple); stroke-dashoffset:100" pathLength="100"></circle></svg><div class="orb-val-box"><div class="orb-val" id="remVal">--</div></div></div>
-                <div class="orb-label">REM (1.5h)</div>
-            </div>
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle><circle class="orb-fg" id="sleepOrb" cx="25" cy="25" r="20" style="stroke:var(--purple); stroke-dashoffset:100" pathLength="100"></circle></svg><div class="orb-val-box"><div class="orb-val" id="sleepVal">--</div></div></div><div class="orb-label">TOTAL (8h)</div></div>
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle><circle class="orb-fg" id="deepOrb" cx="25" cy="25" r="20" style="stroke:#007aff; stroke-dashoffset:100" pathLength="100"></circle></svg><div class="orb-val-box"><div class="orb-val" id="deepVal">--</div></div></div><div class="orb-label">DEEP (1.5h)</div></div>
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle><circle class="orb-fg" id="remOrb" cx="25" cy="25" r="20" style="stroke:var(--purple); stroke-dashoffset:100" pathLength="100"></circle></svg><div class="orb-val-box"><div class="orb-val" id="remVal">--</div></div></div><div class="orb-label">REM (1.5h)</div></div>
         </div>
 
         <div class="section-header">
             <span class="section-label">CARDIO STATUS</span>
-            <span class="tooltip-icon" onclick="alert('Targets:\n- RHR: <50 (Efficiency)\n- Zone 2: Mitochondrial Biogenesis\n- Zone 5: VO2 Max Expansion')">?</span>
+            <span class="tooltip-icon" onclick="alert('Targets:\n- RHR: <50\n- Zone 2: Metabolic Base\n- Zone 5: VO2 Max')">?</span>
         </div>
         <div class="grid-4">
             <div class="orb-card"><div class="orb-container"><svg class="heart-svg beating" viewBox="0 0 24 24"><path class="heart-bg" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" style="stroke:var(--alert); fill:rgba(255, 69, 58, 0.2);"></path></svg><div class="orb-val-box"><div class="orb-val" id="rhrVal">--</div></div></div><div class="orb-label">RHR</div></div>
@@ -210,7 +208,7 @@
 
         <div class="section-header">
             <span class="section-label">PHYTONUTRIENT DIVERSITY</span>
-            <span class="tooltip-icon" onclick="alert('Eat the Rainbow:\nDifferent colors indicate different polyphenols (e.g. Anthocyanins in purple) which activate Sirtuins and DNA repair pathways.')">?</span>
+            <span class="tooltip-icon" onclick="alert('Eat the Rainbow.')">?</span>
         </div>
         
         <div class="cal-container">
@@ -222,18 +220,14 @@
                 <div class="cal-target-line"></div>
                 <div class="cal-fill" id="calBar" style="width:0%"></div>
             </div>
-            <div class="cal-labels">
-                <span>FASTING</span>
-                <span>MAINTENANCE</span>
-                <span>GROWTH</span>
+            <div class="cal-scale">
+                <span>0</span>
+                <span id="calHalf">1400</span>
+                <span id="calTarget">2800</span>
             </div>
         </div>
 
         <div class="rainbow-container">
-            <div style="display:flex; justify-content:space-between; font-size:0.6rem; color:#fff; font-weight:700;">
-                <span>RAINBOW SCORE</span>
-                <span id="rainbowScore">0%</span>
-            </div>
             <div class="rainbow-track" id="rainbowTrack"></div>
             <div class="rainbow-meta">Based on logged meals below</div>
         </div>
@@ -259,11 +253,11 @@
                 <span style="color:var(--acid);font-weight:900;">EDIT BIOMARKERS</span>
                 <span onclick="centurion.closeBio()" style="color:#666;cursor:pointer;">✕</span>
             </div>
-            <div class="input-group"><label>VO2 Max</label><input id="in-vo2" type="number"></div>
-            <div class="input-group"><label>ApoB</label><input id="in-apob" type="number"></div>
-            <div class="input-group"><label>HbA1c</label><input id="in-a1c" type="number"></div>
-            <div class="input-group"><label>hs-CRP</label><input id="in-crp" type="number"></div>
-            <button class="save-btn" onclick="centurion.saveBio()">SAVE & UPDATE</button>
+            <div class="input-group"><label>VO2 Max (mL/kg/min)</label><input id="in-vo2" type="number"></div>
+            <div class="input-group"><label>Grip / Hang (sec)</label><input id="in-hang" type="number"></div>
+            <div class="input-group"><label>Wall Sit (sec)</label><input id="in-wall" type="number"></div>
+            <div class="input-group"><label>ApoB (mg/dL)</label><input id="in-apob" type="number"></div>
+            <button class="save-btn" onclick="centurion.saveBio()">SAVE & CALCULATE L-SCORE</button>
         </div>
     </div>
 
@@ -274,10 +268,10 @@
 
 <script>
 // ==========================================
-// V13.17: SMART CALORIE GAUGE
-// - New Visual Bar with "White Line" Target
-// - Color logic: Blue (Deficit) -> Green (Maint) -> Orange (Surplus)
-// - Explicit Status Text
+// V13.19: OPTIMIZED RECOVERY
+// - "Fire & Ice" on Menu A (Alternating Days)
+// - Bio-Weighted L-Score
+// - Calorie Bar with Numbers
 // ==========================================
 
 const TOKENS = { 'jermaine': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'sophia': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
@@ -294,7 +288,8 @@ const MENUS = {
             { id:'hyd', time:'7 AM', title:'Hydration', desc:'Sea Moss (2 tbsp) + Chia', why:'THYROID & FIBER', colors:[], macros:{p:2,f:5,o:1000,c:50}, micros:'92 Minerals' },
             { id:'juice', time:'8 AM', title:'Juice', desc:'Beet Vitality + Turmeric', why:'NITRIC OXIDE', colors:['red','purple','yellow'], macros:{p:2,o:50,poly:250,c:120}, micros:'Nitrates' },
             { id:'train', time:'9 AM', title:'Training', desc:'Strength / Zone 2', why:'MITOCHONDRIAL', colors:[], macros:{p:0,c:0}, micros:'Cortisol Clearance' },
-            { id:'breakfast', time:'10 AM', title:'Centurion Bowl', desc:'Salmon, Eggs, Spinach, Avo', why:'OMEGA-3 & SATIETY', colors:['orange','green'], macros:{p:65,o:2000,f:12,poly:100,c:800}, micros:'EPA/DHA' },
+            { id:'recovery', time:'10 AM', title:'Fire & Ice', desc:'Sauna (20m) / Plunge (3m)', why:'HEAT SHOCK PROTEINS', colors:[], macros:{p:0,c:0}, micros:'Hormetic Stress' },
+            { id:'breakfast', time:'10:30 AM', title:'Centurion Bowl', desc:'Salmon, Eggs, Spinach, Avo', why:'OMEGA-3 & SATIETY', colors:['orange','green'], macros:{p:65,o:2000,f:12,poly:100,c:800}, micros:'EPA/DHA' },
             { id:'lunch', time:'1 PM', title:'Lunch', desc:'Sardine Quinoa + Black Beans', why:'CALCIUM & FIBER', colors:['green','white','purple'], macros:{p:50,f:18,poly:150,o:500,c:750}, micros:'Calcium' },
             { id:'snack', time:'4 PM', title:'Gut Snack', desc:'Kombucha + Greek Yogurt', why:'PROBIOTICS & PROTEIN', colors:['white'], macros:{p:12,f:2,o:100,c:250}, micros:'Probiotics' },
             { id:'dinner', time:'6 PM', title:'Dinner', desc:'Wild Salmon & Sprouts', why:'RECOVERY', colors:['orange','green'], macros:{p:50,f:12,poly:50,o:500,c:800}, micros:'Vitamin D' }
@@ -314,14 +309,15 @@ const MENUS = {
             { id:'hyd', time:'7 AM', title:'Hydration', desc:'Sea Moss Gel + Lemon', why:'THYROID & MINERALS', colors:['yellow'], macros:{p:0,f:0,c:20}, micros:'92 Minerals' },
             { id:'juice', time:'8 AM', title:'Juice', desc:'Orange Immune', why:'IMMUNE', colors:['orange'], macros:{p:2,poly:200,c:100}, micros:'Bioflavonoids' },
             { id:'breakfast', time:'9 AM', title:'Omega Scramble', desc:'Eggs, Avo, Blueberries, Salmon', why:'COGNITIVE', colors:['green','yellow','purple'], macros:{p:35,f:8,o:1000,poly:100,c:550}, micros:'Choline' },
-            { id:'lunch', time:'1 PM', title:'Lunch', desc:'Ceviche + Lentils', why:'LEAN PROTEIN', colors:['white','green'], macros:{p:45,f:12,o:500,c:600}, micros:'Selenium' },
+            { id:'recovery', time:'10 AM', title:'Fire & Ice', desc:'Sauna (20m) / Plunge (3m)', why:'REJUVENATION', colors:[], macros:{p:0,c:0}, micros:'Collagen Synthesis' },
+            { id:'lunch', time:'1 PM', title:'Lunch', desc:'Ceviche + Lentils', why:'LEAN PROTEIN', colors:['white','green','red'], macros:{p:45,f:12,o:500,c:600}, micros:'Selenium' },
             { id:'snack', time:'4 PM', title:'Gut Snack', desc:'Kombucha + Dark Choc', why:'GUT & POLYPHENOLS', colors:['white'], macros:{p:5,f:3,poly:250,c:200}, micros:'Probiotics' },
             { id:'dinner', time:'6 PM', title:'Dinner', desc:'Salmon & Beans', why:'OMEGA-3 & DIGESTION', colors:['red','white'], macros:{p:45,f:12,o:1000,c:700}, micros:'Iodine' }
         ],
         B: [
             { id:'hyd', time:'7 AM', title:'Hydration', desc:'Sea Moss + Chlorophyll', why:'THYROID & DETOX', colors:['green'], macros:{p:0,c:20}, micros:'92 Minerals' },
             { id:'juice', time:'8 AM', title:'Juice', desc:'Pomegranate Glow', why:'SKIN HEALTH', colors:['red'], macros:{p:1,poly:400,c:120}, micros:'Ellagic Acid' },
-            { id:'breakfast', time:'9 AM', title:'Chia Pudding', desc:'Chia, Collagen, Kiwi', why:'HIGH FIBER & SKIN', colors:['white','green','purple'], macros:{p:30,f:14,o:2000,c:500}, micros:'Prebiotics' },
+            { id:'breakfast', time:'9 AM', title:'Chia Pudding', desc:'Chia, Collagen, Kiwi, Berries', why:'HIGH FIBER & SKIN', colors:['white','green','purple'], macros:{p:30,f:14,o:2000,c:500}, micros:'Prebiotics' },
             { id:'lunch', time:'1 PM', title:'Lunch', desc:'Chickpea Salad + Hemp', why:'PLANT PROTEIN', colors:['yellow','green','red'], macros:{p:40,f:15,c:650}, micros:'Folate' },
             { id:'snack', time:'4 PM', title:'Gut Snack', desc:'Kombucha + Almonds', why:'PROBIOTICS & SATIETY', colors:['orange'], macros:{p:10,f:4,o:500,c:200}, micros:'Probiotics' },
             { id:'dinner', time:'6 PM', title:'Dinner', desc:'Scallops & Zucchini', why:'LIGHT RECOVERY', colors:['white','green'], macros:{p:50,f:6,c:700}, micros:'Taurine' }
@@ -360,18 +356,18 @@ class CenturionCore {
     loadLocalData() {
         this.checked = JSON.parse(localStorage.getItem(`c_checked_${this.user}`)) || {};
         this.bios = JSON.parse(localStorage.getItem(`c_bios_${this.user}`)) || {};
+        this.cumulativeLScore = parseFloat(localStorage.getItem(`c_lscore_${this.user}`)) || 80.0;
     }
 
     switchUser(u) {
         if(u === this.user) return;
         this.user = u;
         localStorage.setItem('centurion_user', u);
-        this.cumulativeLScore = parseFloat(localStorage.getItem(`c_lscore_${u}`)) || 80.0;
+        this.loadLocalData(); 
         this.wipeDashboard();
         this.updateUI();
         this.history = [];
         this.currentIndex = 0;
-        this.loadLocalData();
         this.renderBio(); 
         this.fetchData();
     }
@@ -384,6 +380,7 @@ class CenturionCore {
     wipeDashboard() {
         this.setText('scoreVal', "--");
         this.setText('dayGrade', "--");
+        this.setText('lScoreVal', "--");
         this.setText('sleepVal', "--");
         this.setText('deepVal', "--");
         this.setText('remVal', "--");
@@ -405,6 +402,11 @@ class CenturionCore {
         if(btn) btn.classList.add('active');
         const uName = USERS[this.user].name.toUpperCase();
         this.setText('userLabel', `USER: ${uName}`);
+        
+        // Update Calorie Scale Numbers
+        const tdee = USERS[this.user].tdee;
+        this.setText('calHalf', Math.round(tdee * 0.5));
+        this.setText('calTarget', tdee);
     }
 
     async fetchData() {
@@ -549,27 +551,46 @@ class CenturionCore {
     }
 
     renderGrade(dailyPercent) {
-        // Map 0-100% daily adherence to 60-120 Scale
-        const targetScore = 60 + (dailyPercent * 60); 
-        
-        // Rolling Average (Cumulative): Move 10% towards target
-        const newScore = (this.cumulativeLScore * 0.9) + (targetScore * 0.1);
-        
-        this.cumulativeLScore = newScore;
-        localStorage.setItem(`c_lscore_${this.user}`, newScore.toFixed(1));
-        
-        this.setText('dayGrade', newScore.toFixed(1));
-        
-        const dg = document.getElementById('dayGrade');
-        const gb = document.querySelector('.grade-box');
-        
+        // --- DAILY GRADE (Short Term S/A/B/C) ---
+        let dailyGrade = 'C';
         let color = 'var(--alert)';
-        if (newScore >= 100) color = 'var(--cyan)';
-        else if (newScore >= 85) color = 'var(--acid)';
-        else if (newScore >= 75) color = 'var(--gold)';
+        if (dailyPercent >= 0.95) { dailyGrade = 'S'; color = 'var(--cyan)'; }
+        else if (dailyPercent >= 0.85) { dailyGrade = 'A'; color = 'var(--acid)'; }
+        else if (dailyPercent >= 0.70) { dailyGrade = 'B'; color = 'var(--gold)'; }
         
-        if(dg) dg.style.color = color;
-        if(gb) gb.style.borderColor = color;
+        this.setText('dayGrade', dailyGrade);
+        document.getElementById('dayGrade').style.color = color;
+
+        // --- L-SCORE (Long Term Bio-Weighted) ---
+        // 50% Bio Markers, 30% Daily consistency (rolling), 20% Sleep Avg
+        
+        // 1. Calculate Bio Factor (0-60 points)
+        let bioScore = 30; // Base
+        const vo2 = parseFloat(this.bios.vo2) || 35;
+        if(vo2 > 50) bioScore += 10;
+        if(vo2 > 40) bioScore += 5;
+        
+        const hang = parseFloat(this.bios.hang) || 0;
+        if(hang > 90) bioScore += 5;
+        
+        const wall = parseFloat(this.bios.wall) || 0;
+        if(wall > 120) bioScore += 5;
+        
+        // 2. Add Daily Factor (30% of 120 = 36 points max)
+        const dailyPoints = dailyPercent * 36;
+        
+        // 3. Add Sleep Factor (20% of 120 = 24 points max)
+        // Using current day as proxy for avg in this demo
+        const sleepPoints = (this.history[this.currentIndex].totalSec / 28800) * 24;
+        
+        // Rolling Average Smoothing
+        const targetLScore = bioScore + dailyPoints + sleepPoints;
+        const newLScore = (this.cumulativeLScore * 0.95) + (targetLScore * 0.05); // Very slow movement
+        
+        this.cumulativeLScore = newLScore;
+        localStorage.setItem(`c_lscore_${this.user}`, newLScore.toFixed(1));
+        
+        this.setText('lScoreVal', newLScore.toFixed(1));
     }
 
     renderComplex(dateKey) {
@@ -661,10 +682,9 @@ class CenturionCore {
         bar.style.width = pctWidth + "%";
         bar.style.backgroundColor = barColor;
 
-        // Update Grade
-        const data = this.history[this.currentIndex];
-        const sleepScore = Math.min((data.totalSec / 28800), 1) * 30; 
-        const z2Score = Math.min((data.med / goals.z2), 1) * 20;
+        // Recalculate Grades
+        const sleepScore = Math.min((this.history[this.currentIndex].totalSec / 28800), 1) * 30; 
+        const z2Score = Math.min((this.history[this.currentIndex].med / goals.z2), 1) * 20;
         const protScore = Math.min((totals.p / goals.pro), 1) * 20;
         const fibScore = Math.min((totals.f / goals.fib), 1) * 20;
         const rainScore = (colorsHit.size / 6) * 10;
@@ -724,9 +744,9 @@ class CenturionCore {
 
     openBio() { 
         document.getElementById('in-vo2').value = this.bios.vo2 || '';
+        document.getElementById('in-hang').value = this.bios.hang || '';
+        document.getElementById('in-wall').value = this.bios.wall || '';
         document.getElementById('in-apob').value = this.bios.apob || '';
-        document.getElementById('in-a1c').value = this.bios.a1c || '';
-        document.getElementById('in-crp').value = this.bios.crp || '';
         document.getElementById('bioModal').classList.add('active'); 
     }
     closeBio() { document.getElementById('bioModal').classList.remove('active'); }
@@ -734,13 +754,16 @@ class CenturionCore {
     saveBio() {
         this.bios = {
             vo2: document.getElementById('in-vo2').value,
-            apob: document.getElementById('in-apob').value,
-            a1c: document.getElementById('in-a1c').value,
-            crp: document.getElementById('in-crp').value
+            hang: document.getElementById('in-hang').value,
+            wall: document.getElementById('in-wall').value,
+            apob: document.getElementById('in-apob').value
         };
         localStorage.setItem(`c_bios_${this.user}`, JSON.stringify(this.bios));
         this.closeBio();
-        this.renderBio();
+        // Recalculate Score with new Bio Data
+        const data = this.history[this.currentIndex];
+        // Trigger a re-render to update score
+        if(data) this.renderComplex(data.date);
     }
 
     renderBio() {
