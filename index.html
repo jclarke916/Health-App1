@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v11.2 RECOVERY</title>
+    <title>The Centurion | v11.3 AUTONOMOUS</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -24,15 +24,6 @@
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { margin: 0; padding: 0 0 120px 0; background: var(--bg); color: var(--text); font-family: var(--font-ui); min-height: 100vh; background-image: radial-gradient(circle at top right, #111 0%, #000 70%); }
 
-        /* DEBUG LOG (New) */
-        .sys-log {
-            background: #111; border-bottom: 1px solid #333; padding: 8px 16px;
-            font-family: var(--font-data); font-size: 0.55rem; color: #888;
-            height: 80px; overflow-y: scroll; white-space: pre-wrap;
-        }
-        .log-ok { color: var(--acid); }
-        .log-err { color: var(--alert); }
-
         /* HEADER */
         .hud-header { padding: 15px 16px; background: rgba(0,0,0,0.95); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--border); }
         .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
@@ -41,7 +32,7 @@
         .user-switch { display: flex; gap: 4px; background: #222; padding: 2px; border-radius: 20px; }
         .u-badge { padding: 6px 14px; border-radius: 16px; font-size: 0.6rem; font-weight: 700; color: #666; background: transparent; border: none; cursor: pointer; transition: all 0.2s; }
         .u-badge.active { background: var(--text); color: #000; }
-
+        
         /* DATE NAV */
         .date-nav { display: flex; justify-content: center; align-items: center; gap: 20px; font-family: var(--font-data); font-size: 0.8rem; font-weight: 700; color: #fff; padding-top: 10px; border-top: 1px solid #222; margin-top: 10px; }
         .nav-btn { background: transparent; border: 1px solid var(--border); color: var(--gold); padding: 8px 20px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: 900; }
@@ -69,7 +60,12 @@
         .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 10px; }
         
         .orb-card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 10px 5px; display: flex; flex-direction: column; align-items: center; position: relative; }
-        .orb-val { font-family: var(--font-data); font-size: 0.75rem; font-weight: 700; color: #fff; }
+        .orb-container { width: 50px; height: 50px; position: relative; display: flex; align-items: center; justify-content: center; margin-bottom: 5px; }
+        .orb-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+        .orb-bg { fill: none; stroke: #222; stroke-width: 4; }
+        .orb-fg { fill: none; stroke: var(--cyan); stroke-width: 4; stroke-dasharray: 145; stroke-dashoffset: 145; transition: stroke-dashoffset 1s ease; stroke-linecap: round; }
+        .orb-val-box { position: absolute; text-align: center; }
+        .orb-val { font-family: var(--font-data); font-size: 0.7rem; font-weight: 700; color: #fff; }
         .orb-label { font-size: 0.45rem; font-weight: 700; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-top: 4px; }
         .orb-sub { font-size: 0.4rem; color: #555; margin-top: 2px; }
 
@@ -121,11 +117,9 @@
 </head>
 <body>
 
-    <div class="sys-log" id="sysLog">System Initialized. Waiting for sync...</div>
-
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v11.2</div>
+            <div class="app-name">CENTURION v11.3</div>
             <div style="display:flex; gap:10px;">
                 <button onclick="centurion.openBio()" style="background:transparent; border:1px solid #333; color:#666; padding:4px 8px; border-radius:4px; font-size:0.6rem; cursor:pointer;">BIO PANEL</button>
                 <div class="user-switch">
@@ -162,15 +156,15 @@
         </div>
         <div class="grid-3">
             <div class="orb-card">
-                <div class="orb-val" id="sleepVal">--</div>
+                <div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle><circle class="orb-fg" id="sleepOrb" cx="25" cy="25" r="20" style="stroke:url(#grad-purple)"></circle></svg><div class="orb-val-box"><div class="orb-val" id="sleepVal">--</div></div></div>
                 <div class="orb-label">TOTAL</div>
             </div>
             <div class="orb-card">
-                <div class="orb-val" id="deepVal">--</div>
+                <div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle><circle class="orb-fg" id="deepOrb" cx="25" cy="25" r="20" style="stroke:#007aff"></circle></svg><div class="orb-val-box"><div class="orb-val" id="deepVal">--</div></div></div>
                 <div class="orb-label">DEEP</div>
             </div>
             <div class="orb-card">
-                <div class="orb-val" id="remVal">--</div>
+                <div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle><circle class="orb-fg" id="remOrb" cx="25" cy="25" r="20" style="stroke:var(--purple)"></circle></svg><div class="orb-val-box"><div class="orb-val" id="remVal">--</div></div></div>
                 <div class="orb-label">REM</div>
             </div>
         </div>
@@ -249,10 +243,10 @@
 
 <script>
 // ==========================================
-// V11.2: AUTO-RECOVERY
-// - Smart Filtering (Skips empty days)
-// - Sequential Fetching
-// - Visual Debug Log
+// V11.3: AUTONOMOUS ULTIMATE
+// - Auto-Loads latest data (0 index)
+// - Full UI functionality (Rainbows, Grade)
+// - Manual Model Switcher
 // ==========================================
 
 const TOKENS = { 'jermaine': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'sophia': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
@@ -298,19 +292,12 @@ class CenturionCore {
         this.renderBio();
     }
 
-    log(msg, type='') {
-        const box = document.getElementById('sysLog');
-        const line = document.createElement('div');
-        line.className = type;
-        line.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
-        box.prepend(line);
-    }
-
     switchUser(u) {
         if(u === this.user) return;
         this.user = u;
         localStorage.setItem('centurion_user', u);
         
+        // Reset state
         this.history = [];
         this.currentIndex = 0;
         this.checked = JSON.parse(localStorage.getItem(`c_checked_${u}`)) || {};
@@ -327,12 +314,11 @@ class CenturionCore {
         document.getElementById('bioDisplay').innerText = `VO2: ${this.bios.vo2 || '--'}`;
     }
 
-    // --- SMART DATA ENGINE ---
+    // --- DATA ENGINE ---
     async fetchData() {
         document.getElementById('ouraBar').innerHTML = "💍 SYNCING...";
-        this.log("Starting Cloud Sync...");
         
-        // Range: Last 8 days to find something valid
+        // Fetch last 7 days + Tomorrow (Timezone safety)
         const d = new Date();
         d.setDate(d.getDate() + 1);
         const end = d.toISOString().split('T')[0];
@@ -340,19 +326,18 @@ class CenturionCore {
         const start = d.toISOString().split('T')[0];
 
         try {
-            // Sequential Fetch for Safety
-            const sRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${start}&end_date=${end}`)}`, { headers: { 'Authorization': `Bearer ${TOKENS[this.user]}` } });
+            const [sRes, rRes] = await Promise.all([
+                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${start}&end_date=${end}`)}`, { headers: { 'Authorization': `Bearer ${TOKENS[this.user]}` } }),
+                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${start}&end_date=${end}`)}`, { headers: { 'Authorization': `Bearer ${TOKENS[this.user]}` } })
+            ]);
+
             const sJson = await sRes.json();
-            this.log(`Sleep Data: ${sJson.data ? sJson.data.length : 0} records`, 'log-ok');
-
-            const rRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${start}&end_date=${end}`)}`, { headers: { 'Authorization': `Bearer ${TOKENS[this.user]}` } });
             const rJson = await rRes.json();
-            this.log(`Readiness: ${rJson.data ? rJson.data.length : 0} records`, 'log-ok');
 
-            // Merge
-            let rawHist = [];
+            // Merge & Sort
+            this.history = [];
             if(sJson.data) {
-                rawHist = sJson.data.map(session => {
+                this.history = sJson.data.map(session => {
                     const day = session.day;
                     const readiness = rJson.data ? rJson.data.find(r => r.day === day) : null;
                     return {
@@ -366,23 +351,13 @@ class CenturionCore {
                 }).sort((a, b) => b.date.localeCompare(a.date)); // Sort Newest First
             }
 
-            // SMART FILTER: Remove days with 0 score (timezone ghosts)
-            this.history = rawHist.filter(d => d.score > 0 || d.totalSec > 0);
-
-            if(this.history.length > 0) {
-                this.currentIndex = 0; // Auto-select the NEWEST VALID ENTRY
-                this.log(`Auto-Locked to ${this.history[0].date}`, 'log-ok');
-                document.getElementById('ouraBar').innerHTML = "💍 UPDATED";
-                this.render();
-            } else {
-                this.log("No valid data found in range.", 'log-err');
-                document.getElementById('statusMsg').innerText = "NO CLOUD DATA";
-                document.getElementById('ouraBar').innerHTML = "💍 EMPTY";
-            }
+            this.currentIndex = 0; // Auto-select latest
+            document.getElementById('ouraBar').innerHTML = "💍 UPDATED";
+            this.render();
 
         } catch (e) {
-            this.log("Sync Error: " + e.message, 'log-err');
             document.getElementById('ouraBar').innerHTML = "💍 ERROR";
+            console.error(e);
         }
     }
 
@@ -424,10 +399,14 @@ class CenturionCore {
         const ringOff = 283 - (Math.min(data.score, 100) / 100) * 283;
         document.getElementById('ringFg').style.strokeDashoffset = ringOff;
         
-        this.renderGrade(data.score, h);
+        const sleepOff = 145 - (Math.min((data.totalSec/3600), 9) / 9) * 145;
+        document.getElementById('sleepOrb').style.strokeDashoffset = sleepOff;
         
-        // Reset AI Text
-        document.getElementById('aiOutput').innerText = "Data loaded. Ready for Analysis.";
+        const deepOff = 145 - (Math.min((data.deepSec/3600), 2) / 2) * 145;
+        document.getElementById('deepOrb').style.strokeDashoffset = deepOff;
+
+        // Grade
+        this.renderGrade(data.score, h);
         
         // Complex Renderers
         this.renderTimeline(data.date);
@@ -449,8 +428,11 @@ class CenturionCore {
 
     // --- TIMELINE & MACROS & RAINBOW ---
     toggleTask(id) {
-        if(!this.history[this.currentIndex]) return;
-        const dateKey = this.history[this.currentIndex].date;
+        // Safe access to date
+        let dateKey = new Date().toISOString().split('T')[0];
+        if(this.history.length > 0 && this.history[this.currentIndex]) {
+            dateKey = this.history[this.currentIndex].date;
+        }
         
         if(!this.checked[dateKey]) this.checked[dateKey] = [];
         const idx = this.checked[dateKey].indexOf(id);
