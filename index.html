@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v13.0 HEARTBEAT</title>
+    <title>The Centurion | v13.1 INTELLIGENT</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -24,14 +24,10 @@
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { margin: 0; padding: 0 0 120px 0; background: var(--bg); color: var(--text); font-family: var(--font-ui); min-height: 100vh; background-image: radial-gradient(circle at top right, #111 0%, #000 70%); }
 
-        /* DEBUG LOG */
-        .sys-log { display: none; }
-
         /* HEADER */
         .hud-header { padding: 15px 16px; background: rgba(0,0,0,0.95); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--border); }
         .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .app-name { font-size: 0.6rem; font-weight: 900; letter-spacing: 2px; color: var(--muted); }
-        
         .user-switch { display: flex; gap: 4px; background: #222; padding: 2px; border-radius: 20px; }
         .u-badge { padding: 6px 14px; border-radius: 16px; font-size: 0.6rem; font-weight: 700; color: #666; background: transparent; border: none; cursor: pointer; transition: all 0.2s; }
         .u-badge.active { background: var(--text); color: #000; }
@@ -40,15 +36,13 @@
         /* DATE NAV */
         .date-nav { display: flex; justify-content: center; align-items: center; gap: 20px; font-family: var(--font-data); font-size: 0.8rem; font-weight: 700; color: #fff; padding-top: 10px; border-top: 1px solid #222; margin-top: 10px; }
         .nav-btn { background: transparent; border: 1px solid var(--border); color: var(--gold); padding: 8px 20px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: 900; }
-        .nav-btn:active { background: #222; }
         .date-display { min-width: 120px; text-align: center; letter-spacing: 1px; color: var(--acid); }
 
-        /* HERO & GRADE */
+        /* HERO */
         .hero-section { padding: 20px 16px; display: flex; align-items: center; justify-content: space-between; }
         .grade-box { position: relative; width: 90px; height: 90px; display: flex; align-items: center; justify-content: center; border: 4px solid var(--border); border-radius: 50%; }
         .grade-val { font-family: var(--font-data); font-size: 2.5rem; font-weight: 900; color: #fff; }
         .grade-label { position: absolute; bottom: -20px; font-size: 0.5rem; font-weight: 700; color: var(--muted); }
-        
         .tactical-box { flex: 1; margin-left: 20px; border-left: 3px solid var(--acid); padding: 10px; background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, transparent 100%); }
         .tac-label { font-size: 0.55rem; color: var(--acid); font-weight: 900; letter-spacing: 1px; margin-bottom: 4px; text-transform: uppercase; }
         .tac-cmd { font-size: 0.8rem; font-weight: 700; color: #fff; line-height: 1.3; }
@@ -57,82 +51,78 @@
         /* SECTIONS */
         .section-header { display: flex; justify-content: space-between; align-items: center; margin: 25px 16px 10px; }
         .section-label { font-size: 0.55rem; font-weight: 900; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
-        
-        /* GRIDS */
+        .tooltip-icon { color: var(--cyan); font-size: 0.6rem; cursor: help; border: 1px solid #333; padding: 2px 6px; border-radius: 4px; font-weight: 900; }
+
+        /* GRIDS & CARDS */
         .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 10px; }
         .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 10px; }
         
-        /* ORB CARDS */
         .orb-card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 10px 5px; display: flex; flex-direction: column; align-items: center; position: relative; }
         .orb-container { width: 50px; height: 50px; position: relative; display: flex; align-items: center; justify-content: center; margin-bottom: 5px; }
-        
-        /* CIRCLE SVGS */
         .orb-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
         .orb-bg { fill: none; stroke: #222; stroke-width: 4; }
         .orb-fg { fill: none; stroke: var(--cyan); stroke-width: 4; stroke-dasharray: 145; stroke-dashoffset: 145; transition: stroke-dashoffset 1s ease; stroke-linecap: round; }
-        
-        /* HEART SVGS */
-        .heart-svg { width: 100%; height: 100%; overflow: visible; }
-        .heart-bg { fill: none; stroke: #222; stroke-width: 2; }
-        .heart-fg { fill: none; stroke: var(--alert); stroke-width: 2; stroke-dasharray: 100; stroke-dashoffset: 100; transition: stroke-dashoffset 1s ease; }
-        .heart-full { fill: var(--alert); stroke: none; opacity: 0.2; } /* Background fill */
-        
-        .beating { animation: heartbeat 1.5s infinite; transform-origin: center; }
-        @keyframes heartbeat {
-            0% { transform: scale(1); }
-            15% { transform: scale(1.15); }
-            30% { transform: scale(1); }
-            45% { transform: scale(1.15); }
-            60% { transform: scale(1); }
-            100% { transform: scale(1); }
-        }
-
         .orb-val-box { position: absolute; text-align: center; }
         .orb-val { font-family: var(--font-data); font-size: 0.7rem; font-weight: 700; color: #fff; }
         .orb-label { font-size: 0.45rem; font-weight: 700; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-top: 4px; }
 
-        /* RAINBOW BAR */
+        /* HEARTS */
+        .heart-svg { width: 100%; height: 100%; overflow: visible; }
+        .heart-bg { fill: none; stroke: #222; stroke-width: 2; }
+        .heart-fg { fill: none; stroke: var(--alert); stroke-width: 2; stroke-dasharray: 100; stroke-dashoffset: 100; transition: stroke-dashoffset 1s ease; }
+        .beating { animation: heartbeat 1.5s infinite; transform-origin: center; }
+        @keyframes heartbeat { 0% { transform: scale(1); } 15% { transform: scale(1.15); } 30% { transform: scale(1); } 45% { transform: scale(1.15); } 60% { transform: scale(1); } 100% { transform: scale(1); } }
+
+        /* RAINBOW */
         .rainbow-container { padding: 0 16px; margin-bottom: 20px; }
         .rainbow-track { height: 6px; background: #222; border-radius: 3px; display: flex; overflow: hidden; margin-top: 8px; }
         .rainbow-seg { height: 100%; width: 0%; transition: width 0.5s ease; }
         .rainbow-meta { display: flex; justify-content: space-between; font-size: 0.55rem; color: #888; margin-top: 4px; }
 
-        /* TIMELINE */
+        /* SMART MEAL CARDS */
         .timeline-container { padding: 0 16px; margin-bottom: 40px; }
         .time-slot { display: flex; gap: 12px; margin-bottom: 15px; position: relative; }
-        .ts-time { width: 45px; font-family: var(--font-data); font-size: 0.7rem; color: var(--muted); text-align: right; padding-top: 5px; }
-        .ts-card { flex: 1; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 12px; position: relative; cursor: pointer; transition: all 0.2s; }
-        .ts-title { font-size: 0.8rem; font-weight: 700; color: #fff; margin-bottom: 2px; }
-        .ts-desc { font-size: 0.6rem; color: #888; line-height: 1.3; }
-        .check-btn { position: absolute; top: 12px; right: 12px; width: 20px; height: 20px; border-radius: 50%; border: 1px solid #444; background: transparent; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.7rem; color: #000; }
+        .ts-time { width: 45px; font-family: var(--font-data); font-size: 0.7rem; color: var(--muted); text-align: right; padding-top: 15px; }
+        
+        .ts-card { flex: 1; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 15px; position: relative; transition: all 0.3s; overflow: hidden; }
+        .ts-header { display: flex; justify-content: space-between; align-items: flex-start; cursor: pointer; }
+        .ts-title { font-size: 0.85rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
+        .ts-desc { font-size: 0.65rem; color: #888; line-height: 1.3; }
+        .ts-check { width: 24px; height: 24px; border-radius: 50%; border: 1px solid #444; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.8rem; color: #000; margin-left: 10px; cursor: pointer; z-index: 10; }
+        
+        .ts-details { display: none; margin-top: 15px; padding-top: 15px; border-top: 1px solid #222; animation: fadein 0.3s; }
+        .ts-card.expanded .ts-details { display: block; }
+        .ts-why { color: var(--acid); font-size: 0.6rem; font-weight: 900; letter-spacing: 1px; margin-bottom: 8px; text-transform: uppercase; display: flex; align-items: center; gap: 6px; }
+        .ts-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .ts-meta-item { font-size: 0.6rem; color: #aaa; }
+        .ts-meta-val { color: #fff; font-family: var(--font-data); font-weight: 700; }
+        
         .ts-card.checked { border-color: var(--acid); background: rgba(204,255,0,0.05); }
-        .ts-card.checked .check-btn { background: var(--acid); border-color: var(--acid); }
+        .ts-card.checked .ts-check { background: var(--acid); border-color: var(--acid); }
 
-        /* AI CARD */
+        @keyframes fadein { from { opacity:0; transform:translateY(-5px); } to { opacity:1; transform:translateY(0); } }
+
+        /* AI & MODALS */
         .ai-section { padding: 16px; margin-bottom: 80px; }
-        .ai-card { background: #080808; border: 1px solid #333; padding: 15px; border-radius: 12px; position: relative; }
+        .ai-card { background: #080808; border: 1px solid #333; padding: 15px; border-radius: 12px; }
         .ai-btn { width: 100%; padding: 12px; background: var(--acid); color: #000; font-weight: 900; border: none; border-radius: 6px; cursor: pointer; font-size: 0.7rem; }
         
-        /* FOOTER */
-        .sync-footer { position: fixed; bottom: 0; left: 0; width: 100%; background: #000; padding: 12px 16px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-family: var(--font-data); font-size: 0.6rem; color: #555; z-index: 200; }
-        .pulse { animation: pulse 2s infinite; display: inline-block; width: 6px; height: 6px; background: var(--acid); border-radius: 50%; margin-right: 6px; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } }
-
-        /* MODAL */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2000; padding: 20px; overflow-y: auto; }
         .modal.active { display: block; }
         .modal-content { background: var(--panel); border: 1px solid var(--acid); border-radius: 16px; padding: 20px; margin-top: 40px; }
         .input-group { margin-bottom: 15px; }
-        .input-group label { display: block; font-size: 0.6rem; color: #888; margin-bottom: 5px; text-transform: uppercase; }
+        .input-group label { display: block; font-size: 0.6rem; color: #888; margin-bottom: 5px; }
         .input-group input { width: 100%; background: #111; border: 1px solid #333; padding: 12px; color: #fff; font-family: var(--font-data); border-radius: 6px; }
-        .save-btn { width: 100%; padding: 15px; background: var(--acid); color: #000; font-weight: 900; border: none; border-radius: 8px; cursor: pointer; }
+        
+        .sync-footer { position: fixed; bottom: 0; left: 0; width: 100%; background: #000; padding: 12px 16px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-family: var(--font-data); font-size: 0.6rem; color: #555; z-index: 200; }
+        .pulse { animation: pulse 2s infinite; display: inline-block; width: 6px; height: 6px; background: var(--acid); border-radius: 50%; margin-right: 6px; }
     </style>
 </head>
 <body>
 
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v13.0</div>
+            <div class="app-name">CENTURION v13.1</div>
             <div style="display:flex; gap:10px;">
                 <button onclick="centurion.openBio()" class="bio-btn">BIO</button>
                 <div class="user-switch">
@@ -162,69 +152,31 @@
             </div>
         </div>
 
-        <div class="section-header"><span class="section-label">SLEEP ARCHITECTURE</span></div>
+        <div class="section-header">
+            <span class="section-label">SLEEP ARCHITECTURE</span>
+            <span class="tooltip-icon" onclick="alert('Targets: 7h+ Total, 90m Deep, 90m REM.\n\nMechanisms:\n- Deep: HGH Release, Glymphatic Clearance\n- REM: Emotional Processing, Memory Consolidation')">?</span>
+        </div>
         <div class="grid-3">
-            <div class="orb-card">
-                <div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle><circle class="orb-fg" id="sleepOrb" cx="25" cy="25" r="20" style="stroke:url(#grad-purple); stroke-dashoffset:145"></circle></svg><div class="orb-val-box"><div class="orb-val" id="sleepVal">--</div></div></div>
-                <div class="orb-label">TOTAL</div>
-            </div>
-            <div class="orb-card">
-                <div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle><circle class="orb-fg" id="deepOrb" cx="25" cy="25" r="20" style="stroke:#007aff; stroke-dashoffset:145"></circle></svg><div class="orb-val-box"><div class="orb-val" id="deepVal">--</div></div></div>
-                <div class="orb-label">DEEP</div>
-            </div>
-            <div class="orb-card">
-                <div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle><circle class="orb-fg" id="remOrb" cx="25" cy="25" r="20" style="stroke:var(--purple); stroke-dashoffset:145"></circle></svg><div class="orb-val-box"><div class="orb-val" id="remVal">--</div></div></div>
-                <div class="orb-label">REM</div>
-            </div>
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle><circle class="orb-fg" id="sleepOrb" cx="25" cy="25" r="20" style="stroke:url(#grad-purple); stroke-dashoffset:145"></circle></svg><div class="orb-val-box"><div class="orb-val" id="sleepVal">--</div></div></div><div class="orb-label">TOTAL</div></div>
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle><circle class="orb-fg" id="deepOrb" cx="25" cy="25" r="20" style="stroke:#007aff; stroke-dashoffset:145"></circle></svg><div class="orb-val-box"><div class="orb-val" id="deepVal">--</div></div></div><div class="orb-label">DEEP</div></div>
+            <div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle><circle class="orb-fg" id="remOrb" cx="25" cy="25" r="20" style="stroke:var(--purple); stroke-dashoffset:145"></circle></svg><div class="orb-val-box"><div class="orb-val" id="remVal">--</div></div></div><div class="orb-label">REM</div></div>
         </div>
 
-        <div class="section-header"><span class="section-label">CARDIO STATUS</span></div>
+        <div class="section-header">
+            <span class="section-label">CARDIO STATUS</span>
+            <span class="tooltip-icon" onclick="alert('Targets:\n- RHR: <50 (Efficiency)\n- Zone 2: Mitochondrial Biogenesis\n- Zone 5: VO2 Max Expansion')">?</span>
+        </div>
         <div class="grid-4">
-            <div class="orb-card">
-                <div class="orb-container">
-                    <svg class="heart-svg beating" viewBox="0 0 24 24">
-                        <path class="heart-bg" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" style="stroke:var(--alert); fill:rgba(255, 69, 58, 0.2);"></path>
-                    </svg>
-                    <div class="orb-val-box"><div class="orb-val" id="rhrVal">--</div></div>
-                </div>
-                <div class="orb-label">RHR</div>
-            </div>
-            
-            <div class="orb-card">
-                <div class="orb-container">
-                    <svg class="heart-svg" viewBox="0 0 24 24">
-                        <path class="heart-bg" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path>
-                        <path class="heart-fg" id="z2Heart" pathLength="100" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" style="stroke:var(--cyan)"></path>
-                    </svg>
-                    <div class="orb-val-box"><div class="orb-val" id="z2Val">--</div></div>
-                </div>
-                <div class="orb-label">Z2</div>
-            </div>
-
-            <div class="orb-card">
-                <div class="orb-container">
-                    <svg class="heart-svg" viewBox="0 0 24 24">
-                        <path class="heart-bg" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path>
-                        <path class="heart-fg" id="z5Heart" pathLength="100" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" style="stroke:var(--gold)"></path>
-                    </svg>
-                    <div class="orb-val-box"><div class="orb-val" id="z5Val">--</div></div>
-                </div>
-                <div class="orb-label">Z5</div>
-            </div>
-
-            <div class="orb-card">
-                <div class="orb-container">
-                    <svg class="heart-svg" viewBox="0 0 24 24">
-                        <path class="heart-bg" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path>
-                        <path class="heart-fg" id="calHeart" pathLength="100" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" style="stroke:#fff"></path>
-                    </svg>
-                    <div class="orb-val-box"><div class="orb-val" id="calVal">--</div></div>
-                </div>
-                <div class="orb-label">CAL</div>
-            </div>
+            <div class="orb-card"><div class="orb-container"><svg class="heart-svg beating" viewBox="0 0 24 24"><path class="heart-bg" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" style="stroke:var(--alert); fill:rgba(255, 69, 58, 0.2);"></path></svg><div class="orb-val-box"><div class="orb-val" id="rhrVal">--</div></div></div><div class="orb-label">RHR</div></div>
+            <div class="orb-card"><div class="orb-container"><svg class="heart-svg" viewBox="0 0 24 24"><path class="heart-bg" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path><path class="heart-fg" id="z2Heart" pathLength="100" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" style="stroke:var(--cyan)"></path></svg><div class="orb-val-box"><div class="orb-val" id="z2Val">--</div></div></div><div class="orb-label">Z2</div></div>
+            <div class="orb-card"><div class="orb-container"><svg class="heart-svg" viewBox="0 0 24 24"><path class="heart-bg" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path><path class="heart-fg" id="z5Heart" pathLength="100" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" style="stroke:var(--gold)"></path></svg><div class="orb-val-box"><div class="orb-val" id="z5Val">--</div></div></div><div class="orb-label">Z5</div></div>
+            <div class="orb-card"><div class="orb-container"><svg class="heart-svg" viewBox="0 0 24 24"><path class="heart-bg" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path><path class="heart-fg" id="calHeart" pathLength="100" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" style="stroke:#fff"></path></svg><div class="orb-val-box"><div class="orb-val" id="calVal">--</div></div></div><div class="orb-label">CAL</div></div>
         </div>
 
-        <div class="section-header"><span class="section-label">PHYTONUTRIENT DIVERSITY</span></div>
+        <div class="section-header">
+            <span class="section-label">PHYTONUTRIENT DIVERSITY</span>
+            <span class="tooltip-icon" onclick="alert('Eat the Rainbow:\nDifferent colors indicate different polyphenols (e.g. Anthocyanins in purple) which activate Sirtuins and DNA repair pathways.')">?</span>
+        </div>
         <div class="rainbow-container">
             <div style="display:flex; justify-content:space-between; font-size:0.6rem; color:#fff; font-weight:700;">
                 <span>RAINBOW SCORE</span>
@@ -270,10 +222,10 @@
 
 <script>
 // ==========================================
-// V13.0: HEARTBEAT
-// - Bio Panel Hidden (Accessible via Button)
-// - Cardio Hearts (Beating RHR, Progressive Zones)
-// - Robust Clean Slate Logic
+// V13.1: INTELLIGENT PROTOCOLS
+// - Expanded Meal Cards with "Why" & Macros
+// - Deep Science Tooltips
+// - Fully Integrated Data Engine
 // ==========================================
 
 const TOKENS = { 'jermaine': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'sophia': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
@@ -284,20 +236,66 @@ const USERS = {
     'sophia': { name: "Sophia", goals: { pro: 120, omega3: 2500, poly: 400, fib: 35, z2: 45, z5: 10, cal: 450 } }
 };
 
+// DEEP PROTOCOL DATABASE
 const PROTOCOL = {
     'jermaine': [
-        { id:'hyd', time:'7 AM', title:'Hydration', desc:'Sea Moss Gel (2 tbsp)', colors:[], macros:{p:0,o:0} },
-        { id:'juice', time:'8 AM', title:'Juice', desc:'Beet Vitality', colors:['red','purple'], macros:{p:2,o:50} },
-        { id:'train', time:'9 AM', title:'Training', desc:'Strength / Zone 2', colors:[], macros:{p:25,o:0} },
-        { id:'lunch', time:'1 PM', title:'Lunch', desc:'Sardine Quinoa Salad', colors:['green','white'], macros:{p:45,o:1500,f:8} },
-        { id:'dinner', time:'6 PM', title:'Dinner', desc:'Wild Salmon', colors:['orange','green'], macros:{p:50,o:2500,f:10} }
+        { 
+            id:'hyd', time:'7 AM', title:'Hydration', desc:'Sea Moss Gel (2 tbsp)', 
+            why:'THYROID & MINERAL SUPPORT', 
+            colors:[], macros:{p:0,o:0}, micros:'92 Minerals, Iodine'
+        },
+        { 
+            id:'juice', time:'8 AM', title:'Juice Protocol', desc:'Beet Vitality', 
+            why:'NITRIC OXIDE BOOST', 
+            colors:['red','purple'], macros:{p:2,o:50,poly:200}, micros:'Nitrates, Betalains'
+        },
+        { 
+            id:'train', time:'9 AM', title:'Training', desc:'Strength / Zone 2', 
+            why:'MITOCHONDRIAL BIOGENESIS', 
+            colors:[], macros:{p:0}, micros:'Cortisol Clearance'
+        },
+        { 
+            id:'breakfast', time:'10 AM', title:'Centurion Bowl', desc:'Wild Salmon, Eggs, Spinach', 
+            why:'OMEGA-3 & CHOLINE LOAD', 
+            colors:['orange','green'], macros:{p:60,o:2400,poly:100}, micros:'EPA/DHA, Choline'
+        },
+        { 
+            id:'lunch', time:'1 PM', title:'Lunch', desc:'Sardine Quinoa Salad', 
+            why:'CALCIUM & FIBER', 
+            colors:['green','white'], macros:{p:45,o:1500,f:8,poly:150}, micros:'Calcium, Fiber'
+        },
+        { 
+            id:'dinner', time:'6 PM', title:'Dinner', desc:'Wild Salmon & Greens', 
+            why:'ANTI-INFLAMMATORY', 
+            colors:['orange','green'], macros:{p:50,o:2500,f:10,poly:100}, micros:'Vitamin D, Magnesium'
+        }
     ],
     'sophia': [
-        { id:'hyd', time:'7 AM', title:'Hydration', desc:'Lemon Water', colors:['yellow'], macros:{p:0} },
-        { id:'juice', time:'8 AM', title:'Juice', desc:'Orange Immune', colors:['orange'], macros:{p:2} },
-        { id:'train', time:'9 AM', title:'Movement', desc:'Yoga / Pilates', colors:[], macros:{p:10} },
-        { id:'lunch', time:'1 PM', title:'Lunch', desc:'Ceviche', colors:['white','green'], macros:{p:35,o:1000} },
-        { id:'dinner', time:'6 PM', title:'Dinner', desc:'White Fish', colors:['white'], macros:{p:40,o:2000} }
+        { 
+            id:'hyd', time:'7 AM', title:'Hydration', desc:'Lemon Water', 
+            why:'ALKALIZING START', 
+            colors:['yellow'], macros:{p:0}, micros:'Vitamin C'
+        },
+        { 
+            id:'juice', time:'8 AM', title:'Juice', desc:'Orange Immune', 
+            why:'IMMUNE DEFENSE', 
+            colors:['orange'], macros:{p:2,poly:150}, micros:'Bioflavonoids'
+        },
+        { 
+            id:'breakfast', time:'9 AM', title:'Omega Scramble', desc:'Pasture Eggs, Avocado', 
+            why:'COGNITIVE SUPPORT', 
+            colors:['green','yellow'], macros:{p:25,o:500}, micros:'Choline, Potassium'
+        },
+        { 
+            id:'lunch', time:'1 PM', title:'Lunch', desc:'Ceviche', 
+            why:'LEAN PROTEIN', 
+            colors:['white','green'], macros:{p:35,o:1000}, micros:'Zinc, Selenium'
+        },
+        { 
+            id:'dinner', time:'6 PM', title:'Dinner', desc:'White Fish & Beans', 
+            why:'DIGESTIVE EASE', 
+            colors:['white'], macros:{p:40,o:2000,f:12}, micros:'Iodine'
+        }
     ]
 };
 
@@ -393,7 +391,7 @@ class CenturionCore {
 
             const sJson = await sRes.json();
             const rJson = await rRes.json();
-            const aJson = await aRes.json(); // Activity Data
+            const aJson = await aRes.json();
 
             let rawHist = [];
             if(sJson.data) {
@@ -468,7 +466,6 @@ class CenturionCore {
         this.setText('z5Val', z5Min);
         this.setText('calVal', cal);
 
-        // Heart Progress (0 to 100 dashoffset)
         const updateHeart = (id, val, goal) => {
             const el = document.getElementById(id);
             if(el) {
@@ -491,9 +488,6 @@ class CenturionCore {
 
         this.renderGrade(scoreVal, h);
 
-        const ring = document.getElementById('ringFg');
-        if(ring) ring.style.strokeDashoffset = 283 - (Math.min(scoreVal, 100) / 100) * 283;
-        
         const so = document.getElementById('sleepOrb');
         if(so) so.style.strokeDashoffset = 145 - (Math.min((data.totalSec/3600), 9) / 9) * 145;
         
@@ -549,15 +543,27 @@ class CenturionCore {
             timelineHtml += `
             <div class="time-slot">
                 <div class="ts-time">${t.time}</div>
-                <div class="ts-card ${isDone ? 'checked' : ''}" onclick="centurion.toggleTask('${t.id}')">
-                    <div class="ts-title">${t.title}</div>
-                    <div class="ts-desc">${t.desc}</div>
-                    <div class="check-btn">${isDone ? '✓' : ''}</div>
+                <div class="ts-card ${isDone ? 'checked' : ''}" id="card-${t.id}">
+                    <div class="ts-header" onclick="centurion.toggleExpand('${t.id}')">
+                        <div>
+                            <div class="ts-title">${t.title}</div>
+                            <div class="ts-desc">${t.desc}</div>
+                        </div>
+                        <div class="ts-check" onclick="event.stopPropagation(); centurion.toggleTask('${t.id}')">${isDone ? '✓' : ''}</div>
+                    </div>
+                    <div class="ts-details">
+                        <div class="ts-why">⚠️ ${t.why}</div>
+                        <div class="ts-meta-grid">
+                            <div class="ts-meta-item">PRO: <span class="ts-meta-val">${t.macros.p || 0}g</span></div>
+                            <div class="ts-meta-item">OMEGA-3: <span class="ts-meta-val">${t.macros.o || 0}mg</span></div>
+                            <div class="ts-meta-item">POLY: <span class="ts-meta-val">${t.macros.poly || 0}mg</span></div>
+                            <div class="ts-meta-item">KEY: <span class="ts-meta-val" style="font-size:0.5rem">${t.micros}</span></div>
+                        </div>
+                    </div>
                 </div>
             </div>`;
         });
-        const tl = document.getElementById('timelineList');
-        if(tl) tl.innerHTML = timelineHtml;
+        document.getElementById('timelineList').innerHTML = timelineHtml;
 
         const drawOrb = (label, val, goal, color) => {
             const pct = Math.min(val / goal, 1);
@@ -568,8 +574,7 @@ class CenturionCore {
                 <div class="orb-val-box"><div class="orb-val">${val}</div></div>
             </div><div class="orb-label">${label}</div></div>`;
         };
-        const ml = document.getElementById('macroList');
-        if(ml) ml.innerHTML = 
+        document.getElementById('macroList').innerHTML = 
             drawOrb('PROTEIN', totals.p, goals.pro, '#fff') +
             drawOrb('OMEGA-3', totals.o, goals.omega3, '#00d4ff') +
             drawOrb('POLY', totals.poly, goals.poly, '#bf5af2') +
@@ -581,8 +586,7 @@ class CenturionCore {
             const bg = {red:'#ff453a',orange:'#ff9f0a',yellow:'#ffd60a',green:'#30d158',purple:'#bf5af2',white:'#fff'}[c];
             rainbowHtml += `<div class="rainbow-seg" style="background:${bg}; width:${colorsHit.has(c)?'16.66%':'0%'}"></div>`;
         });
-        const rb = document.getElementById('rainbowTrack');
-        if(rb) rb.innerHTML = rainbowHtml;
+        document.getElementById('rainbowTrack').innerHTML = rainbowHtml;
     }
 
     toggleTask(id) {
@@ -595,6 +599,11 @@ class CenturionCore {
         
         localStorage.setItem(`c_checked_${this.user}`, JSON.stringify(this.checked));
         this.renderComplex(dateKey);
+    }
+
+    toggleExpand(id) {
+        const card = document.getElementById(`card-${id}`);
+        card.classList.toggle('expanded');
     }
 
     async runAI() {
@@ -651,7 +660,6 @@ class CenturionCore {
     }
 
     renderBio() {
-        // Just used to keep state sync, visually removed from main dashboard
         this.setText('bioDisplay', `VO2: ${this.bios.vo2 || '--'} | APOB: ${this.bios.apob || '--'}`);
     }
 }
