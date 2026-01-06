@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v13.1 INTELLIGENT</title>
+    <title>The Centurion | v13.2 IDENTITY FIX</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -113,7 +113,8 @@
         .input-group { margin-bottom: 15px; }
         .input-group label { display: block; font-size: 0.6rem; color: #888; margin-bottom: 5px; }
         .input-group input { width: 100%; background: #111; border: 1px solid #333; padding: 12px; color: #fff; font-family: var(--font-data); border-radius: 6px; }
-        
+        .save-btn { width: 100%; padding: 15px; background: var(--acid); color: #000; font-weight: 900; border: none; border-radius: 8px; cursor: pointer; }
+
         .sync-footer { position: fixed; bottom: 0; left: 0; width: 100%; background: #000; padding: 12px 16px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-family: var(--font-data); font-size: 0.6rem; color: #555; z-index: 200; }
         .pulse { animation: pulse 2s infinite; display: inline-block; width: 6px; height: 6px; background: var(--acid); border-radius: 50%; margin-right: 6px; }
     </style>
@@ -122,7 +123,7 @@
 
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v13.1</div>
+            <div class="app-name">CENTURION v13.2</div>
             <div style="display:flex; gap:10px;">
                 <button onclick="centurion.openBio()" class="bio-btn">BIO</button>
                 <div class="user-switch">
@@ -222,10 +223,9 @@
 
 <script>
 // ==========================================
-// V13.1: INTELLIGENT PROTOCOLS
-// - Expanded Meal Cards with "Why" & Macros
-// - Deep Science Tooltips
-// - Fully Integrated Data Engine
+// V13.2: IDENTITY FIX
+// - Forces correct User Label on Render
+// - Proper order of operations for Toggle
 // ==========================================
 
 const TOKENS = { 'jermaine': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'sophia': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
@@ -236,66 +236,21 @@ const USERS = {
     'sophia': { name: "Sophia", goals: { pro: 120, omega3: 2500, poly: 400, fib: 35, z2: 45, z5: 10, cal: 450 } }
 };
 
-// DEEP PROTOCOL DATABASE
 const PROTOCOL = {
     'jermaine': [
-        { 
-            id:'hyd', time:'7 AM', title:'Hydration', desc:'Sea Moss Gel (2 tbsp)', 
-            why:'THYROID & MINERAL SUPPORT', 
-            colors:[], macros:{p:0,o:0}, micros:'92 Minerals, Iodine'
-        },
-        { 
-            id:'juice', time:'8 AM', title:'Juice Protocol', desc:'Beet Vitality', 
-            why:'NITRIC OXIDE BOOST', 
-            colors:['red','purple'], macros:{p:2,o:50,poly:200}, micros:'Nitrates, Betalains'
-        },
-        { 
-            id:'train', time:'9 AM', title:'Training', desc:'Strength / Zone 2', 
-            why:'MITOCHONDRIAL BIOGENESIS', 
-            colors:[], macros:{p:0}, micros:'Cortisol Clearance'
-        },
-        { 
-            id:'breakfast', time:'10 AM', title:'Centurion Bowl', desc:'Wild Salmon, Eggs, Spinach', 
-            why:'OMEGA-3 & CHOLINE LOAD', 
-            colors:['orange','green'], macros:{p:60,o:2400,poly:100}, micros:'EPA/DHA, Choline'
-        },
-        { 
-            id:'lunch', time:'1 PM', title:'Lunch', desc:'Sardine Quinoa Salad', 
-            why:'CALCIUM & FIBER', 
-            colors:['green','white'], macros:{p:45,o:1500,f:8,poly:150}, micros:'Calcium, Fiber'
-        },
-        { 
-            id:'dinner', time:'6 PM', title:'Dinner', desc:'Wild Salmon & Greens', 
-            why:'ANTI-INFLAMMATORY', 
-            colors:['orange','green'], macros:{p:50,o:2500,f:10,poly:100}, micros:'Vitamin D, Magnesium'
-        }
+        { id:'hyd', time:'7 AM', title:'Hydration', desc:'Sea Moss Gel (2 tbsp)', why:'THYROID & MINERAL SUPPORT', colors:[], macros:{p:0,o:0}, micros:'92 Minerals, Iodine' },
+        { id:'juice', time:'8 AM', title:'Juice Protocol', desc:'Beet Vitality', why:'NITRIC OXIDE BOOST', colors:['red','purple'], macros:{p:2,o:50,poly:200}, micros:'Nitrates, Betalains' },
+        { id:'train', time:'9 AM', title:'Training', desc:'Strength / Zone 2', why:'MITOCHONDRIAL BIOGENESIS', colors:[], macros:{p:0}, micros:'Cortisol Clearance' },
+        { id:'breakfast', time:'10 AM', title:'Centurion Bowl', desc:'Wild Salmon, Eggs, Spinach', why:'OMEGA-3 & CHOLINE LOAD', colors:['orange','green'], macros:{p:60,o:2400,poly:100}, micros:'EPA/DHA, Choline' },
+        { id:'lunch', time:'1 PM', title:'Lunch', desc:'Sardine Quinoa Salad', why:'CALCIUM & FIBER', colors:['green','white'], macros:{p:45,o:1500,f:8,poly:150}, micros:'Calcium, Fiber' },
+        { id:'dinner', time:'6 PM', title:'Dinner', desc:'Wild Salmon & Greens', why:'ANTI-INFLAMMATORY', colors:['orange','green'], macros:{p:50,o:2500,f:10,poly:100}, micros:'Vitamin D, Magnesium' }
     ],
     'sophia': [
-        { 
-            id:'hyd', time:'7 AM', title:'Hydration', desc:'Lemon Water', 
-            why:'ALKALIZING START', 
-            colors:['yellow'], macros:{p:0}, micros:'Vitamin C'
-        },
-        { 
-            id:'juice', time:'8 AM', title:'Juice', desc:'Orange Immune', 
-            why:'IMMUNE DEFENSE', 
-            colors:['orange'], macros:{p:2,poly:150}, micros:'Bioflavonoids'
-        },
-        { 
-            id:'breakfast', time:'9 AM', title:'Omega Scramble', desc:'Pasture Eggs, Avocado', 
-            why:'COGNITIVE SUPPORT', 
-            colors:['green','yellow'], macros:{p:25,o:500}, micros:'Choline, Potassium'
-        },
-        { 
-            id:'lunch', time:'1 PM', title:'Lunch', desc:'Ceviche', 
-            why:'LEAN PROTEIN', 
-            colors:['white','green'], macros:{p:35,o:1000}, micros:'Zinc, Selenium'
-        },
-        { 
-            id:'dinner', time:'6 PM', title:'Dinner', desc:'White Fish & Beans', 
-            why:'DIGESTIVE EASE', 
-            colors:['white'], macros:{p:40,o:2000,f:12}, micros:'Iodine'
-        }
+        { id:'hyd', time:'7 AM', title:'Hydration', desc:'Lemon Water', why:'ALKALIZING START', colors:['yellow'], macros:{p:0}, micros:'Vitamin C' },
+        { id:'juice', time:'8 AM', title:'Juice', desc:'Orange Immune', why:'IMMUNE DEFENSE', colors:['orange'], macros:{p:2,poly:150}, micros:'Bioflavonoids' },
+        { id:'breakfast', time:'9 AM', title:'Omega Scramble', desc:'Pasture Eggs, Avocado', why:'COGNITIVE SUPPORT', colors:['green','yellow'], macros:{p:25,o:500}, micros:'Choline, Potassium' },
+        { id:'lunch', time:'1 PM', title:'Lunch', desc:'Ceviche', why:'LEAN PROTEIN', colors:['white','green'], macros:{p:35,o:1000}, micros:'Zinc, Selenium' },
+        { id:'dinner', time:'6 PM', title:'Dinner', desc:'White Fish & Beans', why:'DIGESTIVE EASE', colors:['white'], macros:{p:40,o:2000,f:12}, micros:'Iodine' }
     ]
 };
 
@@ -324,17 +279,27 @@ class CenturionCore {
         this.bios = JSON.parse(localStorage.getItem(`c_bios_${this.user}`)) || {};
     }
 
+    // --- IDENTITY FIX SWITCHER ---
     switchUser(u) {
         if(u === this.user) return;
         this.user = u;
         localStorage.setItem('centurion_user', u);
+        
+        // 1. Wipe Old Data
         this.wipeDashboard();
-        document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
-        document.getElementById(`btn-${this.user}`).classList.add('active');
+        
+        // 2. Update UI State (Buttons & Label)
+        this.updateUI();
+        
+        // 3. Clear Internal Memory & Load New Local Data
         this.history = [];
         this.currentIndex = 0;
         this.loadLocalData();
+        
+        // 4. Render Initial (Empty) State with Correct Name
         this.renderBio(); 
+        
+        // 5. Start New Fetch
         this.fetchData();
     }
 
@@ -364,7 +329,10 @@ class CenturionCore {
         document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
         const btn = document.getElementById(`btn-${this.user}`);
         if(btn) btn.classList.add('active');
-        this.setText('userLabel', `USER: ${USERS[this.user].name.toUpperCase()}`);
+        
+        // Force update the label immediately
+        const uName = USERS[this.user].name.toUpperCase();
+        this.setText('userLabel', `USER: ${uName}`);
     }
 
     async fetchData() {
@@ -440,6 +408,11 @@ class CenturionCore {
     }
 
     render() {
+        // --- IDENTITY CHECK ---
+        // Ensures the label is always correct even if render is called late
+        const uName = USERS[this.user].name.toUpperCase();
+        this.setText('userLabel', `USER: ${uName}`);
+
         if(this.history.length === 0) return this.renderEmpty();
 
         const data = this.history[this.currentIndex];
@@ -456,7 +429,6 @@ class CenturionCore {
         this.setText('remVal', Math.round(data.remSec / 60) + "m");
         this.setText('rhrVal', data.rhr);
         
-        // Cardio Heart Vals
         const goals = USERS[this.user].goals;
         const z2Min = Math.round(data.med);
         const z5Min = Math.round(data.high);
