@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v11.4 ULTIMATE</title>
+    <title>The Centurion | v11.7 UNIVERSAL</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -98,7 +98,6 @@
         /* AI CARD */
         .ai-section { padding: 16px; margin-bottom: 80px; }
         .ai-card { background: #080808; border: 1px solid #333; padding: 15px; border-radius: 12px; position: relative; }
-        .ai-select { width: 100%; background: #000; color: #fff; border: 1px solid #333; padding: 8px; font-size: 0.6rem; margin-bottom: 10px; border-radius: 4px; }
         .ai-btn { width: 100%; padding: 12px; background: var(--acid); color: #000; font-weight: 900; border: none; border-radius: 6px; cursor: pointer; font-size: 0.7rem; }
         
         /* FOOTER */
@@ -120,7 +119,7 @@
 
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v11.4</div>
+            <div class="app-name">CENTURION v11.7</div>
             <div style="display:flex; gap:10px;">
                 <button onclick="centurion.openBio()" class="bio-btn">BIO</button>
                 <div class="user-switch">
@@ -160,10 +159,9 @@
 
 <script>
 // ==========================================
-// V11.4: ULTIMATE INTEGRATION
-// - Autonomous Data Sync (Latest Day)
-// - Full UI (Rainbow, Bio, Grade)
-// - Verified AI Model List
+// V11.7: UNIVERSAL KEY
+// - Auto-Cascades through 5 models
+// - Includes "Cockroach" gemini-pro backup
 // ==========================================
 
 const TOKENS = { 'jermaine': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'sophia': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
@@ -209,26 +207,22 @@ class CenturionCore {
         this.currentIndex = 0; 
         this.checked = JSON.parse(localStorage.getItem(`c_checked_${this.user}`)) || {};
         this.bios = JSON.parse(localStorage.getItem(`c_bios_${this.user}`)) || {};
-        
         this.init();
     }
 
     async init() {
         this.updateUI();
         await this.fetchData();
-        this.renderBio();
     }
 
     switchUser(u) {
         if(u === this.user) return;
         this.user = u;
         localStorage.setItem('centurion_user', u);
-        
         this.history = [];
         this.currentIndex = 0;
         this.checked = JSON.parse(localStorage.getItem(`c_checked_${u}`)) || {};
         this.bios = JSON.parse(localStorage.getItem(`c_bios_${u}`)) || {};
-        
         this.updateUI();
         this.fetchData();
     }
@@ -240,7 +234,6 @@ class CenturionCore {
 
     async fetchData() {
         document.getElementById('ouraBar').innerHTML = "💍 SYNCING...";
-        
         const d = new Date();
         d.setDate(d.getDate() + 1);
         const end = d.toISOString().split('T')[0];
@@ -272,7 +265,6 @@ class CenturionCore {
                 }).sort((a, b) => b.date.localeCompare(a.date)); 
             }
 
-            // Filter out bad data
             this.history = rawHist.filter(d => d.score > 0 || d.totalSec > 0);
 
             if(this.history.length > 0) {
@@ -281,7 +273,7 @@ class CenturionCore {
                 this.render();
             } else {
                 document.getElementById('ouraBar').innerHTML = "💍 EMPTY";
-                this.render(); // Render empty state
+                this.render(); 
             }
 
         } catch (e) {
@@ -300,7 +292,6 @@ class CenturionCore {
     }
 
     render() {
-        // Safe Data
         let data = { date: 'NO DATA', score: 0, totalSec: 0, deepSec: 0, remSec: 0, rhr: '-' };
         if(this.history.length > 0 && this.history[this.currentIndex]) {
             data = this.history[this.currentIndex];
@@ -321,7 +312,6 @@ class CenturionCore {
             else statusMsg = "RECOVERY REQUIRED.";
         }
 
-        // Direct HTML Injection
         const html = `
         <div class="hero-section">
             <div class="grade-box" style="border-color:${this.getGradeColor(scoreVal, h)}">
@@ -335,9 +325,7 @@ class CenturionCore {
             </div>
         </div>
 
-        <div class="section-header">
-            <span class="section-label">SLEEP ARCHITECTURE</span>
-        </div>
+        <div class="section-header"><span class="section-label">SLEEP ARCHITECTURE</span></div>
         <div class="grid-3">
             <div class="orb-card">
                 <div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle><circle class="orb-fg" cx="25" cy="25" r="20" style="stroke:url(#grad-purple); stroke-dashoffset:${145 - (Math.min((data.totalSec/3600), 9) / 9) * 145}"></circle></svg><div class="orb-val-box"><div class="orb-val">${sleepDisplay}</div></div></div>
@@ -367,8 +355,7 @@ class CenturionCore {
                 <span>RAINBOW SCORE</span>
                 <span id="rainbowScore">0%</span>
             </div>
-            <div class="rainbow-track" id="rainbowTrack">
-                </div>
+            <div class="rainbow-track" id="rainbowTrack"></div>
             <div class="rainbow-meta">Based on logged meals below</div>
         </div>
 
@@ -381,13 +368,8 @@ class CenturionCore {
         <div class="ai-section">
             <div class="ai-card">
                 <div style="color:var(--cyan); font-weight:900; font-size:0.7rem; margin-bottom:5px;">GEMINI COACH</div>
-                <select id="aiModel" class="ai-select">
-                    <option value="gemini-2.5-flash">gemini-2.5-flash (Newest)</option>
-                    <option value="gemini-2.0-flash-lite-preview-02-05">gemini-2.0-flash-lite</option>
-                    <option value="gemini-1.5-flash">gemini-1.5-flash</option>
-                </select>
                 <div id="aiOutput" style="font-size:0.7rem; line-height:1.5; color:#ddd; min-height:20px; margin-bottom:15px; white-space:pre-line;">Data Loaded. Ready for analysis.</div>
-                <button class="ai-btn" onclick="centurion.runAI()">GENERATE ANALYSIS</button>
+                <button class="ai-btn" onclick="centurion.runAI()">GENERATE COACHING</button>
             </div>
         </div>
         `;
@@ -396,10 +378,7 @@ class CenturionCore {
         container.innerHTML = html;
         container.style.opacity = '1';
 
-        // Post-Render Logic
-        if(data.date !== 'NO DATA') {
-            this.renderComplex(data.date);
-        }
+        if(data.date !== 'NO DATA') this.renderComplex(data.date);
     }
 
     getGrade(score, sleepHrs) {
@@ -488,27 +467,43 @@ class CenturionCore {
     async runAI() {
         if(this.history.length === 0) return;
         const data = this.history[this.currentIndex];
-        
         const ui = document.getElementById('aiOutput');
-        const model = document.getElementById('aiModel').value;
-        ui.innerText = `Connecting to ${model}...`;
         
-        const hours = (data.totalSec / 3600).toFixed(1);
-        const prompt = `I slept ${hours} hours. Readiness Score ${data.score}. Deep sleep ${Math.round(data.deepSec/60)} min. My biomarkers: VO2 ${this.bios.vo2}, ApoB ${this.bios.apob}. Give me 1 sentence of tough love coaching.`;
+        // AUTO-CASCADE CHAIN
+        const models = [
+            'gemini-2.0-flash-lite-preview-02-05',
+            'gemini-2.0-flash-exp',
+            'gemini-1.5-pro',
+            'gemini-2.5-flash',
+            'gemini-pro' // The Universal Backup (1.0)
+        ];
 
-        try {
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${API_KEY}`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-            });
-            const json = await res.json();
-            if(json.candidates) {
-                ui.innerHTML = `<span style="color:var(--acid)">${json.candidates[0].content.parts[0].text}</span>`;
-            } else {
-                ui.innerText = "Error: " + (json.error ? json.error.message : JSON.stringify(json));
+        const prompt = `Longevity coach analysis for ${USERS[this.user].name}. Stats: Sleep ${data.totalSec/3600}h, Deep ${Math.round(data.deepSec/60)}m, Score ${data.score}. Give 1 specific tough love tip.`;
+
+        for (let m of models) {
+            ui.innerHTML = `<span style="color:#888">Trying ${m}...</span>`;
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${API_KEY}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                
+                if (!res.ok) {
+                    if (res.status === 429) { continue; } // Try next model if rate limited
+                    throw new Error(`${res.status} ${res.statusText}`);
+                }
+
+                const json = await res.json();
+                if(json.candidates) {
+                    ui.innerHTML = `<span style="color:var(--acid)">[${m}]</span> ${json.candidates[0].content.parts[0].text}`;
+                    return; // Success! Exit function.
+                }
+            } catch(e) {
+                console.log(`${m} failed: ${e.message}`);
             }
-        } catch(e) { ui.innerText = "Error: " + e.message; }
+        }
+        ui.innerHTML = `<span style="color:var(--alert)">ALL MODELS FAILED.</span> Check quotas or API key permissions.`;
     }
 
     openBio() { 
@@ -529,11 +524,7 @@ class CenturionCore {
         };
         localStorage.setItem(`c_bios_${this.user}`, JSON.stringify(this.bios));
         this.closeBio();
-        this.renderBio();
-    }
-
-    renderBio() {
-        // No-op for now, re-render calls UI update
+        this.render();
     }
 }
 
