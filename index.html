@@ -736,54 +736,73 @@ class CenturionCore {
     }
 
     async runAI() {
-    if(this.history.length === 0) return;
-    const data = this.history[this.currentIndex];
     const ui = document.getElementById('aiOutput');
+    const st = document.getElementById('aiStatus');
+    const btn = document.getElementById('aiBtn');
     
-    // Only using the stable models found in your screenshot
-    const models = [
-        'gemini-2.5-pro', 
-        'gemini-2.5-flash', 
-        'gemini-2.0-flash', 
-        'gemini-2.5-flash-lite'
-    ];
+    if (this.history.length === 0) return;
+    const data = this.history[this.currentIndex];
 
-    const safePrompt = `You are a longevity performance coach, not a doctor. Focus on habits and data optimization. User: ${USERS[this.user].name}. Stats: Sleep ${data.totalSec/3600}h, Score ${data.score}. Give 1 specific tough love habit tip.`;
+    const models = ['gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash-lite'];
+    const safePrompt = `You are a longevity coach for ${this.user}. Quick tough-love tip. Stats: Sleep ${data.totalSec/3600}h, Readiness ${data.score}.`;
 
+    btn.disabled = true;
     let success = false;
+    let lastError = "";
 
     for (let m of models) {
-        if(ui) ui.innerHTML = `<span style="color:#888">Requesting ${m}...</span>`;
+        st.innerText = `TESTING: ${m.toUpperCase()}`;
         try {
             const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${API_KEY}`, {
-                method: 'POST', 
-                headers: {'Content-Type': 'application/json'},
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ contents: [{ parts: [{ text: safePrompt }] }] })
             });
 
+            // Capture the exact status code
+            const statusCode = res.status;
+
             if (res.ok) {
-                const json = await res.json();
-                if(json.candidates && json.candidates[0].content) {
-                    const text = json.candidates[0].content.parts[0].text;
-                    if(ui) ui.innerHTML = `<span style="color:var(--acid)">[${m}]</span> ${text}`;
-                    success = true; 
-                    break; 
-                }
-            } else if (res.status === 429) {
-                // Rate limit hit: wait 2 seconds before trying the next model
-                if(ui) ui.innerHTML = `<span style="color:var(--gold)">Rate limit on ${m}. Cooling down...</span>`;
-                await new Promise(resolve => setTimeout(resolve, 2000));
+                const j = await res.json();
+                ui.innerHTML = `<span style="color:var(--acid)">[SUCCESS: ${m}]</span><br>${j.candidates[0].content.parts[0].text}`;
+                st.innerText = "SUCCESS (200)";
+                success = true;
+                break;
             } else {
-                console.warn(`Model ${m} failed with status: ${res.status}`);
+                // Read error details from the response body if available
+                let errorDetails = "";
+                try {
+                    const errorJson = await res.json();
+                    errorDetails = errorJson.error ? `: ${errorJson.error.message}` : "";
+                } catch(e) { 
+                    errorDetails = " (No details provided)";
+                }
+                
+                lastError = `ERROR ${statusCode}${errorDetails}`;
+                console.warn(`Model ${m} failed with ${lastError}`);
+                
+                if (statusCode === 429) {
+                    st.innerText = "RATE LIMIT (429). COOLING DOWN...";
+                    await new Promise(r => setTimeout(r, 2500));
+                }
             }
-        } catch(e) {
-            console.error(`Error with model ${m}:`, e);
+        } catch (e) {
+            lastError = `NETWORK ERROR: ${e.message}`;
+            console.error(`Endpoint ${m} error:`, e);
         }
     }
 
-    if (!success && ui) {
-        ui.innerHTML = `<span style="color:var(--alert)">[SYSTEM BUSY]</span> All models are currently at capacity. Please try again in 60 seconds.`;
+    if (!success) {
+        st.innerText = "ALL MODELS FAILED";
+        st.style.color = "var(--alert)";
+        ui.innerHTML = `<div style="border: 1px solid var(--alert); padding: 10px; border-radius: 8px;">
+            <span style="color:var(--alert); font-weight:900;">DIAGNOSTIC LOG:</span><br>
+            <span style="color:#fff; font-family:var(--font-data); font-size:0.65rem;">${lastError}</span><br><br>
+            <span style="color:var(--muted)">Check if your API key is correct or if you have hit your 24-hour limit.</span>
+        </div>`;
     }
+
+    setTimeout(() => { btn.disabled = false; }, 3000);
 }
 
     openBio() { 
