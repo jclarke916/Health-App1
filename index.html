@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v11.6 BUNKER BUSTER</title>
+    <title>The Centurion | v12.4 CLEAN SLATE</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -23,6 +23,15 @@
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { margin: 0; padding: 0 0 120px 0; background: var(--bg); color: var(--text); font-family: var(--font-ui); min-height: 100vh; background-image: radial-gradient(circle at top right, #111 0%, #000 70%); }
+
+        /* DEBUG LOG */
+        .sys-log {
+            background: #111; border-bottom: 1px solid #333; padding: 8px 16px;
+            font-family: var(--font-data); font-size: 0.55rem; color: #888;
+            height: 60px; overflow-y: scroll; white-space: pre-wrap; display:none;
+        }
+        .log-ok { color: var(--acid); }
+        .log-err { color: var(--alert); }
 
         /* HEADER */
         .hud-header { padding: 15px 16px; background: rgba(0,0,0,0.95); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--border); }
@@ -117,9 +126,11 @@
 </head>
 <body>
 
+    <div class="sys-log" id="sysLog">System Initialized.</div>
+
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v11.6</div>
+            <div class="app-name">CENTURION v12.4</div>
             <div style="display:flex; gap:10px;">
                 <button onclick="centurion.openBio()" class="bio-btn">BIO</button>
                 <div class="user-switch">
@@ -136,7 +147,67 @@
         </div>
     </div>
 
-    <div id="dayContent" style="opacity:0; transition:opacity 0.5s;"></div>
+    <div id="dashboard" style="opacity:1; transition:opacity 0.2s;">
+        <div class="hero-section">
+            <div class="grade-box" style="border-color:var(--border)">
+                <div class="grade-val" id="dayGrade">--</div>
+                <div class="grade-label">DAY GRADE</div>
+            </div>
+            <div class="tactical-box">
+                <div class="tac-label" id="userLabel">USER: --</div>
+                <div class="tac-cmd" id="statusMsg">INITIALIZING...</div>
+                <div class="tac-meta" id="bioDisplay">--</div>
+            </div>
+        </div>
+
+        <div class="section-header"><span class="section-label">SLEEP ARCHITECTURE</span></div>
+        <div class="grid-3">
+            <div class="orb-card">
+                <div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle><circle class="orb-fg" id="sleepOrb" cx="25" cy="25" r="20" style="stroke:url(#grad-purple); stroke-dashoffset:145"></circle></svg><div class="orb-val-box"><div class="orb-val" id="sleepVal">--</div></div></div>
+                <div class="orb-label">TOTAL</div>
+            </div>
+            <div class="orb-card">
+                <div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle><circle class="orb-fg" id="deepOrb" cx="25" cy="25" r="20" style="stroke:#007aff; stroke-dashoffset:145"></circle></svg><div class="orb-val-box"><div class="orb-val" id="deepVal">--</div></div></div>
+                <div class="orb-label">DEEP</div>
+            </div>
+            <div class="orb-card">
+                <div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle><circle class="orb-fg" id="remOrb" cx="25" cy="25" r="20" style="stroke:var(--purple); stroke-dashoffset:145"></circle></svg><div class="orb-val-box"><div class="orb-val" id="remVal">--</div></div></div>
+                <div class="orb-label">REM</div>
+            </div>
+        </div>
+
+        <div class="section-header"><span class="section-label">BIOMARKER PANEL</span></div>
+        <div class="bio-grid">
+            <div class="bio-card"><span class="bio-name">VO2 MAX</span><div><span class="bio-val" id="disp-vo2">--</span><span class="bio-status status-ok"></span></div></div>
+            <div class="bio-card"><span class="bio-name">APOB</span><div><span class="bio-val" id="disp-apob">--</span><span class="bio-status status-ok"></span></div></div>
+            <div class="bio-card"><span class="bio-name">HBA1C</span><div><span class="bio-val" id="disp-a1c">--</span><span class="bio-status status-ok"></span></div></div>
+            <div class="bio-card"><span class="bio-name">HS-CRP</span><div><span class="bio-val" id="disp-crp">--</span><span class="bio-status status-ok"></span></div></div>
+        </div>
+
+        <div class="section-header"><span class="section-label">PHYTONUTRIENT DIVERSITY</span></div>
+        <div class="rainbow-container">
+            <div style="display:flex; justify-content:space-between; font-size:0.6rem; color:#fff; font-weight:700;">
+                <span>RAINBOW SCORE</span>
+                <span id="rainbowScore">0%</span>
+            </div>
+            <div class="rainbow-track" id="rainbowTrack"></div>
+            <div class="rainbow-meta">Based on logged meals below</div>
+        </div>
+
+        <div class="section-label" style="margin-left:16px;">NUTRITION PROTOCOL</div>
+        <div class="timeline-container" id="timelineList"></div>
+
+        <div class="section-label" style="margin-left:16px;">MACRO TOTALS</div>
+        <div class="grid-4" id="macroList"></div>
+
+        <div class="ai-section">
+            <div class="ai-card">
+                <div style="color:var(--cyan); font-weight:900; font-size:0.7rem; margin-bottom:5px;">GEMINI COACH</div>
+                <div id="aiOutput" style="font-size:0.7rem; line-height:1.5; color:#ddd; min-height:20px; margin-bottom:15px; white-space:pre-line;">Data Loaded. Ready.</div>
+                <button class="ai-btn" onclick="centurion.runAI()">GENERATE COACHING</button>
+            </div>
+        </div>
+    </div>
 
     <div id="bioModal" class="modal">
         <div class="modal-content">
@@ -159,9 +230,10 @@
 
 <script>
 // ==========================================
-// V11.6: BUNKER BUSTER
-// - Brute Forces 1.5 Models to bypass "Not Found"
-// - Auto-Cascades until a model works
+// V12.4: CLEAN SLATE
+// - Hard DOM Reset on Toggle
+// - Cache Busting Timestamps on API calls
+// - no-store fetch mode
 // ==========================================
 
 const TOKENS = { 'jermaine': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'sophia': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
@@ -172,9 +244,373 @@ const USERS = {
     'sophia': { name: "Sophia", goals: { pro: 120, omega3: 2500, poly: 400, fib: 35 } }
 };
 
-const MACRO_VALS = {
-    'hyd': { p:0, o:0, poly:0, f:0 },
-    'juice': { p:2, o:50, poly:200, f:2 },
-    'train': { p:25, o:0, poly:0, f:0 },
-    'lunch': { p:45, o:1500, poly:150, f:8 },
-    'dinner': { p:50, o:250
+const PROTOCOL = {
+    'jermaine': [
+        { id:'hyd', time:'7 AM', title:'Hydration', desc:'Sea Moss Gel (2 tbsp)', colors:[], macros:{p:0,o:0} },
+        { id:'juice', time:'8 AM', title:'Juice', desc:'Beet Vitality', colors:['red','purple'], macros:{p:2,o:50} },
+        { id:'train', time:'9 AM', title:'Training', desc:'Strength / Zone 2', colors:[], macros:{p:25,o:0} },
+        { id:'lunch', time:'1 PM', title:'Lunch', desc:'Sardine Quinoa Salad', colors:['green','white'], macros:{p:45,o:1500,f:8} },
+        { id:'dinner', time:'6 PM', title:'Dinner', desc:'Wild Salmon', colors:['orange','green'], macros:{p:50,o:2500,f:10} }
+    ],
+    'sophia': [
+        { id:'hyd', time:'7 AM', title:'Hydration', desc:'Lemon Water', colors:['yellow'], macros:{p:0} },
+        { id:'juice', time:'8 AM', title:'Juice', desc:'Orange Immune', colors:['orange'], macros:{p:2} },
+        { id:'train', time:'9 AM', title:'Movement', desc:'Yoga / Pilates', colors:[], macros:{p:10} },
+        { id:'lunch', time:'1 PM', title:'Lunch', desc:'Ceviche', colors:['white','green'], macros:{p:35,o:1000} },
+        { id:'dinner', time:'6 PM', title:'Dinner', desc:'White Fish', colors:['white'], macros:{p:40,o:2000} }
+    ]
+};
+
+function getCaDate() { let d = new Date(); d.setHours(12, 0, 0, 0); return d; }
+function getDateKey(d) { return d.toISOString().split('T')[0]; }
+
+class CenturionCore {
+    constructor() {
+        this.user = localStorage.getItem('centurion_user') || 'jermaine';
+        this.history = []; 
+        this.currentIndex = 0; 
+        this.checked = {}; 
+        this.bios = {}; 
+        this.init();
+    }
+
+    async init() {
+        this.loadLocalData();
+        this.updateUI();
+        await this.fetchData();
+        this.renderBio();
+    }
+
+    loadLocalData() {
+        this.checked = JSON.parse(localStorage.getItem(`c_checked_${this.user}`)) || {};
+        this.bios = JSON.parse(localStorage.getItem(`c_bios_${this.user}`)) || {};
+    }
+
+    // --- SCORCHED EARTH SWITCH ---
+    switchUser(u) {
+        if(u === this.user) return;
+        this.user = u;
+        localStorage.setItem('centurion_user', u);
+        
+        // 1. CLEAR MEMORY
+        this.history = [];
+        this.currentIndex = 0;
+        this.loadLocalData();
+        
+        // 2. CLEAR UI INSTANTLY
+        this.wipeDashboard();
+        this.updateUI();
+        this.renderBio();
+        
+        // 3. START FRESH FETCH WITH CACHE BUSTING
+        this.fetchData();
+    }
+
+    // SAFE UPDATE HELPER
+    setText(id, val) {
+        const el = document.getElementById(id);
+        if(el) el.innerText = val;
+    }
+
+    wipeDashboard() {
+        this.setText('statusMsg', "CLEARING CACHE...");
+        this.setText('scoreVal', "--");
+        this.setText('dayGrade', "--");
+        this.setText('sleepVal', "--");
+        this.setText('deepVal', "--");
+        this.setText('remVal', "--");
+        this.setText('rhrVal', "--");
+        this.setText('bioDisplay', "--");
+        this.setText('disp-vo2', "--");
+        this.setText('disp-apob', "--");
+        this.setText('disp-a1c', "--");
+        this.setText('disp-crp', "--");
+        
+        document.getElementById('timelineList').innerHTML = "";
+        document.getElementById('macroList').innerHTML = "";
+        document.getElementById('rainbowTrack').innerHTML = "";
+        this.setText('rainbowScore', "0%");
+        
+        document.querySelectorAll('circle.orb-fg').forEach(el => el.style.strokeDashoffset = 145);
+        const ring = document.getElementById('ringFg');
+        if(ring) ring.style.strokeDashoffset = 283;
+    }
+
+    updateUI() {
+        document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
+        const btn = document.getElementById(`btn-${this.user}`);
+        if(btn) btn.classList.add('active');
+        this.setText('userLabel', `USER: ${USERS[this.user].name.toUpperCase()}`);
+    }
+
+    async fetchData() {
+        const fetchUser = this.user;
+        const bar = document.getElementById('ouraBar');
+        bar.innerText = "💍 SYNCING...";
+        
+        const d = new Date();
+        d.setDate(d.getDate() + 1);
+        const end = d.toISOString().split('T')[0];
+        d.setDate(d.getDate() - 8); 
+        const start = d.toISOString().split('T')[0];
+        
+        // CACHE BUSTER
+        const ts = Date.now();
+
+        try {
+            const [sRes, rRes] = await Promise.all([
+                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${start}&end_date=${end}&t=${ts}`)}`, { 
+                    headers: { 'Authorization': `Bearer ${TOKENS[this.user]}` },
+                    cache: 'no-store'
+                }),
+                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${start}&end_date=${end}&t=${ts}`)}`, { 
+                    headers: { 'Authorization': `Bearer ${TOKENS[this.user]}` },
+                    cache: 'no-store'
+                })
+            ]);
+
+            if(!sRes.ok || !rRes.ok) throw new Error(`${sRes.status} / ${rRes.status}`);
+            if(this.user !== fetchUser) return; // Prevent race
+
+            const sJson = await sRes.json();
+            const rJson = await rRes.json();
+
+            let rawHist = [];
+            if(sJson.data) {
+                rawHist = sJson.data.map(session => {
+                    const day = session.day;
+                    const readiness = rJson.data ? rJson.data.find(r => r.day === day) : null;
+                    return {
+                        date: day,
+                        score: readiness ? readiness.score : 0,
+                        totalSec: session.total_sleep_duration,
+                        deepSec: session.deep_sleep_duration,
+                        remSec: session.rem_sleep_duration,
+                        rhr: readiness && readiness.contributors ? readiness.contributors.resting_heart_rate : '-'
+                    };
+                }).sort((a, b) => b.date.localeCompare(a.date)); 
+            }
+
+            this.history = rawHist.filter(d => d.score > 0 || d.totalSec > 0);
+
+            if(this.history.length > 0) {
+                this.currentIndex = 0; 
+                bar.innerText = "💍 UPDATED";
+                this.render();
+            } else {
+                bar.innerText = "💍 EMPTY";
+                this.renderEmpty(); 
+            }
+
+        } catch (e) {
+            bar.innerText = `⚠️ ERR: ${e.message}`;
+            console.error(e);
+        }
+    }
+
+    changeDate(dir) {
+        if(this.history.length === 0) return;
+        const newIndex = this.currentIndex - dir;
+        if(newIndex >= 0 && newIndex < this.history.length) {
+            this.currentIndex = newIndex;
+            this.render();
+        }
+    }
+
+    render() {
+        if(this.history.length === 0) return this.renderEmpty();
+
+        const data = this.history[this.currentIndex];
+        this.setText('dateDisplay', data.date);
+        
+        const h = Math.floor(data.totalSec / 3600);
+        const m = Math.round((data.totalSec % 3600) / 60);
+        const sleepDisplay = data.totalSec > 0 ? `${h}h ${m}m` : "--";
+        const scoreVal = parseInt(data.score) || 0;
+        
+        this.setText('scoreVal', data.score || "-");
+        this.setText('sleepVal', sleepDisplay);
+        this.setText('deepVal', Math.round(data.deepSec / 60) + "m");
+        this.setText('remVal', Math.round(data.remSec / 60) + "m");
+        this.setText('rhrVal', data.rhr);
+        
+        const rColor = scoreVal >= 80 ? 'var(--acid)' : scoreVal >= 60 ? 'var(--gold)' : 'var(--alert)';
+        const tb = document.querySelector('.tactical-box');
+        if(tb) tb.style.borderLeftColor = rColor;
+        
+        const tl = document.querySelector('.tac-label');
+        if(tl) tl.style.color = rColor;
+        
+        let statusMsg = "MAINTAIN";
+        if(scoreVal >= 85) statusMsg = "PEAK READINESS";
+        else if(scoreVal < 70) statusMsg = "RECOVERY REQUIRED";
+        this.setText('statusMsg', statusMsg);
+
+        this.renderGrade(scoreVal, h);
+
+        const ring = document.getElementById('ringFg');
+        if(ring) ring.style.strokeDashoffset = 283 - (Math.min(scoreVal, 100) / 100) * 283;
+        
+        const so = document.getElementById('sleepOrb');
+        if(so) so.style.strokeDashoffset = 145 - (Math.min((data.totalSec/3600), 9) / 9) * 145;
+
+        this.renderComplex(data.date);
+        this.renderBio();
+    }
+
+    renderEmpty() {
+        this.setText('dateDisplay', "NO DATA");
+        this.setText('statusMsg', "SYNC REQUIRED");
+        this.wipeDashboard();
+        this.renderBio(); 
+    }
+
+    renderGrade(score, sleepHrs) {
+        let grade = 'C';
+        let color = 'var(--alert)';
+        if (score >= 85 && sleepHrs >= 7) { grade = 'S'; color = 'var(--acid)'; }
+        else if (score >= 80 && sleepHrs >= 6.5) { grade = 'A'; color = 'var(--cyan)'; }
+        else if (score >= 70) { grade = 'B'; color = 'var(--gold)'; }
+        
+        this.setText('dayGrade', grade);
+        const dg = document.getElementById('dayGrade');
+        if(dg) dg.style.color = color;
+        const gb = document.querySelector('.grade-box');
+        if(gb) gb.style.borderColor = color;
+    }
+
+    renderComplex(dateKey) {
+        const tasks = PROTOCOL[this.user];
+        const done = this.checked[dateKey] || [];
+        const goals = USERS[this.user].goals;
+        
+        let totals = { p:0, o:0, poly:0, f:0 };
+        let colorsHit = new Set();
+
+        let timelineHtml = '';
+        tasks.forEach(t => {
+            const isDone = done.includes(t.id);
+            if(isDone) {
+                if(t.macros.p) totals.p += t.macros.p;
+                if(t.macros.o) totals.o += t.macros.o;
+                if(t.macros.poly) totals.poly += t.macros.poly;
+                if(t.macros.f) totals.f += t.macros.f;
+                if(t.colors) t.colors.forEach(c => colorsHit.add(c));
+            }
+            timelineHtml += `
+            <div class="time-slot">
+                <div class="ts-time">${t.time}</div>
+                <div class="ts-card ${isDone ? 'checked' : ''}" onclick="centurion.toggleTask('${t.id}')">
+                    <div class="ts-title">${t.title}</div>
+                    <div class="ts-desc">${t.desc}</div>
+                    <div class="check-btn">${isDone ? '✓' : ''}</div>
+                </div>
+            </div>`;
+        });
+        const tl = document.getElementById('timelineList');
+        if(tl) tl.innerHTML = timelineHtml;
+
+        const drawOrb = (label, val, goal, color) => {
+            const pct = Math.min(val / goal, 1);
+            return `
+            <div class="orb-card"><div class="orb-container">
+                <svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle>
+                <circle class="orb-fg" cx="25" cy="25" r="20" style="stroke:${color}; stroke-dashoffset:${145 - (pct * 145)}"></circle></svg>
+                <div class="orb-val-box"><div class="orb-val">${val}</div></div>
+            </div><div class="orb-label">${label}</div></div>`;
+        };
+        const ml = document.getElementById('macroList');
+        if(ml) ml.innerHTML = 
+            drawOrb('PROTEIN', totals.p, goals.pro, '#fff') +
+            drawOrb('OMEGA-3', totals.o, goals.omega3, '#00d4ff') +
+            drawOrb('POLY', totals.poly, goals.poly, '#bf5af2') +
+            drawOrb('FIBER', totals.f, goals.fib, '#30d158');
+
+        this.setText('rainbowScore', Math.round((colorsHit.size/6)*100) + "%");
+        let rainbowHtml = '';
+        ['red','orange','yellow','green','purple','white'].forEach(c => {
+            const bg = {red:'#ff453a',orange:'#ff9f0a',yellow:'#ffd60a',green:'#30d158',purple:'#bf5af2',white:'#fff'}[c];
+            rainbowHtml += `<div class="rainbow-seg" style="background:${bg}; width:${colorsHit.has(c)?'16.66%':'0%'}"></div>`;
+        });
+        const rb = document.getElementById('rainbowTrack');
+        if(rb) rb.innerHTML = rainbowHtml;
+    }
+
+    toggleTask(id) {
+        if(this.history.length === 0) return;
+        const dateKey = this.history[this.currentIndex].date;
+        if(!this.checked[dateKey]) this.checked[dateKey] = [];
+        const idx = this.checked[dateKey].indexOf(id);
+        if(idx > -1) this.checked[dateKey].splice(idx, 1);
+        else this.checked[dateKey].push(id);
+        
+        localStorage.setItem(`c_checked_${this.user}`, JSON.stringify(this.checked));
+        this.renderComplex(dateKey);
+    }
+
+    async runAI() {
+        if(this.history.length === 0) return;
+        const data = this.history[this.currentIndex];
+        const ui = document.getElementById('aiOutput');
+        
+        const models = ['gemini-1.5-flash-8b', 'gemini-2.0-flash-exp', 'gemini-1.5-flash', 'gemini-2.5-flash', 'gemini-pro'];
+        const prompt = `Longevity coach analysis for ${USERS[this.user].name}. Stats: Sleep ${data.totalSec/3600}h, Deep ${Math.round(data.deepSec/60)}m, Score ${data.score}. Give 1 specific tough love tip.`;
+
+        let success = false;
+        for (let m of models) {
+            if(ui) ui.innerHTML = `<span style="color:#888">Connecting to ${m}...</span>`;
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${API_KEY}`, {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                if (res.ok) {
+                    const json = await res.json();
+                    if(json.candidates) {
+                        if(ui) ui.innerHTML = `<span style="color:var(--acid)">[${m}]</span> ${json.candidates[0].content.parts[0].text}`;
+                        success = true; break;
+                    }
+                }
+            } catch(e) {}
+        }
+
+        if (!success && ui) {
+            let advice = data.score >= 80 ? "System Optimal. Go for a PR." : "Prioritize sleep tonight.";
+            ui.innerHTML = `<span style="color:var(--cyan)">[CENTURION PRIME]</span> ${advice}`;
+        }
+    }
+
+    openBio() { 
+        document.getElementById('in-vo2').value = this.bios.vo2 || '';
+        document.getElementById('in-apob').value = this.bios.apob || '';
+        document.getElementById('in-a1c').value = this.bios.a1c || '';
+        document.getElementById('in-crp').value = this.bios.crp || '';
+        document.getElementById('bioModal').classList.add('active'); 
+    }
+    closeBio() { document.getElementById('bioModal').classList.remove('active'); }
+    
+    saveBio() {
+        this.bios = {
+            vo2: document.getElementById('in-vo2').value,
+            apob: document.getElementById('in-apob').value,
+            a1c: document.getElementById('in-a1c').value,
+            crp: document.getElementById('in-crp').value
+        };
+        localStorage.setItem(`c_bios_${this.user}`, JSON.stringify(this.bios));
+        this.closeBio();
+        this.renderBio();
+    }
+
+    renderBio() {
+        this.setText('disp-vo2', this.bios.vo2 || '--');
+        this.setText('disp-apob', this.bios.apob || '--');
+        this.setText('disp-a1c', this.bios.a1c || '--');
+        this.setText('disp-crp', this.bios.crp || '--');
+        this.setText('bioDisplay', `VO2: ${this.bios.vo2 || '--'} | APOB: ${this.bios.apob || '--'}`);
+    }
+}
+
+const centurion = new CenturionCore();
+</script>
+</body>
+</html>
