@@ -3,438 +3,488 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Centurion v15.2</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>The Centurion | v15.2 FOOD FIRST</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg: #000000; --panel: #0a0a0a; --border: #222; --acid: #ccff00; --cyan: #00f0ff;
-            --gold: #FFD60A; --alert: #ff453a; --text: #ffffff; --muted: #666;
+            --gold: #FFD60A; --alert: #ff453a; --purple: #bf5af2; --text: #ffffff; --muted: #666;
             --font-ui: 'Inter', sans-serif; --font-data: 'JetBrains Mono', monospace;
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; padding: 0 0 100px 0; background: var(--bg); color: var(--text); font-family: var(--font-ui); }
+        body { margin: 0; padding: 0 0 120px 0; background: var(--bg); color: var(--text); font-family: var(--font-ui); min-height: 100vh; background-image: radial-gradient(circle at top right, #111 0%, #000 70%); }
 
 ```
-    .header { padding: 15px; background: #0a0a0a; border-bottom: 1px solid #222; }
-    .title { font-size: 0.6rem; font-weight: 900; color: #666; letter-spacing: 2px; margin-bottom: 10px; }
-    .user-switch { display: flex; gap: 5px; background: #222; padding: 3px; border-radius: 20px; width: fit-content; }
-    .user-btn { padding: 6px 14px; border-radius: 16px; background: transparent; border: none; color: #666; font-size: 0.6rem; font-weight: 700; cursor: pointer; }
-    .user-btn.active { background: #fff; color: #000; }
+    .hud-header { padding: 15px 16px; background: rgba(0,0,0,0.95); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--border); }
+    .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .app-name { font-size: 0.6rem; font-weight: 900; letter-spacing: 2px; color: var(--muted); }
+    .user-switch { display: flex; gap: 4px; background: #222; padding: 2px; border-radius: 20px; }
+    .u-badge { padding: 6px 14px; border-radius: 16px; font-size: 0.6rem; font-weight: 700; color: #666; background: transparent; border: none; cursor: pointer; transition: all 0.2s; }
+    .u-badge.active { background: var(--text); color: #000; }
+    .bio-btn { background: rgba(255,255,255,0.1); border: 1px solid var(--border); color: var(--muted); padding: 4px 8px; border-radius: 8px; font-size: 0.55rem; font-weight: 700; cursor: pointer; margin-right: 10px; }
+    .date-nav { display: flex; justify-content: center; align-items: center; gap: 20px; font-family: var(--font-data); font-size: 0.8rem; font-weight: 700; color: #fff; padding-top: 10px; border-top: 1px solid #222; margin-top: 10px; }
+    .nav-btn { background: transparent; border: 1px solid var(--border); color: var(--gold); padding: 8px 20px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: 900; }
+    .date-display { min-width: 120px; text-align: center; letter-spacing: 1px; color: var(--acid); }
     
-    .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 15px; }
-    .metric-card { background: #0a0a0a; border: 1px solid #222; border-radius: 10px; padding: 12px; text-align: center; }
-    .metric-value { font-family: var(--font-data); font-size: 1.2rem; font-weight: 900; color: var(--acid); }
-    .metric-label { font-size: 0.5rem; color: #666; margin-top: 4px; font-weight: 700; letter-spacing: 1px; }
+    .hero-section { padding: 20px 16px; display: flex; align-items: center; justify-content: space-between; }
+    .grade-box { position: relative; width: 90px; height: 90px; display: flex; align-items: center; justify-content: center; border: 4px solid var(--border); border-radius: 50%; }
+    .grade-val { font-family: var(--font-data); font-size: 2.5rem; font-weight: 900; color: #fff; }
+    .grade-label { position: absolute; bottom: -20px; font-size: 0.5rem; font-weight: 700; color: var(--muted); }
+    .tactical-box { flex: 1; margin-left: 20px; border-left: 3px solid var(--acid); padding: 10px; background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, transparent 100%); }
+    .tac-label { font-size: 0.55rem; color: var(--acid); font-weight: 900; letter-spacing: 1px; margin-bottom: 4px; text-transform: uppercase; }
+    .tac-cmd { font-size: 0.8rem; font-weight: 700; color: #fff; line-height: 1.3; }
+    .tac-meta { font-family: var(--font-data); font-size: 0.55rem; color: var(--muted); margin-top: 4px; }
     
-    .protocol { padding: 0 15px; }
-    .section-title { font-size: 0.6rem; color: #666; font-weight: 900; letter-spacing: 1px; margin: 20px 0 10px; text-transform: uppercase; }
-    .task { background: #0a0a0a; border: 1px solid #222; border-radius: 10px; padding: 12px; margin-bottom: 10px; cursor: pointer; transition: all 0.2s; }
-    .task.checked { border-color: var(--acid); background: rgba(204,255,0,0.05); }
-    .task-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
-    .task-time { font-family: var(--font-data); font-size: 0.65rem; color: #666; }
-    .task-title { font-size: 0.8rem; font-weight: 700; color: #fff; }
-    .task-title.clickable { color: var(--acid); cursor: pointer; }
-    .task-title.clickable:hover { text-decoration: underline; }
-    .task-desc { font-size: 0.65rem; color: #888; line-height: 1.4; }
-    .task-why { font-size: 0.6rem; color: #666; margin-top: 6px; font-style: italic; border-left: 2px solid var(--gold); padding-left: 8px; }
-    .check { width: 20px; height: 20px; border-radius: 50%; border: 1px solid #444; background: transparent; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; }
-    .task.checked .check { background: var(--acid); border-color: var(--acid); color: #000; font-weight: 900; }
+    .health-badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 0.5rem; font-weight: 900; letter-spacing: 0.5px; margin-left: 8px; }
+    .badge-lpa { background: rgba(255,69,58,0.2); border: 1px solid var(--alert); color: var(--alert); }
+    .badge-ana { background: rgba(255,165,0,0.2); border: 1px solid #ff9f0a; color: #ff9f0a; }
     
-    .actions { padding: 15px; }
-    .action-btn { width: 100%; padding: 12px; background: var(--acid); color: #000; border: none; border-radius: 8px; font-weight: 900; font-size: 0.7rem; margin-bottom: 8px; cursor: pointer; }
-    .action-btn.secondary { background: #222; color: var(--acid); border: 1px solid var(--acid); }
+    .section-header { display: flex; justify-content: space-between; align-items: center; margin: 25px 16px 10px; }
+    .section-label { font-size: 0.55rem; font-weight: 900; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 10px; }
+    .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 10px; }
     
-    .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: #000; padding: 12px 15px; border-top: 1px solid #222; display: flex; justify-content: space-between; align-items: center; }
-    .footer-text { font-family: var(--font-data); font-size: 0.6rem; color: #666; }
-    .sync-btn { background: var(--acid); color: #000; border: none; padding: 8px 16px; border-radius: 6px; font-size: 0.65rem; font-weight: 900; cursor: pointer; }
+    .orb-card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 10px 5px; display: flex; flex-direction: column; align-items: center; position: relative; }
+    .orb-container { width: 50px; height: 50px; position: relative; display: flex; align-items: center; justify-content: center; margin-bottom: 5px; }
+    .orb-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+    .orb-bg { fill: none; stroke: #222; stroke-width: 4; }
+    .orb-fg { fill: none; stroke: var(--cyan); stroke-width: 4; stroke-dasharray: 145; stroke-dashoffset: 145; transition: stroke-dashoffset 1s ease; stroke-linecap: round; }
     
-    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.97); z-index: 1000; overflow-y: auto; }
+    .heart-svg { width: 100%; height: 100%; overflow: visible; }
+    .heart-bg { fill: none; stroke: #222; stroke-width: 2; }
+    .heart-fg { fill: none; stroke: var(--alert); stroke-width: 2; stroke-dasharray: 100; stroke-dashoffset: 100; transition: stroke-dashoffset 1s ease; }
+    .beating { animation: heartbeat 1.5s infinite; transform-origin: center; }
+    @keyframes heartbeat { 0% { transform: scale(1); } 15% { transform: scale(1.15); } 30% { transform: scale(1); } 45% { transform: scale(1.15); } 60% { transform: scale(1); } }
+    
+    .orb-val-box { position: absolute; text-align: center; }
+    .orb-val { font-family: var(--font-data); font-size: 0.7rem; font-weight: 700; color: #fff; }
+    .orb-label { font-size: 0.45rem; font-weight: 700; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-top: 4px; }
+    
+    .rainbow-container { padding: 0 16px; margin-bottom: 20px; }
+    .rainbow-track { height: 6px; background: #222; border-radius: 3px; display: flex; overflow: hidden; margin-top: 8px; }
+    .rainbow-seg { height: 100%; width: 0%; transition: width 0.5s ease; }
+    .rainbow-meta { display: flex; justify-content: space-between; font-size: 0.55rem; color: #888; margin-top: 4px; }
+    
+    .timeline-container { padding: 0 16px; margin-bottom: 40px; }
+    .time-slot { display: flex; gap: 12px; margin-bottom: 15px; position: relative; }
+    .ts-time { width: 45px; font-family: var(--font-data); font-size: 0.7rem; color: var(--muted); text-align: right; padding-top: 5px; }
+    .ts-card { flex: 1; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 12px; position: relative; cursor: pointer; transition: all 0.2s; }
+    .ts-title { font-size: 0.8rem; font-weight: 700; color: #fff; margin-bottom: 2px; }
+    .ts-desc { font-size: 0.6rem; color: #888; line-height: 1.3; }
+    .ts-why { font-size: 0.55rem; color: #666; margin-top: 4px; font-style: italic; line-height: 1.2; border-left: 2px solid var(--gold); padding-left: 8px; margin-top: 6px; }
+    .check-btn { position: absolute; top: 12px; right: 12px; width: 20px; height: 20px; border-radius: 50%; border: 1px solid #444; background: transparent; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.7rem; color: #000; }
+    .ts-card.checked { border-color: var(--acid); background: rgba(204,255,0,0.05); }
+    .ts-card.checked .check-btn { background: var(--acid); border-color: var(--acid); }
+    
+    .ai-section { padding: 16px; margin-bottom: 80px; }
+    .ai-card { background: #080808; border: 1px solid #333; padding: 15px; border-radius: 12px; position: relative; }
+    .ai-btn { width: 100%; padding: 12px; background: var(--acid); color: #000; font-weight: 900; border: none; border-radius: 6px; cursor: pointer; font-size: 0.7rem; }
+    
+    .sync-footer { position: fixed; bottom: 0; left: 0; width: 100%; background: #000; padding: 12px 16px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-family: var(--font-data); font-size: 0.6rem; color: #555; z-index: 200; }
+    .pulse { animation: pulse 2s infinite; display: inline-block; width: 6px; height: 6px; background: var(--acid); border-radius: 50%; margin-right: 6px; }
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } }
+    
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2000; padding: 20px; overflow-y: auto; }
     .modal.active { display: block; }
-    .modal-content { background: #0a0a0a; border: 1px solid #333; border-radius: 12px; padding: 20px; max-width: 600px; margin: 20px auto; }
-    .modal-header { display: flex; justify-content: space-between; margin-bottom: 15px; align-items: center; }
-    .modal-title { font-size: 0.8rem; font-weight: 900; color: var(--acid); letter-spacing: 1px; }
-    .modal-close { color: #666; cursor: pointer; font-size: 1.5rem; line-height: 1; }
-    
-    .recipe-meta { display: flex; gap: 15px; margin-bottom: 20px; padding: 12px; background: #111; border-radius: 8px; }
-    .recipe-meta-item { font-size: 0.7rem; color: #ccc; }
-    .recipe-meta-item strong { color: var(--acid); }
-    
-    .macros-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; }
-    .macro-box { background: #111; padding: 10px; border-radius: 8px; text-align: center; }
-    .macro-value { font-family: var(--font-data); font-size: 0.9rem; font-weight: 900; color: var(--cyan); }
-    .macro-label { font-size: 0.5rem; color: #666; margin-top: 2px; }
-    
-    .recipe-section { margin-bottom: 20px; }
-    .recipe-section-title { font-size: 0.65rem; color: var(--gold); font-weight: 900; margin-bottom: 10px; letter-spacing: 1px; }
-    .ingredient-item { font-size: 0.7rem; color: #ccc; margin: 6px 0; padding: 6px; background: #111; border-radius: 4px; }
-    .step-item { display: flex; gap: 10px; margin: 10px 0; }
-    .step-num { min-width: 28px; height: 28px; background: var(--acid); color: #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.7rem; flex-shrink: 0; }
-    .step-text { font-size: 0.7rem; color: #ccc; line-height: 1.5; padding-top: 4px; }
-    
-    .weekly-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #222; }
-    .weekly-label { font-size: 0.65rem; color: #888; }
-    .weekly-value { font-family: var(--font-data); font-size: 0.7rem; color: #fff; font-weight: 700; }
-    .trend-up { color: #30d158; margin-left: 6px; }
-    .trend-down { color: #ff453a; margin-left: 6px; }
-</style>
+    .modal-content { background: var(--panel); border: 1px solid var(--acid); border-radius: 16px; padding: 20px; margin-top: 40px; }
+    .input-group { margin-bottom: 15px; }
+    .input-group label { display: block; font-size: 0.6rem; color: #888; margin-bottom: 5px; text-transform: uppercase; }
+    .input-group input { width: 100%; background: #111; border: 1px solid #333; padding: 12px; color: #fff; font-family: var(--font-data); border-radius: 6px; }
+    .save-btn { width: 100%; padding: 15px; background: var(--acid); color: #000; font-weight: 900; border: none; border-radius: 8px; cursor: pointer; }
 ```
+
+.meal-clickable { cursor: pointer; color: var(–acid) !important; }
+.meal-clickable:hover { text-decoration: underline; }
+.cooking-page { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 5000; overflow-y: auto; padding: 0 0 80px; }
+.cooking-page.active { display: block; }
+.cooking-header { padding: 20px 16px; background: #0a0a0a; border-bottom: 1px solid #222; position: sticky; top: 0; z-index: 100; }
+.back-btn { background: #222; border: 1px solid #333; color: var(–acid); padding: 8px 16px; border-radius: 8px; font-size: 0.7rem; font-weight: 700; cursor: pointer; margin-bottom: 12px; }
+.cooking-title { font-size: 1.2rem; font-weight: 900; color: #fff; margin: 0 0 8px; }
+.cooking-meta { display: flex; gap: 15px; font-size: 0.7rem; color: #888; margin-bottom: 20px; }
+.macro-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 0 16px 20px; }
+.macro-card { background: #0a0a0a; border: 1px solid #333; border-radius: 10px; padding: 12px; text-align: center; }
+.macro-value { font-family: var(–font-data); font-size: 1rem; font-weight: 900; color: var(–cyan); }
+.macro-label { font-size: 0.5rem; color: #666; margin-top: 4px; }
+.cooking-section { padding: 15px 16px; border-bottom: 1px solid #111; }
+.section-title-cook { font-size: 0.65rem; font-weight: 900; color: var(–acid); margin-bottom: 12px; letter-spacing: 1px; }
+.ingredient-list { background: #0a0a0a; border: 1px solid #222; border-radius: 8px; padding: 10px; }
+.ingredient-item { font-size: 0.7rem; color: #ccc; padding: 8px; margin: 4px 0; background: #111; border-radius: 4px; }
+.steps-list { background: #0a0a0a; border: 1px solid #222; border-radius: 8px; padding: 10px; }
+.step-item { display: flex; gap: 12px; margin: 10px 0; }
+.step-number { min-width: 32px; height: 32px; background: var(–acid); color: #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.75rem; flex-shrink: 0; }
+.step-text { font-size: 0.7rem; color: #ccc; line-height: 1.5; padding-top: 6px; }
+.tips-list { background: rgba(204,255,0,0.05); border: 1px solid rgba(204,255,0,0.2); border-radius: 8px; padding: 12px; }
+.tip-item { font-size: 0.7rem; color: #ccc; margin: 6px 0; }
+.why-box { background: rgba(0,240,255,0.05); border: 1px solid rgba(0,240,255,0.2); border-radius: 8px; padding: 12px; font-size: 0.7rem; color: #ccc; line-height: 1.6; font-style: italic; }
+.cooking-footer { position: fixed; bottom: 0; left: 0; width: 100%; padding: 15px 16px; background: #000; border-top: 1px solid #222; z-index: 200; }
+.done-btn { width: 100%; padding: 15px; background: var(–acid); color: #000; border: none; border-radius: 8px; font-size: 0.8rem; font-weight: 900; cursor: pointer; }
+.weekly-summary { margin-top: 15px; padding: 15px; background: #0a0a0a; border: 1px solid #333; border-radius: 8px; }
+.weekly-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #222; }
+.weekly-row:last-child { border-bottom: none; }
+.weekly-label { font-size: 0.6rem; color: #888; }
+.weekly-value { font-family: var(–font-data); font-size: 0.65rem; color: #fff; font-weight: 700; }
+</style>
 
 </head>
 <body>
-    <div class="header">
-        <div class="title">CENTURION v15.2 FOOD FIRST</div>
-        <div class="user-switch">
-            <button id="btn-jer" class="user-btn active" onclick="app.switchUser('jermaine')">JER</button>
-            <button id="btn-soph" class="user-btn" onclick="app.switchUser('sophia')">SOPH</button>
+    <div class="hud-header">
+        <div class="top-bar">
+            <div class="app-name">CENTURION v15.2 FOOD FIRST</div>
+            <div style="display:flex; gap:10px;">
+                <button onclick="centurion.openBio()" class="bio-btn">BIO</button>
+                <div class="user-switch">
+                    <button id="btn-jermaine" class="u-badge active" onclick="centurion.switchUser('jermaine')">JER</button>
+                    <button id="btn-sophia" class="u-badge" onclick="centurion.switchUser('sophia')">SOPH</button>
+                </div>
+            </div>
+        </div>
+        <div class="date-nav">
+            <button class="nav-btn" onclick="centurion.changeDate(-1)">◀</button>
+            <span class="date-display" id="dateDisplay">LOADING...</span>
+            <button class="nav-btn" onclick="centurion.changeDate(1)">▶</button>
         </div>
     </div>
 
 ```
-<div class="metrics" id="metrics">
-    <div class="metric-card">
-        <div class="metric-value" id="sleepVal">--</div>
-        <div class="metric-label">SLEEP</div>
-    </div>
-    <div class="metric-card">
-        <div class="metric-value" id="rhrVal">--</div>
-        <div class="metric-label">RHR</div>
-    </div>
-    <div class="metric-card">
-        <div class="metric-value" id="scoreVal">--</div>
-        <div class="metric-label">SCORE</div>
-    </div>
-</div>
-
-<div class="protocol">
-    <div class="section-title">TODAY'S PROTOCOL</div>
-    <div id="taskList"></div>
-</div>
-
-<div class="actions">
-    <button class="action-btn" onclick="app.openWeekly()">📊 WEEKLY SUMMARY</button>
-    <button class="action-btn secondary" onclick="app.generateAI()">🧠 AI COACHING</button>
-    <div id="aiOutput" style="margin-top: 12px; font-size: 0.7rem; color: #ccc; line-height: 1.5;"></div>
-</div>
-
-<div class="footer">
-    <div class="footer-text" id="footerStatus">READY</div>
-    <button class="sync-btn" onclick="app.syncData()">SYNC OURA</button>
-</div>
-
-<div id="weeklyModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <span class="modal-title">📊 WEEKLY SUMMARY</span>
-            <span class="modal-close" onclick="app.closeWeekly()">×</span>
+<div id="dashboard">
+    <div class="hero-section">
+        <div class="grade-box">
+            <div class="grade-val" id="dayGrade">--</div>
+            <div class="grade-label">DAY GRADE</div>
         </div>
-        <div id="weeklyContent"></div>
+        <div class="tactical-box">
+            <div class="tac-label" id="userLabel">USER: --</div>
+            <div class="tac-cmd" id="statusMsg">INITIALIZING...</div>
+            <div class="tac-meta" id="bioDisplay">--</div>
+        </div>
+    </div>
+
+    <div class="section-header"><span class="section-label">SLEEP ARCHITECTURE</span></div>
+    <div class="grid-3">
+        <div class="orb-card">
+            <div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle><circle class="orb-fg" id="sleepOrb" cx="25" cy="25" r="20" style="stroke:#bf5af2"></circle></svg><div class="orb-val-box"><div class="orb-val" id="sleepVal">--</div></div></div>
+            <div class="orb-label">TOTAL</div>
+        </div>
+        <div class="orb-card">
+            <div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle><circle class="orb-fg" id="deepOrb" cx="25" cy="25" r="20" style="stroke:#007aff"></circle></svg><div class="orb-val-box"><div class="orb-val" id="deepVal">--</div></div></div>
+            <div class="orb-label">DEEP</div>
+        </div>
+        <div class="orb-card">
+            <div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle><circle class="orb-fg" id="remOrb" cx="25" cy="25" r="20" style="stroke:#bf5af2"></circle></svg><div class="orb-val-box"><div class="orb-val" id="remVal">--</div></div></div>
+            <div class="orb-label">REM</div>
+        </div>
+    </div>
+
+    <div class="section-header"><span class="section-label">CARDIO STATUS</span></div>
+    <div class="grid-4">
+        <div class="orb-card">
+            <div class="orb-container">
+                <svg class="heart-svg beating" viewBox="0 0 24 24"><path class="heart-bg" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" style="stroke:#ff453a; fill:rgba(255,69,58,0.2);"></path></svg>
+                <div class="orb-val-box"><div class="orb-val" id="rhrVal">--</div></div>
+            </div>
+            <div class="orb-label">RHR</div>
+        </div>
+        <div class="orb-card">
+            <div class="orb-container">
+                <svg class="heart-svg" viewBox="0 0 24 24"><path class="heart-bg" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path><path class="heart-fg" id="z2Heart" pathLength="100" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" style="stroke:#00f0ff"></path></svg>
+                <div class="orb-val-box"><div class="orb-val" id="z2Val">--</div></div>
+            </div>
+            <div class="orb-label">Z2</div>
+        </div>
+        <div class="orb-card">
+            <div class="orb-container">
+                <svg class="heart-svg" viewBox="0 0 24 24"><path class="heart-bg" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path><path class="heart-fg" id="z5Heart" pathLength="100" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" style="stroke:#FFD60A"></path></svg>
+                <div class="orb-val-box"><div class="orb-val" id="z5Val">--</div></div>
+            </div>
+            <div class="orb-label">Z5</div>
+        </div>
+        <div class="orb-card">
+            <div class="orb-container">
+                <svg class="heart-svg" viewBox="0 0 24 24"><path class="heart-bg" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path><path class="heart-fg" id="calHeart" pathLength="100" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" style="stroke:#fff"></path></svg>
+                <div class="orb-val-box"><div class="orb-val" id="calVal">--</div></div>
+            </div>
+            <div class="orb-label">CAL</div>
+        </div>
+    </div>
+
+    <div class="section-header"><span class="section-label">PHYTONUTRIENT DIVERSITY</span></div>
+    <div class="rainbow-container">
+        <div style="display:flex; justify-content:space-between; font-size:0.6rem; color:#fff; font-weight:700;">
+            <span>RAINBOW SCORE</span>
+            <span id="rainbowScore">0%</span>
+        </div>
+        <div class="rainbow-track" id="rainbowTrack"></div>
+        <div class="rainbow-meta">Anti-inflammatory + ApoB reduction</div>
+    </div>
+
+    <div class="section-label" style="margin-left:16px;">SYNERGY PROTOCOL</div>
+    <div class="timeline-container" id="timelineList"></div>
+
+    <div class="section-label" style="margin-left:16px;">MACRO TOTALS</div>
+    <div class="grid-4" id="macroList"></div>
+
+    <div class="ai-section">
+        <div class="ai-card">
+            <div style="color:#00f0ff; font-weight:900; font-size:0.7rem; margin-bottom:5px;">GEMINI COACH</div>
+            <div id="aiOutput" style="font-size:0.7rem; line-height:1.5; color:#ddd; min-height:20px; margin-bottom:15px;">Ready.</div>
+            <button class="ai-btn" onclick="centurion.runAI()">GENERATE COACHING</button>
+        </div>
     </div>
 </div>
 
-<div id="cookingModal" class="modal">
+<div id="bioModal" class="modal">
     <div class="modal-content">
-        <div class="modal-header">
-            <span class="modal-title" id="cookingTitle">RECIPE</span>
-            <span class="modal-close" onclick="app.closeCooking()">×</span>
+        <div style="display:flex;justify-content:space-between;margin-bottom:20px;">
+            <span style="color:#ccff00;font-weight:900;">BIOMARKERS</span>
+            <span onclick="centurion.closeBio()" style="color:#666;cursor:pointer;">✕</span>
         </div>
-        <div id="cookingContent"></div>
+        <div class="input-group"><label>VO2 Max</label><input id="in-vo2" type="number"></div>
+        <div class="input-group"><label>ApoB (mg/dL)</label><input id="in-apob" type="number"></div>
+        <div class="input-group"><label>Lp(a) (nmol/L)</label><input id="in-lpa" type="number"></div>
+        <div class="input-group"><label>ANA Titer</label><input id="in-ana" type="text" placeholder="1:320"></div>
+        <div class="input-group"><label>hs-CRP (mg/L)</label><input id="in-crp" type="number"></div>
+        <button class="save-btn" onclick="centurion.saveBio()">SAVE</button>
     </div>
+</div>
+
+<div class="sync-footer">
+    <div><span class="pulse"></span><span id="ouraBar">INIT</span></div>
+    <div onclick="centurion.fetchData()" style="cursor:pointer">SYNC</div>
 </div>
 ```
 
 <script>
-console.log('=== CENTURION v15.2 LOADING ===');
+const TOKENS = { 'jermaine': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'sophia': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
+const API_KEY = "AIzaSyBtqgUcbq5uVGFZ5nHPDyhthLDii7uRNrg";
 
-const PROTOCOL = [
-    { id:'sunrise', time:'6:00', title:'Morning Activation', desc:'15min walk + cold shower', why:'Circadian reset + brown fat activation' },
-    { id:'hydrate', time:'6:30', title:'Hydration Start', desc:'32oz water + Celtic salt + lemon', why:'Kidney flushing. Electrolytes for training' },
-    { id:'juice1', time:'7:00', title:'ARTERIAL FLOW Juice', desc:'16oz: Beets, carrots, turmeric, ginger, lemon', why:'Fresh turmeric = 3x curcumin. Nitrates = vasodilation' },
-    { id:'breakfast', time:'7:30', title:'Omega Breakfast 👆', desc:'Salmon 8oz, 2 eggs, kale, blueberries, walnuts', clickable:true, why:'Eggs = choline. Salmon = 3500mg omega-3' },
-    { id:'train', time:'9:00', title:'Training', desc:'JER: 4x4 VO2max | SOPH: Yoga flow', why:'VO2max = arterial health. Yoga = cortisol control' },
-    { id:'juice2', time:'10:00', title:'RECOVERY Juice + Broth', desc:'12oz cherry/pomegranate/blueberry + bone broth', why:'Anthocyanins cut CRP. Glycine = kidney support' },
-    { id:'lunch', time:'1:00', title:'Mediterranean Bowl 👆', desc:'Mackerel 6oz, quinoa, arugula, beets, olives', clickable:true, why:'Mackerel = 4200mg omega-3 (highest)' },
-    { id:'snack', time:'4:00', title:'Polyphenol Snack', desc:'Dark chocolate 85%, matcha, apple', why:'Cocoa = endothelial function. EGCG. Quercetin' },
-    { id:'dinner', time:'6:30', title:'Omega Dinner 👆', desc:'Salmon 8oz, sweet potato, broccoli, Brussels sprouts', clickable:true, why:'Omega-3 + sulforaphane + beta-carotene' },
-    { id:'juice3', time:'8:00', title:'HIBISCUS FLUSH', desc:'10oz: Hibiscus tea + tart cherry + pomegranate', why:'Creatinine reduction. Melatonin precursor' },
-    { id:'evening', time:'9:00', title:'Wind-Down + Golden Milk', desc:'Fresh turmeric golden milk + magnesium 600mg', why:'Curcumin 1500mg. Magnesium = sleep + kidney function' }
-];
-
-const RECIPES = {
-    breakfast: {
-        title: 'Omega Breakfast',
-        time: '15 min',
-        servings: 1,
-        macros: { protein: 58, omega3: 3500, poly: 220, fiber: 12, calories: 680 },
-        ingredients: [
-            '8oz wild salmon fillet',
-            '2 pasture-raised eggs',
-            '2 cups kale (chopped)',
-            '1 cup blueberries',
-            '1oz walnuts (chopped)',
-            '½ avocado (sliced)',
-            '1 tsp EVOO',
-            'Celtic salt, black pepper'
-        ],
-        steps: [
-            'Heat EVOO in a pan over medium heat',
-            'Season salmon with salt and pepper',
-            'Cook salmon 4 minutes per side until flaky',
-            'In separate pan, scramble eggs with pinch of salt',
-            'Massage kale with pinch of salt until tender (2 min)',
-            'Plate kale as base layer',
-            'Top with cooked salmon and scrambled eggs',
-            'Add blueberries, avocado slices, and walnuts',
-            'Serve immediately'
-        ],
-        tips: [
-            'Buy wild-caught salmon for maximum omega-3',
-            'Massage kale until bright green and wilted',
-            'Don\'t overcook salmon - slightly pink in center',
-            'Use pasture-raised eggs for higher omega-3'
-        ],
-        why: 'Salmon provides 3500mg omega-3 to lower Lp(a) oxidation. Eggs supply choline for liver function. Walnuts add plant omega-3. Blueberries deliver polyphenols for arterial protection.'
-    },
-    lunch: {
-        title: 'Mediterranean Bowl',
-        time: '12 min',
-        servings: 1,
-        macros: { protein: 55, omega3: 4200, poly: 250, fiber: 18, calories: 720 },
-        ingredients: [
-            '6oz wild mackerel',
-            '1 cup cooked quinoa',
-            '2 cups arugula',
-            '1 cup roasted beets (diced)',
-            '10 kalamata olives',
-            '2 tbsp EVOO',
-            '¼ cup pomegranate seeds',
-            '1 lemon (juice)',
-            '2 cloves garlic (minced)'
-        ],
-        steps: [
-            'Cook quinoa if not pre-cooked',
-            'Season mackerel with salt, pepper, and garlic',
-            'Grill or pan-sear mackerel 3 minutes per side',
-            'Massage arugula with 1 tbsp EVOO and lemon juice',
-            'In bowl, add quinoa as base',
-            'Top with massaged arugula',
-            'Add diced roasted beets',
-            'Place cooked mackerel on top',
-            'Garnish with olives and pomegranate seeds',
-            'Drizzle remaining EVOO'
-        ],
-        tips: [
-            'Mackerel has 4x more omega-3 than salmon',
-            'Roast beets ahead for meal prep',
-            'Use high-quality EVOO (should taste peppery)',
-            'Can substitute sardines for mackerel'
-        ],
-        why: 'Mackerel delivers 4200mg omega-3 (highest of any fish). Beets provide nitrates for arterial flexibility. EVOO polyphenols prevent LDL oxidation. Pomegranate adds punicalagin.'
-    },
-    dinner: {
-        title: 'Omega Dinner',
-        time: '35 min',
-        servings: 1,
-        macros: { protein: 60, omega3: 4000, poly: 200, fiber: 16, calories: 750 },
-        ingredients: [
-            '8oz wild salmon',
-            '1 medium Japanese sweet potato',
-            '2 cups broccoli florets',
-            '1 cup Brussels sprouts (halved)',
-            'Fresh herbs (basil, cilantro)',
-            '2 tbsp EVOO',
-            '4 cloves garlic (minced)',
-            'Ginger-turmeric powder',
-            'Celtic salt, black pepper'
-        ],
-        steps: [
-            'Preheat oven to 400°F',
-            'Wash sweet potato, poke holes, wrap in foil',
-            'Roast sweet potato 30 minutes',
-            'Steam broccoli and Brussels sprouts 8 minutes',
-            'Season salmon with ginger-turmeric powder',
-            'Pan-sear salmon 4 minutes per side',
-            'Heat EVOO, sauté garlic 30 seconds',
-            'Toss vegetables with garlic EVOO',
-            'Plate sweet potato, vegetables, salmon',
-            'Top with fresh herbs'
-        ],
-        tips: [
-            'Japanese sweet potatoes have purple skin',
-            'Keep cruciferous vegetables bright green',
-            'Fresh herbs > dried for antioxidants',
-            'Make extra sweet potato for next day'
-        ],
-        why: 'Salmon omega-3 fights inflammation. Cruciferous vegetables contain sulforaphane that activates Nrf2 anti-inflammatory pathway. Sweet potato provides beta-carotene.'
-    }
+const USERS = {
+    jermaine: { name: "Jermaine", age: 42, condition: "HIGH LP(A)", goals: { pro: 180, omega3: 4000, poly: 600, fib: 45, z2: 45, z5: 25, cal: 800 } },
+    sophia: { name: "Sophia", age: 38, condition: "HIGH ANA", goals: { pro: 130, omega3: 4000, poly: 600, fib: 45, z2: 60, z5: 15, cal: 600 } }
 };
 
-class App {
+const PROTOCOL = [
+    { id:'sunrise', time:'6:00', title:'Morning Activation', desc:'15min outdoor walk + cold shower', colors:[], macros:{p:0,o:0}, why:'Circadian reset reduces cortisol (ANA trigger) + cold activates brown fat (anti-inflammatory)' },
+    { id:'hydrate', time:'6:30', title:'Hydration', desc:'Sea Moss (2 tbsp) + Lemon + Celtic Salt', colors:['green'], macros:{p:1,o:0,poly:50}, why:'Trace minerals support endothelium + electrolytes for VO2max training' },
+    { id:'breakfast', time:'7:30', title:'Omega Breakfast 👆', clickable:true, desc:'Wild Salmon 6oz, Avocado ½, Blueberries 1c, Walnuts 1oz, Spinach 2c, Turmeric milk', colors:['orange','purple','green','white'], macros:{p:50,o:2800,poly:220,f:12}, why:'Omega-3 lowers Lp(a) oxidation. Curcumin blocks NF-κB (ANA pathway). Polyphenols reduce arterial inflammation' },
+    { id:'train', time:'9:00', title:'Partner Training', desc:'JER: 4x4min VO2max @95%HR. SOPH: Yoga flow during rest', colors:[], macros:{p:0,o:0}, why:'VO2max = arterial stiffness (Lp(a) protection). Yoga = mobility + cortisol reduction (autoimmune control)' },
+    { id:'post', time:'10:00', title:'Recovery', desc:'Tart Cherry 8oz + Collagen 20g + Creatine 5g', colors:['red','purple'], macros:{p:20,o:0,poly:180}, why:'Anthocyanins cut CRP 25%. Collagen protects joints (autoimmune). Creatine for ATP' },
+    { id:'lunch', time:'1:00', title:'Mediterranean Bowl 👆', clickable:true, desc:'Sardines 2 cans, Quinoa 1c, Arugula 2c, Beets 1c, Olives 10, EVOO 2tbsp, Pomegranate', colors:['red','green','white','purple'], macros:{p:55,o:3500,poly:250,f:14}, why:'Sardines = max EPA/DHA for ApoB. Beets = arterial flex. Polyphenols block IL-6 (ANA)' },
+    { id:'snack', time:'4:00', title:'Anti-Inflam Snack', desc:'Dark Choc 85% (2sq) + Matcha + Brazil Nuts (3)', colors:['green','white'], macros:{p:5,o:200,poly:180}, why:'Cocoa = endothelial function. Selenium modulates autoimmune. EGCG anti-inflam' },
+    { id:'dinner', time:'6:30', title:'Omega Dinner 👆', clickable:true, desc:'Wild Mackerel 8oz, Sweet Potato 1, Broccoli 2c, Garlic 3 cloves, Ginger 1tbsp, Turmeric', colors:['orange','green','white','yellow'], macros:{p:60,o:4200,poly:200,f:16}, why:'Mackerel 4x omega-3 vs salmon. Sulforaphane = Nrf2 (anti-inflam). Ginger blocks COX-2' },
+    { id:'evening', time:'9:00', title:'Wind-Down', desc:'Magnesium 400mg + Ashwagandha 300mg + Tart Cherry + Blue blockers', colors:[], macros:{p:0,o:0}, why:'Mag lowers CRP. Ashwa cuts cortisol 28%. Melatonin for deep sleep = inflammation control' }
+];
+
+class CenturionCore {
     constructor() {
-        console.log('App constructor starting...');
-        this.user = localStorage.getItem('user') || 'jermaine';
-        this.checked = JSON.parse(localStorage.getItem('checked') || '{}');
-        this.data = [];
-        console.log('Rendering initial UI...');
-        this.render();
-        console.log('App ready!');
+        this.user = localStorage.getItem('centurion_user') || 'jermaine';
+        this.history = []; this.currentIndex = 0; this.checked = {}; this.bios = {};
+        this.init();
     }
-    
+    init() { 
+        console.log('Initializing...');
+        this.loadLocalData(); 
+        this.updateUI(); 
+        this.renderBio();
+        this.renderEmpty();
+        // Fetch data in background (non-blocking)
+        setTimeout(() => {
+            this.fetchData().catch(e => {
+                console.log('Fetch failed:', e);
+                document.getElementById('ouraBar').innerText = "TAP SYNC";
+            });
+        }, 100);
+    }
+    loadLocalData() {
+        this.checked = JSON.parse(localStorage.getItem(`c_checked_${this.user}`)) || {};
+        this.bios = JSON.parse(localStorage.getItem(`c_bios_${this.user}`)) || {};
+    }
+    switchUser(u) {
+        if(u === this.user) return;
+        this.user = u; localStorage.setItem('centurion_user', u); this.wipeDashboard();
+        document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
+        document.getElementById(`btn-${u}`).classList.add('active');
+        this.history = []; this.currentIndex = 0; this.loadLocalData(); this.renderBio(); this.fetchData();
+    }
+    setText(id, val) { const el = document.getElementById(id); if(el) el.innerText = val; }
+    wipeDashboard() {
+        this.setText('dayGrade', "--"); this.setText('sleepVal', "--"); this.setText('deepVal', "--");
+        this.setText('remVal', "--"); this.setText('rhrVal', "--"); this.setText('bioDisplay', "--");
+        document.getElementById('timelineList').innerHTML = ""; document.getElementById('macroList').innerHTML = "";
+        document.getElementById('rainbowTrack').innerHTML = ""; this.setText('rainbowScore', "0%");
+        this.setText('statusMsg', "SWITCHING..."); 
+        document.querySelectorAll('circle.orb-fg').forEach(el => el.style.strokeDashoffset = 145);
+        document.querySelectorAll('path.heart-fg').forEach(el => el.style.strokeDashoffset = 100);
+    }
+    updateUI() {
+        document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
+        document.getElementById(`btn-${this.user}`).classList.add('active');
+        this.setText('userLabel', `USER: ${USERS[this.user].name.toUpperCase()}`);
+    }
+    async fetchData() {
+        const bar = document.getElementById('ouraBar'); bar.innerText = "SYNCING...";
+        const d = new Date(); d.setDate(d.getDate() + 1); const end = d.toISOString().split('T')[0];
+        d.setDate(d.getDate() - 8); const start = d.toISOString().split('T')[0]; const ts = Date.now();
+        try {
+            const [sRes, rRes, aRes] = await Promise.all([
+                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${start}&end_date=${end}&t=${ts}`)}`, { headers: { 'Authorization': `Bearer ${TOKENS[this.user]}` }, cache: 'no-store' }),
+                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${start}&end_date=${end}&t=${ts}`)}`, { headers: { 'Authorization': `Bearer ${TOKENS[this.user]}` }, cache: 'no-store' }),
+                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${start}&end_date=${end}&t=${ts}`)}`, { headers: { 'Authorization': `Bearer ${TOKENS[this.user]}` }, cache: 'no-store' })
+            ]);
+            if(!sRes.ok) throw new Error("API Error");
+            const sJson = await sRes.json(), rJson = await rRes.json(), aJson = await aRes.json();
+            let raw = sJson.data ? sJson.data.map(s => {
+                const r = rJson.data?.find(x => x.day === s.day);
+                const a = aJson.data?.find(x => x.day === s.day);
+                return { date: s.day, score: r?.score || 0, totalSec: s.total_sleep_duration, deepSec: s.deep_sleep_duration,
+                    remSec: s.rem_sleep_duration, rhr: r?.contributors?.resting_heart_rate || '-',
+                    cal: a?.active_calories || 0, high: (a?.high_activity_time || 0)/60, med: (a?.medium_activity_time || 0)/60 };
+            }).sort((a,b) => b.date.localeCompare(a.date)) : [];
+            this.history = raw.filter(d => d.score > 0 || d.totalSec > 0);
+            if(this.history.length > 0) { this.currentIndex = 0; bar.innerText = "UPDATED"; this.render(); }
+            else { bar.innerText = "EMPTY"; this.renderEmpty(); }
+        } catch(e) { bar.innerText = `ERR: ${e.message}`; console.error(e); }
+    }
+    changeDate(dir) {
+        if(!this.history.length) return;
+        const n = this.currentIndex - dir;
+        if(n >= 0 && n < this.history.length) { this.currentIndex = n; this.render(); }
+    }
     render() {
-        let html = '';
-        PROTOCOL.forEach(task => {
-            const isChecked = this.checked[task.id] || false;
-            const clickHandler = task.clickable ? 
-                `onclick="event.stopPropagation(); app.showRecipe('${task.id}')"` : '';
-            
-            html += `
-                <div class="task ${isChecked ? 'checked' : ''}" onclick="app.toggle('${task.id}')">
-                    <div class="task-header">
-                        <div class="task-time">${task.time}</div>
-                        <div class="check">${isChecked ? '✓' : ''}</div>
-                    </div>
-                    <div class="task-title ${task.clickable ? 'clickable' : ''}" ${clickHandler}>${task.title}</div>
-                    <div class="task-desc">${task.desc}</div>
-                    ${task.why ? `<div class="task-why">WHY: ${task.why}</div>` : ''}
-                </div>
-            `;
+        if(!this.history.length) return this.renderEmpty();
+        const d = this.history[this.currentIndex], h = Math.floor(d.totalSec/3600), m = Math.round((d.totalSec%3600)/60);
+        this.setText('dateDisplay', d.date); this.setText('sleepVal', `${h}h ${m}m`);
+        this.setText('deepVal', Math.round(d.deepSec/60)+"m"); this.setText('remVal', Math.round(d.remSec/60)+"m");
+        this.setText('rhrVal', d.rhr); const g = USERS[this.user].goals;
+        this.setText('z2Val', Math.round(d.med)); this.setText('z5Val', Math.round(d.high)); this.setText('calVal', d.cal);
+        const uh = (id,val,goal) => { const e = document.getElementById(id); if(e) e.style.strokeDashoffset = 100-(Math.min(val/goal,1)*100); };
+        uh('z2Heart', d.med, g.z2); uh('z5Heart', d.high, g.z5); uh('calHeart', d.cal, g.cal);
+        const c = d.score >= 80 ? '#ccff00' : d.score >= 60 ? '#FFD60A' : '#ff453a';
+        document.querySelector('.tactical-box').style.borderLeftColor = c;
+        const u = USERS[this.user], s = d.score >= 85 ? `PEAK - ${u.condition} MANAGED` : d.score < 70 ? `RECOVERY - ${u.condition} RISK` : `${u.condition} PROTOCOL`;
+        this.setText('statusMsg', s); this.renderGrade(d.score, h);
+        document.getElementById('sleepOrb').style.strokeDashoffset = 145-(Math.min(d.totalSec/3600,9)/9)*145;
+        document.getElementById('deepOrb').style.strokeDashoffset = 145-(Math.min(d.deepSec/3600,2)/2)*145;
+        document.getElementById('remOrb').style.strokeDashoffset = 145-(Math.min(d.remSec/3600,2)/2)*145;
+        this.renderComplex(d.date); this.renderBio();
+    }
+    renderEmpty() { this.setText('dateDisplay', "NO DATA"); this.setText('statusMsg', "SYNC"); this.wipeDashboard(); this.renderBio(); }
+    renderGrade(sc, sl) {
+        let gr = 'C', co = '#ff453a';
+        if(sc >= 85 && sl >= 7) { gr = 'S'; co = '#ccff00'; }
+        else if(sc >= 80 && sl >= 6.5) { gr = 'A'; co = '#00f0ff'; }
+        else if(sc >= 70) { gr = 'B'; co = '#FFD60A'; }
+        this.setText('dayGrade', gr); document.getElementById('dayGrade').style.color = co;
+        document.querySelector('.grade-box').style.borderColor = co;
+    }
+    renderComplex(dk) {
+        const done = this.checked[dk] || [], g = USERS[this.user].goals;
+        let tot = {p:0,o:0,poly:0,f:0}, cols = new Set(), html = '';
+        PROTOCOL.forEach(t => {
+            const chk = done.includes(t.id);
+            if(chk) { tot.p += t.macros.p||0; tot.o += t.macros.o||0; tot.poly += t.macros.poly||0; tot.f += t.macros.f||0; t.colors?.forEach(c => cols.add(c)); }
+            html += `<div class="time-slot"><div class="ts-time">${t.time}</div><div class="ts-card ${chk?'checked':''}" onclick="centurion.toggleTask('${t.id}')">
+                <div class="ts-title">${t.title}</div><div class="ts-desc">${t.desc}</div>
+                ${t.why?`<div class="ts-why">WHY: ${t.why}</div>`:''}
+                <div class="check-btn">${chk?'✓':''}</div></div></div>`;
         });
-        document.getElementById('taskList').innerHTML = html;
+        document.getElementById('timelineList').innerHTML = html;
+        const orb = (l,v,go,co) => `<div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle>
+            <circle class="orb-fg" cx="25" cy="25" r="20" style="stroke:${co}; stroke-dashoffset:${145-(Math.min(v/go,1)*145)}"></circle></svg>
+            <div class="orb-val-box"><div class="orb-val">${v}</div></div></div><div class="orb-label">${l}</div></div>`;
+        document.getElementById('macroList').innerHTML = orb('PROTEIN',tot.p,g.pro,'#fff')+orb('OMEGA-3',tot.o,g.omega3,'#00d4ff')+orb('POLY',tot.poly,g.poly,'#bf5af2')+orb('FIBER',tot.f,g.fib,'#30d158');
+        this.setText('rainbowScore', Math.round(cols.size/6*100)+"%");
+        const cb = {red:'#ff453a',orange:'#ff9f0a',yellow:'#ffd60a',green:'#30d158',purple:'#bf5af2',white:'#fff'};
+        document.getElementById('rainbowTrack').innerHTML = ['red','orange','yellow','green','purple','white'].map(c => 
+            `<div class="rainbow-seg" style="background:${cb[c]}; width:${cols.has(c)?'16.66%':'0%'}"></div>`).join('');
     }
-    
-    toggle(id) {
-        this.checked[id] = !this.checked[id];
-        localStorage.setItem('checked', JSON.stringify(this.checked));
-        this.render();
+    toggleTask(id) {
+        if(!this.history.length) return;
+        const dk = this.history[this.currentIndex].date;
+        if(!this.checked[dk]) this.checked[dk] = [];
+        const i = this.checked[dk].indexOf(id);
+        i > -1 ? this.checked[dk].splice(i,1) : this.checked[dk].push(id);
+        localStorage.setItem(`c_checked_${this.user}`, JSON.stringify(this.checked));
+        this.renderComplex(dk);
     }
-    
-    switchUser(user) {
-        this.user = user;
-        localStorage.setItem('user', user);
-        document.querySelectorAll('.user-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(`btn-${user === 'jermaine' ? 'jer' : 'soph'}`).classList.add('active');
-    }
-    
-    showRecipe(id) {
-        const recipe = RECIPES[id];
-        if(!recipe) return;
-        
-        document.getElementById('cookingTitle').innerText = recipe.title.toUpperCase();
-        
-        let html = `
-            <div class="recipe-meta">
-                <div class="recipe-meta-item"><strong>⏱️ </strong>${recipe.time}</div>
-                <div class="recipe-meta-item"><strong>🍽️ </strong>${recipe.servings} serving</div>
-            </div>
-            
-            <div class="macros-grid">
-                <div class="macro-box">
-                    <div class="macro-value">${recipe.macros.protein}g</div>
-                    <div class="macro-label">PROTEIN</div>
-                </div>
-                <div class="macro-box">
-                    <div class="macro-value">${recipe.macros.omega3}mg</div>
-                    <div class="macro-label">OMEGA-3</div>
-                </div>
-                <div class="macro-box">
-                    <div class="macro-value">${recipe.macros.poly}mg</div>
-                    <div class="macro-label">POLYPHENOLS</div>
-                </div>
-                <div class="macro-box">
-                    <div class="macro-value">${recipe.macros.fiber}g</div>
-                    <div class="macro-label">FIBER</div>
-                </div>
-                <div class="macro-box">
-                    <div class="macro-value">${recipe.macros.calories}</div>
-                    <div class="macro-label">CALORIES</div>
-                </div>
-            </div>
-            
-            <div class="recipe-section">
-                <div class="recipe-section-title">🛒 INGREDIENTS</div>
-                ${recipe.ingredients.map(ing => `<div class="ingredient-item">• ${ing}</div>`).join('')}
-            </div>
-            
-            <div class="recipe-section">
-                <div class="recipe-section-title">👨‍🍳 COOKING STEPS</div>
-                ${recipe.steps.map((step, i) => `
-                    <div class="step-item">
-                        <div class="step-num">${i+1}</div>
-                        <div class="step-text">${step}</div>
-                    </div>
-                `).join('')}
-            </div>
-            
-            <div class="recipe-section">
-                <div class="recipe-section-title">💡 PRO TIPS</div>
-                ${recipe.tips.map(tip => `<div class="ingredient-item">✓ ${tip}</div>`).join('')}
-            </div>
-            
-            <div class="recipe-section">
-                <div class="recipe-section-title">🎯 WHY THIS WORKS</div>
-                <div style="background: rgba(0,240,255,0.05); border: 1px solid rgba(0,240,255,0.2); padding: 12px; border-radius: 8px; font-size: 0.7rem; color: #ccc; line-height: 1.6; font-style: italic;">
-                    ${recipe.why}
-                </div>
-            </div>
-            
-            <button class="action-btn" onclick="app.closeCooking()">✓ GOT IT</button>
-        `;
-        
-        document.getElementById('cookingContent').innerHTML = html;
-        document.getElementById('cookingModal').classList.add('active');
-    }
-    
-    closeCooking() {
-        document.getElementById('cookingModal').classList.remove('active');
-    }
-    
-    openWeekly() {
-        if(this.data.length < 2) {
-            document.getElementById('weeklyContent').innerHTML = `
-                <div style="color: #ccc; font-size: 0.75rem; line-height: 1.6; text-align: center; padding: 20px;">
-                    <div style="font-size: 2rem; margin-bottom: 10px;">📊</div>
-                    Need at least 2 days of Oura data for weekly summary.<br><br>
-                    Tap <strong style="color: var(--acid);">SYNC OURA</strong> below to load your data.
-                </div>
-            `;
-        } else {
-            const last7 = this.data.slice(0, Math.min(7, this.data.length));
-            const avg = (key) => {
-                const vals = last7.map(d => d[key]).filter(v => v > 0);
-                return vals.length ? (vals.reduce((a,b) => a+b) / vals.length).toFixed(1) : 0;
-            };
-            
-            document.getElementById('weeklyContent').innerHTML = `
-                <div style="font-size: 0.65rem; color: #888; margin-bottom: 15px;">
-                    Last ${last7.length} days
-                </div>
-                
-                <div class="weekly-row">
-                    <span class="weekly-label">AVG READINESS</span>
-                    <span class="weekly-value">${avg('score')}</span>
-                </div>
-                <div class="weekly-row">
-                    <span class="weekly-label">AVG SLEEP</span>
-                    <span class="weekly-value">${avg('sleep')}h</span>
-                </div>
-                <div class="weekly-row">
-                    <span class="weekly-label">AVG RHR</span>
-                    <span class="weekly-value">${avg('rhr')}</span>
-                </div>
-                <div class="weekly-row" style="border-bottom: none;">
-                    <span class="weekly-label">ACTIVE CALORIES</span>
-                    <span class="weekly-value">${(avg('cal') * last7.length).toFixed(0)}</span>
-                </div>
-                
-                <div style="margin-top: 20px; padding: 15px; background: #111; border-radius: 8px;">
-                    <div style="font-size: 0.6rem; color: #888; margin-bottom: 8px;">INSIGHTS</div>
-                    <div style="font-size: 0.7rem; color: #ccc; line-height: 1.5;">
-                        ${avg('score') > 75 ? '✓ Strong week! Metrics indicate good recovery.' : 
-                          '⚠ Focus on sleep quality and recovery protocols.'}
-                    </div>
-                </div>
-            `;
+    async runAI() {
+        if(!this.history.length) return;
+        const d = this.history[this.currentIndex], ui = document.getElementById('aiOutput'), u = USERS[this.user];
+        const p = `Coach ${u.name} (${u.condition}). Sleep ${(d.totalSec/3600).toFixed(1)}h, Score ${d.score}, Z2 ${Math.round(d.med)}min, Z5 ${Math.round(d.high)}min. ${u.condition==='HIGH LP(A)'?'ApoB via omega-3, VO2max for arteries':'ANA via anti-inflam, mobility'}. 1 action TODAY.`;
+        ui.innerText = "Analyzing...";
+        for(let m of ['gemini-1.5-flash-8b','gemini-2.0-flash-exp']) {
+            try {
+                const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${API_KEY}`, {
+                    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({contents:[{parts:[{text:p}]}]})
+                });
+                if(r.ok) { const j = await r.json(); if(j.candidates) { ui.innerText = j.candidates[0].content.parts[0].text; return; } }
+            } catch(e) {}
         }
+        ui.innerText = d.score >= 80 ? `${u.condition} managed. Execute VO2max.` : `Recovery. Z2 only.`;
+    }
+    openBio() {
+        ['vo2','apob','lpa','ana','crp'].forEach(k => document.getElementById(`in-${k}`).value = this.bios[k]||'');
+        document.getElementById('bioModal').classList.add('active');
+    }
+    closeBio() { document.getElementById('bioModal').classList.remove('active'); }
+    saveBio() {
+        this.bios = { vo2: document.getElementById('in-vo2').value, apob: document.getElementById('in-apob').value,
+            lpa: document.getElementById('in-lpa').value, ana: document.getElementById('in-ana').value, crp: document.getElementById('in-crp').value };
+        localStorage.setItem(`c_bios_${this.user}`, JSON.stringify(this.bios));
+        this.closeBio(); this.renderBio();
+    }
+    renderBio() {
+        const u = USERS[this.user]; let t = u.condition;
+        if(u.condition === 'HIGH LP(A)' && this.bios.lpa) {
+            t += ` • Lp(a): ${this.bios.lpa}`;
+            document.querySelector('.tac-label').innerHTML = `USER: ${u.name.toUpperCase()} <span class="health-badge badge-lpa">LP(A)</span>`;
+        } else if(u.condition === 'HIGH ANA' && this.bios.ana) {
+            t += ` • ANA: ${this.bios.ana}`;
+            document.querySelector('.tac-label').innerHTML = `USER: ${u.name.toUpperCase()} <span class="health-badge badge-ana">ANA</span>`;
+        }
+        if(this.bios.apob) t += ` • ApoB: ${this.bios.apob}`;
+        if(this.bios.crp) t += ` • CRP: ${this.bios.crp}`;
+        this.setText('bioDisplay', t);
+    }
+}
+
+    
+    openWeeklySummary() {
+        if(this.history.length < 2) {
+            document.getElementById('weeklyContent').innerHTML = '<div style="text-align:center;padding:20px;color:#888;font-size:0.7rem;">Need at least 2 days of data. Tap SYNC below.</div>';
+            document.getElementById('weeklyModal').classList.add('active');
+            return;
+        }
+        
+        const last7 = this.history.slice(0, Math.min(7, this.history.length));
+        const avg = (arr, key) => {
+            const vals = arr.map(d => {
+                if(key === 'sleep') return d.totalSec / 3600;
+                if(key === 'deep') return d.deepSec / 3600;
+                if(key === 'rem') return d.remSec / 3600;
+                if(key === 'rhr') return typeof d.rhr === 'number' ? d.rhr : parseInt(d.rhr) || 0;
+                return d[key] || 0;
+            }).filter(v => v > 0);
+            return vals.length ? (vals.reduce((a,b) => a+b) / vals.length).toFixed(1) : 0;
+        };
+        
+        const u = USERS[this.user];
+        let html = `
+            <div class="weekly-summary">
+                <div style="font-size:0.65rem;color:#888;margin-bottom:15px;">Last ${last7.length} days (${last7[last7.length-1].date} to ${last7[0].date})</div>
+                <div class="weekly-row"><span class="weekly-label">AVG READINESS</span><span class="weekly-value">${avg(last7, 'score')}</span></div>
+                <div class="weekly-row"><span class="weekly-label">AVG SLEEP</span><span class="weekly-value">${avg(last7, 'sleep')}h</span></div>
+                <div class="weekly-row"><span class="weekly-label">AVG DEEP</span><span class="weekly-value">${avg(last7, 'deep')}h</span></div>
+                <div class="weekly-row"><span class="weekly-label">AVG REM</span><span class="weekly-value">${avg(last7, 'rem')}h</span></div>
+                <div class="weekly-row"><span class="weekly-label">AVG RHR</span><span class="weekly-value">${avg(last7, 'rhr')}</span></div>
+                <div class="weekly-row"><span class="weekly-label">TOTAL ZONE 2</span><span class="weekly-value">${(avg(last7, 'med') * last7.length).toFixed(0)}min / ${u.goals.z2 * 7}min</span></div>
+                <div class="weekly-row" style="border:none;"><span class="weekly-label">TOTAL ZONE 5</span><span class="weekly-value">${(avg(last7, 'high') * last7.length).toFixed(0)}min / ${u.goals.z5 * 7}min</span></div>
+            </div>
+            <div style="margin-top:15px;padding:12px;background:#111;border-radius:8px;font-size:0.7rem;color:#ccc;line-height:1.5;">
+                ${avg(last7, 'score') > 75 ? '✓ Strong week! Good recovery and inflammation control.' : '⚠ Focus on sleep quality and recovery protocols.'}
+            </div>
+        `;
+        document.getElementById('weeklyContent').innerHTML = html;
         document.getElementById('weeklyModal').classList.add('active');
     }
     
@@ -442,93 +492,99 @@ class App {
         document.getElementById('weeklyModal').classList.remove('active');
     }
     
-    async syncData() {
-        const status = document.getElementById('footerStatus');
-        status.innerText = 'SYNCING...';
-        
-        try {
-            const TOKENS = {
-                'jermaine': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y',
-                'sophia': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4'
-            };
-            
-            const d = new Date();
-            const end = new Date(d.setDate(d.getDate() + 1)).toISOString().split('T')[0];
-            const start = new Date(d.setDate(d.getDate() - 8)).toISOString().split('T')[0];
-            
-            const [sRes, rRes] = await Promise.all([
-                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${start}&end_date=${end}`)}`, {
-                    headers: { 'Authorization': `Bearer ${TOKENS[this.user]}` }
-                }),
-                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${start}&end_date=${end}`)}`, {
-                    headers: { 'Authorization': `Bearer ${TOKENS[this.user]}` }
-                })
-            ]);
-            
-            if(sRes.ok && rRes.ok) {
-                const sleep = await sRes.json();
-                const ready = await rRes.json();
-                
-                this.data = (sleep.data || []).map(s => {
-                    const r = ready.data?.find(x => x.day === s.day);
-                    return {
-                        date: s.day,
-                        sleep: (s.total_sleep_duration / 3600).toFixed(1),
-                        score: r?.score || 0,
-                        rhr: r?.contributors?.resting_heart_rate || 0,
-                        cal: 0
-                    };
-                }).sort((a,b) => b.date.localeCompare(a.date));
-                
-                if(this.data.length > 0) {
-                    const latest = this.data[0];
-                    document.getElementById('sleepVal').innerText = latest.sleep + 'h';
-                    document.getElementById('rhrVal').innerText = latest.rhr;
-                    document.getElementById('scoreVal').innerText = latest.score;
-                }
-                
-                status.innerText = `SYNCED - ${this.data.length} DAYS`;
-            } else {
-                throw new Error('API Error');
+    showCooking(mealId) {
+        const MEALS = {
+            breakfast: {
+                title: 'Omega Breakfast',
+                time: '15 min',
+                macros: { protein: 58, omega3: 3500, poly: 220, fiber: 12, cal: 680 },
+                ingredients: ['8oz wild salmon fillet', '2 pasture-raised eggs', '2 cups kale (chopped)', '1 cup blueberries', '1oz walnuts', '½ avocado', '1 tsp EVOO', 'Celtic salt, black pepper'],
+                steps: ['Heat EVOO in pan over medium heat', 'Season salmon with salt and pepper', 'Cook salmon 4 minutes per side until flaky', 'Scramble eggs in separate pan', 'Massage kale with salt until tender (2 min)', 'Plate kale as base', 'Top with salmon and eggs', 'Add blueberries, avocado, and walnuts'],
+                tips: ['Buy wild-caught salmon for max omega-3', 'Massage kale until bright green', 'Don\'t overcook salmon', 'Use pasture-raised eggs'],
+                why: 'Salmon = 3500mg omega-3 to lower Lp(a) oxidation. Eggs = choline for liver. Walnuts = plant omega-3. Blueberries = polyphenols.'
+            },
+            lunch: {
+                title: 'Mediterranean Bowl',
+                time: '12 min',
+                macros: { protein: 55, omega3: 4200, poly: 250, fiber: 18, cal: 720 },
+                ingredients: ['6oz wild mackerel', '1 cup cooked quinoa', '2 cups arugula', '1 cup roasted beets', '10 kalamata olives', '2 tbsp EVOO', '¼ cup pomegranate seeds', '1 lemon juice', '2 cloves garlic'],
+                steps: ['Cook quinoa if needed', 'Season mackerel with garlic, salt, pepper', 'Grill mackerel 3 min per side', 'Massage arugula with EVOO and lemon', 'Layer: quinoa base, arugula, beets', 'Top with mackerel', 'Add olives and pomegranate', 'Drizzle remaining EVOO'],
+                tips: ['Mackerel has 4x omega-3 vs salmon', 'Roast beets ahead for meal prep', 'Use quality EVOO', 'Can substitute sardines'],
+                why: 'Mackerel = 4200mg omega-3 (highest). Beets = nitrates for arteries. EVOO = polyphenols. Pomegranate = punicalagin.'
+            },
+            dinner: {
+                title: 'Omega Dinner',
+                time: '35 min',
+                macros: { protein: 60, omega3: 4000, poly: 200, fiber: 16, cal: 750 },
+                ingredients: ['8oz wild salmon', '1 Japanese sweet potato', '2 cups broccoli', '1 cup Brussels sprouts', 'Fresh herbs', '2 tbsp EVOO', '4 cloves garlic', 'Ginger-turmeric powder', 'Salt, pepper'],
+                steps: ['Preheat oven to 400°F', 'Wrap sweet potato in foil, roast 30 min', 'Steam broccoli and Brussels sprouts 8 min', 'Season salmon with spices', 'Pan-sear salmon 4 min per side', 'Sauté garlic in EVOO', 'Toss veggies with garlic oil', 'Plate together with fresh herbs'],
+                tips: ['Japanese sweet potatoes = purple skin', 'Keep vegetables bright green', 'Fresh herbs > dried', 'Meal prep extra potato'],
+                why: 'Salmon omega-3 = anti-inflammatory. Cruciferous = sulforaphane (Nrf2 pathway). Sweet potato = beta-carotene.'
             }
-        } catch(e) {
-            status.innerText = 'SYNC FAILED';
-            console.error(e);
-        }
+        };
+        
+        const meal = MEALS[mealId];
+        if(!meal) return;
+        
+        let html = `
+            <div class="cooking-header">
+                <button class="back-btn" onclick="centurion.closeCooking()">← BACK</button>
+                <h1 class="cooking-title">${meal.title}</h1>
+                <div class="cooking-meta"><span>⏱️ ${meal.time}</span><span>🍽️ 1 serving</span></div>
+            </div>
+            <div class="macro-grid">
+                <div class="macro-card"><div class="macro-value">${meal.macros.protein}g</div><div class="macro-label">PROTEIN</div></div>
+                <div class="macro-card"><div class="macro-value">${meal.macros.omega3}mg</div><div class="macro-label">OMEGA-3</div></div>
+                <div class="macro-card"><div class="macro-value">${meal.macros.poly}mg</div><div class="macro-label">POLYPHENOLS</div></div>
+                <div class="macro-card"><div class="macro-value">${meal.macros.fiber}g</div><div class="macro-label">FIBER</div></div>
+                <div class="macro-card"><div class="macro-value">${meal.macros.cal}</div><div class="macro-label">CALORIES</div></div>
+            </div>
+            <div class="cooking-section">
+                <h2 class="section-title-cook">🛒 INGREDIENTS</h2>
+                <div class="ingredient-list">${meal.ingredients.map(i => `<div class="ingredient-item">• ${i}</div>`).join('')}</div>
+            </div>
+            <div class="cooking-section">
+                <h2 class="section-title-cook">👨‍🍳 COOKING STEPS</h2>
+                <div class="steps-list">${meal.steps.map((s, i) => `<div class="step-item"><div class="step-number">${i+1}</div><div class="step-text">${s}</div></div>`).join('')}</div>
+            </div>
+            <div class="cooking-section">
+                <h2 class="section-title-cook">💡 PRO TIPS</h2>
+                <div class="tips-list">${meal.tips.map(t => `<div class="tip-item">✓ ${t}</div>`).join('')}</div>
+            </div>
+            <div class="cooking-section">
+                <h2 class="section-title-cook">🎯 WHY THIS WORKS</h2>
+                <div class="why-box">${meal.why}</div>
+            </div>
+            <div class="cooking-footer"><button class="done-btn" onclick="centurion.closeCooking()">✓ DONE COOKING</button></div>
+        `;
+        
+        document.getElementById('cookingPage').innerHTML = html;
+        document.getElementById('cookingPage').classList.add('active');
+        document.body.style.overflow = 'hidden';
     }
     
-    async generateAI() {
-        const output = document.getElementById('aiOutput');
-        output.innerText = 'Generating coaching...';
-        
-        try {
-            const API_KEY = 'AIzaSyBtqgUcbq5uVGFZ5nHPDyhthLDii7uRNrg';
-            const prompt = `You are a health coach. Give one specific actionable tip for someone tracking ${this.user === 'jermaine' ? 'Lp(a) and cardiovascular health with omega-3 and VO2max training' : 'ANA and autoimmune health with anti-inflammatory diet and gentle movement'}. Keep it under 50 words.`;
-            
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-8b:generateContent?key=${API_KEY}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }]
-                })
-            });
-            
-            if(res.ok) {
-                const data = await res.json();
-                output.innerText = data.candidates[0].content.parts[0].text;
-            } else {
-                output.innerText = 'Stay consistent with your omega-3 protocol. Small daily actions compound into major health improvements.';
-            }
-        } catch(e) {
-            output.innerText = 'Focus on food-first nutrition and quality sleep for optimal recovery.';
-        }
+    closeCooking() {
+        document.getElementById('cookingPage').classList.remove('active');
+        document.body.style.overflow = 'auto';
     }
 }
 
-console.log('Creating app instance...');
-const app = new App();
-console.log('=== APP LOADED SUCCESSFULLY ===');
+const centurion = new CenturionCore();
 </script>
+
+```
+<div id="weeklyModal" class="modal">
+    <div class="modal-content">
+        <div style="display:flex;justify-content:space-between;margin-bottom:20px;">
+            <span style="color:#ccff00;font-weight:900;font-size:0.8rem;">📊 WEEKLY SUMMARY</span>
+            <span onclick="centurion.closeWeekly()" style="color:#666;cursor:pointer;font-size:1.2rem;">✕</span>
+        </div>
+        <div id="weeklyContent"></div>
+    </div>
+</div>
+
+<div id="cookingPage" class="cooking-page"></div>
+```
 
 </body>
 </html>
