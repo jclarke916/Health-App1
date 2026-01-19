@@ -469,32 +469,33 @@ const PROTOCOL = [
 
 class CenturionCore {
     constructor() {
+        console.log('Centurion constructor called');
         this.user = localStorage.getItem('centurion_user') || 'jermaine';
         this.history = []; 
         this.currentIndex = 0; 
         this.checked = {}; 
         this.bios = {};
+        console.log('Starting init...');
         this.init();
+        console.log('Init completed');
     }
     
-    async init() { 
+    init() { 
+        console.log('Initializing Centurion...');
         this.loadLocalData(); 
         this.updateUI(); 
         this.renderBio();
         
-        // Show empty state immediately
+        // Show UI immediately - don't wait for data
         this.renderEmpty();
         
-        // Try to fetch data with timeout
-        try {
-            await Promise.race([
-                this.fetchData(),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000))
-            ]);
-        } catch(e) {
-            console.log('Fetch failed or timed out:', e.message);
-            document.getElementById('ouraBar').innerText = "TAP SYNC";
-        }
+        // Fetch data in background (non-blocking)
+        setTimeout(() => {
+            this.fetchData().catch(e => {
+                console.log('Background fetch failed:', e);
+                document.getElementById('ouraBar').innerText = "TAP SYNC";
+            });
+        }, 100);
     }
     
     loadLocalData() {
@@ -669,8 +670,10 @@ class CenturionCore {
     }
     
     renderEmpty() { 
+        console.log('Rendering empty state');
         this.setText('dateDisplay', "NO DATA"); 
         this.setText('statusMsg', "TAP SYNC TO LOAD"); 
+        document.getElementById('ouraBar').innerText = "READY";
         this.renderBio();
         
         // Show protocol even without data
