@@ -4,131 +4,530 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Centurion Debug</title>
+    <title>The Centurion v15.2</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
-        body { margin: 0; padding: 20px; background: #000; color: #0f0; font-family: monospace; font-size: 14px; }
-        .log { margin: 5px 0; padding: 5px; background: #111; border-left: 3px solid #0f0; }
-        .error { border-left-color: #f00; color: #f00; }
-        .success { border-left-color: #0f0; }
-        .info { border-left-color: #0ff; color: #0ff; }
-        button { background: #0f0; color: #000; border: none; padding: 10px 20px; margin: 10px 5px; cursor: pointer; font-weight: bold; }
-    </style>
+        :root {
+            --bg: #000000; --panel: #0a0a0a; --border: #222; --acid: #ccff00; --cyan: #00f0ff;
+            --gold: #FFD60A; --alert: #ff453a; --text: #ffffff; --muted: #666;
+            --font-ui: 'Inter', sans-serif; --font-data: 'JetBrains Mono', monospace;
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; padding: 0 0 100px 0; background: var(--bg); color: var(--text); font-family: var(--font-ui); }
+
+```
+    .header { padding: 15px; background: #0a0a0a; border-bottom: 1px solid #222; }
+    .title { font-size: 0.6rem; font-weight: 900; color: #666; letter-spacing: 2px; margin-bottom: 10px; }
+    .user-switch { display: flex; gap: 5px; background: #222; padding: 3px; border-radius: 20px; width: fit-content; }
+    .user-btn { padding: 6px 14px; border-radius: 16px; background: transparent; border: none; color: #666; font-size: 0.6rem; font-weight: 700; cursor: pointer; }
+    .user-btn.active { background: #fff; color: #000; }
+    
+    .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 15px; }
+    .metric-card { background: #0a0a0a; border: 1px solid #222; border-radius: 10px; padding: 12px; text-align: center; }
+    .metric-value { font-family: var(--font-data); font-size: 1.2rem; font-weight: 900; color: var(--acid); }
+    .metric-label { font-size: 0.5rem; color: #666; margin-top: 4px; font-weight: 700; letter-spacing: 1px; }
+    
+    .protocol { padding: 0 15px; }
+    .section-title { font-size: 0.6rem; color: #666; font-weight: 900; letter-spacing: 1px; margin: 20px 0 10px; text-transform: uppercase; }
+    .task { background: #0a0a0a; border: 1px solid #222; border-radius: 10px; padding: 12px; margin-bottom: 10px; cursor: pointer; transition: all 0.2s; }
+    .task.checked { border-color: var(--acid); background: rgba(204,255,0,0.05); }
+    .task-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+    .task-time { font-family: var(--font-data); font-size: 0.65rem; color: #666; }
+    .task-title { font-size: 0.8rem; font-weight: 700; color: #fff; }
+    .task-title.clickable { color: var(--acid); cursor: pointer; }
+    .task-title.clickable:hover { text-decoration: underline; }
+    .task-desc { font-size: 0.65rem; color: #888; line-height: 1.4; }
+    .task-why { font-size: 0.6rem; color: #666; margin-top: 6px; font-style: italic; border-left: 2px solid var(--gold); padding-left: 8px; }
+    .check { width: 20px; height: 20px; border-radius: 50%; border: 1px solid #444; background: transparent; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; }
+    .task.checked .check { background: var(--acid); border-color: var(--acid); color: #000; font-weight: 900; }
+    
+    .actions { padding: 15px; }
+    .action-btn { width: 100%; padding: 12px; background: var(--acid); color: #000; border: none; border-radius: 8px; font-weight: 900; font-size: 0.7rem; margin-bottom: 8px; cursor: pointer; }
+    .action-btn.secondary { background: #222; color: var(--acid); border: 1px solid var(--acid); }
+    
+    .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: #000; padding: 12px 15px; border-top: 1px solid #222; display: flex; justify-content: space-between; align-items: center; }
+    .footer-text { font-family: var(--font-data); font-size: 0.6rem; color: #666; }
+    .sync-btn { background: var(--acid); color: #000; border: none; padding: 8px 16px; border-radius: 6px; font-size: 0.65rem; font-weight: 900; cursor: pointer; }
+    
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.97); z-index: 1000; overflow-y: auto; }
+    .modal.active { display: block; }
+    .modal-content { background: #0a0a0a; border: 1px solid #333; border-radius: 12px; padding: 20px; max-width: 600px; margin: 20px auto; }
+    .modal-header { display: flex; justify-content: space-between; margin-bottom: 15px; align-items: center; }
+    .modal-title { font-size: 0.8rem; font-weight: 900; color: var(--acid); letter-spacing: 1px; }
+    .modal-close { color: #666; cursor: pointer; font-size: 1.5rem; line-height: 1; }
+    
+    .recipe-meta { display: flex; gap: 15px; margin-bottom: 20px; padding: 12px; background: #111; border-radius: 8px; }
+    .recipe-meta-item { font-size: 0.7rem; color: #ccc; }
+    .recipe-meta-item strong { color: var(--acid); }
+    
+    .macros-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; }
+    .macro-box { background: #111; padding: 10px; border-radius: 8px; text-align: center; }
+    .macro-value { font-family: var(--font-data); font-size: 0.9rem; font-weight: 900; color: var(--cyan); }
+    .macro-label { font-size: 0.5rem; color: #666; margin-top: 2px; }
+    
+    .recipe-section { margin-bottom: 20px; }
+    .recipe-section-title { font-size: 0.65rem; color: var(--gold); font-weight: 900; margin-bottom: 10px; letter-spacing: 1px; }
+    .ingredient-item { font-size: 0.7rem; color: #ccc; margin: 6px 0; padding: 6px; background: #111; border-radius: 4px; }
+    .step-item { display: flex; gap: 10px; margin: 10px 0; }
+    .step-num { min-width: 28px; height: 28px; background: var(--acid); color: #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.7rem; flex-shrink: 0; }
+    .step-text { font-size: 0.7rem; color: #ccc; line-height: 1.5; padding-top: 4px; }
+    
+    .weekly-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #222; }
+    .weekly-label { font-size: 0.65rem; color: #888; }
+    .weekly-value { font-family: var(--font-data); font-size: 0.7rem; color: #fff; font-weight: 700; }
+    .trend-up { color: #30d158; margin-left: 6px; }
+    .trend-down { color: #ff453a; margin-left: 6px; }
+</style>
+```
+
 </head>
 <body>
-    <h1>🔍 CENTURION DEBUG MODE</h1>
-    <div id="logs"></div>
-    <button onclick="testInit()">TEST INITIALIZATION</button>
-    <button onclick="testFetch()">TEST OURA FETCH</button>
-    <button onclick="clearLogs()">CLEAR LOGS</button>
+    <div class="header">
+        <div class="title">CENTURION v15.2 FOOD FIRST</div>
+        <div class="user-switch">
+            <button id="btn-jer" class="user-btn active" onclick="app.switchUser('jermaine')">JER</button>
+            <button id="btn-soph" class="user-btn" onclick="app.switchUser('sophia')">SOPH</button>
+        </div>
+    </div>
+
+```
+<div class="metrics" id="metrics">
+    <div class="metric-card">
+        <div class="metric-value" id="sleepVal">--</div>
+        <div class="metric-label">SLEEP</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-value" id="rhrVal">--</div>
+        <div class="metric-label">RHR</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-value" id="scoreVal">--</div>
+        <div class="metric-label">SCORE</div>
+    </div>
+</div>
+
+<div class="protocol">
+    <div class="section-title">TODAY'S PROTOCOL</div>
+    <div id="taskList"></div>
+</div>
+
+<div class="actions">
+    <button class="action-btn" onclick="app.openWeekly()">📊 WEEKLY SUMMARY</button>
+    <button class="action-btn secondary" onclick="app.generateAI()">🧠 AI COACHING</button>
+    <div id="aiOutput" style="margin-top: 12px; font-size: 0.7rem; color: #ccc; line-height: 1.5;"></div>
+</div>
+
+<div class="footer">
+    <div class="footer-text" id="footerStatus">READY</div>
+    <button class="sync-btn" onclick="app.syncData()">SYNC OURA</button>
+</div>
+
+<div id="weeklyModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span class="modal-title">📊 WEEKLY SUMMARY</span>
+            <span class="modal-close" onclick="app.closeWeekly()">×</span>
+        </div>
+        <div id="weeklyContent"></div>
+    </div>
+</div>
+
+<div id="cookingModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span class="modal-title" id="cookingTitle">RECIPE</span>
+            <span class="modal-close" onclick="app.closeCooking()">×</span>
+        </div>
+        <div id="cookingContent"></div>
+    </div>
+</div>
+```
 
 <script>
-const log = (msg, type = 'info') => {
-    const div = document.createElement('div');
-    div.className = `log ${type}`;
-    div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-    document.getElementById('logs').appendChild(div);
-    console.log(msg);
-};
+console.log('=== CENTURION v15.2 LOADING ===');
 
-const clearLogs = () => {
-    document.getElementById('logs').innerHTML = '';
-};
+const PROTOCOL = [
+    { id:'sunrise', time:'6:00', title:'Morning Activation', desc:'15min walk + cold shower', why:'Circadian reset + brown fat activation' },
+    { id:'hydrate', time:'6:30', title:'Hydration Start', desc:'32oz water + Celtic salt + lemon', why:'Kidney flushing. Electrolytes for training' },
+    { id:'juice1', time:'7:00', title:'ARTERIAL FLOW Juice', desc:'16oz: Beets, carrots, turmeric, ginger, lemon', why:'Fresh turmeric = 3x curcumin. Nitrates = vasodilation' },
+    { id:'breakfast', time:'7:30', title:'Omega Breakfast 👆', desc:'Salmon 8oz, 2 eggs, kale, blueberries, walnuts', clickable:true, why:'Eggs = choline. Salmon = 3500mg omega-3' },
+    { id:'train', time:'9:00', title:'Training', desc:'JER: 4x4 VO2max | SOPH: Yoga flow', why:'VO2max = arterial health. Yoga = cortisol control' },
+    { id:'juice2', time:'10:00', title:'RECOVERY Juice + Broth', desc:'12oz cherry/pomegranate/blueberry + bone broth', why:'Anthocyanins cut CRP. Glycine = kidney support' },
+    { id:'lunch', time:'1:00', title:'Mediterranean Bowl 👆', desc:'Mackerel 6oz, quinoa, arugula, beets, olives', clickable:true, why:'Mackerel = 4200mg omega-3 (highest)' },
+    { id:'snack', time:'4:00', title:'Polyphenol Snack', desc:'Dark chocolate 85%, matcha, apple', why:'Cocoa = endothelial function. EGCG. Quercetin' },
+    { id:'dinner', time:'6:30', title:'Omega Dinner 👆', desc:'Salmon 8oz, sweet potato, broccoli, Brussels sprouts', clickable:true, why:'Omega-3 + sulforaphane + beta-carotene' },
+    { id:'juice3', time:'8:00', title:'HIBISCUS FLUSH', desc:'10oz: Hibiscus tea + tart cherry + pomegranate', why:'Creatinine reduction. Melatonin precursor' },
+    { id:'evening', time:'9:00', title:'Wind-Down + Golden Milk', desc:'Fresh turmeric golden milk + magnesium 600mg', why:'Curcumin 1500mg. Magnesium = sleep + kidney function' }
+];
 
-log('Debug mode loaded', 'success');
-
-// Test basic initialization
-function testInit() {
-    log('Testing initialization...', 'info');
-    
-    try {
-        log('Step 1: Creating class instance', 'info');
-        
-        class TestCore {
-            constructor() {
-                log('Constructor called', 'success');
-                this.user = 'jermaine';
-                this.init();
-            }
-            
-            init() {
-                log('Init method called', 'success');
-                log('Loading UI...', 'info');
-                this.showUI();
-            }
-            
-            showUI() {
-                log('UI shown successfully', 'success');
-            }
-        }
-        
-        const test = new TestCore();
-        log('✓ Initialization test PASSED', 'success');
-        
-    } catch(e) {
-        log(`✗ Error: ${e.message}`, 'error');
-        log(`Stack: ${e.stack}`, 'error');
+const RECIPES = {
+    breakfast: {
+        title: 'Omega Breakfast',
+        time: '15 min',
+        servings: 1,
+        macros: { protein: 58, omega3: 3500, poly: 220, fiber: 12, calories: 680 },
+        ingredients: [
+            '8oz wild salmon fillet',
+            '2 pasture-raised eggs',
+            '2 cups kale (chopped)',
+            '1 cup blueberries',
+            '1oz walnuts (chopped)',
+            '½ avocado (sliced)',
+            '1 tsp EVOO',
+            'Celtic salt, black pepper'
+        ],
+        steps: [
+            'Heat EVOO in a pan over medium heat',
+            'Season salmon with salt and pepper',
+            'Cook salmon 4 minutes per side until flaky',
+            'In separate pan, scramble eggs with pinch of salt',
+            'Massage kale with pinch of salt until tender (2 min)',
+            'Plate kale as base layer',
+            'Top with cooked salmon and scrambled eggs',
+            'Add blueberries, avocado slices, and walnuts',
+            'Serve immediately'
+        ],
+        tips: [
+            'Buy wild-caught salmon for maximum omega-3',
+            'Massage kale until bright green and wilted',
+            'Don\'t overcook salmon - slightly pink in center',
+            'Use pasture-raised eggs for higher omega-3'
+        ],
+        why: 'Salmon provides 3500mg omega-3 to lower Lp(a) oxidation. Eggs supply choline for liver function. Walnuts add plant omega-3. Blueberries deliver polyphenols for arterial protection.'
+    },
+    lunch: {
+        title: 'Mediterranean Bowl',
+        time: '12 min',
+        servings: 1,
+        macros: { protein: 55, omega3: 4200, poly: 250, fiber: 18, calories: 720 },
+        ingredients: [
+            '6oz wild mackerel',
+            '1 cup cooked quinoa',
+            '2 cups arugula',
+            '1 cup roasted beets (diced)',
+            '10 kalamata olives',
+            '2 tbsp EVOO',
+            '¼ cup pomegranate seeds',
+            '1 lemon (juice)',
+            '2 cloves garlic (minced)'
+        ],
+        steps: [
+            'Cook quinoa if not pre-cooked',
+            'Season mackerel with salt, pepper, and garlic',
+            'Grill or pan-sear mackerel 3 minutes per side',
+            'Massage arugula with 1 tbsp EVOO and lemon juice',
+            'In bowl, add quinoa as base',
+            'Top with massaged arugula',
+            'Add diced roasted beets',
+            'Place cooked mackerel on top',
+            'Garnish with olives and pomegranate seeds',
+            'Drizzle remaining EVOO'
+        ],
+        tips: [
+            'Mackerel has 4x more omega-3 than salmon',
+            'Roast beets ahead for meal prep',
+            'Use high-quality EVOO (should taste peppery)',
+            'Can substitute sardines for mackerel'
+        ],
+        why: 'Mackerel delivers 4200mg omega-3 (highest of any fish). Beets provide nitrates for arterial flexibility. EVOO polyphenols prevent LDL oxidation. Pomegranate adds punicalagin.'
+    },
+    dinner: {
+        title: 'Omega Dinner',
+        time: '35 min',
+        servings: 1,
+        macros: { protein: 60, omega3: 4000, poly: 200, fiber: 16, calories: 750 },
+        ingredients: [
+            '8oz wild salmon',
+            '1 medium Japanese sweet potato',
+            '2 cups broccoli florets',
+            '1 cup Brussels sprouts (halved)',
+            'Fresh herbs (basil, cilantro)',
+            '2 tbsp EVOO',
+            '4 cloves garlic (minced)',
+            'Ginger-turmeric powder',
+            'Celtic salt, black pepper'
+        ],
+        steps: [
+            'Preheat oven to 400°F',
+            'Wash sweet potato, poke holes, wrap in foil',
+            'Roast sweet potato 30 minutes',
+            'Steam broccoli and Brussels sprouts 8 minutes',
+            'Season salmon with ginger-turmeric powder',
+            'Pan-sear salmon 4 minutes per side',
+            'Heat EVOO, sauté garlic 30 seconds',
+            'Toss vegetables with garlic EVOO',
+            'Plate sweet potato, vegetables, salmon',
+            'Top with fresh herbs'
+        ],
+        tips: [
+            'Japanese sweet potatoes have purple skin',
+            'Keep cruciferous vegetables bright green',
+            'Fresh herbs > dried for antioxidants',
+            'Make extra sweet potato for next day'
+        ],
+        why: 'Salmon omega-3 fights inflammation. Cruciferous vegetables contain sulforaphane that activates Nrf2 anti-inflammatory pathway. Sweet potato provides beta-carotene.'
     }
-}
+};
 
-// Test Oura API fetch
-async function testFetch() {
-    log('Testing Oura API fetch...', 'info');
+class App {
+    constructor() {
+        console.log('App constructor starting...');
+        this.user = localStorage.getItem('user') || 'jermaine';
+        this.checked = JSON.parse(localStorage.getItem('checked') || '{}');
+        this.data = [];
+        console.log('Rendering initial UI...');
+        this.render();
+        console.log('App ready!');
+    }
     
-    const TOKENS = {
-        'jermaine': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y',
-        'sophia': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4'
-    };
-    
-    try {
-        log('Creating date range...', 'info');
-        const d = new Date();
-        d.setDate(d.getDate() + 1);
-        const end = d.toISOString().split('T')[0];
-        d.setDate(d.getDate() - 8);
-        const start = d.toISOString().split('T')[0];
-        
-        log(`Date range: ${start} to ${end}`, 'info');
-        
-        const url = `https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${start}&end_date=${end}`)}`;
-        
-        log('Fetching from Oura API...', 'info');
-        log(`URL length: ${url.length} chars`, 'info');
-        
-        const controller = new AbortController();
-        const timeout = setTimeout(() => {
-            controller.abort();
-            log('Fetch timeout after 8 seconds', 'error');
-        }, 8000);
-        
-        const response = await fetch(url, {
-            headers: { 'Authorization': `Bearer ${TOKENS.jermaine}` },
-            cache: 'no-store',
-            signal: controller.signal
+    render() {
+        let html = '';
+        PROTOCOL.forEach(task => {
+            const isChecked = this.checked[task.id] || false;
+            const clickHandler = task.clickable ? 
+                `onclick="event.stopPropagation(); app.showRecipe('${task.id}')"` : '';
+            
+            html += `
+                <div class="task ${isChecked ? 'checked' : ''}" onclick="app.toggle('${task.id}')">
+                    <div class="task-header">
+                        <div class="task-time">${task.time}</div>
+                        <div class="check">${isChecked ? '✓' : ''}</div>
+                    </div>
+                    <div class="task-title ${task.clickable ? 'clickable' : ''}" ${clickHandler}>${task.title}</div>
+                    <div class="task-desc">${task.desc}</div>
+                    ${task.why ? `<div class="task-why">WHY: ${task.why}</div>` : ''}
+                </div>
+            `;
         });
+        document.getElementById('taskList').innerHTML = html;
+    }
+    
+    toggle(id) {
+        this.checked[id] = !this.checked[id];
+        localStorage.setItem('checked', JSON.stringify(this.checked));
+        this.render();
+    }
+    
+    switchUser(user) {
+        this.user = user;
+        localStorage.setItem('user', user);
+        document.querySelectorAll('.user-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(`btn-${user === 'jermaine' ? 'jer' : 'soph'}`).classList.add('active');
+    }
+    
+    showRecipe(id) {
+        const recipe = RECIPES[id];
+        if(!recipe) return;
         
-        clearTimeout(timeout);
+        document.getElementById('cookingTitle').innerText = recipe.title.toUpperCase();
         
-        log(`Response status: ${response.status}`, response.ok ? 'success' : 'error');
-        log(`Response headers: ${JSON.stringify([...response.headers])}`, 'info');
+        let html = `
+            <div class="recipe-meta">
+                <div class="recipe-meta-item"><strong>⏱️ </strong>${recipe.time}</div>
+                <div class="recipe-meta-item"><strong>🍽️ </strong>${recipe.servings} serving</div>
+            </div>
+            
+            <div class="macros-grid">
+                <div class="macro-box">
+                    <div class="macro-value">${recipe.macros.protein}g</div>
+                    <div class="macro-label">PROTEIN</div>
+                </div>
+                <div class="macro-box">
+                    <div class="macro-value">${recipe.macros.omega3}mg</div>
+                    <div class="macro-label">OMEGA-3</div>
+                </div>
+                <div class="macro-box">
+                    <div class="macro-value">${recipe.macros.poly}mg</div>
+                    <div class="macro-label">POLYPHENOLS</div>
+                </div>
+                <div class="macro-box">
+                    <div class="macro-value">${recipe.macros.fiber}g</div>
+                    <div class="macro-label">FIBER</div>
+                </div>
+                <div class="macro-box">
+                    <div class="macro-value">${recipe.macros.calories}</div>
+                    <div class="macro-label">CALORIES</div>
+                </div>
+            </div>
+            
+            <div class="recipe-section">
+                <div class="recipe-section-title">🛒 INGREDIENTS</div>
+                ${recipe.ingredients.map(ing => `<div class="ingredient-item">• ${ing}</div>`).join('')}
+            </div>
+            
+            <div class="recipe-section">
+                <div class="recipe-section-title">👨‍🍳 COOKING STEPS</div>
+                ${recipe.steps.map((step, i) => `
+                    <div class="step-item">
+                        <div class="step-num">${i+1}</div>
+                        <div class="step-text">${step}</div>
+                    </div>
+                `).join('')}
+            </div>
+            
+            <div class="recipe-section">
+                <div class="recipe-section-title">💡 PRO TIPS</div>
+                ${recipe.tips.map(tip => `<div class="ingredient-item">✓ ${tip}</div>`).join('')}
+            </div>
+            
+            <div class="recipe-section">
+                <div class="recipe-section-title">🎯 WHY THIS WORKS</div>
+                <div style="background: rgba(0,240,255,0.05); border: 1px solid rgba(0,240,255,0.2); padding: 12px; border-radius: 8px; font-size: 0.7rem; color: #ccc; line-height: 1.6; font-style: italic;">
+                    ${recipe.why}
+                </div>
+            </div>
+            
+            <button class="action-btn" onclick="app.closeCooking()">✓ GOT IT</button>
+        `;
         
-        if(response.ok) {
-            const data = await response.json();
-            log(`Data received: ${data.data ? data.data.length : 0} records`, 'success');
-            log('✓ Fetch test PASSED', 'success');
+        document.getElementById('cookingContent').innerHTML = html;
+        document.getElementById('cookingModal').classList.add('active');
+    }
+    
+    closeCooking() {
+        document.getElementById('cookingModal').classList.remove('active');
+    }
+    
+    openWeekly() {
+        if(this.data.length < 2) {
+            document.getElementById('weeklyContent').innerHTML = `
+                <div style="color: #ccc; font-size: 0.75rem; line-height: 1.6; text-align: center; padding: 20px;">
+                    <div style="font-size: 2rem; margin-bottom: 10px;">📊</div>
+                    Need at least 2 days of Oura data for weekly summary.<br><br>
+                    Tap <strong style="color: var(--acid);">SYNC OURA</strong> below to load your data.
+                </div>
+            `;
         } else {
-            const text = await response.text();
-            log(`Response body: ${text.substring(0, 200)}...`, 'error');
-            log('✗ Fetch test FAILED', 'error');
+            const last7 = this.data.slice(0, Math.min(7, this.data.length));
+            const avg = (key) => {
+                const vals = last7.map(d => d[key]).filter(v => v > 0);
+                return vals.length ? (vals.reduce((a,b) => a+b) / vals.length).toFixed(1) : 0;
+            };
+            
+            document.getElementById('weeklyContent').innerHTML = `
+                <div style="font-size: 0.65rem; color: #888; margin-bottom: 15px;">
+                    Last ${last7.length} days
+                </div>
+                
+                <div class="weekly-row">
+                    <span class="weekly-label">AVG READINESS</span>
+                    <span class="weekly-value">${avg('score')}</span>
+                </div>
+                <div class="weekly-row">
+                    <span class="weekly-label">AVG SLEEP</span>
+                    <span class="weekly-value">${avg('sleep')}h</span>
+                </div>
+                <div class="weekly-row">
+                    <span class="weekly-label">AVG RHR</span>
+                    <span class="weekly-value">${avg('rhr')}</span>
+                </div>
+                <div class="weekly-row" style="border-bottom: none;">
+                    <span class="weekly-label">ACTIVE CALORIES</span>
+                    <span class="weekly-value">${(avg('cal') * last7.length).toFixed(0)}</span>
+                </div>
+                
+                <div style="margin-top: 20px; padding: 15px; background: #111; border-radius: 8px;">
+                    <div style="font-size: 0.6rem; color: #888; margin-bottom: 8px;">INSIGHTS</div>
+                    <div style="font-size: 0.7rem; color: #ccc; line-height: 1.5;">
+                        ${avg('score') > 75 ? '✓ Strong week! Metrics indicate good recovery.' : 
+                          '⚠ Focus on sleep quality and recovery protocols.'}
+                    </div>
+                </div>
+            `;
         }
+        document.getElementById('weeklyModal').classList.add('active');
+    }
+    
+    closeWeekly() {
+        document.getElementById('weeklyModal').classList.remove('active');
+    }
+    
+    async syncData() {
+        const status = document.getElementById('footerStatus');
+        status.innerText = 'SYNCING...';
         
-    } catch(e) {
-        log(`✗ Fetch error: ${e.message}`, 'error');
-        log(`Error type: ${e.name}`, 'error');
-        if(e.stack) log(`Stack: ${e.stack.substring(0, 300)}`, 'error');
+        try {
+            const TOKENS = {
+                'jermaine': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y',
+                'sophia': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4'
+            };
+            
+            const d = new Date();
+            const end = new Date(d.setDate(d.getDate() + 1)).toISOString().split('T')[0];
+            const start = new Date(d.setDate(d.getDate() - 8)).toISOString().split('T')[0];
+            
+            const [sRes, rRes] = await Promise.all([
+                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${start}&end_date=${end}`)}`, {
+                    headers: { 'Authorization': `Bearer ${TOKENS[this.user]}` }
+                }),
+                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${start}&end_date=${end}`)}`, {
+                    headers: { 'Authorization': `Bearer ${TOKENS[this.user]}` }
+                })
+            ]);
+            
+            if(sRes.ok && rRes.ok) {
+                const sleep = await sRes.json();
+                const ready = await rRes.json();
+                
+                this.data = (sleep.data || []).map(s => {
+                    const r = ready.data?.find(x => x.day === s.day);
+                    return {
+                        date: s.day,
+                        sleep: (s.total_sleep_duration / 3600).toFixed(1),
+                        score: r?.score || 0,
+                        rhr: r?.contributors?.resting_heart_rate || 0,
+                        cal: 0
+                    };
+                }).sort((a,b) => b.date.localeCompare(a.date));
+                
+                if(this.data.length > 0) {
+                    const latest = this.data[0];
+                    document.getElementById('sleepVal').innerText = latest.sleep + 'h';
+                    document.getElementById('rhrVal').innerText = latest.rhr;
+                    document.getElementById('scoreVal').innerText = latest.score;
+                }
+                
+                status.innerText = `SYNCED - ${this.data.length} DAYS`;
+            } else {
+                throw new Error('API Error');
+            }
+        } catch(e) {
+            status.innerText = 'SYNC FAILED';
+            console.error(e);
+        }
+    }
+    
+    async generateAI() {
+        const output = document.getElementById('aiOutput');
+        output.innerText = 'Generating coaching...';
+        
+        try {
+            const API_KEY = 'AIzaSyBtqgUcbq5uVGFZ5nHPDyhthLDii7uRNrg';
+            const prompt = `You are a health coach. Give one specific actionable tip for someone tracking ${this.user === 'jermaine' ? 'Lp(a) and cardiovascular health with omega-3 and VO2max training' : 'ANA and autoimmune health with anti-inflammatory diet and gentle movement'}. Keep it under 50 words.`;
+            
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-8b:generateContent?key=${API_KEY}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }]
+                })
+            });
+            
+            if(res.ok) {
+                const data = await res.json();
+                output.innerText = data.candidates[0].content.parts[0].text;
+            } else {
+                output.innerText = 'Stay consistent with your omega-3 protocol. Small daily actions compound into major health improvements.';
+            }
+        } catch(e) {
+            output.innerText = 'Focus on food-first nutrition and quality sleep for optimal recovery.';
+        }
     }
 }
 
-log('Ready to test. Click buttons above.', 'info');
+console.log('Creating app instance...');
+const app = new App();
+console.log('=== APP LOADED SUCCESSFULLY ===');
 </script>
 
 </body>
