@@ -321,9 +321,9 @@ class CenturionCore {
         this.setText('dateDisplay', d.date); this.setText('sleepVal', `${h}h ${m}m`);
         this.setText('deepVal', Math.round(d.deepSec/60)+"m"); this.setText('remVal', Math.round(d.remSec/60)+"m");
         this.setText('rhrVal', d.rhr); const g = USERS[this.user].goals;
-        this.setText('z2Val', Math.round(d.med)); this.setText('z5Val', Math.round(d.high)); this.setText('calVal', d.cal);
+        this.setText('z2Val', Math.round(d.z2)); this.setText('z5Val', Math.round(d.z5)); this.setText('calVal', d.cal);
         const uh = (id,val,goal) => { const e = document.getElementById(id); if(e) e.style.strokeDashoffset = 100-(Math.min(val/goal,1)*100); };
-        uh('z2Heart', d.med, g.z2); uh('z5Heart', d.high, g.z5); uh('calHeart', d.cal, g.cal);
+        uh('z2Heart', d.z2, g.z2); uh('z5Heart', d.z5, g.z5); uh('calHeart', d.cal, g.cal);
         const c = d.score >= 80 ? '#ccff00' : d.score >= 60 ? '#FFD60A' : '#ff453a';
         document.querySelector('.tactical-box').style.borderLeftColor = c;
         const u = USERS[this.user], s = d.score >= 85 ? `PEAK - ${u.condition} MANAGED` : d.score < 70 ? `RECOVERY - ${u.condition} RISK` : `${u.condition} PROTOCOL`;
@@ -375,7 +375,7 @@ class CenturionCore {
     async runAI() {
         if(!this.history.length) return;
         const d = this.history[this.currentIndex], ui = document.getElementById('aiOutput'), u = USERS[this.user];
-        const p = `Coach ${u.name} (${u.condition}). Sleep ${(d.totalSec/3600).toFixed(1)}h, Score ${d.score}, Z2 ${Math.round(d.med)}min, Z5 ${Math.round(d.high)}min. ${u.condition==='HIGH LP(A)'?'ApoB via omega-3, VO2max for arteries':'ANA via anti-inflam, mobility'}. 1 action TODAY.`;
+        const p = `Coach ${u.name} (${u.condition}). Sleep ${(d.totalSec/3600).toFixed(1)}h, Score ${d.score}, Z2 ${Math.round(d.z2)}min, Z5 ${Math.round(d.z5)}min. ${u.condition==='HIGH LP(A)'?'ApoB via omega-3, VO2max for arteries':'ANA via anti-inflam, mobility'}. 1 action TODAY.`;
         ui.innerText = "Analyzing...";
         for(let m of ['gemini-1.5-flash-8b','gemini-2.0-flash-exp']) {
             try {
@@ -639,8 +639,8 @@ class CenturionCore {
                     if(key === 'deep') return d.deepSec / 60;
                     if(key === 'rem') return d.remSec / 60;
                     if(key === 'rhr') return typeof d.rhr === 'number' ? d.rhr : parseInt(d.rhr) || 0;
-                    if(key === 'z2') return d.med || 0;
-                    if(key === 'z5') return d.high || 0;
+                    if(key === 'z2') return d.z2 || 0;
+                    if(key === 'z5') return d.z5 || 0;
                     return d[key] || 0;
                 }).filter(function(v) { return v > 0; });
                 return vals.length ? (vals.reduce(function(a,b){return a+b;}) / vals.length).toFixed(1) : 0;
