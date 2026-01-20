@@ -256,6 +256,7 @@ class CenturionCore {
     loadLocalData() {
         this.checked = JSON.parse(localStorage.getItem(`c_checked_${this.user}`)) || {};
         this.bios = JSON.parse(localStorage.getItem(`c_bios_${this.user}`)) || {};
+        this.currentMeals = JSON.parse(localStorage.getItem('currentMeals')) || {breakfast:0,lunch:0,dinner:0};
     }
     switchUser(u) {
         if(u === this.user) return;
@@ -388,13 +389,31 @@ class CenturionCore {
         ui.innerText = d.score >= 80 ? `${u.condition} managed. Execute VO2max.` : `Recovery. Z2 only.`;
     }
     openBio() {
-        ['vo2','apob','lpa','ana','crp'].forEach(k => document.getElementById(`in-${k}`).value = this.bios[k]||'');
+        ['apob','lpa','ldl','hdl','trig','crp','ana','hcy','glucose','hba1c','insulin','creat','egfr','uric','vo2','hang','wall']
+            .forEach(k => document.getElementById(`in-${k}`).value = this.bios[k]||'');
         document.getElementById('bioModal').classList.add('active');
     }
     closeBio() { document.getElementById('bioModal').classList.remove('active'); }
     saveBio() {
-        this.bios = { vo2: document.getElementById('in-vo2').value, apob: document.getElementById('in-apob').value,
-            lpa: document.getElementById('in-lpa').value, ana: document.getElementById('in-ana').value, crp: document.getElementById('in-crp').value };
+        this.bios = { 
+            apob: document.getElementById('in-apob').value,
+            lpa: document.getElementById('in-lpa').value,
+            ldl: document.getElementById('in-ldl').value,
+            hdl: document.getElementById('in-hdl').value,
+            trig: document.getElementById('in-trig').value,
+            crp: document.getElementById('in-crp').value,
+            ana: document.getElementById('in-ana').value,
+            hcy: document.getElementById('in-hcy').value,
+            glucose: document.getElementById('in-glucose').value,
+            hba1c: document.getElementById('in-hba1c').value,
+            insulin: document.getElementById('in-insulin').value,
+            creat: document.getElementById('in-creat').value,
+            egfr: document.getElementById('in-egfr').value,
+            uric: document.getElementById('in-uric').value,
+            vo2: document.getElementById('in-vo2').value,
+            hang: document.getElementById('in-hang').value,
+            wall: document.getElementById('in-wall').value
+        };
         localStorage.setItem(`c_bios_${this.user}`, JSON.stringify(this.bios));
         this.closeBio(); this.renderBio();
     }
@@ -411,45 +430,162 @@ class CenturionCore {
             if(this.bios.ana) t += ` • ANA: ${this.bios.ana}`;
         }
         
+        // Show key biomarkers
         if(this.bios.apob) t += ` • ApoB: ${this.bios.apob}`;
         if(this.bios.crp) t += ` • CRP: ${this.bios.crp}`;
-        if(this.bios.vo2) t += ` • VO2max: ${this.bios.vo2}`;
+        if(this.bios.creat) t += ` • Creatinine: ${this.bios.creat}`;
+        if(this.bios.vo2) t += ` • VO2: ${this.bios.vo2}`;
         
         this.setText('bioDisplay', t);
     }
 
     
-    // RECIPES
+        // RECIPES - Multiple options per meal
     RECIPES = {
-        breakfast: {
-            title:'Omega Breakfast',time:'15min',servings:1,
-            macros:{protein:58,omega3:3500,poly:220,fiber:12,calories:680},
-            ingredients:['8oz wild salmon','2 eggs','2 cups kale','1 cup blueberries','1oz walnuts','½ avocado','1 tsp EVOO','Salt, pepper'],
-            steps:['Heat EVOO in pan','Season salmon','Cook salmon 4min per side','Scramble eggs separately','Massage kale 2min','Plate kale as base','Add salmon and eggs','Top with berries, nuts'],
-            tips:['Buy wild-caught salmon','Massage kale until bright green','Don\'t overcook salmon'],
-            why:'Salmon = 3500mg omega-3 to lower Lp(a). Eggs = choline. Walnuts = plant omega-3.'
-        },
-        lunch: {
-            title:'Mediterranean Bowl',time:'12min',servings:1,
-            macros:{protein:55,omega3:4200,poly:250,fiber:18,calories:720},
-            ingredients:['6oz mackerel','1 cup quinoa','2 cups arugula','1 cup beets','10 olives','2 tbsp EVOO','¼ cup pomegranate','Lemon, garlic'],
-            steps:['Cook quinoa','Season mackerel','Grill mackerel 3min per side','Massage arugula with EVOO/lemon','Bowl: quinoa base','Add arugula','Add beets','Top with mackerel','Garnish olives & pomegranate'],
-            tips:['Mackerel has 4x omega-3 vs salmon','Roast beets ahead','High-quality EVOO'],
-            why:'Mackerel = 4200mg omega-3. Beets = nitrates. EVOO = polyphenols.'
-        },
-        dinner: {
-            title:'Omega Dinner',time:'35min',servings:1,
-            macros:{protein:60,omega3:4000,poly:200,fiber:16,calories:750},
-            ingredients:['8oz salmon','1 sweet potato','2 cups broccoli','1 cup Brussels sprouts','Fresh herbs','2 tbsp EVOO','Garlic','Turmeric powder','Salt, pepper'],
-            steps:['Preheat oven 400°F','Wrap sweet potato in foil','Roast 30min','Steam vegetables 8min','Season salmon with turmeric','Pan-sear 4min per side','Sauté garlic in EVOO','Toss vegetables','Plate together','Top with herbs'],
-            tips:['Japanese sweet potatoes','Keep vegetables bright green','Fresh herbs > dried'],
-            why:'Omega-3 fights inflammation. Cruciferous = sulforaphane. Sweet potato = beta-carotene.'
-        }
+        breakfast: [
+            {
+                title:'Omega Breakfast',time:'15min',servings:1,
+                macros:{protein:58,omega3:3500,poly:220,fiber:12,calories:680},
+                ingredients:['8oz wild salmon','2 eggs','2 cups kale','1 cup blueberries','1oz walnuts','½ avocado','1 tsp EVOO','Salt, pepper'],
+                steps:['Heat EVOO in pan','Season salmon','Cook salmon 4min per side','Scramble eggs separately','Massage kale 2min','Plate kale as base','Add salmon and eggs','Top with berries, nuts'],
+                tips:['Buy wild-caught salmon','Massage kale until bright green','Don\'t overcook salmon'],
+                why:'Salmon = 3500mg omega-3 to lower Lp(a). Eggs = choline. Walnuts = plant omega-3.'
+            },
+            {
+                title:'Sardine Power Bowl',time:'10min',servings:1,
+                macros:{protein:52,omega3:4500,poly:180,fiber:14,calories:620},
+                ingredients:['2 cans wild sardines','3 eggs','2 cups spinach','1 cup cherry tomatoes','¼ red onion','2 tbsp EVOO','Lemon','Garlic'],
+                steps:['Boil eggs 8min, peel','Sauté spinach with garlic','Halve tomatoes','Drain sardines','Plate spinach, add sardines','Top with eggs, tomatoes, onion','Dress with EVOO and lemon'],
+                tips:['Choose sardines in water or EVOO','Spinach wilts fast - watch it','Cold eggs peel easier'],
+                why:'Sardines = 4500mg omega-3 (highest of any food). Eggs = complete protein. Spinach = folate for homocysteine.'
+            },
+            {
+                title:'Chia Protein Parfait',time:'5min',servings:1,
+                macros:{protein:48,omega3:2800,poly:240,fiber:18,calories:580},
+                ingredients:['2 scoops whey protein','¼ cup chia seeds','1 cup Greek yogurt','1 cup mixed berries','2 tbsp hemp hearts','1 tbsp cacao nibs','Almond milk'],
+                steps:['Mix chia seeds with almond milk (set 5min)','Layer yogurt in bowl','Add protein powder to yogurt','Top with chia pudding','Add berries, hemp hearts, cacao'],
+                tips:['Prep chia night before','Use unflavored whey','Frozen berries work great'],
+                why:'Chia = 2800mg omega-3 + 18g fiber. Greek yogurt = probiotics. Berries = anthocyanins for inflammation.'
+            },
+            {
+                title:'Smoked Trout Hash',time:'18min',servings:1,
+                macros:{protein:54,omega3:3200,poly:190,fiber:16,calories:640},
+                ingredients:['6oz smoked trout','2 eggs','1 sweet potato','1 cup Brussels sprouts','½ red bell pepper','2 cloves garlic','2 tbsp EVOO','Dill'],
+                steps:['Dice sweet potato small','Sauté sweet potato 10min','Add Brussels sprouts, cook 5min','Add bell pepper and garlic','Create wells, crack eggs','Cover until eggs set','Flake trout on top','Garnish with dill'],
+                tips:['Smaller dice = faster cooking','Don\'t overcook eggs','Smoked trout is pre-cooked'],
+                why:'Trout = 3200mg omega-3. Sweet potato = beta-carotene. Brussels sprouts = sulforaphane (Nrf2 activation).'
+            },
+            {
+                title:'Mackerel Scramble',time:'12min',servings:1,
+                macros:{protein:56,omega3:4800,poly:200,fiber:10,calories:660},
+                ingredients:['1 can mackerel','4 eggs','1 cup arugula','½ avocado','1 cup mushrooms','Cherry tomatoes','2 tbsp EVOO','Turmeric'],
+                steps:['Sauté mushrooms 5min','Drain mackerel, flake','Whisk eggs with turmeric','Scramble eggs with mackerel','Wilt arugula in pan','Plate with avocado and tomatoes'],
+                tips:['Mackerel has 4x omega-3 vs salmon','Add turmeric to eggs for color','Fresh black pepper enhances turmeric'],
+                why:'Mackerel = 4800mg omega-3 (absolute maximum). Turmeric = curcumin. Mushrooms = ergothioneine (longevity).'
+            }
+        ],
+        lunch: [
+            {
+                title:'Mediterranean Bowl',time:'12min',servings:1,
+                macros:{protein:55,omega3:4200,poly:250,fiber:18,calories:720},
+                ingredients:['6oz mackerel','1 cup quinoa','2 cups arugula','1 cup beets','10 olives','2 tbsp EVOO','¼ cup pomegranate','Lemon, garlic'],
+                steps:['Cook quinoa','Season mackerel','Grill mackerel 3min per side','Massage arugula with EVOO/lemon','Bowl: quinoa base','Add arugula','Add beets','Top with mackerel','Garnish olives & pomegranate'],
+                tips:['Mackerel has 4x omega-3 vs salmon','Roast beets ahead','High-quality EVOO'],
+                why:'Mackerel = 4200mg omega-3. Beets = nitrates. EVOO = polyphenols.'
+            },
+            {
+                title:'Wild Salmon Buddha Bowl',time:'20min',servings:1,
+                macros:{protein:52,omega3:3600,poly:220,fiber:16,calories:680},
+                ingredients:['6oz wild salmon','1 cup brown rice','2 cups kale','1 cup edamame','½ cup red cabbage','1 carrot','2 tbsp tahini','Lemon','Ginger'],
+                steps:['Cook brown rice','Steam edamame 5min','Massage kale with salt','Grate carrot','Bake salmon 15min at 400°F','Make tahini dressing (tahini, lemon, ginger)','Assemble bowl','Drizzle dressing'],
+                tips:['Bake salmon with skin on','Massage kale until tender','Thin tahini with water'],
+                why:'Salmon = 3600mg omega-3. Edamame = complete plant protein. Tahini = calcium + selenium.'
+            },
+            {
+                title:'Sardine Salad Supreme',time:'8min',servings:1,
+                macros:{protein:48,omega3:4400,poly:260,fiber:14,calories:640},
+                ingredients:['2 cans sardines','4 cups mixed greens','1 cup cherry tomatoes','1 cucumber','¼ red onion','2 tbsp hemp hearts','2 tbsp EVOO','Red wine vinegar','Dijon mustard'],
+                steps:['Wash and dry greens','Halve tomatoes','Slice cucumber','Dice onion','Drain sardines','Make dressing (EVOO, vinegar, Dijon)','Toss salad','Top with sardines and hemp hearts'],
+                tips:['Pat sardines dry','Fresh greens are key','Make dressing in jar and shake'],
+                why:'Sardines = 4400mg omega-3 + calcium. Hemp hearts = plant omega-3. Greens = folate for methylation.'
+            },
+            {
+                title:'Tuna Poke Bowl',time:'15min',servings:1,
+                macros:{protein:54,omega3:2800,poly:240,fiber:20,calories:700},
+                ingredients:['8oz sushi-grade ahi tuna','1 cup sushi rice','1 avocado','1 cup cucumber','¼ cup edamame','Seaweed','Sesame seeds','Tamari','Ginger','Wasabi'],
+                steps:['Cook sushi rice','Dice tuna into cubes','Marinate tuna (tamari, sesame, ginger)','Slice cucumber and avocado','Assemble bowl: rice base','Add tuna, cucumber, edamame','Top with avocado, seaweed, sesame','Serve with wasabi'],
+                tips:['Use sushi-grade tuna only','Keep tuna cold','Marinate only 5min'],
+                why:'Tuna = 2800mg omega-3. Seaweed = iodine. Edamame = isoflavones for arterial health.'
+            },
+            {
+                title:'Anchovy Power Pasta',time:'18min',servings:1,
+                macros:{protein:50,omega3:3800,poly:280,fiber:12,calories:720},
+                ingredients:['4oz anchovies','6oz whole grain pasta','3 cups broccoli rabe','6 cloves garlic','Red pepper flakes','3 tbsp EVOO','Lemon zest','Parmesan'],
+                steps:['Boil pasta','Blanch broccoli rabe 2min','Sauté garlic in EVOO','Add anchovies (they dissolve)','Add pepper flakes','Toss pasta with anchovy sauce','Add broccoli rabe','Top with lemon zest and parmesan'],
+                tips:['Anchovies melt into sauce','Don\'t overcook broccoli rabe','Save pasta water for sauce'],
+                why:'Anchovies = 3800mg omega-3. Broccoli rabe = sulforaphane. Garlic = allicin (cardiovascular protection).'
+            }
+        ],
+        dinner: [
+            {
+                title:'Omega Dinner',time:'35min',servings:1,
+                macros:{protein:60,omega3:4000,poly:200,fiber:16,calories:750},
+                ingredients:['8oz salmon','1 sweet potato','2 cups broccoli','1 cup Brussels sprouts','Fresh herbs','2 tbsp EVOO','Garlic','Turmeric powder','Salt, pepper'],
+                steps:['Preheat oven 400°F','Wrap sweet potato in foil','Roast 30min','Steam vegetables 8min','Season salmon with turmeric','Pan-sear 4min per side','Sauté garlic in EVOO','Toss vegetables','Plate together','Top with herbs'],
+                tips:['Japanese sweet potatoes','Keep vegetables bright green','Fresh herbs > dried'],
+                why:'Omega-3 fights inflammation. Cruciferous = sulforaphane. Sweet potato = beta-carotene.'
+            },
+            {
+                title:'Mackerel Curry',time:'30min',servings:1,
+                macros:{protein:58,omega3:4600,poly:280,fiber:18,calories:780},
+                ingredients:['8oz mackerel','1 can coconut milk','2 cups cauliflower','1 cup green beans','1 sweet potato','Curry paste','Turmeric','Ginger','Garlic','Lime'],
+                steps:['Dice sweet potato','Sauté curry paste, turmeric, ginger','Add coconut milk','Simmer sweet potato 15min','Add cauliflower and green beans','Cook 10min','Add mackerel last 5min','Finish with lime'],
+                tips:['Don\'t overcook mackerel','Full-fat coconut milk','Fresh ginger is key'],
+                why:'Mackerel = 4600mg omega-3. Coconut = MCTs. Turmeric + black pepper = 2000% more curcumin absorption.'
+            },
+            {
+                title:'Trout Almondine',time:'25min',servings:1,
+                macros:{protein:56,omega3:3400,poly:240,fiber:14,calories:720},
+                ingredients:['2 rainbow trout fillets','½ cup sliced almonds','2 cups asparagus','1 cup wild rice','Fresh parsley','Lemon','3 tbsp butter','Garlic','Capers'],
+                steps:['Cook wild rice','Trim asparagus','Toast almonds in dry pan','Sauté garlic in butter','Add capers','Pan-fry trout 4min per side','Roast asparagus 12min at 425°F','Plate with almond-caper butter'],
+                tips:['Pat trout very dry','Watch almonds - they burn fast','Save caper brine for dressing'],
+                why:'Trout = 3400mg omega-3. Almonds = vitamin E (antioxidant). Asparagus = glutathione precursor.'
+            },
+            {
+                title:'Sardine Shakshuka',time:'28min',servings:1,
+                macros:{protein:52,omega3:4200,poly:300,fiber:16,calories:680},
+                ingredients:['2 cans sardines','4 eggs','1 can crushed tomatoes','1 red bell pepper','1 yellow onion','3 cloves garlic','Cumin','Paprika','Cayenne','Feta','Parsley','EVOO'],
+                steps:['Sauté onion and pepper','Add garlic and spices','Add crushed tomatoes','Simmer 15min','Make 4 wells','Crack eggs into wells','Add drained sardines','Cover until eggs set','Top with feta and parsley'],
+                tips:['Don\'t stir after adding eggs','Low heat for eggs','Serve with crusty bread'],
+                why:'Sardines = 4200mg omega-3 + calcium. Eggs = choline. Tomatoes = lycopene (cardiovascular protection).'
+            },
+            {
+                title:'Black Cod Miso',time:'40min',servings:1,
+                macros:{protein:54,omega3:3800,poly:220,fiber:12,calories:740},
+                ingredients:['8oz black cod','3 tbsp white miso','2 tbsp mirin','1 tbsp sake','Ginger','2 cups bok choy','1 cup shiitake','Soba noodles','Sesame oil','Scallions'],
+                steps:['Marinate cod (miso, mirin, sake, ginger) 30min','Cook soba noodles','Sauté shiitake in sesame oil','Blanch bok choy','Broil cod 8min','Assemble bowl: noodles, vegetables','Top with miso cod','Garnish scallions'],
+                tips:['Marinate cod overnight for best flavor','Watch broiler - miso burns','Black cod = butterfish'],
+                why:'Black cod = 3800mg omega-3 (richest white fish). Miso = probiotics. Shiitake = immune support (beta-glucans).'
+            }
+        ]
+    };
+    
+    // Meal rotation tracker
+    currentMeals = {
+        breakfast: 0,
+        lunch: 0,
+        dinner: 0
     };
     
     showCooking(id) {
-        const r = this.RECIPES[id];
+        // Get current meal index
+        const idx = this.currentMeals[id] || 0;
+        const r = this.RECIPES[id][idx];
         if(!r) return;
+        
+        // Rotate to next meal for tomorrow
+        this.currentMeals[id] = (idx + 1) % this.RECIPES[id].length;
+        localStorage.setItem('currentMeals', JSON.stringify(this.currentMeals));
         
         let html = '<div class="cooking-header"><button class="back-btn" onclick="centurion.closeCooking()">← BACK</button><h1 class="cook-title">' + r.title + '</h1><div class="cook-meta"><span>⏱️ ' + r.time + '</span><span>🍽️ ' + r.servings + ' serving</span></div></div>';
         
@@ -475,7 +611,10 @@ class CenturionCore {
         
         html += '<div class="cook-section"><h2 class="cook-sec-title">🎯 WHY IT WORKS</h2><div class="why-box">' + r.why + '</div></div>';
         
-        html += '<div class="cook-footer"><button class="done-btn" onclick="centurion.closeCooking()">✓ DONE</button></div>';
+        html += '<div class="cook-footer">';
+        html += '<button class="done-btn" onclick="centurion.changeMeal(\''+id+'\');" style="background:#222; color:var(--acid); border:1px solid var(--acid); margin-bottom:8px;">🔄 CHANGE MEAL</button>';
+        html += '<button class="done-btn" onclick="centurion.closeCooking()">✓ DONE COOKING</button>';
+        html += '</div>';
         
         document.getElementById('cookingPage').innerHTML = html;
         document.getElementById('cookingPage').classList.add('active');
@@ -531,6 +670,16 @@ class CenturionCore {
     
     closeWeekly() {
         document.getElementById('weeklyModal').classList.remove('active');
+    }
+    
+    
+    
+    changeMeal(id) {
+        // Cycle to next meal option
+        this.currentMeals[id] = (this.currentMeals[id] + 1) % this.RECIPES[id].length;
+        localStorage.setItem('currentMeals', JSON.stringify(this.currentMeals));
+        this.closeCooking();
+        this.showCooking(id);
     }
     
     closeCooking() {
