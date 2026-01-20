@@ -368,63 +368,32 @@ class App {
     }
     
     switchUser(u) {
-        console.log('=== SWITCH USER ===');
-        console.log('From:', this.user, 'To:', u);
-        
-        // Update internal state
+        // Update state
         this.user = u;
         localStorage.setItem('user', u);
         
-        // Update UI buttons
-        document.querySelectorAll('.user-btn').forEach(b => b.classList.remove('active'));
-        if(u === 'jermaine') {
-            document.getElementById('btnJer').classList.add('active');
-        } else {
-            document.getElementById('btnSoph').classList.add('active');
-        }
+        // Update buttons
+        document.querySelectorAll('.user-btn').forEach(function(b) {
+            b.classList.remove('active');
+        });
         
-        // Update status text
-        document.getElementById('statusUser').innerText = 'USER: ' + USERS[u].name.toUpperCase();
-        document.getElementById('statusMain').innerText = 'LOADING...';
+        var btnId = (u === 'jermaine') ? 'btnJer' : 'btnSoph';
+        document.getElementById(btnId).classList.add('active');
         
-        // Clear data
+        // Update status
+        var userName = USERS[u].name.toUpperCase();
+        document.getElementById('statusUser').innerText = 'USER: ' + userName;
+        
+        // Clear and reload
         this.data = [];
         this.idx = 0;
-        
-        // Clear dashboard visuals
-        document.getElementById('dateDisplay').innerText = 'SWITCHING...';
-        document.getElementById('gradeLetter').innerText = '--';
-        document.getElementById('sleepVal').innerText = '--';
-        document.getElementById('deepVal').innerText = '--';
-        document.getElementById('remVal').innerText = '--';
-        document.getElementById('rhrVal').innerText = '--';
-        document.getElementById('z2Val').innerText = '--';
-        document.getElementById('z5Val').innerText = '--';
-        document.getElementById('calVal').innerText = '--';
-        
-        // Reset all progress circles
-        document.getElementById('sleepOrb').style.strokeDashoffset = 145;
-        document.getElementById('deepOrb').style.strokeDashoffset = 145;
-        document.getElementById('remOrb').style.strokeDashoffset = 145;
-        document.getElementById('rhrHeart').style.strokeDashoffset = 100;
-        document.getElementById('z2Heart').style.strokeDashoffset = 100;
-        document.getElementById('z5Heart').style.strokeDashoffset = 100;
-        document.getElementById('calHeart').style.strokeDashoffset = 100;
-        
-        // Clear macros and rainbow
-        document.getElementById('macros').innerHTML = '';
-        document.getElementById('rainbowBar').innerHTML = '';
-        document.getElementById('rainbowPct').innerText = '0%';
-        
-        // Re-render protocol with no checks
         this.render();
         
-        // Auto-sync after 500ms delay
-        setTimeout(() => {
-            console.log('Auto-syncing for:', u);
-            this.sync();
+        // Sync new user data
+        var self = this;
+        setTimeout(function() {
+            self.sync();
         }, 500);
-    }`;
     }
     
     async sync() {
