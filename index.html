@@ -125,14 +125,14 @@
     <div class="header">
         <div class="title">CENTURION v15.2 FOOD FIRST</div>
         <div class="user-switch">
-            <button id="btnJer" class="user-btn active" onclick="app.switchUser('jermaine')">JER</button>
-            <button id="btnSoph" class="user-btn" onclick="app.switchUser('sophia')">SOPH</button>
+            <button id="btn-jermaine" class="user-btn active" onclick="centurion.switchUser('jermaine')">JER</button>
+            <button id="btn-sophia" class="user-btn" onclick="centurion.switchUser('sophia')">SOPH</button>
         </div>
         <div class="nav-bar">
             <span class="date-text" id="dateDisplay">NO DATA</span>
             <div class="nav-btns">
-                <button class="nav-btn" onclick="app.prevDay()">◀</button>
-                <button class="nav-btn" onclick="app.nextDay()">▶</button>
+                <button class="nav-btn" onclick="centurion.prevDay()">◀</button>
+                <button class="nav-btn" onclick="centurion.nextDay()">▶</button>
             </div>
         </div>
     </div>
@@ -215,21 +215,21 @@
 <div class="grid4" id="macros"></div>
 
 <div class="actions">
-    <button class="action-btn" onclick="app.openWeekly()">📊 WEEKLY SUMMARY</button>
-    <button class="action-btn sec" onclick="app.genAI()">🧠 AI COACHING</button>
+    <button class="action-btn" onclick="centurion.openWeekly()">📊 WEEKLY SUMMARY</button>
+    <button class="action-btn sec" onclick="centurion.genAI()">🧠 AI COACHING</button>
     <div id="aiOut"></div>
 </div>
 
 <div class="footer">
     <span class="footer-status" id="footerStatus">READY</span>
-    <button class="sync-btn" onclick="app.sync()">SYNC OURA</button>
+    <button class="sync-btn" onclick="centurion.sync()">SYNC OURA</button>
 </div>
 
 <div id="weeklyModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
             <span class="modal-title">📊 WEEKLY SUMMARY</span>
-            <span class="modal-close" onclick="app.closeWeekly()">✕</span>
+            <span class="modal-close" onclick="centurion.closeWeekly()">✕</span>
         </div>
         <div id="weeklyContent"></div>
     </div>
@@ -239,420 +239,186 @@
 ```
 
 <script>
-console.log('=== LOADING CENTURION ===');
+const TOKENS = { 'jermaine': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'sophia': '4QSDWYJJUZFHRWRH727NCK7WH4COQJF4' };
+const API_KEY = "AIzaSyBtqgUcbq5uVGFZ5nHPDyhthLDii7uRNrg";
 
-const TOKENS = {jermaine:'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y',sophia:'4QSDWYJJUZFHRWRH727NCK7WH4COQJF4'};
-const API_KEY = 'AIzaSyBtqgUcbq5uVGFZ5nHPDyhthLDii7uRNrg';
 const USERS = {
-    jermaine: {name:'Jermaine',age:42,condition:'HIGH LP(A)',goals:{pro:180,omega3:12000,poly:700,fib:50,z2:45,z5:25,cal:800}},
-    sophia: {name:'Sophia',age:38,condition:'HIGH ANA',goals:{pro:130,omega3:8000,poly:600,fib:45,z2:60,z5:15,cal:600}}
+    jermaine: { name: "Jermaine", age: 42, condition: "HIGH LP(A)", goals: { pro: 180, omega3: 4000, poly: 600, fib: 45, z2: 45, z5: 25, cal: 800 } },
+    sophia: { name: "Sophia", age: 38, condition: "HIGH ANA", goals: { pro: 130, omega3: 4000, poly: 600, fib: 45, z2: 60, z5: 15, cal: 600 } }
 };
 
 const PROTOCOL = [
-    {id:'sunrise',time:'6:00',title:'Morning Activation',desc:'15min walk + cold shower',colors:[],macros:{p:0,o:0},why:'Circadian reset'},
-    {id:'hydrate',time:'6:30',title:'Hydration',desc:'32oz water + salt + lemon',colors:['yellow'],macros:{p:0,o:0},why:'Kidney flush'},
-    {id:'juice1',time:'7:00',title:'ARTERIAL FLOW Juice',desc:'16oz beets/carrots/turmeric',colors:['red','orange','yellow'],macros:{p:0,o:0,poly:200},why:'Fresh turmeric'},
-    {id:'breakfast',time:'7:30',title:'Omega Breakfast 👆',desc:'Salmon 8oz, eggs, kale',colors:['orange','purple','green'],macros:{p:58,o:3500,poly:220,f:12},clickable:true,why:'3500mg omega-3'},
-    {id:'train',time:'9:00',title:'Training',desc:'VO2max or Yoga',colors:[],macros:{p:0,o:0},why:'Arterial health'},
-    {id:'juice2',time:'10:00',title:'RECOVERY Juice',desc:'Cherry/pomegranate + broth',colors:['red','purple'],macros:{p:20,o:0,poly:350},why:'Anthocyanins'},
-    {id:'lunch',time:'1:00',title:'Mediterranean Bowl 👆',desc:'Mackerel, quinoa, arugula',colors:['red','green','white','purple'],macros:{p:55,o:4200,poly:250,f:18},clickable:true,why:'4200mg omega-3'},
-    {id:'snack',time:'4:00',title:'Polyphenol Snack',desc:'Dark chocolate, matcha',colors:['green','yellow'],macros:{p:5,o:0,poly:180},why:'Endothelial function'},
-    {id:'dinner',time:'6:30',title:'Omega Dinner 👆',desc:'Salmon, sweet potato, broccoli',colors:['orange','green','white'],macros:{p:60,o:4000,poly:200,f:16},clickable:true,why:'Sulforaphane'},
-    {id:'juice3',time:'8:00',title:'HIBISCUS FLUSH',desc:'Hibiscus + tart cherry',colors:['red','purple'],macros:{p:0,o:0},why:'Creatinine reduction'},
-    {id:'evening',time:'9:00',title:'Wind-Down',desc:'Golden milk + magnesium',colors:[],macros:{p:0,o:0},why:'Sleep + kidney'}
+    { id:'sunrise', time:'6:00', title:'Morning Activation', desc:'15min outdoor walk + cold shower', colors:[], macros:{p:0,o:0}, why:'Circadian reset reduces cortisol (ANA trigger) + cold activates brown fat (anti-inflammatory)' },
+    { id:'hydrate', time:'6:30', title:'Hydration', desc:'Sea Moss (2 tbsp) + Lemon + Celtic Salt', colors:['green'], macros:{p:1,o:0,poly:50}, why:'Trace minerals support endothelium + electrolytes for VO2max training' },
+    { id:'breakfast', time:'7:30', title:'Omega Breakfast', desc:'Wild Salmon 6oz, Avocado ½, Blueberries 1c, Walnuts 1oz, Spinach 2c, Turmeric milk', colors:['orange','purple','green','white'], macros:{p:50,o:2800,poly:220,f:12}, why:'Omega-3 lowers Lp(a) oxidation. Curcumin blocks NF-κB (ANA pathway). Polyphenols reduce arterial inflammation' },
+    { id:'train', time:'9:00', title:'Partner Training', desc:'JER: 4x4min VO2max @95%HR. SOPH: Yoga flow during rest', colors:[], macros:{p:0,o:0}, why:'VO2max = arterial stiffness (Lp(a) protection). Yoga = mobility + cortisol reduction (autoimmune control)' },
+    { id:'post', time:'10:00', title:'Recovery', desc:'Tart Cherry 8oz + Collagen 20g + Creatine 5g', colors:['red','purple'], macros:{p:20,o:0,poly:180}, why:'Anthocyanins cut CRP 25%. Collagen protects joints (autoimmune). Creatine for ATP' },
+    { id:'lunch', time:'1:00', title:'Mediterranean Bowl', desc:'Sardines 2 cans, Quinoa 1c, Arugula 2c, Beets 1c, Olives 10, EVOO 2tbsp, Pomegranate', colors:['red','green','white','purple'], macros:{p:55,o:3500,poly:250,f:14}, why:'Sardines = max EPA/DHA for ApoB. Beets = arterial flex. Polyphenols block IL-6 (ANA)' },
+    { id:'snack', time:'4:00', title:'Anti-Inflam Snack', desc:'Dark Choc 85% (2sq) + Matcha + Brazil Nuts (3)', colors:['green','white'], macros:{p:5,o:200,poly:180}, why:'Cocoa = endothelial function. Selenium modulates autoimmune. EGCG anti-inflam' },
+    { id:'dinner', time:'6:30', title:'Omega Dinner', desc:'Wild Mackerel 8oz, Sweet Potato 1, Broccoli 2c, Garlic 3 cloves, Ginger 1tbsp, Turmeric', colors:['orange','green','white','yellow'], macros:{p:60,o:4200,poly:200,f:16}, why:'Mackerel 4x omega-3 vs salmon. Sulforaphane = Nrf2 (anti-inflam). Ginger blocks COX-2' },
+    { id:'evening', time:'9:00', title:'Wind-Down', desc:'Magnesium 400mg + Ashwagandha 300mg + Tart Cherry + Blue blockers', colors:[], macros:{p:0,o:0}, why:'Mag lowers CRP. Ashwa cuts cortisol 28%. Melatonin for deep sleep = inflammation control' }
 ];
 
-const RECIPES = {
-    breakfast: {
-        title:'Omega Breakfast',time:'15min',servings:1,
-        macros:{protein:58,omega3:3500,poly:220,fiber:12,calories:680},
-        ingredients:['8oz wild salmon','2 eggs','2 cups kale','1 cup blueberries','1oz walnuts','½ avocado','1 tsp EVOO','Salt, pepper'],
-        steps:['Heat EVOO in pan','Season salmon','Cook salmon 4min per side','Scramble eggs separately','Massage kale 2min','Plate kale as base','Add salmon and eggs','Top with berries, nuts'],
-        tips:['Buy wild-caught salmon','Massage kale until bright green','Don\'t overcook salmon'],
-        why:'Salmon = 3500mg omega-3 to lower Lp(a). Eggs = choline. Walnuts = plant omega-3.'
-    },
-    lunch: {
-        title:'Mediterranean Bowl',time:'12min',servings:1,
-        macros:{protein:55,omega3:4200,poly:250,fiber:18,calories:720},
-        ingredients:['6oz mackerel','1 cup quinoa','2 cups arugula','1 cup beets','10 olives','2 tbsp EVOO','¼ cup pomegranate','Lemon, garlic'],
-        steps:['Cook quinoa','Season mackerel','Grill mackerel 3min per side','Massage arugula with EVOO/lemon','Bowl: quinoa base','Add arugula','Add beets','Top with mackerel','Garnish olives & pomegranate'],
-        tips:['Mackerel has 4x omega-3 vs salmon','Roast beets ahead','High-quality EVOO'],
-        why:'Mackerel = 4200mg omega-3. Beets = nitrates. EVOO = polyphenols.'
-    },
-    dinner: {
-        title:'Omega Dinner',time:'35min',servings:1,
-        macros:{protein:60,omega3:4000,poly:200,fiber:16,calories:750},
-        ingredients:['8oz salmon','1 sweet potato','2 cups broccoli','1 cup Brussels sprouts','Fresh herbs','2 tbsp EVOO','Garlic','Turmeric powder','Salt, pepper'],
-        steps:['Preheat oven 400°F','Wrap sweet potato in foil','Roast 30min','Steam vegetables 8min','Season salmon with turmeric','Pan-sear 4min per side','Sauté garlic in EVOO','Toss vegetables','Plate together','Top with herbs'],
-        tips:['Japanese sweet potatoes','Keep vegetables bright green','Fresh herbs > dried'],
-        why:'Omega-3 fights inflammation. Cruciferous = sulforaphane. Sweet potato = beta-carotene.'
-    }
-};
-
-class App {
+class CenturionCore {
     constructor() {
-        console.log('App starting...');
-        this.user = localStorage.getItem('user') || 'jermaine';
-        this.checked = JSON.parse(localStorage.getItem('checked') || '{}');
-        this.data = [];
-        this.idx = 0;
-        this.render();
-        console.log('App ready!');
+        this.user = localStorage.getItem('centurion_user') || 'jermaine';
+        this.history = []; this.currentIndex = 0; this.checked = {}; this.bios = {};
+        this.init();
     }
-    
-    render() {
-        // Render protocol
-        let html = '';
-        const key = this.data.length ? this.data[this.idx].date : 'none';
-        const done = this.checked[key] || [];
-        
-        let totals = {p:0,o:0,poly:0,f:0};
-        let colors = new Set();
-        
-        PROTOCOL.forEach(t => {
-            const ck = done.includes(t.id);
-            if(ck) {
-                totals.p += t.macros.p||0;
-                totals.o += t.macros.o||0;
-                totals.poly += t.macros.poly||0;
-                totals.f += t.macros.f||0;
-                t.colors?.forEach(c => colors.add(c));
-            }
-            
-            const click = t.clickable ? `onclick="event.stopPropagation(); app.showCook('${t.id}')"` : '';
-            const clickClass = t.clickable ? 'clickable' : '';
-            
-            html += `<div class="task ${ck?'checked':''}" onclick="app.toggle('${t.id}')">
-                <div class="task-top">
-                    <span class="task-time">${t.time}</span>
-                    <div class="task-check">${ck?'✓':''}</div>
-                </div>
-                <div class="task-title ${clickClass}" ${click}>${t.title}</div>
-                <div class="task-desc">${t.desc}</div>
-                ${t.why ? `<div class="task-why">WHY: ${t.why}</div>` : ''}
-            </div>`;
-        });
-        
-        document.getElementById('protocol').innerHTML = html;
-        
-        // Render macros
-        const g = USERS[this.user].goals;
-        const orb = (l,v,go,c) => `<div class="orb-box">
-            <div class="orb-wrap">
-                <svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"/><circle class="orb-fg" cx="25" cy="25" r="20" style="stroke:${c}; stroke-dashoffset:${145-(Math.min(v/go,1)*145)}"/></svg>
-                <div class="orb-val">${v}</div>
-            </div>
-            <div class="orb-label">${l}</div>
-        </div>`;
-        
-        document.getElementById('macros').innerHTML = 
-            orb('PROTEIN',totals.p,g.pro,'#fff')+
-            orb('OMEGA-3',totals.o,g.omega3,'#00f0ff')+
-            orb('POLY',totals.poly,g.poly,'#bf5af2')+
-            orb('FIBER',totals.f,g.fib,'#30d158');
-        
-        // Rainbow
-        const cb = {red:'#ff453a',orange:'#ff9f0a',yellow:'#ffd60a',green:'#30d158',purple:'#bf5af2',white:'#fff'};
-        document.getElementById('rainbowBar').innerHTML = ['red','orange','yellow','green','purple','white']
-            .map(c => `<div class="rainbow-seg" style="background:${cb[c]}; width:${colors.has(c)?'16.66%':'0%'}"></div>`).join('');
-        document.getElementById('rainbowPct').innerText = Math.round(colors.size/6*100)+'%';
+    async init() { this.loadLocalData(); this.updateUI(); await this.fetchData(); this.renderBio(); }
+    loadLocalData() {
+        this.checked = JSON.parse(localStorage.getItem(`c_checked_${this.user}`)) || {};
+        this.bios = JSON.parse(localStorage.getItem(`c_bios_${this.user}`)) || {};
     }
-    
-    toggle(id) {
-        const key = this.data.length ? this.data[this.idx].date : 'none';
-        if(!this.checked[key]) this.checked[key] = [];
-        const i = this.checked[key].indexOf(id);
-        i > -1 ? this.checked[key].splice(i,1) : this.checked[key].push(id);
-        localStorage.setItem('checked', JSON.stringify(this.checked));
-        this.render();
-    }
-    
     switchUser(u) {
-        // Update state
-        this.user = u;
-        localStorage.setItem('user', u);
-        
-        // Update buttons
-        document.querySelectorAll('.user-btn').forEach(function(b) {
-            b.classList.remove('active');
-        });
-        
-        var btnId = (u === 'jermaine') ? 'btnJer' : 'btnSoph';
-        document.getElementById(btnId).classList.add('active');
-        
-        // Update status
-        var userName = USERS[u].name.toUpperCase();
-        document.getElementById('statusUser').innerText = 'USER: ' + userName;
-        
-        // Clear and reload
-        this.data = [];
-        this.idx = 0;
-        this.render();
-        
-        // Sync new user data
-        var self = this;
-        setTimeout(function() {
-            self.sync();
-        }, 500);
+        if(u === this.user) return;
+        this.user = u; localStorage.setItem('centurion_user', u); this.wipeDashboard();
+        document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
+        document.getElementById(`btn-${u}`).classList.add('active');
+        this.history = []; this.currentIndex = 0; this.loadLocalData(); this.renderBio(); this.fetchData();
     }
-    
-    async sync() {
-        console.log('=== SYNC STARTED for user:', this.user);
-        const status = document.getElementById('footerStatus');
-        status.innerText = 'SYNCING...';
-        
+    setText(id, val) { const el = document.getElementById(id); if(el) el.innerText = val; }
+    wipeDashboard() {
+        this.setText('dayGrade', "--"); this.setText('sleepVal', "--"); this.setText('deepVal', "--");
+        this.setText('remVal', "--"); this.setText('rhrVal', "--"); this.setText('bioDisplay', "--");
+        document.getElementById('timelineList').innerHTML = ""; document.getElementById('macroList').innerHTML = "";
+        document.getElementById('rainbowTrack').innerHTML = ""; this.setText('rainbowScore', "0%");
+        this.setText('statusMsg', "SWITCHING..."); 
+        document.querySelectorAll('circle.orb-fg').forEach(el => el.style.strokeDashoffset = 145);
+        document.querySelectorAll('path.heart-fg').forEach(el => el.style.strokeDashoffset = 100);
+    }
+    updateUI() {
+        document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
+        document.getElementById(`btn-${this.user}`).classList.add('active');
+        this.setText('userLabel', `USER: ${USERS[this.user].name.toUpperCase()}`);
+    }
+    async fetchData() {
+        const bar = document.getElementById('ouraBar'); bar.innerText = "SYNCING...";
+        const d = new Date(); d.setDate(d.getDate() + 1); const end = d.toISOString().split('T')[0];
+        d.setDate(d.getDate() - 8); const start = d.toISOString().split('T')[0]; const ts = Date.now();
         try {
-            const d = new Date();
-            const end = new Date(d.setDate(d.getDate()+1)).toISOString().split('T')[0];
-            const start = new Date(d.setDate(d.getDate()-8)).toISOString().split('T')[0];
-            
-            const [s,r,a] = await Promise.all([
-                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${start}&end_date=${end}`)}`,{headers:{'Authorization':`Bearer ${TOKENS[this.user]}`}}),
-                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${start}&end_date=${end}`)}`,{headers:{'Authorization':`Bearer ${TOKENS[this.user]}`}}),
-                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${start}&end_date=${end}`)}`,{headers:{'Authorization':`Bearer ${TOKENS[this.user]}`}})
+            const [sRes, rRes, aRes] = await Promise.all([
+                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${start}&end_date=${end}&t=${ts}`)}`, { headers: { 'Authorization': `Bearer ${TOKENS[this.user]}` }, cache: 'no-store' }),
+                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${start}&end_date=${end}&t=${ts}`)}`, { headers: { 'Authorization': `Bearer ${TOKENS[this.user]}` }, cache: 'no-store' }),
+                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${start}&end_date=${end}&t=${ts}`)}`, { headers: { 'Authorization': `Bearer ${TOKENS[this.user]}` }, cache: 'no-store' })
             ]);
-            
-            if(!s.ok) throw new Error('API fail');
-            
-            const sj = await s.json(), rj = await r.json(), aj = await a.json();
-            
-            console.log('Raw data received:', sj.data?.length, 'sleep records');
-            this.data = (sj.data||[]).map(x => {
-                const rd = rj.data?.find(y => y.day === x.day);
-                const ad = aj.data?.find(y => y.day === x.day);
-                return {
-                    date: x.day,
-                    score: rd?.score||0,
-                    totalSec: x.total_sleep_duration,
-                    deepSec: x.deep_sleep_duration,
-                    remSec: x.rem_sleep_duration,
-                    rhr: rd?.contributors?.resting_heart_rate||0,
-                    cal: ad?.active_calories||0,
-                    z2: (ad?.medium_activity_time||0)/60,
-                    z5: (ad?.high_activity_time||0)/60
-                };
-            }).filter(x => x.score > 0).sort((a,b) => b.date.localeCompare(a.date));
-            
-            if(this.data.length) {
-                console.log('Processed data:', this.data.length, 'records');
-                console.log('First record:', this.data[0]);
-                this.idx = 0;
-                console.log('Calling updateDash()');
-                this.updateDash();
-                status.innerText = this.data.length + ' DAYS';
-                console.log('=== SYNC COMPLETE ===');
-            } else {
-                status.innerText = 'NO DATA';
-            }
-        } catch(e) {
-            status.innerText = 'FAILED';
-            console.error(e);
-        }
+            if(!sRes.ok) throw new Error("API Error");
+            const sJson = await sRes.json(), rJson = await rRes.json(), aJson = await aRes.json();
+            let raw = sJson.data ? sJson.data.map(s => {
+                const r = rJson.data?.find(x => x.day === s.day);
+                const a = aJson.data?.find(x => x.day === s.day);
+                return { date: s.day, score: r?.score || 0, totalSec: s.total_sleep_duration, deepSec: s.deep_sleep_duration,
+                    remSec: s.rem_sleep_duration, rhr: r?.contributors?.resting_heart_rate || '-',
+                    cal: a?.active_calories || 0, high: (a?.high_activity_time || 0)/60, med: (a?.medium_activity_time || 0)/60 };
+            }).sort((a,b) => b.date.localeCompare(a.date)) : [];
+            this.history = raw.filter(d => d.score > 0 || d.totalSec > 0);
+            if(this.history.length > 0) { this.currentIndex = 0; bar.innerText = "UPDATED"; this.render(); }
+            else { bar.innerText = "EMPTY"; this.renderEmpty(); }
+        } catch(e) { bar.innerText = `ERR: ${e.message}`; console.error(e); }
     }
-    
-    updateDash() {
-        console.log('=== updateDash CALLED ===');
-        if(!this.data.length) {
-            console.log('No data to display');
-            return;
-        }
-        
-        const d = this.data[this.idx];
-        console.log('Displaying data for:', d.date, 'score:', d.score);
-        const h = Math.floor(d.totalSec/3600);
-        const m = Math.round((d.totalSec%3600)/60);
-        
-        document.getElementById('dateDisplay').innerText = d.date;
-        document.getElementById('sleepVal').innerText = `${h}h${m}m`;
-        document.getElementById('deepVal').innerText = Math.round(d.deepSec/60)+'m';
-        document.getElementById('remVal').innerText = Math.round(d.remSec/60)+'m';
-        document.getElementById('rhrVal').innerText = d.rhr;
-        document.getElementById('z2Val').innerText = Math.round(d.z2)+'m';
-        document.getElementById('z5Val').innerText = Math.round(d.z5)+'m';
-        document.getElementById('calVal').innerText = d.cal;
-        
-        // Grade
-        let gr = 'C', co = '#ff453a';
-        if(d.score >= 85 && h >= 7) { gr='S'; co='#ccff00'; }
-        else if(d.score >= 80 && h >= 6.5) { gr='A'; co='#00f0ff'; }
-        else if(d.score >= 70) { gr='B'; co='#FFD60A'; }
-        
-        document.getElementById('gradeLetter').innerText = gr;
-        document.getElementById('gradeCircle').style.borderColor = co;
-        
-        // Status
-        const cond = USERS[this.user].condition;
-        const msg = d.score >= 85 ? `PEAK - ${cond} MANAGED` : d.score < 70 ? `RECOVERY - ${cond} RISK` : `${cond} PROTOCOL`;
-        document.getElementById('statusMain').innerText = msg;
-        document.getElementById('statusSub').innerText = `Score ${d.score} • Sleep ${h}h${m}m`;
-        
-        // Orbs & hearts
+    changeDate(dir) {
+        if(!this.history.length) return;
+        const n = this.currentIndex - dir;
+        if(n >= 0 && n < this.history.length) { this.currentIndex = n; this.render(); }
+    }
+    render() {
+        if(!this.history.length) return this.renderEmpty();
+        const d = this.history[this.currentIndex], h = Math.floor(d.totalSec/3600), m = Math.round((d.totalSec%3600)/60);
+        this.setText('dateDisplay', d.date); this.setText('sleepVal', `${h}h ${m}m`);
+        this.setText('deepVal', Math.round(d.deepSec/60)+"m"); this.setText('remVal', Math.round(d.remSec/60)+"m");
+        this.setText('rhrVal', d.rhr); const g = USERS[this.user].goals;
+        this.setText('z2Val', Math.round(d.med)); this.setText('z5Val', Math.round(d.high)); this.setText('calVal', d.cal);
+        const uh = (id,val,goal) => { const e = document.getElementById(id); if(e) e.style.strokeDashoffset = 100-(Math.min(val/goal,1)*100); };
+        uh('z2Heart', d.med, g.z2); uh('z5Heart', d.high, g.z5); uh('calHeart', d.cal, g.cal);
+        const c = d.score >= 80 ? '#ccff00' : d.score >= 60 ? '#FFD60A' : '#ff453a';
+        document.querySelector('.tactical-box').style.borderLeftColor = c;
+        const u = USERS[this.user], s = d.score >= 85 ? `PEAK - ${u.condition} MANAGED` : d.score < 70 ? `RECOVERY - ${u.condition} RISK` : `${u.condition} PROTOCOL`;
+        this.setText('statusMsg', s); this.renderGrade(d.score, h);
         document.getElementById('sleepOrb').style.strokeDashoffset = 145-(Math.min(d.totalSec/3600,9)/9)*145;
         document.getElementById('deepOrb').style.strokeDashoffset = 145-(Math.min(d.deepSec/3600,2)/2)*145;
         document.getElementById('remOrb').style.strokeDashoffset = 145-(Math.min(d.remSec/3600,2)/2)*145;
-        
-        const g = USERS[this.user].goals;
-        document.getElementById('rhrHeart').style.strokeDashoffset = 100-(Math.min(75/d.rhr,1)*100);
-        document.getElementById('z2Heart').style.strokeDashoffset = 100-(Math.min(d.z2/g.z2,1)*100);
-        document.getElementById('z5Heart').style.strokeDashoffset = 100-(Math.min(d.z5/g.z5,1)*100);
-        document.getElementById('calHeart').style.strokeDashoffset = 100-(Math.min(d.cal/g.cal,1)*100);
-        
-        this.render();
+        this.renderComplex(d.date); this.renderBio();
     }
-    
-    prevDay() { if(this.idx < this.data.length-1) { this.idx++; this.updateDash(); }}
-    nextDay() { if(this.idx > 0) { this.idx--; this.updateDash(); }}
-    
-    showCook(id) {
-        const r = RECIPES[id];
-        if(!r) return;
-        
-        let html = `
-            <div class="cook-header">
-                <button class="back-btn" onclick="app.closeCook()">← BACK</button>
-                <h1 class="cook-title">${r.title}</h1>
-                <div class="cook-meta">
-                    <span>⏱️ ${r.time}</span>
-                    <span>🍽️ ${r.servings} serving</span>
-                </div>
-            </div>
-            
-            <div class="macro-grid">
-                ${['protein','omega3','poly','fiber','calories'].map(k => `
-                    <div class="macro-card">
-                        <div class="macro-val">${r.macros[k]}${k==='protein'||k==='fiber'?'g':''}${k==='omega3'||k==='poly'?'mg':''}</div>
-                        <div class="macro-lab">${k.toUpperCase()}</div>
-                    </div>
-                `).join('')}
-            </div>
-            
-            <div class="cook-section">
-                <h2 class="cook-sec-title">🛒 INGREDIENTS</h2>
-                <div class="ing-list">
-                    ${r.ingredients.map(i => `<div class="ing-item">• ${i}</div>`).join('')}
-                </div>
-            </div>
-            
-            <div class="cook-section">
-                <h2 class="cook-sec-title">👨‍🍳 STEPS</h2>
-                <div class="step-list">
-                    ${r.steps.map((s,i) => `
-                        <div class="step">
-                            <div class="step-num">${i+1}</div>
-                            <div class="step-txt">${s}</div>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-            
-            <div class="cook-section">
-                <h2 class="cook-sec-title">💡 TIPS</h2>
-                <div class="tip-list">
-                    ${r.tips.map(t => `<div class="tip">✓ ${t}</div>`).join('')}
-                </div>
-            </div>
-            
-            <div class="cook-section">
-                <h2 class="cook-sec-title">🎯 WHY IT WORKS</h2>
-                <div class="why-box">${r.why}</div>
-            </div>
-            
-            <div class="cook-footer">
-                <button class="done-btn" onclick="app.closeCook()">✓ DONE</button>
-            </div>
-        `;
-        
-        document.getElementById('cookModal').innerHTML = html;
-        document.getElementById('cookModal').classList.add('active');
-        document.body.style.overflow = 'hidden';
+    renderEmpty() { this.setText('dateDisplay', "NO DATA"); this.setText('statusMsg', "SYNC"); this.wipeDashboard(); this.renderBio(); }
+    renderGrade(sc, sl) {
+        let gr = 'C', co = '#ff453a';
+        if(sc >= 85 && sl >= 7) { gr = 'S'; co = '#ccff00'; }
+        else if(sc >= 80 && sl >= 6.5) { gr = 'A'; co = '#00f0ff'; }
+        else if(sc >= 70) { gr = 'B'; co = '#FFD60A'; }
+        this.setText('dayGrade', gr); document.getElementById('dayGrade').style.color = co;
+        document.querySelector('.grade-box').style.borderColor = co;
     }
-    
-    closeCook() {
-        document.getElementById('cookModal').classList.remove('active');
-        document.body.style.overflow = 'auto';
+    renderComplex(dk) {
+        const done = this.checked[dk] || [], g = USERS[this.user].goals;
+        let tot = {p:0,o:0,poly:0,f:0}, cols = new Set(), html = '';
+        PROTOCOL.forEach(t => {
+            const chk = done.includes(t.id);
+            if(chk) { tot.p += t.macros.p||0; tot.o += t.macros.o||0; tot.poly += t.macros.poly||0; tot.f += t.macros.f||0; t.colors?.forEach(c => cols.add(c)); }
+            html += `<div class="time-slot"><div class="ts-time">${t.time}</div><div class="ts-card ${chk?'checked':''}" onclick="centurion.toggleTask('${t.id}')">
+                <div class="ts-title">${t.title}</div><div class="ts-desc">${t.desc}</div>
+                ${t.why?`<div class="ts-why">WHY: ${t.why}</div>`:''}
+                <div class="check-btn">${chk?'✓':''}</div></div></div>`;
+        });
+        document.getElementById('timelineList').innerHTML = html;
+        const orb = (l,v,go,co) => `<div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle>
+            <circle class="orb-fg" cx="25" cy="25" r="20" style="stroke:${co}; stroke-dashoffset:${145-(Math.min(v/go,1)*145)}"></circle></svg>
+            <div class="orb-val-box"><div class="orb-val">${v}</div></div></div><div class="orb-label">${l}</div></div>`;
+        document.getElementById('macroList').innerHTML = orb('PROTEIN',tot.p,g.pro,'#fff')+orb('OMEGA-3',tot.o,g.omega3,'#00d4ff')+orb('POLY',tot.poly,g.poly,'#bf5af2')+orb('FIBER',tot.f,g.fib,'#30d158');
+        this.setText('rainbowScore', Math.round(cols.size/6*100)+"%");
+        const cb = {red:'#ff453a',orange:'#ff9f0a',yellow:'#ffd60a',green:'#30d158',purple:'#bf5af2',white:'#fff'};
+        document.getElementById('rainbowTrack').innerHTML = ['red','orange','yellow','green','purple','white'].map(c => 
+            `<div class="rainbow-seg" style="background:${cb[c]}; width:${cols.has(c)?'16.66%':'0%'}"></div>`).join('');
     }
-    
-    openWeekly() {
-        if(this.data.length < 2) {
-            document.getElementById('weeklyContent').innerHTML = `
-                <div style="text-align:center;padding:20px;color:#ccc;">
-                    Need at least 2 days. Tap SYNC.
-                </div>
-            `;
-        } else {
-            const last7 = this.data.slice(0, Math.min(7, this.data.length));
-            const avg = k => {
-                let vals = last7.map(d => {
-                    if(k==='sleep') return d.totalSec/3600;
-                    if(k==='rhr') return d.rhr;
-                    return d[k]||0;
-                }).filter(v => v > 0);
-                return vals.length ? (vals.reduce((a,b) => a+b)/vals.length).toFixed(1) : 0;
-            };
-            
-            document.getElementById('weeklyContent').innerHTML = `
-                <div style="font-size:0.65rem;color:#888;margin-bottom:15px;">Last ${last7.length} days</div>
-                <div style="padding:10px 0;border-bottom:1px solid #222;display:flex;justify-content:space-between;">
-                    <span style="font-size:0.6rem;color:#888;">AVG READINESS</span>
-                    <span style="font-family:var(--font-data);font-size:0.65rem;color:#fff;font-weight:700;">${avg('score')}</span>
-                </div>
-                <div style="padding:10px 0;border-bottom:1px solid #222;display:flex;justify-content:space-between;">
-                    <span style="font-size:0.6rem;color:#888;">AVG SLEEP</span>
-                    <span style="font-family:var(--font-data);font-size:0.65rem;color:#fff;font-weight:700;">${avg('sleep')}h</span>
-                </div>
-                <div style="padding:10px 0;border-bottom:1px solid #222;display:flex;justify-content:space-between;">
-                    <span style="font-size:0.6rem;color:#888;">AVG RHR</span>
-                    <span style="font-family:var(--font-data);font-size:0.65rem;color:#fff;font-weight:700;">${avg('rhr')}</span>
-                </div>
-                <div style="padding:10px 0;display:flex;justify-content:space-between;">
-                    <span style="font-size:0.6rem;color:#888;">ZONE 2 TOTAL</span>
-                    <span style="font-family:var(--font-data);font-size:0.65rem;color:#fff;font-weight:700;">${(avg('z2')*last7.length).toFixed(0)}min</span>
-                </div>
-            `;
+    toggleTask(id) {
+        if(!this.history.length) return;
+        const dk = this.history[this.currentIndex].date;
+        if(!this.checked[dk]) this.checked[dk] = [];
+        const i = this.checked[dk].indexOf(id);
+        i > -1 ? this.checked[dk].splice(i,1) : this.checked[dk].push(id);
+        localStorage.setItem(`c_checked_${this.user}`, JSON.stringify(this.checked));
+        this.renderComplex(dk);
+    }
+    async runAI() {
+        if(!this.history.length) return;
+        const d = this.history[this.currentIndex], ui = document.getElementById('aiOutput'), u = USERS[this.user];
+        const p = `Coach ${u.name} (${u.condition}). Sleep ${(d.totalSec/3600).toFixed(1)}h, Score ${d.score}, Z2 ${Math.round(d.med)}min, Z5 ${Math.round(d.high)}min. ${u.condition==='HIGH LP(A)'?'ApoB via omega-3, VO2max for arteries':'ANA via anti-inflam, mobility'}. 1 action TODAY.`;
+        ui.innerText = "Analyzing...";
+        for(let m of ['gemini-1.5-flash-8b','gemini-2.0-flash-exp']) {
+            try {
+                const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${API_KEY}`, {
+                    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({contents:[{parts:[{text:p}]}]})
+                });
+                if(r.ok) { const j = await r.json(); if(j.candidates) { ui.innerText = j.candidates[0].content.parts[0].text; return; } }
+            } catch(e) {}
         }
-        document.getElementById('weeklyModal').classList.add('active');
+        ui.innerText = d.score >= 80 ? `${u.condition} managed. Execute VO2max.` : `Recovery. Z2 only.`;
     }
-    
-    closeWeekly() {
-        document.getElementById('weeklyModal').classList.remove('active');
+    openBio() {
+        ['vo2','apob','lpa','ana','crp'].forEach(k => document.getElementById(`in-${k}`).value = this.bios[k]||'');
+        document.getElementById('bioModal').classList.add('active');
     }
-    
-    async genAI() {
-        if(!this.data.length) {
-            document.getElementById('aiOut').innerText = 'No data. Sync first.';
-            return;
+    closeBio() { document.getElementById('bioModal').classList.remove('active'); }
+    saveBio() {
+        this.bios = { vo2: document.getElementById('in-vo2').value, apob: document.getElementById('in-apob').value,
+            lpa: document.getElementById('in-lpa').value, ana: document.getElementById('in-ana').value, crp: document.getElementById('in-crp').value };
+        localStorage.setItem(`c_bios_${this.user}`, JSON.stringify(this.bios));
+        this.closeBio(); this.renderBio();
+    }
+    renderBio() {
+        const u = USERS[this.user]; let t = u.condition;
+        if(u.condition === 'HIGH LP(A)' && this.bios.lpa) {
+            t += ` • Lp(a): ${this.bios.lpa}`;
+            document.querySelector('.tac-label').innerHTML = `USER: ${u.name.toUpperCase()} <span class="health-badge badge-lpa">LP(A)</span>`;
+        } else if(u.condition === 'HIGH ANA' && this.bios.ana) {
+            t += ` • ANA: ${this.bios.ana}`;
+            document.querySelector('.tac-label').innerHTML = `USER: ${u.name.toUpperCase()} <span class="health-badge badge-ana">ANA</span>`;
         }
-        
-        const out = document.getElementById('aiOut');
-        const d = this.data[this.idx];
-        const u = USERS[this.user];
-        
-        const p = `Coach ${u.name} (${u.condition}). Sleep ${(d.totalSec/3600).toFixed(1)}h, Score ${d.score}. 1 action today.`;
-        
-        out.innerText = 'Thinking...';
-        
-        try {
-            const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-8b:generateContent?key=${API_KEY}`, {
-                method:'POST',
-                headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({contents:[{parts:[{text:p}]}]})
-            });
-            
-            if(r.ok) {
-                const j = await r.json();
-                out.innerText = j.candidates[0].content.parts[0].text;
-            } else {
-                out.innerText = d.score >= 80 ? 'Execute protocol.' : 'Recovery mode. Zone 2 only.';
-            }
-        } catch(e) {
-            out.innerText = 'Focus on sleep and omega-3 protocol.';
-        }
+        if(this.bios.apob) t += ` • ApoB: ${this.bios.apob}`;
+        if(this.bios.crp) t += ` • CRP: ${this.bios.crp}`;
+        this.setText('bioDisplay', t);
     }
 }
-
-console.log('Creating app...');
-const app = new App();
-console.log('=== READY ===');
+const centurion = new CenturionCore();
 </script>
 
 </body>
