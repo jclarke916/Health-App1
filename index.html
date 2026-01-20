@@ -397,6 +397,7 @@ class App {
     }
     
     async sync() {
+        console.log('=== SYNC STARTED for user:', this.user);
         const status = document.getElementById('footerStatus');
         status.innerText = 'SYNCING...';
         
@@ -415,6 +416,7 @@ class App {
             
             const sj = await s.json(), rj = await r.json(), aj = await a.json();
             
+            console.log('Raw data received:', sj.data?.length, 'sleep records');
             this.data = (sj.data||[]).map(x => {
                 const rd = rj.data?.find(y => y.day === x.day);
                 const ad = aj.data?.find(y => y.day === x.day);
@@ -432,9 +434,13 @@ class App {
             }).filter(x => x.score > 0).sort((a,b) => b.date.localeCompare(a.date));
             
             if(this.data.length) {
+                console.log('Processed data:', this.data.length, 'records');
+                console.log('First record:', this.data[0]);
                 this.idx = 0;
+                console.log('Calling updateDash()');
                 this.updateDash();
-                status.innerText = `${this.data.length} DAYS`;
+                status.innerText = this.data.length + ' DAYS';
+                console.log('=== SYNC COMPLETE ===');
             } else {
                 status.innerText = 'NO DATA';
             }
@@ -445,9 +451,14 @@ class App {
     }
     
     updateDash() {
-        if(!this.data.length) return;
+        console.log('=== updateDash CALLED ===');
+        if(!this.data.length) {
+            console.log('No data to display');
+            return;
+        }
         
         const d = this.data[this.idx];
+        console.log('Displaying data for:', d.date, 'score:', d.score);
         const h = Math.floor(d.totalSec/3600);
         const m = Math.round((d.totalSec%3600)/60);
         
