@@ -256,7 +256,6 @@ class CenturionCore {
     loadLocalData() {
         this.checked = JSON.parse(localStorage.getItem(`c_checked_${this.user}`)) || {};
         this.bios = JSON.parse(localStorage.getItem(`c_bios_${this.user}`)) || {};
-        this.currentMeals = JSON.parse(localStorage.getItem('currentMeals')) || {breakfast:0,lunch:0,dinner:0};
     }
     switchUser(u) {
         if(u === this.user) return;
@@ -570,24 +569,30 @@ class CenturionCore {
         ]
     };
     
-    // Meal rotation tracker
-    currentMeals = {
-        breakfast: 0,
-        lunch: 0,
-        dinner: 0
-    };
+    // Meal rotation - date-based selection
+    getMealIndex(mealType) {
+        // Use day of year to determine which meal variant to show
+        const now = new Date();
+        const start = new Date(now.getFullYear(), 0, 0);
+        const diff = now - start;
+        const oneDay = 1000 * 60 * 60 * 24;
+        const dayOfYear = Math.floor(diff / oneDay);
+        
+        // Rotate through 5 meals based on day of year
+        return dayOfYear % 5;
+    }
     
-    showCooking(id) {
-        // Get current meal index
-        const idx = this.currentMeals[id] || 0;
+    showCooking(id, customIdx) {
+        // Use custom index if provided (from changeMeal), otherwise use date-based
+        const idx = customIdx !== undefined ? customIdx : this.getMealIndex(id);
         const r = this.RECIPES[id][idx];
         if(!r) return;
         
-        // Rotate to next meal for tomorrow
-        this.currentMeals[id] = (idx + 1) % this.RECIPES[id].length;
-        localStorage.setItem('currentMeals', JSON.stringify(this.currentMeals));
+        // Store which meal variant is currently being viewed
+        this.currentlyViewingMeal = {type: id, index: idx};
         
-        let html = '<div class="cooking-header"><button class="back-btn" onclick="centurion.closeCooking()">← BACK</button><h1 class="cook-title">' + r.title + '</h1><div class="cook-meta"><span>⏱️ ' + r.time + '</span><span>🍽️ ' + r.servings + ' serving</span></div></div>';
+        const mealNum = (customIdx !== undefined ? customIdx : this.getMealIndex(id)) + 1;
+        let html = '<div class="cooking-header"><button class="back-btn" onclick="centurion.closeCooking()">← BACK</button><h1 class="cook-title">' + r.title + '</h1><div class="cook-meta"><span>Option ' + mealNum + '/5</span><span>⏱️ ' + r.time + '</span><span>🍽️ ' + r.servings + ' serving</span></div></div>';
         
         html += '<div class="macro-grid-cook">';
         html += '<div class="macro-card-cook"><div class="macro-val-cook">' + r.macros.protein + 'g</div><div class="macro-lab-cook">PROTEIN</div></div>';
@@ -676,10 +681,11 @@ class CenturionCore {
     
     changeMeal(id) {
         // Cycle to next meal option
-        this.currentMeals[id] = (this.currentMeals[id] + 1) % this.RECIPES[id].length;
-        localStorage.setItem('currentMeals', JSON.stringify(this.currentMeals));
+        const currentIdx = this.currentlyViewingMeal ? this.currentlyViewingMeal.index : this.getMealIndex(id);
+        const nextIdx = (currentIdx + 1) % this.RECIPES[id].length;
         this.closeCooking();
-        this.showCooking(id);
+        // Show next meal with explicit index
+        this.showCooking(id, nextIdx);
     }
     
     closeCooking() {
