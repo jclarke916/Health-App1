@@ -265,14 +265,10 @@ class CenturionCore {
         document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
         document.getElementById(`btn-${u}`).classList.add('active');
         
-        // Update user name label
-        const userName = USERS[u].name.toUpperCase();
-        document.getElementById('userLabel').innerText = 'USER: ' + userName;
-        
         this.history = []; 
         this.currentIndex = 0; 
         this.loadLocalData(); 
-        this.renderBio(); 
+        this.renderBio(); // This updates userLabel with badge
         this.fetchData();
     }
     setText(id, val) { const el = document.getElementById(id); if(el) el.innerText = val; }
@@ -403,16 +399,22 @@ class CenturionCore {
         this.closeBio(); this.renderBio();
     }
     renderBio() {
-        const u = USERS[this.user]; let t = u.condition;
-        if(u.condition === 'HIGH LP(A)' && this.bios.lpa) {
-            t += ` • Lp(a): ${this.bios.lpa}`;
+        const u = USERS[this.user]; 
+        let t = u.condition;
+        
+        // Always update the user label with appropriate badge
+        if(u.condition === 'HIGH LP(A)') {
             document.querySelector('.tac-label').innerHTML = `USER: ${u.name.toUpperCase()} <span class="health-badge badge-lpa">LP(A)</span>`;
-        } else if(u.condition === 'HIGH ANA' && this.bios.ana) {
-            t += ` • ANA: ${this.bios.ana}`;
+            if(this.bios.lpa) t += ` • Lp(a): ${this.bios.lpa}`;
+        } else if(u.condition === 'HIGH ANA') {
             document.querySelector('.tac-label').innerHTML = `USER: ${u.name.toUpperCase()} <span class="health-badge badge-ana">ANA</span>`;
+            if(this.bios.ana) t += ` • ANA: ${this.bios.ana}`;
         }
+        
         if(this.bios.apob) t += ` • ApoB: ${this.bios.apob}`;
         if(this.bios.crp) t += ` • CRP: ${this.bios.crp}`;
+        if(this.bios.vo2) t += ` • VO2max: ${this.bios.vo2}`;
+        
         this.setText('bioDisplay', t);
     }
 
