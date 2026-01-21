@@ -770,7 +770,31 @@ const USERS = {
         name: "Jermaine", 
         age: 42, 
         condition: "HIGH LP(A)", 
-        goals: { pro: 180, omega3: 4000, poly: 600, fib: 45, z2: 45, z5: 25, cal: 800 },
+        goals: { 
+            // Macros (based on 217 lbs, 172 lbs lean mass, body recomp)
+            pro: 172,        // 1g per lb lean mass (muscle preservation)
+            omega3: 12000,   // Aggressive for Lp(a) = 178 (2.4x target)
+            poly: 800,       // High polyphenols for inflammation
+            fib: 50,         // High fiber for ApoB = 114 (42% above)
+            
+            // Cardio (based on VO2max needs for Lp(a) protection)
+            z2: 180,         // 180min/week Zone 2 (arterial health)
+            z5: 20,          // 20min/week VO2max (high-intensity)
+            
+            // Strength (based on 172 lbs lean mass, 98.8 lbs skeletal muscle)
+            strength: 3,     // 3 sessions/week (maintain muscle during recomp)
+            
+            // Hydration (based on Creatinine 1.32, eGFR 69 - CRITICAL)
+            water: 140,      // 140oz/day (1+ gallon for kidney function)
+            
+            // Calories (based on BMR 2057, body recomp goal)
+            cal: 2300,       // Slight deficit from TDEE ~2600 (recomp pace)
+            
+            // Body Composition Goals (12-month targets)
+            targetWeight: 205,      // From 217 → 205 (lose 12 lbs fat)
+            targetBodyFat: 15.0,    // From 20.7% → 15% 
+            targetLeanMass: 174,    // From 172 → 174 (gain 2 lbs muscle)
+        },
         defaultBios: {
             // Cardiovascular - Lab Date: 01/06/2026
             apob: '114',
@@ -836,6 +860,87 @@ class CenturionCore {
         this.history = []; this.currentIndex = 0; this.checked = {}; this.bios = {};
         this.init();
     }
+
+    calculateDailyScore() {
+        if(!this.history.length) return 0;
+        const today = this.history[this.currentIndex];
+        const goals = USERS[this.user].goals;
+        let score = 0;
+        let maxScore = 0;
+        
+        // PROTOCOL COMPLETION (30 points max)
+        const completed = this.checked[today.date]?.length || 0;
+        const total = PROTOCOL.length;
+        score += (completed / total) * 30;
+        maxScore += 30;
+        
+        // MACROS (25 points max)
+        // Protein (10 points) - Critical for muscle preservation
+        if(today.protein) {
+            const proteinScore = Math.min((today.protein / goals.pro) * 10, 10);
+            score += proteinScore;
+        }
+        maxScore += 10;
+        
+        // Omega-3 (10 points) - Critical for Lp(a)
+        if(today.omega3) {
+            const omegaScore = Math.min((today.omega3 / goals.omega3) * 10, 10);
+            score += omegaScore;
+        }
+        maxScore += 10;
+        
+        // Fiber (5 points) - Important for ApoB
+        if(today.fiber) {
+            const fiberScore = Math.min((today.fiber / goals.fib) * 5, 5);
+            score += fiberScore;
+        }
+        maxScore += 5;
+        
+        // CARDIO (20 points max)
+        // Zone 2 (12 points) - Critical for arterial health with high Lp(a)
+        const weeklyZ2 = this.getWeeklyMinutes('z2');
+        const z2Score = Math.min((weeklyZ2 / goals.z2) * 12, 12);
+        score += z2Score;
+        maxScore += 12;
+        
+        // Zone 5 (8 points) - VO2max for cardiovascular risk
+        const weeklyZ5 = this.getWeeklyMinutes('z5');
+        const z5Score = Math.min((weeklyZ5 / goals.z5) * 8, 8);
+        score += z5Score;
+        maxScore += 8;
+        
+        // HYDRATION (15 points) - CRITICAL for kidney function (Creat 1.32, eGFR 69)
+        if(today.water) {
+            const waterScore = Math.min((today.water / goals.water) * 15, 15);
+            score += waterScore;
+        }
+        maxScore += 15;
+        
+        // SLEEP (10 points) - Critical for recovery and inflammation
+        if(today.sleep) {
+            let sleepScore = 0;
+            if(today.sleep >= 7 && today.sleep <= 9) sleepScore = 10;
+            else if(today.sleep >= 6 && today.sleep < 7) sleepScore = 7;
+            else if(today.sleep >= 5 && today.sleep < 6) sleepScore = 4;
+            score += sleepScore;
+        }
+        maxScore += 10;
+        
+        return Math.round((score / maxScore) * 100);
+    }
+    
+    getWeeklyMinutes(type) {
+        if(!this.history.length) return 0;
+        const today = this.currentIndex;
+        const start = Math.max(0, today - 6);
+        let total = 0;
+        for(let i = start; i <= today; i++) {
+            if(type === 'z2') total += (this.history[i].z2 || 0);
+            if(type === 'z5') total += (this.history[i].z5 || 0);
+        }
+        return total;
+    }
+
     async init() { 
         this.loadLocalData(); 
         // Load default bios if none exist for this user
@@ -1209,6 +1314,32 @@ class CenturionCore {
         if(this.bios.apob) t += ` • ApoB: ${this.bios.apob}`;
         if(this.bios.crp) t += ` • CRP: ${this.bios.crp}`;
         this.setText('bioDisplay', t);
+        
+        // Update tactical command with personalized targets
+        const goals = USERS[this.user].goals;
+        let cmd = '';
+        
+        // Priority 1: Lp(a) oxidation prevention (CRITICAL - 2.4x target)
+        if(this.bios.lpa && parseInt(this.bios.lpa) > 75) {
+            cmd = `Lp(a) OXIDATION PROTOCOL: 12,000mg ω-3 daily + VO2max training 2x/week`;
+        }
+        // Priority 2: ApoB reduction (42% above target)
+        else if(this.bios.apob && parseInt(this.bios.apob) > 80) {
+            cmd = `ApoB REDUCTION: Low sat fat + 50g fiber daily + maintain ${goals.pro}g protein`;
+        }
+        // Priority 3: Kidney protection (Creat 1.32, eGFR 69)
+        else if(this.bios.creat && parseFloat(this.bios.creat) > 1.2) {
+            cmd = `KIDNEY PROTECTION: ${goals.water}oz water daily + monitor protein at ${goals.pro}g`;
+        }
+        // Priority 4: Body recomp (20.7% → 15% body fat)
+        else if(this.bios.bodyFatPct && parseFloat(this.bios.bodyFatPct) > 15) {
+            cmd = `BODY RECOMP: ${goals.pro}g protein + ${goals.cal} cal + strength 3x/week`;
+        }
+        else {
+            cmd = `MAINTAIN: All biomarkers tracked + body recomp in progress`;
+        }
+        
+        this.setText('tacCmd', cmd);
     }
 }
 const centurion = new CenturionCore();
