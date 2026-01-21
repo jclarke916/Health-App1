@@ -357,6 +357,24 @@
             outline: none;
             border-color: var(--acid);
         }
+        .meal-dropdown {
+    width: 100%;
+    padding: 15px;
+    background: #222;
+    color: var(--acid);
+    border: 1px solid var(--acid);
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    font-family: var(--font-ui);
+    margin-bottom: 8px;
+    cursor: pointer;
+}
+
+.meal-dropdown:focus {
+    outline: none;
+    border-color: var(--cyan);
+}
     </style>
 </head>
 <body>
@@ -993,69 +1011,83 @@ class CenturionCore {
     }
     
     showCooking(id) {
-    // TEMPORARY DEBUG
-    if(id === 'breakfast') {
-        this.showDebug(id);
-    }
-    
-    const idx = this.currentMeals[id] || 0;
+    let idx = this.currentMeals[id] || 0;
     const recipes = this.RECIPES[id];
     
     if(!recipes || !recipes.length) {
-        alert('ERROR: No recipes found for: ' + id + '\nRecipes object keys: ' + Object.keys(this.RECIPES).join(', '));
+        alert('ERROR: No recipes found for: ' + id);
         return;
     }
     
-    // ... rest of function
-
-        
-        const r = recipes[idx];
-        
-        if(!r) {
-            console.error('Recipe not found at index:', idx);
-            return;
-        }
-        
-        let html = '<div class="cooking-header">';
-        html += '<button class="back-btn" onclick="centurion.closeCooking()">← BACK</button>';
-        html += '<h1 class="cook-title">' + r.title + '</h1>';
-        html += '<div class="cook-meta">';
-        html += '<span>⏱️ ' + r.time + '</span>';
-        html += '<span>🍽️ ' + r.servings + ' serving</span>';
-        html += '</div>';
-        html += '</div>';
-        
-        html += '<div class="macro-grid-cook">';
-        html += '<div class="macro-card-cook"><div class="macro-val-cook">' + r.macros.protein + 'g</div><div class="macro-lab-cook">PROTEIN</div></div>';
-        html += '<div class="macro-card-cook"><div class="macro-val-cook">' + r.macros.omega3 + 'mg</div><div class="macro-lab-cook">OMEGA-3</div></div>';
-        html += '<div class="macro-card-cook"><div class="macro-val-cook">' + r.macros.poly + 'mg</div><div class="macro-lab-cook">POLYPHENOLS</div></div>';
-        html += '<div class="macro-card-cook"><div class="macro-val-cook">' + r.macros.fiber + 'g</div><div class="macro-lab-cook">FIBER</div></div>';
-        html += '<div class="macro-card-cook"><div class="macro-val-cook">' + r.macros.calories + '</div><div class="macro-lab-cook">CALORIES</div></div>';
-        html += '</div>';
-        
-        html += '<div class="cook-section"><h2 class="cook-sec-title">🛒 INGREDIENTS</h2><div class="ing-list">';
-        r.ingredients.forEach(ing => html += '<div class="ing-item">• ' + ing + '</div>');
-        html += '</div></div>';
-        
-        html += '<div class="cook-section"><h2 class="cook-sec-title">👨‍🍳 STEPS</h2><div class="step-list">';
-        r.steps.forEach((step, i) => html += '<div class="step-item"><div class="step-num">' + (i+1) + '</div><div class="step-txt">' + step + '</div></div>');
-        html += '</div></div>';
-        
-        html += '<div class="cook-section"><h2 class="cook-sec-title">💡 TIPS</h2><div class="tip-list">';
-        r.tips.forEach(tip => html += '<div class="tip-item">✓ ' + tip + '</div>');
-        html += '</div></div>';
-        
-        html += '<div class="cook-section"><h2 class="cook-sec-title">🎯 WHY IT WORKS</h2><div class="why-box">' + r.why + '</div></div>';
-        
-        html += '<div class="cook-footer">';
-        html += '<button class="done-btn change-meal-btn" onclick="centurion.changeMeal(\''+id+'\')">🔄 CHANGE MEAL (' + (idx+1) + '/' + recipes.length + ')</button>';
-        html += '<button class="done-btn" onclick="centurion.closeCooking()">✓ DONE COOKING</button>';
-        html += '</div>';
-        
-        document.getElementById('cookingPage').innerHTML = html;
-        document.getElementById('cookingPage').classList.add('active');
-        document.body.style.overflow = 'hidden';
+    // FIX: Reset index if it's out of bounds
+    if(idx >= recipes.length) {
+        idx = 0;
+        this.currentMeals[id] = 0;
+        localStorage.setItem('currentMeals', JSON.stringify(this.currentMeals));
     }
+    
+    const r = recipes[idx];
+    
+    if(!r) {
+        alert('Recipe not found at index: ' + idx + '. Resetting to 0.');
+        this.currentMeals[id] = 0;
+        localStorage.setItem('currentMeals', JSON.stringify(this.currentMeals));
+        return;
+    }
+    
+    // Build dropdown options
+    let dropdownOptions = '';
+    recipes.forEach((recipe, i) => {
+        const selected = i === idx ? 'selected' : '';
+        dropdownOptions += `<option value="${i}" ${selected}>${recipe.title}</option>`;
+    });
+    
+    let html = '<div class="cooking-header">';
+    html += '<button class="back-btn" onclick="centurion.closeCooking()">← BACK</button>';
+    html += '<h1 class="cook-title">' + r.title + '</h1>';
+    html += '<div class="cook-meta">';
+    html += '<span>⏱️ ' + r.time + '</span>';
+    html += '<span>🍽️ ' + r.servings + ' serving</span>';
+    html += '</div>';
+    html += '</div>';
+    
+    html += '<div class="macro-grid-cook">';
+    html += '<div class="macro-card-cook"><div class="macro-val-cook">' + r.macros.protein + 'g</div><div class="macro-lab-cook">PROTEIN</div></div>';
+    html += '<div class="macro-card-cook"><div class="macro-val-cook">' + r.macros.omega3 + 'mg</div><div class="macro-lab-cook">OMEGA-3</div></div>';
+    html += '<div class="macro-card-cook"><div class="macro-val-cook">' + r.macros.poly + 'mg</div><div class="macro-lab-cook">POLYPHENOLS</div></div>';
+    html += '<div class="macro-card-cook"><div class="macro-val-cook">' + r.macros.fiber + 'g</div><div class="macro-lab-cook">FIBER</div></div>';
+    html += '<div class="macro-card-cook"><div class="macro-val-cook">' + r.macros.calories + '</div><div class="macro-lab-cook">CALORIES</div></div>';
+    html += '</div>';
+    
+    html += '<div class="cook-section"><h2 class="cook-sec-title">🛒 INGREDIENTS</h2><div class="ing-list">';
+    r.ingredients.forEach(ing => html += '<div class="ing-item">• ' + ing + '</div>');
+    html += '</div></div>';
+    
+    html += '<div class="cook-section"><h2 class="cook-sec-title">👨‍🍳 STEPS</h2><div class="step-list">';
+    r.steps.forEach((step, i) => html += '<div class="step-item"><div class="step-num">' + (i+1) + '</div><div class="step-txt">' + step + '</div></div>');
+    html += '</div></div>';
+    
+    html += '<div class="cook-section"><h2 class="cook-sec-title">💡 TIPS</h2><div class="tip-list">';
+    r.tips.forEach(tip => html += '<div class="tip-item">✓ ' + tip + '</div>');
+    html += '</div></div>';
+    
+    html += '<div class="cook-section"><h2 class="cook-sec-title">🎯 WHY IT WORKS</h2><div class="why-box">' + r.why + '</div></div>';
+    
+    html += '<div class="cook-footer">';
+    html += '<select class="meal-dropdown" onchange="centurion.selectMeal(\''+id+'\', this.value)">' + dropdownOptions + '</select>';
+    html += '<button class="done-btn" onclick="centurion.closeCooking()">✓ DONE COOKING</button>';
+    html += '</div>';
+    
+    document.getElementById('cookingPage').innerHTML = html;
+    document.getElementById('cookingPage').classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+selectMeal(id, newIndex) {
+    this.currentMeals[id] = parseInt(newIndex);
+    localStorage.setItem('currentMeals', JSON.stringify(this.currentMeals));
+    this.closeCooking();
+    this.showCooking(id);
+}
     
     changeMeal(id) {
         const recipes = this.RECIPES[id];
