@@ -441,8 +441,7 @@
     height: 280px;
     overflow-y: scroll;
     -webkit-overflow-scrolling: touch;
-    scroll-snap-type: y mandatory;
-    padding: 120px 0;
+    padding: 116px 0;
     position: relative;
 }
 
@@ -471,14 +470,17 @@
 
 .picker-option {
     padding: 14px 20px;
+    height: 48px;
     font-size: 0.85rem;
     color: #4a4a4a;
     text-align: center;
-    scroll-snap-align: center;
-    transition: all 0.2s ease;
+    transition: all 0.15s ease;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
     font-weight: 400;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .picker-option.selected {
@@ -488,6 +490,21 @@
     background: rgba(204,255,0,0.12);
     border-top: 1px solid rgba(204,255,0,0.4);
     border-bottom: 1px solid rgba(204,255,0,0.4);
+}
+
+/* Selection indicator lines (always visible in center) */
+.picker-wheel {
+    background-image: 
+        linear-gradient(to bottom, 
+            transparent 0%, 
+            transparent calc(50% - 24px), 
+            rgba(204,255,0,0.2) calc(50% - 24px), 
+            rgba(204,255,0,0.2) calc(50% - 23px),
+            transparent calc(50% - 23px),
+            transparent calc(50% + 23px),
+            rgba(204,255,0,0.2) calc(50% + 23px),
+            rgba(204,255,0,0.2) calc(50% + 24px),
+            transparent calc(50% + 24px));
 }
 
 
@@ -1203,29 +1220,60 @@ openMealPicker(id) {
     html += '<div class="picker-title">Select Meal</div>';
     html += '<button class="picker-done" onclick="centurion.confirmMealPicker(\''+id+'\')">Done</button>';
     html += '</div>';
-    html += '<div class="picker-wheel" id="pickerWheel">';
+    html += '<div class="picker-wheel" id="pickerWheel" data-meal-id="'+id+'">';
     
     recipes.forEach((recipe, i) => {
-        const selected = i === currentIdx ? 'selected' : '';
-        html += `<div class="picker-option ${selected}" data-index="${i}" onclick="centurion.selectPickerOption(this)">${recipe.title}</div>`;
+        html += `<div class="picker-option" data-index="${i}">${recipe.title}</div>`;
     });
     
     html += '</div></div></div>';
     
     document.body.insertAdjacentHTML('beforeend', html);
     
-    // Scroll selected item into view
+    const wheel = document.getElementById('pickerWheel');
+    
+    // Scroll to current selection
     setTimeout(() => {
-        const selected = document.querySelector('.picker-option.selected');
-        if(selected) {
-            selected.scrollIntoView({block: 'center', behavior: 'smooth'});
-        }
+        const itemHeight = 48; // Height of each item
+        wheel.scrollTop = currentIdx * itemHeight;
+        this.updatePickerSelection();
     }, 100);
+    
+    // Update selection as user scrolls
+    wheel.addEventListener('scroll', () => {
+        this.updatePickerSelection();
+    });
 }
 
-selectPickerOption(element) {
-    document.querySelectorAll('.picker-option').forEach(opt => opt.classList.remove('selected'));
-    element.classList.add('selected');
+updatePickerSelection() {
+    const wheel = document.getElementById('pickerWheel');
+    if(!wheel) return;
+    
+    const wheelRect = wheel.getBoundingClientRect();
+    const centerY = wheelRect.top + wheelRect.height / 2;
+    
+    const options = wheel.querySelectorAll('.picker-option');
+    let closestOption = null;
+    let closestDistance = Infinity;
+    
+    options.forEach(option => {
+        const rect = option.getBoundingClientRect();
+        const optionCenterY = rect.top + rect.height / 2;
+        const distance = Math.abs(centerY - optionCenterY);
+        
+        if(distance < closestDistance) {
+            closestDistance = distance;
+            closestOption = option;
+        }
+    });
+    
+    // Remove all selected classes
+    options.forEach(opt => opt.classList.remove('selected'));
+    
+    // Add selected class to closest option
+    if(closestOption) {
+        closestOption.classList.add('selected');
+    }
 }
 
 confirmMealPicker(id) {
