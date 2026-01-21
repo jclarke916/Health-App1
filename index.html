@@ -1069,13 +1069,21 @@ class CenturionCore {
         document.getElementById('macroList').innerHTML = orb('PROTEIN',tot.p,g.pro,'#fff')+orb('OMEGA-3',tot.o,g.omega3,'#00d4ff')+orb('POLY',tot.poly,g.poly,'#bf5af2')+orb('FIBER',tot.f,g.fib,'#30d158');
         
         // Populate CALORIES section with 3 orbs
-        // Get daily burn from Oura data (need to fetch from history)
+        // Get BMR from InBody and active calories from Oura
         const currentDay = this.history[this.currentIndex];
-        const dailyBurn = currentDay?.cal || 0;  // Active calories from Oura
-        const netGoal = g.cal - (g.calBurn || 400);  // 2300 - 400 = 1900
+        const activeBurn = currentDay?.cal || 0;  // Active calories from Oura (walk, training, NEAT)
+        const bmr = parseInt(this.bios.bmr) || 2057;  // BMR from InBody scan
+        const totalBurn = bmr + activeBurn;  // BMR + Active = Total daily burn
+        
+        // Recalculate net with total burn (not just active)
+        tot.net = tot.cal - totalBurn;
+        
+        const netGoal = g.cal - bmr - (g.calBurn || 400);  // 2300 - 2057 - 400 = -157 (deficit)
+        const totalBurnGoal = bmr + (g.calBurn || 400);  // 2057 + 400 = 2457
+        
         document.getElementById('calorieGrid').innerHTML = 
             orb('INTAKE',tot.cal,g.cal,'#FFD60A') +
-            orb('BURNED',dailyBurn,g.calBurn||400,'#ff453a') +
+            orb('TOTAL BURN',totalBurn,totalBurnGoal,'#ff453a') +
             orb('NET',tot.net,netGoal,'#30d158');
         // Update calorie burn display
         if(document.getElementById('burnDisplay')) {
