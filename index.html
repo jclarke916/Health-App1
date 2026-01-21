@@ -691,8 +691,47 @@ const TOKENS = { 'jermaine': 'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y', 'sophia': '4QSD
 const API_KEY = "AIzaSyBtqgUcbq5uVGFZ5nHPDyhthLDii7uRNrg";
 
 const USERS = {
-    jermaine: { name: "Jermaine", age: 42, condition: "HIGH LP(A)", goals: { pro: 180, omega3: 4000, poly: 600, fib: 45, z2: 45, z5: 25, cal: 800 } },
-    sophia: { name: "Sophia", age: 38, condition: "HIGH ANA", goals: { pro: 130, omega3: 4000, poly: 600, fib: 45, z2: 60, z5: 15, cal: 600 } }
+    jermaine: { 
+        name: "Jermaine", 
+        age: 42, 
+        condition: "HIGH LP(A)", 
+        goals: { pro: 180, omega3: 4000, poly: 600, fib: 45, z2: 45, z5: 25, cal: 800 },
+        defaultBios: {
+            // Cardiovascular - Lab Date: 01/06/2026
+            apob: '114',
+            lpa: '178',
+            ldl: '118',
+            hdl: '46',
+            trig: '92',
+            cardioDate: '2026-01-06',
+            // Inflammation
+            crp: '0.4',
+            ana: '',
+            hcy: '',
+            inflamDate: '2026-01-06',
+            // Metabolic
+            glucose: '87',
+            hba1c: '5.4',
+            insulin: '10.5',
+            metabolicDate: '2026-01-06',
+            // Kidney
+            creat: '1.32',
+            egfr: '69',
+            uric: '',
+            kidneyDate: '2026-01-06',
+            // Performance
+            vo2: '',
+            hang: '',
+            wall: '',
+            perfDate: ''
+        }
+    },
+    sophia: { 
+        name: "Sophia", 
+        age: 38, 
+        condition: "HIGH ANA", 
+        goals: { pro: 130, omega3: 4000, poly: 600, fib: 45, z2: 60, z5: 15, cal: 600 } 
+    }
 };
 
 const PROTOCOL = [
@@ -713,7 +752,18 @@ class CenturionCore {
         this.history = []; this.currentIndex = 0; this.checked = {}; this.bios = {};
         this.init();
     }
-    async init() { this.loadLocalData(); this.updateUI(); await this.fetchData(); this.renderBio(); }
+    async init() { 
+        this.loadLocalData(); 
+        // Load default bios if none exist for this user
+        const u = USERS[this.user];
+        if(u.defaultBios && Object.keys(this.bios).length === 0) {
+            this.bios = {...u.defaultBios};
+            localStorage.setItem(`c_bios_${this.user}`, JSON.stringify(this.bios));
+        }
+        this.updateUI(); 
+        await this.fetchData(); 
+        this.renderBio(); 
+    }
     loadLocalData() {
         this.checked = JSON.parse(localStorage.getItem(`c_checked_${this.user}`)) || {};
         this.bios = JSON.parse(localStorage.getItem(`c_bios_${this.user}`)) || {};
