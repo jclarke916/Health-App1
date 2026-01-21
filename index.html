@@ -44,6 +44,7 @@
     .section-label { font-size: 0.55rem; font-weight: 900; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
     .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 10px; }
     .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 10px; }
+    .grid-5 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 6px; padding: 0 16px; margin-bottom: 10px; }
     
     .orb-card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 10px 5px; display: flex; flex-direction: column; align-items: center; position: relative; }
     .orb-container { width: 50px; height: 50px; position: relative; display: flex; align-items: center; justify-content: center; margin-bottom: 5px; }
@@ -453,7 +454,7 @@
     <div class="timeline-container" id="timelineList"></div>
 
     <div class="section-label" style="margin-left:16px;">MACRO TOTALS</div>
-    <div class="grid-4" id="macroList"></div>
+    <div class="grid-5" id="macroList"></div>
 
     <div class="ai-section">
         <div class="ai-card">
@@ -1038,7 +1039,7 @@ class CenturionCore {
     }
     renderComplex(dk) {
         const done = this.checked[dk] || [], g = USERS[this.user].goals;
-        let tot = {p:0,o:0,poly:0,f:0,cal:0,burn:0}, cols = new Set(), html = '';
+        let tot = {p:0,o:0,poly:0,f:0,cal:0,burn:0,net:0}, cols = new Set(), html = '';
         PROTOCOL.forEach(t => {
             const chk = done.includes(t.id);
             if(chk) { tot.p += t.macros.p||0; tot.o += t.macros.o||0; tot.poly += t.macros.poly||0; tot.f += t.macros.f||0; tot.cal += t.macros.cal||0; tot.burn += t.calBurn||0; t.colors?.forEach(c => cols.add(c)); }
@@ -1055,7 +1056,10 @@ class CenturionCore {
         const orb = (l,v,go,co) => `<div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle>
             <circle class="orb-fg" cx="25" cy="25" r="20" style="stroke:${co}; stroke-dashoffset:${145-(Math.min(v/go,1)*145)}"></circle></svg>
             <div class="orb-val-box"><div class="orb-val">${v}</div></div></div><div class="orb-label">${l}</div></div>`;
-        document.getElementById('macroList').innerHTML = orb('PROTEIN',tot.p,g.pro,'#fff')+orb('OMEGA-3',tot.o,g.omega3,'#00d4ff')+orb('POLY',tot.poly,g.poly,'#bf5af2')+orb('FIBER',tot.f,g.fib,'#30d158')+orb('CALORIES',tot.cal,g.cal,'#FFD60A');
+        // Calculate net calories (intake - burn)
+        tot.net = tot.cal - tot.burn;
+        
+        document.getElementById('macroList').innerHTML = orb('PROTEIN',tot.p,g.pro,'#fff')+orb('OMEGA-3',tot.o,g.omega3,'#00d4ff')+orb('POLY',tot.poly,g.poly,'#bf5af2')+orb('FIBER',tot.f,g.fib,'#30d158')+orb('CALORIES',tot.cal,g.cal,'#FFD60A')+orb('NET',tot.net,g.cal-400,'#00ff00');
         // Update calorie burn display
         if(document.getElementById('burnDisplay')) {
             this.setText('burnDisplay', `${tot.burn} / ${g.calBurn||400} cal burned`);
