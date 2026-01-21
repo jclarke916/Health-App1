@@ -441,6 +441,7 @@
     height: 280px;
     overflow-y: scroll;
     -webkit-overflow-scrolling: touch;
+    scroll-snap-type: y mandatory;
     padding: 116px 0;
     position: relative;
 }
@@ -483,6 +484,8 @@
     align-items: center;
     justify-content: center;
     line-height: 1.3;
+    scroll-snap-align: center;
+    scroll-snap-stop: always;
 }
 
 .picker-option.selected {
@@ -1224,7 +1227,8 @@ openMealPicker(id) {
     html += '<div class="picker-wheel" id="pickerWheel" data-meal-id="'+id+'">';
     
     recipes.forEach((recipe, i) => {
-        html += `<div class="picker-option" data-index="${i}">${recipe.title}</div>`;
+        const selected = i === currentIdx ? 'selected' : '';
+        html += `<div class="picker-option ${selected}" data-index="${i}">${recipe.title}</div>`;
     });
     
     html += '</div></div></div>';
@@ -1233,11 +1237,12 @@ openMealPicker(id) {
     
     const wheel = document.getElementById('pickerWheel');
     
-    // Scroll to current selection
+    // Scroll selected item into view with proper centering
     setTimeout(() => {
-        const itemHeight = 48; // Height of each item
-        wheel.scrollTop = currentIdx * itemHeight;
-        this.updatePickerSelection();
+        const selectedOption = wheel.querySelector('.picker-option.selected');
+        if(selectedOption) {
+            selectedOption.scrollIntoView({block: 'center', behavior: 'instant'});
+        }
     }, 100);
     
     // Update selection as user scrolls
@@ -1245,6 +1250,7 @@ openMealPicker(id) {
         this.updatePickerSelection();
     });
 }
+
 
 updatePickerSelection() {
     const wheel = document.getElementById('pickerWheel');
