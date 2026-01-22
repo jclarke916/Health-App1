@@ -845,78 +845,125 @@ class CenturionCore {
         document.body.style.overflow = 'hidden';
     }
 
+// --- NEW: Audio Engine for Haptic Click ---
+    initAudio() {
+        if (!this.audioCtx) {
+            this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (this.audioCtx.state === 'suspended') {
+            this.audioCtx.resume();
+        }
+    }
+
+    playTick() {
+        if (!this.audioCtx) return;
+        const osc = this.audioCtx.createOscillator();
+        const gain = this.audioCtx.createGain();
+        
+        // A short, high-frequency "tick" sound
+        osc.type = 'triangle'; 
+        osc.frequency.setValueAtTime(150, this.audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(600, this.audioCtx.currentTime + 0.03);
+        
+        gain.gain.setValueAtTime(0.05, this.audioCtx.currentTime); // Very quiet
+        gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + 0.03);
+
+        osc.connect(gain);
+        gain.connect(this.audioCtx.destination);
+        
+        osc.start();
+        osc.stop(this.audioCtx.currentTime + 0.04);
+    }
+
+    // --- UPDATED MEAL PICKER ---
     openMealPicker(id) {
+        this.initAudio(); // Initialize audio on first user interaction
         const recipes = this.RECIPES[id];
         const currentIdx = this.currentMeals[id] || 0;
         
         let html = '<div class="picker-overlay" onclick="centurion.closeMealPicker()">';
         html += '<div class="picker-container" onclick="event.stopPropagation()">';
         
-        // FIX: ADD THE PICKER HEADER HERE
         html += '<div class="picker-header">';
         html += '<button class="picker-cancel" onclick="centurion.closeMealPicker()">Cancel</button>';
         html += '<div class="picker-title">Select Meal</div>';
         html += '<button class="picker-done" onclick="centurion.confirmMealPicker(\''+id+'\')">Done</button>';
         html += '</div>';
         
+        // Highlight Strip (The selection window)
+        html += '<div style="position:absolute; top:50%; left:0; right:0; height:40px; margin-top:10px; background:rgba(255,255,255,0.05); pointer-events:none; z-index:3;"></div>';
+
         html += '<div class="picker-wheel" id="pickerWheel" data-meal-id="'+id+'">';
-        
         recipes.forEach((recipe, i) => {
-            const selected = i === currentIdx ? 'selected' : '';
-            html += `<div class="picker-option ${selected}" data-index="${i}">${recipe.title}</div>`;
+            html += `<div class="picker-option" data-index="${i}">${recipe.title}</div>`;
         });
-        
         html += '</div></div></div>';
         
         document.body.insertAdjacentHTML('beforeend', html);
         
         const wheel = document.getElementById('pickerWheel');
-        
+        this.lastScrollY = -1;
+        this.lastSelection = -1;
+
+        // Force initial layout calculation
         setTimeout(() => {
-            const selectedOption = wheel.querySelector('.picker-option.selected');
-            if(selectedOption) {
-                selectedOption.scrollIntoView({block: 'center', behavior: 'smooth'});
-            }
-        }, 150);
+            const rowHeight = 60;
+            // Scroll to current selection instantly
+            wheel.scrollTop = currentIdx * rowHeight;
+            this.updatePickerPhysics(wheel); // Initial 3D render
+        }, 10);
         
-        // FIX #4: ADD DEBOUNCING TO SCROLL EVENT
-        let scrollTimeout;
+        // High-Performance Scroll Loop
         wheel.addEventListener('scroll', () => {
-            clearTimeout(scrollTimeout);
-            scrollTimeout = setTimeout(() => {
-                this.updatePickerSelection();
-            }, 50);
+            window.requestAnimationFrame(() => {
+                this.updatePickerPhysics(wheel);
+            });
+        }, { passive: true });
+    }
+
+    updatePickerPhysics(wheel) {
+        const options = wheel.querySelectorAll('.picker-option');
+        const wheelCenter = wheel.scrollTop + (wheel.clientHeight / 2);
+        const rowHeight = 60;
+        
+        // Calculate the closest index based on scroll position
+        let closestIndex = Math.round(wheel.scrollTop / rowHeight);
+        
+        // Play sound if selection changed
+        if (this.lastSelection !== closestIndex && this.lastSelection !== -1) {
+            this.playTick();
+            // Trigger a tiny vibration on supported devices (Android)
+            if (navigator.vibrate) navigator.vibrate(5);
+        }
+        this.lastSelection = closestIndex;
+
+        options.forEach((option, i) => {
+            const optionCenter = (i * rowHeight) + (rowHeight / 2) + 80; // +80 for top padding
+            const distanceFromCenter = wheelCenter - optionCenter;
+            
+            // PHYSICS MATH: Calculate rotation angle based on distance
+            // Max rotation limited to +/- 90 degrees
+            const distanceFactor = Math.max(-1, Math.min(1, distanceFromCenter / (wheel.clientHeight * 0.7)));
+            const rotateX = distanceFactor * 45; // 45 degree tilt at edges
+            const scale = 1 - Math.abs(distanceFactor) * 0.2; // Shrink items away from center
+            const opacity = 1 - Math.abs(distanceFactor) * 0.7; // Fade items away from center
+            
+            // Apply 3D Transform
+            option.style.transform = `rotateX(${rotateX}deg) scale(${scale})`;
+            option.style.opacity = opacity;
+            
+            // Handle Selection Highlighting
+            if (i === closestIndex) {
+                option.classList.add('selected');
+                option.style.opacity = 1;
+                option.style.transform = `rotateX(0deg) scale(1.1)`; // Slight pop for selected
+            } else {
+                option.classList.remove('selected');
+            }
         });
     }
 
-    updatePickerSelection() {
-        const wheel = document.getElementById('pickerWheel');
-        if(!wheel) return;
-        
-        const wheelRect = wheel.getBoundingClientRect();
-        const centerY = wheelRect.top + wheelRect.height / 2;
-        
-        const options = wheel.querySelectorAll('.picker-option');
-        let closestOption = null;
-        let closestDistance = Infinity;
-        
-        options.forEach(option => {
-            const rect = option.getBoundingClientRect();
-            const optionCenterY = rect.top + rect.height / 2;
-            const distance = Math.abs(centerY - optionCenterY);
-            
-            if(distance < closestDistance) {
-                closestDistance = distance;
-                closestOption = option;
-            }
-        });
-        
-        options.forEach(opt => opt.classList.remove('selected'));
-        
-        if(closestOption) {
-            closestOption.classList.add('selected');
-        }
-    }
+    // Keep the rest of your methods (confirmMealPicker, etc.) as they were
 
     confirmMealPicker(id) {
         const selectedElement = document.querySelector('.picker-option.selected');
