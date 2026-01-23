@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v15.8 MERGED</title>
+    <title>The Centurion | v16.0 BACK RESCUE</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -163,7 +163,7 @@
 <body>
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v15.8 MERGED</div>
+            <div class="app-name">CENTURION v16.0 BACK RESCUE</div>
             <div style="display:flex; gap:10px;">
                 <button onclick="centurion.openBio()" class="bio-btn">BIO</button>
                 <div class="user-switch">
@@ -291,6 +291,7 @@ const WORKOUT_DB = {
         {title:"UFC Gym: Defensive Skills (Low)",time:"40min",type:"MIND BODY",stats:{load:"Low",hr:"Zone 2",cal:200},exercises:["Head Movement Drills","Mirror Work","TRX Stretching","Deep Core Breathing"],tips:["Thursday Focus","While Jermaine kills it, you FLOW","Do NOT spike HR > 130"],why:"This protects you from the 'Cortisol Sandwich' (High Stress Tue/Wed/Thu). Prevents Friday flare-ups."}
     ],
     recovery: [
+        {title:"Spinal Decompression (Back Rescue) ⭐",time:"15min",type:"SPINE RESET",stats:{load:"Zero",hr:"Rest",cal:50},exercises:["Dead Hangs: 3 x 45 sec","Cat-Cow Flow: 2 min","Child's Pose: 2 min","McGill Bird-Dog: 3 x 10"],tips:["Do this IMMEDIATELY after work","Breathe into the lower back","Use straps for hanging if grip is shot"],why:"Reverses the axial loading of construction work. Rehydrates discs and reduces nerve impingement."},
         {title:"Home: The 'Iron Flush' (Normatec)",time:"45min",type:"LYMPHATIC DRAIN",stats:{load:"Pressure",hr:"Rest",cal:0},exercises:["Normatec Legs (Level 7): 30 mins","Normatec Hips (Level 5): 15 mins","TheraFace Mask (Red Light) during"],tips:["Essential after UFC/Leg Days","Elevate legs slightly","Drink water to help the flush"],why:"Mechanical compression physically pushes metabolic waste (lactate) out of the limbs. Red light lowers systemic inflammation."},
         {title:"Home: Deep Tissue Reset (Theragun)",time:"20min",type:"FASCIA RELEASE",stats:{load:"Percussion",hr:"Rest",cal:0},exercises:["Theragun Pro (Dampener): Quads/Calves","Theragun Pro (Cone): Traps/Shoulders","Stretch: Couch Stretch (2 min/side)"],tips:["2 mins per muscle group","Don't bruise yourself","Use Cold attachment if sore"],why:"High-frequency percussion prevents fibrosis (stiffening) of muscle tissue after heavy lifting."},
         {title:"Home: 'Fire & Ice' Joint Care",time:"20min",type:"CONTRAST THERAPY",stats:{load:"Hot/Cold",hr:"Rest",cal:0},exercises:["Thera Knee (Contrast Mode): 15 mins","Theragun Cube (Cold) on ankles/wrists","Theragun Cube (Heat) on neck"],tips:["Contrast drives blood IN and OUT of joints","Use vibration on the Knee unit","Do this while watching TV"],why:"Joints have poor blood flow. Contrast therapy forces fresh nutrient-rich blood into the meniscus."},
@@ -571,15 +572,18 @@ class CenturionCore {
         const banner = document.getElementById('alertBanner');
         const baselineRHR = 55; // Customizable baseline
 
-        if(d.score < 70) {
+        if(d.score < 60) {
             banner.className = 'alert-banner alert-recovery show';
-            banner.innerHTML = '⚠️ RECOVERY MODE ACTIVATED - WORKOUT OVERRIDDEN';
+            banner.innerHTML = '⚠️ FORCED RECOVERY - SLEEP CRITICAL';
+        } else if(d.score >= 60 && d.score < 75) {
+            banner.className = 'alert-banner alert-warning show';
+            banner.innerHTML = '⚠️ CAUTION - REDUCE LOAD';
         } else if(d.rhr > baselineRHR + 5) {
             banner.className = 'alert-banner alert-warning show';
-            banner.innerHTML = '⚠️ ELEVATED HEART RATE DETECTED - REDUCE INTENSITY';
-        } else if(d.score >= 85 && d.totalSec > 25200) {
+            banner.innerHTML = '⚠️ ELEVATED HEART RATE DETECTED';
+        } else if(d.score >= 85) {
             banner.className = 'alert-banner alert-success show';
-            banner.innerHTML = '✅ OPTIMAL STATE - CLEARED FOR MAX EFFORT';
+            banner.innerHTML = '✅ OPTIMAL STATE - GO FOR PR';
         } else {
             banner.className = 'alert-banner'; // Hide
         }
@@ -625,15 +629,15 @@ class CenturionCore {
         const sleepScore = this.history[this.currentIndex].score;
         this.PROTOCOL = JSON.parse(JSON.stringify(BASE_PROTOCOL)); // Reset base
         
-        if(sleepScore < 70) {
+        if(sleepScore < 60) {
             const trainTask = this.PROTOCOL.find(t => t.id === 'train');
             if(trainTask) {
-                trainTask.title = "RECOVERY PROTOCOL";
-                trainTask.desc = "⚠️ SLEEP SCORE LOW. Workout Overridden.";
+                trainTask.title = "FORCED RECOVERY";
+                trainTask.desc = "⚠️ CRITICAL SLEEP DEBT.";
                 trainTask.colors = ['green'];
                 trainTask.calBurn = 100;
-                trainTask.why = "Sleep score below 70. High intensity risks injury today.";
-                trainTask.clickable = false; // Disable click to prevent lifting
+                trainTask.why = "Sleep score < 60. Training now increases injury risk by 45%.";
+                trainTask.clickable = false; 
             }
         }
 
@@ -650,7 +654,7 @@ class CenturionCore {
             }
             
             const clickHandler = t.clickable ? `onclick="event.stopPropagation(); centurion.handleClick('${t.id}');"` : '';
-            const recoveryClass = (t.id === 'train' && sleepScore < 70) ? 'forced-recovery' : '';
+            const recoveryClass = (t.id === 'train' && sleepScore < 60) ? 'forced-recovery' : '';
             
             html += `<div class="time-slot"><div class="ts-time">${t.time}</div><div class="ts-card ${chk?'checked':''} ${recoveryClass}">
                 <div class="ts-title ${t.clickable?'meal-clickable':''}" ${clickHandler}>
@@ -709,8 +713,8 @@ class CenturionCore {
     handleClick(id) {
         if (id === 'train') {
             const sleepScore = this.history[this.currentIndex]?.score || 0;
-            if (sleepScore < 70) {
-                alert("⚠️ RECOVERY MODE ACTIVE\n\nYour sleep score is below 70. High-intensity training is disabled to prevent injury.\n\nFocus on walking, stretching, or the sauna.");
+            if (sleepScore < 60) {
+                alert("⚠️ RECOVERY MODE ACTIVE\n\nYour sleep score is below 60. High-intensity training is disabled to prevent injury.\n\nFocus on walking, stretching, or the sauna.");
                 return; // Stop here
             } else {
                 this.autoSelectWorkout();
