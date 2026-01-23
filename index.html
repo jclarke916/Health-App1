@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v16.11 PERFORMANCE-GRADED</title>
+    <title>The Centurion | v16.12 ANTI-DECAY</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -24,7 +24,7 @@
         .nav-btn { background: transparent; border: 1px solid var(--border); color: var(--gold); padding: 8px 20px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: 900; }
         .date-display { min-width: 120px; text-align: center; letter-spacing: 1px; color: var(--acid); }
         
-        /* LAYOUT & CARDS */
+        /* DUAL SCORE LAYOUT */
         .hero-section { padding: 20px 16px; display: flex; align-items: center; justify-content: space-between; }
         .dual-score-container { display: flex; gap: 15px; align-items: center; }
         .score-box { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 50%; border: 3px solid var(--border); cursor: pointer; transition: transform 0.1s; }
@@ -217,7 +217,7 @@
 <body>
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v16.11 PERFORMANCE-GRADED</div>
+            <div class="app-name">CENTURION v16.12 ANTI-DECAY</div>
             <div style="display:flex; gap:10px;">
                 <button onclick="centurion.openBio()" class="bio-btn">BIO</button>
                 <div class="user-switch">
@@ -752,7 +752,6 @@ class CenturionCore {
         
         // 2. PROTOCOL (30pts)
         const coreTaskIds = ['sunrise', 'breakfast', 'train', 'lunch', 'dinner', 'evening'];
-        // Hydration check
         const waterLogs = checked.filter(t => t.startsWith('water-')).length;
         const hitWaterGoal = (waterLogs * 16) >= (g.water || 140);
         
@@ -782,7 +781,6 @@ class CenturionCore {
         nutritionScore += Math.min(1, totalMacros.omega3 / g.omega3) * 6;
         nutritionScore += (rainbowColors.size / 6) * 4;
         
-        // Calorie balance (2pts)
         const bmr = parseInt(this.bios.bmr) || 2057;
         const workoutBurn = this.estimateFromType();
         const target = bmr + (checked.includes('train') ? workoutBurn : 0);
@@ -794,7 +792,6 @@ class CenturionCore {
         let activityScore = 0;
         if(checked.includes('train')) {
             activityScore += 10;
-            // Intensity match logic
             const type = this.getWorkoutTypeForDay();
             if(sleepScore >= 80 && type !== 'RECOVERY') activityScore += 5;
             else if(sleepScore < 70 && type === 'RECOVERY') activityScore += 5;
@@ -1208,7 +1205,7 @@ class CenturionCore {
             html += `<div class="time-slot">
                 <div class="ts-time">${t.time}</div>
                 <div class="ts-card ${chk?'checked':''} ${recoveryClass}" ${clickHandler}>
-                    <div class="ts-title ${t.clickable?'meal-clickable':''}">${t.title}</div>
+                    <div class="ts-title ${t.clickable?'meal-clickable':'}">${t.title}</div>
                     <div class="ts-desc">${t.desc}</div>
                     ${t.why?`<div class="ts-why">WHY: ${t.why}</div>`:''}
                     <div class="check-btn" onclick="event.stopPropagation(); centurion.toggleTask('${t.id}');">
@@ -1706,16 +1703,55 @@ class CenturionCore {
 
     async runAI() {
         if(!this.history.length) return;
-        const d = this.history[this.currentIndex];
+        const today = this.history[this.currentIndex];
+        
+        // --- ANTI-DECAY DIAGNOSTIC ---
+        const dayScore = this.calculateDailyScore(today.date);
+        
+        // 1. DECISION FATIGUE Check
+        // If it's late (after 6pm) and tasks are incomplete (< 80%), flag Decision Fatigue.
+        const hour = new Date().getHours();
+        const isEvening = hour >= 18;
+        const tasksDone = dayScore.breakdown.protocol >= 25; 
+        
+        // 2. SARCOPENIA Check
+        // If training is missed on a training day
+        const checked = this.checked[today.date] || [];
+        const missedTrain = !checked.includes('train');
+        
+        // 3. INSULIN / STRESS Check
+        // If recent RHR is high or sleep poor (stress = sugar cravings)
+        const stressHigh = today.rhr > 55 || today.score < 70;
+
+        let focus = "General Optimization";
+        let tactic = "Execute standard protocol.";
+        
+        if(missedTrain) {
+            focus = "FIGHTING SARCOPENIA (Muscle Loss)";
+            tactic = "You missed the lift. Do 50 pushups NOW to signal muscle retention.";
+        } else if(stressHigh) {
+            focus = "FIGHTING CORTISOL (Insulin Resistance)";
+            tactic = "High stress detected. No sugar/alcohol tonight. Zone 2 walk only.";
+        } else if(isEvening && !tasksDone) {
+            focus = "FIGHTING DECISION FATIGUE";
+            tactic = "Brain is tired. Don't think. Just finish the list.";
+        }
+        
         const ui = document.getElementById('aiOutput');
+        ui.innerText = "Analyzing Anti-Decay Status...";
+        
         const u = USERS[this.user];
         const last7 = this.history.slice(0, 7);
         const avgSleep = last7.reduce((sum, day) => sum + day.totalSec, 0) / last7.length / 3600;
-        const avgRHR = last7.reduce((sum, day) => sum + (day.rhr !== '-' ? parseInt(day.rhr) : 0), 0) / last7.length;
         
-        const p = `You are a longevity coach for ${u.name} (${u.condition}). Today: Sleep ${(d.totalSec/3600).toFixed(1)}h, Score ${d.score}. 7-day Trend: Avg Sleep ${avgSleep.toFixed(1)}h, Avg RHR ${Math.round(avgRHR)}bpm. ${u.condition==='HIGH LP(A)'?'Focus: Lower ApoB via omega-3 & Zone 5 cardio.':'Focus: Lower ANA via anti-inflammatory diet & Zone 2.'} Give ONE specific, actionable advice for TODAY in 2 sentences max.`;
+        const p = `You are a longevity coach for ${u.name} (${u.condition}, Age ${u.age}). 
+        CONTEXT: We are fighting the '5 Killers of the 50s' (Sarcopenia, Insulin Resistance, Hormonal Drop, Decision Fatigue, Comfort Trap).
+        TODAY'S STATUS: 
+        - Sleep: ${(today.totalSec/3600).toFixed(1)}h (Avg ${avgSleep.toFixed(1)}h)
+        - Day Grade: ${dayScore.grade.letter}
+        - Current Threat: ${focus}
         
-        ui.innerText = "Analyzing trends...";
+        Give ONE specific, punchy command to defeat this threat. Max 2 sentences. Be direct and military-style.`;
         
         try {
             for(let m of ['gemini-1.5-flash-8b','gemini-2.0-flash-exp']) {
@@ -1734,7 +1770,8 @@ class CenturionCore {
                     }
                 } catch(e) { console.warn(`Model ${m} failed:`, e.message); }
             }
-            ui.innerText = d.score >= 80 ? `${u.condition} managed. Execute VO2max.` : `Recovery. Z2 only.`;
+            // Fallback if AI fails
+            ui.innerText = `${focus}: ${tactic}`;
         } catch(e) {
             console.error('AI generation failed:', e);
             ui.innerText = 'AI unavailable. Focus on recovery.';
