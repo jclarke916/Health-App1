@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v15.3 SYNERGY</title>
+    <title>The Centurion | v15.4 COCKPIT</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -126,99 +126,57 @@
         .picker-title { font-size: 0.9rem; font-weight: 600; color: #fff; flex: 1; text-align: center; }
         .picker-cancel, .picker-done { background: none; border: none; color: var(--cyan); font-size: 0.85rem; font-weight: 600; padding: 8px 12px; cursor: pointer; }
         .picker-done { color: var(--acid); }
-       /* FIXED PICKER CSS - Z-Index & Layout Corrected */
-.picker-wheel {
-    height: 220px; /* Slightly shorter to force focus on center */
-    overflow-y: scroll;
-    -webkit-overflow-scrolling: touch;
-    scroll-snap-type: y mandatory;
-    padding: 0;
-    position: relative;
-    scrollbar-width: none; 
-    -ms-overflow-style: none;
-}
-.picker-wheel::-webkit-scrollbar { 
-    display: none; 
-}
+        
+        /* --- FIXED PICKER WHEEL CSS --- */
+        .picker-wheel {
+            height: 220px;
+            overflow-y: scroll;
+            -webkit-overflow-scrolling: touch;
+            scroll-snap-type: y mandatory;
+            padding: 0;
+            position: relative;
+            scrollbar-width: none; 
+            -ms-overflow-style: none;
+            z-index: 5;
+        }
+        .picker-wheel::-webkit-scrollbar { display: none; }
+        
+        /* Fade Masks - Z-Index 10 to sit above unselected items but below selected */
+        .picker-wheel::before, .picker-wheel::after {
+            content: ''; position: absolute; left: 0; right: 0; height: 80px; z-index: 10; pointer-events: none;
+        }
+        .picker-wheel::before { top: 0; background: linear-gradient(to bottom, #1c1c1e 30%, rgba(28,28,30,0)); }
+        .picker-wheel::after { bottom: 0; background: linear-gradient(to top, #1c1c1e 30%, rgba(28,28,30,0)); }
 
-/* Spacers to center the first and last items */
-.picker-option:first-child {
-    margin-top: 80px;
-}
-.picker-option:last-child {
-    margin-bottom: 80px;
-}
+        /* Padding to center first/last items */
+        .picker-option:first-child { margin-top: 80px; }
+        .picker-option:last-child { margin-bottom: 80px; }
 
-/* The Fade Overlays - Lowered Z-Index to 1 */
-.picker-wheel::before,
-.picker-wheel::after {
-    content: '';
-    position: absolute;
-    display: block;
-    left: 0;
-    right: 0;
-    height: 70px; /* Shorter masks to keep center clear */
-    z-index: 1;
-    pointer-events: none;
-}
+        .picker-option {
+            height: 60px; line-height: 60px;
+            font-size: 0.9rem; color: #666; text-align: center;
+            font-weight: 500;
+            scroll-snap-align: center;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            opacity: 0.4; transform: scale(0.9); transition: all 0.2s ease;
+            position: relative; 
+            z-index: 1; /* Below masks */
+            padding: 0 20px;
+        }
 
-.picker-wheel::before {
-    top: 0;
-    background: linear-gradient(to bottom, #1c1c1e 20%, rgba(28,28,30,0) 100%);
-}
-
-.picker-wheel {
-    height: 220px;
-    overflow-y: scroll;
-    -webkit-overflow-scrolling: touch; /* iOS momentum scrolling */
-    scroll-snap-type: y mandatory;
-    scroll-behavior: smooth; /* Smooth native scrolling */
-    padding: 0;
-    position: relative;
-    scrollbar-width: none; 
-    -ms-overflow-style: none;
-}
-
-.picker-option {
-    padding: 0 20px;
-    height: 60px;
-    line-height: 60px;
-    font-size: 0.9rem;
-    color: #666;
-    text-align: center;
-    transition: all 0.15s ease-out; /* Faster, smoother transition */
-    cursor: pointer;
-    font-weight: 500;
-    scroll-snap-align: center;
-    scroll-snap-stop: always; /* Forces snap to each item */
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    opacity: 0.4;
-    transform: scale(0.9);
-    position: relative;
-    z-index: 0;
-    will-change: transform, opacity; /* GPU acceleration hint */
-}
-
-.picker-option.selected {
-    color: #ccff00;
-    font-weight: 900;
-    font-size: 1.1rem;
-    opacity: 1;
-    transform: scale(1.05);
-    background: rgba(204,255,0,0.1);
-    border-radius: 8px;
-    z-index: 10;
-}
-
-
+        /* Selected State - Z-Index 20 to pop above masks */
+        .picker-option.selected {
+            color: #ccff00; font-weight: 900; font-size: 1.1rem;
+            opacity: 1; transform: scale(1.05);
+            z-index: 20;
+            text-shadow: 0 0 10px rgba(204,255,0,0.3);
+        }
     </style>
 </head>
 <body>
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v15.3 SYNERGY</div>
+            <div class="app-name">CENTURION v15.4 COCKPIT</div>
             <div style="display:flex; gap:10px;">
                 <button onclick="centurion.openBio()" class="bio-btn">BIO</button>
                 <div class="user-switch">
@@ -262,6 +220,12 @@
                 <div class="orb-label">REM</div>
             </div>
         </div>
+
+        <div class="section-header"><span class="section-label">FUEL COMPOSITION</span></div>
+        <div class="grid-4" id="macroList"></div>
+
+        <div class="section-header"><span class="section-label">CALORIES</span></div>
+        <div class="grid-3" id="calorieGrid"></div>
 
         <div class="section-header"><span class="section-label">CARDIO STATUS</span></div>
         <div class="grid-4">
@@ -307,15 +271,6 @@
 
         <div class="section-label" style="margin-left:16px;">SYNERGY PROTOCOL</div>
         <div class="timeline-container" id="timelineList"></div>
-
-        <div class="section-label" style="margin-left:16px;">MACRO TOTALS</div>
-        <div class="grid-4" id="macroList"></div>
-
-        <div class="section-header">
-            <div class="section-label">CALORIES</div>
-        </div>
-        <div class="grid-3" id="calorieGrid">
-            </div>
 
         <div class="ai-section">
             <div class="ai-card">
@@ -887,86 +842,73 @@ class CenturionCore {
         }, this.currentMeals[id] || 0);
     }
 
-openPicker(items, callback, currentIdx) {
-    let html = '<div class="picker-overlay" onclick="centurion.closeMealPicker()">';
-    html += '<div class="picker-container" onclick="event.stopPropagation()">';
-    html += '<div class="picker-header">';
-    html += '<button class="picker-cancel" onclick="centurion.closeMealPicker()">Cancel</button>';
-    html += '<div class="picker-title">Select Option</div>';
-    html += '<button class="picker-done" onclick="centurion.confirmPicker()">Done</button>';
-    html += '</div>';
-    html += '<div class="picker-wheel" id="pickerWheel">';
-    
-    items.forEach((item, i) => {
-        const selected = i === currentIdx ? 'selected' : '';
-        const title = item.title || item.name || 'Option ' + (i + 1);
-        html += `<div class="picker-option ${selected}" data-index="${i}">${title}</div>`;
-    });
-    
-    html += '</div></div></div>';
-    
-    document.body.insertAdjacentHTML('beforeend', html);
-    
-    this.pickerCallback = callback;
-    const wheel = document.getElementById('pickerWheel');
-    const ITEM_HEIGHT = 60;
-    
-    // Scroll to current selection immediately (no animation initially)
-    wheel.scrollTop = currentIdx * ITEM_HEIGHT;
-    
-    // Use requestAnimationFrame for smoother updates
-    let rafId = null;
-    const smoothUpdate = () => {
-        this.updatePickerSelection();
-        rafId = null;
-    };
-    
-    wheel.addEventListener('scroll', () => {
-        if (rafId) cancelAnimationFrame(rafId);
-        rafId = requestAnimationFrame(smoothUpdate);
-    }, { passive: true });
-    
-    // Snap to nearest item when scrolling stops
-    let snapTimeout;
-    wheel.addEventListener('scroll', () => {
-        clearTimeout(snapTimeout);
-        snapTimeout = setTimeout(() => {
-            const scrollPos = wheel.scrollTop;
-            const nearestIndex = Math.round(scrollPos / ITEM_HEIGHT);
-            const targetScroll = nearestIndex * ITEM_HEIGHT;
-            
-            wheel.scrollTo({
-                top: targetScroll,
-                behavior: 'smooth'
-            });
-        }, 150); // Snap after 150ms of no scrolling
-    }, { passive: true });
-}
-
-updatePickerSelection() {
-    const wheel = document.getElementById('pickerWheel');
-    if(!wheel) return;
-    
-    const ITEM_HEIGHT = 60;
-    const scrollPos = wheel.scrollTop;
-    const centerIndex = Math.round(scrollPos / ITEM_HEIGHT);
-    
-    const options = wheel.querySelectorAll('.picker-option');
-    options.forEach((opt, idx) => {
-        const distance = Math.abs(idx - centerIndex);
+    openPicker(items, callback, currentIdx) {
+        let html = '<div class="picker-overlay" onclick="centurion.closeMealPicker()">';
+        html += '<div class="picker-container" onclick="event.stopPropagation()">';
+        html += '<div class="picker-header">';
+        html += '<button class="picker-cancel" onclick="centurion.closeMealPicker()">Cancel</button>';
+        html += '<div class="picker-title">Select Option</div>';
+        html += '<button class="picker-done" onclick="centurion.confirmPicker()">Done</button>';
+        html += '</div>';
+        html += '<div class="picker-wheel" id="pickerWheel">';
         
-        if (idx === centerIndex) {
-            opt.classList.add('selected');
-            this.tempSelectionIndex = idx;
-        } else {
-            opt.classList.remove('selected');
-            // Fade out items further from center
-            const opacity = Math.max(0.3, 1 - (distance * 0.2));
-            opt.style.opacity = opacity;
-        }
-    });
-}
+        items.forEach((item, i) => {
+            const selected = i === currentIdx ? 'selected' : '';
+            html += `<div class="picker-option ${selected}" data-index="${i}">${item.title}</div>`;
+        });
+        
+        html += '</div></div></div>';
+        
+        document.body.insertAdjacentHTML('beforeend', html);
+        
+        this.pickerCallback = callback;
+        const wheel = document.getElementById('pickerWheel');
+        
+        setTimeout(() => {
+            const selectedOption = wheel.querySelector('.picker-option.selected');
+            if(selectedOption) {
+                selectedOption.scrollIntoView({block: 'center', behavior: 'smooth'});
+            }
+        }, 150);
+        
+        let scrollTimeout;
+        wheel.addEventListener('scroll', () => {
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(() => {
+                this.updatePickerSelection();
+            }, 50);
+        });
+    }
 
+    updatePickerSelection() {
+        const wheel = document.getElementById('pickerWheel');
+        if(!wheel) return;
+        
+        const wheelRect = wheel.getBoundingClientRect();
+        const centerY = wheelRect.top + wheelRect.height / 2;
+        
+        const options = wheel.querySelectorAll('.picker-option');
+        let closestOption = null;
+        let closestDistance = Infinity;
+        
+        options.forEach(option => {
+            const rect = option.getBoundingClientRect();
+            const optionCenterY = rect.top + rect.height / 2;
+            const distance = Math.abs(centerY - optionCenterY);
+            
+            if(distance < closestDistance) {
+                closestDistance = distance;
+                closestOption = option;
+            }
+        });
+        
+        options.forEach(opt => opt.classList.remove('selected'));
+        
+        if(closestOption) {
+            closestOption.classList.add('selected');
+            this.tempSelectionIndex = parseInt(closestOption.getAttribute('data-index'));
+        }
+    }
 
     confirmPicker() {
         if (typeof this.tempSelectionIndex !== 'undefined' && this.pickerCallback) {
