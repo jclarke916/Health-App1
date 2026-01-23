@@ -917,47 +917,109 @@ const clickHandler = t.clickable ?
         document.getElementById('cookingPage').classList.add('active');
     }
 
+    // --- SMOOTH SCROLL PICKER UPDATE ---
+
     openWorkoutPicker() {
         this.initAudio();
         const u = this.user;
         const workouts = [...WORKOUT_DB[u], ...WORKOUT_DB.recovery];
         
+        // CSS for Native Scroll Snapping (Buttery Smooth)
+        const style = `
+        <style>
+            .picker-wheel {
+                height: 200px;
+                overflow-y: scroll;
+                scroll-snap-type: y mandatory;
+                padding: 80px 0; /* Centers the first/last items */
+                -webkit-overflow-scrolling: touch; /* iOS Momentum */
+            }
+            .picker-option {
+                height: 40px;
+                line-height: 40px;
+                scroll-snap-align: center;
+                transition: all 0.15s ease-out;
+                opacity: 0.3;
+                transform: scale(0.9);
+                text-align: center;
+                font-size: 1.1rem;
+                color: white;
+            }
+            .picker-option.selected {
+                opacity: 1;
+                transform: scale(1.15);
+                font-weight: 700;
+                color: #00d4ff;
+                text-shadow: 0 0 10px rgba(0,212,255,0.5);
+            }
+            /* Hide Scrollbar */
+            .picker-wheel::-webkit-scrollbar { display: none; }
+        </style>`;
+
         let html = '<div class="picker-overlay" onclick="centurion.closeMealPicker()">';
         html += '<div class="picker-container" onclick="event.stopPropagation()">';
+        html += style; // Inject the smooth styles
         html += '<div class="picker-header">';
         html += '<button class="picker-cancel" onclick="centurion.closeMealPicker()">Cancel</button>';
         html += '<div class="picker-title">Select Routine</div>';
         html += '<button class="picker-done" onclick="centurion.confirmWorkoutPicker()">Done</button>';
         html += '</div>';
-        html += '<div style="position:absolute; top:50%; left:0; right:0; height:40px; margin-top:10px; background:rgba(255,255,255,0.05); pointer-events:none; z-index:3;"></div>';
+        
+        // The Center Highlight Bar
+        html += '<div style="position:absolute; top:50%; left:0; right:0; height:40px; margin-top:10px; background:rgba(255,255,255,0.05); pointer-events:none; z-index:0; border-top:1px solid rgba(255,255,255,0.1); border-bottom:1px solid rgba(255,255,255,0.1);"></div>';
+        
         html += '<div class="picker-wheel" id="pickerWheel">';
-        
         workouts.forEach((w, i) => {
-            html += `<div class="picker-option" data-index="${i}">${w.title}</div>`;
+            html += `<div class="picker-option" id="opt-${i}" data-index="${i}">${w.title}</div>`;
         });
-        
         html += '</div></div></div>';
+        
         document.body.insertAdjacentHTML('beforeend', html);
         
         const wheel = document.getElementById('pickerWheel');
-        this.lastSelection = -1;
-        
-        setTimeout(() => {
-            wheel.scrollTop = (this.currentWorkoutIdx || 0) * 60;
-            this.updatePickerPhysics(wheel);
-        }, 10);
-        
+        const ITEM_HEIGHT = 40;
+
+        // Set initial position
+        if(this.currentWorkoutIdx) {
+            wheel.scrollTop = this.currentWorkoutIdx * ITEM_HEIGHT;
+        }
+
+        // Highlight immediately
+        this.updateSnapSelection(wheel);
+
+        // Native Scroll Listener (High Performance)
         wheel.addEventListener('scroll', () => {
-            window.requestAnimationFrame(() => {
-                this.updatePickerPhysics(wheel);
-            });
+            this.updateSnapSelection(wheel);
         }, { passive: true });
     }
 
+    updateSnapSelection(wheel) {
+        const ITEM_HEIGHT = 40;
+        // Calculate which item is in the center
+        const centerIndex = Math.round(wheel.scrollTop / ITEM_HEIGHT);
+        
+        // Remove old highlights
+        wheel.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
+        
+        // Add new highlight
+        const target = document.getElementById(`opt-${centerIndex}`);
+        if(target) {
+            target.classList.add('selected');
+            // Save index to class property for retrieval
+            this.tempSelectionIndex = centerIndex; 
+            
+            // Optional: Haptic feedback check (prevents spamming)
+            if(this.lastHapticIndex !== centerIndex) {
+                // navigator.vibrate(5); // Uncomment if on Android
+                this.lastHapticIndex = centerIndex;
+            }
+        }
+    }
+
     confirmWorkoutPicker() {
-        const selectedElement = document.querySelector('.picker-option.selected');
-        if(selectedElement) {
-            this.currentWorkoutIdx = parseInt(selectedElement.getAttribute('data-index'));
+        // Use the index we tracked during scrolling
+        if (typeof this.tempSelectionIndex !== 'undefined') {
+            this.currentWorkoutIdx = this.tempSelectionIndex;
         }
         this.closeMealPicker();
         this.showWorkout();
