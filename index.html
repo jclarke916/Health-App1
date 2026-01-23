@@ -203,6 +203,18 @@
         border-radius: 8px;
         z-index: 10; /* CRITICAL FIX: Pops text on top of everything */
     }
+    /* Summary Modal Styles */
+.summary-content {
+    padding: 20px;
+    padding-bottom: 100px;
+}
+.summary-card {
+    background: rgba(255,255,255,0.05);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 15px;
+}
+/* Reusing existing 'macro-card-cook' styles for consistency */
     </style>
 </head>
 <body>
@@ -394,6 +406,18 @@
     </div>
 
     <div id="cookingPage" class="cooking-modal"></div>
+    <button class="nav-btn" onclick="centurion.showSummary()">📊 WEEKLY REPORT</button>
+
+<div id="summaryPage" class="cooking-modal">
+    <div class="cooking-header">
+        <button class="back-btn" onclick="document.getElementById('summaryPage').classList.remove('active')">← BACK</button>
+        <h1 class="cook-title">Weekly Analysis</h1>
+        <div class="cook-meta">Last 7 Days</div>
+    </div>
+    
+    <div class="summary-content" id="summaryContent">
+        </div>
+</div>
     <script>
 // GLOBAL RECIPE DATABASE - UPDATED WITH POACHED SALMON
 const RECIPE_DB = {
@@ -812,6 +836,85 @@ const clickHandler = t.clickable ?
         i > -1 ? this.checked[dk].splice(i,1) : this.checked[dk].push(id);
         localStorage.setItem(`c_checked_${this.user}`, JSON.stringify(this.checked));
         this.renderComplex(dk);
+    }
+    // --- WEEKLY SUMMARY LOGIC ---
+
+    showSummary() {
+        const history = this.history || [];
+        const days = history.slice(-7); // Get last 7 days
+        const count = days.length || 1;
+        
+        // 1. Calculate Averages
+        let stats = { protein:0, omega3:0, sleep:0, calories:0, perfectDays:0 };
+        
+        days.forEach(d => {
+            stats.protein += d.protein || 0;
+            stats.omega3 += d.omega3 || 0;
+            stats.calories += d.cal || 0;
+            // Count a "Perfect Day" if they hit protein goal
+            if((d.protein || 0) >= USERS[this.user].goals.pro) stats.perfectDays++;
+        });
+
+        const avg = {
+            p: Math.round(stats.protein / count),
+            o: Math.round(stats.omega3 / count),
+            c: Math.round(stats.calories / count)
+        };
+
+        // 2. Generate HTML
+        let html = '<div class="macro-grid-cook" style="grid-template-columns:repeat(2,1fr); gap:15px; margin-bottom:20px;">';
+        
+        // Consistency Card
+        html += `<div class="macro-card-cook" style="grid-column:span 2; background: linear-gradient(135deg, #30d158 0%, #1c7c35 100%);">
+                    <div class="macro-val-cook">${stats.perfectDays} / 7</div>
+                    <div class="macro-lab-cook">PERFECT DAYS</div>
+                 </div>`;
+
+        // Averages
+        html += `<div class="macro-card-cook"><div class="macro-val-cook">${avg.p}g</div><div class="macro-lab-cook">AVG PROTEIN</div></div>`;
+        html += `<div class="macro-card-cook"><div class="macro-val-cook">${avg.o}mg</div><div class="macro-lab-cook">AVG OMEGA-3</div></div>`;
+        html += `</div>`;
+
+        // 3. The "Coach's Insight"
+        const insight = this.generateInsight(avg, stats.perfectDays);
+        html += `<div class="cook-section">
+                    <h2 class="cook-sec-title">🧠 COACH'S INSIGHT</h2>
+                    <div class="why-box" style="border-left: 4px solid #00d4ff;">${insight}</div>
+                 </div>`;
+
+        // 4. Workout Log (Simple List)
+        html += `<div class="cook-section"><h2 class="cook-sec-title">🏋️ WORKOUT LOG</h2><div class="step-list">`;
+        if(days.length === 0) html += '<div class="step-item"><div class="step-txt">No data yet. Start logging!</div></div>';
+        
+        days.slice().reverse().forEach((d, i) => { // Show newest first
+            const dateStr = new Date(d.date).toLocaleDateString('en-US', {weekday:'short'});
+            // We assume you might track workout names in future, for now showing calories
+            html += `<div class="step-item">
+                        <div class="step-num">${dateStr}</div>
+                        <div class="step-txt" style="color:#fff;">${d.cal} Calories Burned</div>
+                     </div>`;
+        });
+        html += `</div></div>`;
+
+        document.getElementById('summaryContent').innerHTML = html;
+        document.getElementById('summaryPage').classList.add('active');
+    }
+
+    generateInsight(avg, perfectDays) {
+        const u = USERS[this.user];
+        let msg = "";
+
+        // Insight Logic
+        if (perfectDays >= 5) {
+            msg = "🏆 <b>Elite Consistency.</b> You are hitting your targets like a machine. This level of adherence significantly lowers Lp(a) risk factors.";
+        } else if (avg.p < u.goals.pro) {
+            msg = "⚠️ <b>Protein Gap Detected.</b> You are averaging " + avg.p + "g, but your goal is " + u.goals.pro + "g. Try adding an extra scoop of pea protein or a tin of sardines to lunch.";
+        } else if (avg.o < u.goals.omega3) {
+            msg = "❤️ <b>Inflammation Risk.</b> Your Omega-3 intake is low (" + avg.o + "mg). Prioritize the Salmon or Chia seeds tomorrow to protect your arteries.";
+        } else {
+            msg = "✅ <b>Solid Baseline.</b> You are doing well, but there is room to tighten up the weekends. Stick to the 'One Gym Per Day' rule.";
+        }
+        return msg;
     }
 
     showCooking(id) {
