@@ -167,9 +167,16 @@
     background: linear-gradient(to bottom, #1c1c1e 20%, rgba(28,28,30,0) 100%);
 }
 
-.picker-wheel::after {
-    bottom: 0;
-    background: linear-gradient(to top, #1c1c1e 20%, rgba(28,28,30,0) 100%);
+.picker-wheel {
+    height: 220px;
+    overflow-y: scroll;
+    -webkit-overflow-scrolling: touch; /* iOS momentum scrolling */
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth; /* Smooth native scrolling */
+    padding: 0;
+    position: relative;
+    scrollbar-width: none; 
+    -ms-overflow-style: none;
 }
 
 .picker-option {
@@ -179,20 +186,21 @@
     font-size: 0.9rem;
     color: #666;
     text-align: center;
-    transition: all 0.2s ease;
+    transition: all 0.15s ease-out; /* Faster, smoother transition */
     cursor: pointer;
     font-weight: 500;
     scroll-snap-align: center;
+    scroll-snap-stop: always; /* Forces snap to each item */
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     opacity: 0.4;
     transform: scale(0.9);
-    position: relative; /* Required for z-index */
-    z-index: 0; /* Unselected items sit below masks */
+    position: relative;
+    z-index: 0;
+    will-change: transform, opacity; /* GPU acceleration hint */
 }
 
-/* Selected Item - Raised Z-Index to 2 (Above Masks) */
 .picker-option.selected {
     color: #ccff00;
     font-weight: 900;
@@ -201,8 +209,9 @@
     transform: scale(1.05);
     background: rgba(204,255,0,0.1);
     border-radius: 8px;
-    z-index: 10; /* CRITICAL FIX: Pops text on top of everything */
+    z-index: 10;
 }
+
 
     </style>
 </head>
@@ -878,73 +887,86 @@ class CenturionCore {
         }, this.currentMeals[id] || 0);
     }
 
-    openPicker(items, callback, currentIdx) {
-        let html = '<div class="picker-overlay" onclick="centurion.closeMealPicker()">';
-        html += '<div class="picker-container" onclick="event.stopPropagation()">';
-        html += '<div class="picker-header">';
-        html += '<button class="picker-cancel" onclick="centurion.closeMealPicker()">Cancel</button>';
-        html += '<div class="picker-title">Select Option</div>';
-        html += '<button class="picker-done" onclick="centurion.confirmPicker()">Done</button>';
-        html += '</div>';
-        html += '<div class="picker-wheel" id="pickerWheel">';
-        
-        items.forEach((item, i) => {
-            const selected = i === currentIdx ? 'selected' : '';
-            html += `<div class="picker-option ${selected}" data-index="${i}">${item.title}</div>`;
-        });
-        
-        html += '</div></div></div>';
-        
-        document.body.insertAdjacentHTML('beforeend', html);
-        
-        this.pickerCallback = callback;
-        const wheel = document.getElementById('pickerWheel');
-        
-        setTimeout(() => {
-            const selectedOption = wheel.querySelector('.picker-option.selected');
-            if(selectedOption) {
-                selectedOption.scrollIntoView({block: 'center', behavior: 'smooth'});
-            }
-        }, 150);
-        
-        let scrollTimeout;
-        wheel.addEventListener('scroll', () => {
-            clearTimeout(scrollTimeout);
-            scrollTimeout = setTimeout(() => {
-                this.updatePickerSelection();
-            }, 50);
-        });
-    }
-
-    updatePickerSelection() {
-        const wheel = document.getElementById('pickerWheel');
-        if(!wheel) return;
-        
-        const wheelRect = wheel.getBoundingClientRect();
-        const centerY = wheelRect.top + wheelRect.height / 2;
-        
-        const options = wheel.querySelectorAll('.picker-option');
-        let closestOption = null;
-        let closestDistance = Infinity;
-        
-        options.forEach(option => {
-            const rect = option.getBoundingClientRect();
-            const optionCenterY = rect.top + rect.height / 2;
-            const distance = Math.abs(centerY - optionCenterY);
+openPicker(items, callback, currentIdx) {
+    let html = '<div class="picker-overlay" onclick="centurion.closeMealPicker()">';
+    html += '<div class="picker-container" onclick="event.stopPropagation()">';
+    html += '<div class="picker-header">';
+    html += '<button class="picker-cancel" onclick="centurion.closeMealPicker()">Cancel</button>';
+    html += '<div class="picker-title">Select Option</div>';
+    html += '<button class="picker-done" onclick="centurion.confirmPicker()">Done</button>';
+    html += '</div>';
+    html += '<div class="picker-wheel" id="pickerWheel">';
+    
+    items.forEach((item, i) => {
+        const selected = i === currentIdx ? 'selected' : '';
+        const title = item.title || item.name || 'Option ' + (i + 1);
+        html += `<div class="picker-option ${selected}" data-index="${i}">${title}</div>`;
+    });
+    
+    html += '</div></div></div>';
+    
+    document.body.insertAdjacentHTML('beforeend', html);
+    
+    this.pickerCallback = callback;
+    const wheel = document.getElementById('pickerWheel');
+    const ITEM_HEIGHT = 60;
+    
+    // Scroll to current selection immediately (no animation initially)
+    wheel.scrollTop = currentIdx * ITEM_HEIGHT;
+    
+    // Use requestAnimationFrame for smoother updates
+    let rafId = null;
+    const smoothUpdate = () => {
+        this.updatePickerSelection();
+        rafId = null;
+    };
+    
+    wheel.addEventListener('scroll', () => {
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(smoothUpdate);
+    }, { passive: true });
+    
+    // Snap to nearest item when scrolling stops
+    let snapTimeout;
+    wheel.addEventListener('scroll', () => {
+        clearTimeout(snapTimeout);
+        snapTimeout = setTimeout(() => {
+            const scrollPos = wheel.scrollTop;
+            const nearestIndex = Math.round(scrollPos / ITEM_HEIGHT);
+            const targetScroll = nearestIndex * ITEM_HEIGHT;
             
-            if(distance < closestDistance) {
-                closestDistance = distance;
-                closestOption = option;
-            }
-        });
+            wheel.scrollTo({
+                top: targetScroll,
+                behavior: 'smooth'
+            });
+        }, 150); // Snap after 150ms of no scrolling
+    }, { passive: true });
+}
+
+updatePickerSelection() {
+    const wheel = document.getElementById('pickerWheel');
+    if(!wheel) return;
+    
+    const ITEM_HEIGHT = 60;
+    const scrollPos = wheel.scrollTop;
+    const centerIndex = Math.round(scrollPos / ITEM_HEIGHT);
+    
+    const options = wheel.querySelectorAll('.picker-option');
+    options.forEach((opt, idx) => {
+        const distance = Math.abs(idx - centerIndex);
         
-        options.forEach(opt => opt.classList.remove('selected'));
-        
-        if(closestOption) {
-            closestOption.classList.add('selected');
-            this.tempSelectionIndex = parseInt(closestOption.getAttribute('data-index'));
+        if (idx === centerIndex) {
+            opt.classList.add('selected');
+            this.tempSelectionIndex = idx;
+        } else {
+            opt.classList.remove('selected');
+            // Fade out items further from center
+            const opacity = Math.max(0.3, 1 - (distance * 0.2));
+            opt.style.opacity = opacity;
         }
-    }
+    });
+}
+
 
     confirmPicker() {
         if (typeof this.tempSelectionIndex !== 'undefined' && this.pickerCallback) {
