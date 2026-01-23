@@ -839,8 +839,13 @@ const clickHandler = t.clickable ?
     }
     // --- WEEKLY SUMMARY LOGIC ---
 
+    // --- FIXED WEEKLY SUMMARY LOGIC ---
+
     showSummary() {
-        const history = this.history || [];
+        // Safe check for history
+        if (!this.history) this.history = [];
+        
+        const history = this.history;
         const days = history.slice(-7); // Get last 7 days
         const count = days.length || 1;
         
@@ -848,17 +853,26 @@ const clickHandler = t.clickable ?
         let stats = { protein:0, omega3:0, sleep:0, calories:0, perfectDays:0 };
         
         days.forEach(d => {
-            stats.protein += d.protein || 0;
-            stats.omega3 += d.omega3 || 0;
-            stats.calories += d.cal || 0;
+            // FIX: Check for 'p' (short) OR 'protein' (long)
+            const dailyProtein = parseInt(d.p || d.protein || 0);
+            const dailyOmega = parseInt(d.o || d.omega || d.omega3 || 0);
+            const dailyCal = parseInt(d.cal || d.calories || 0);
+
+            stats.protein += dailyProtein;
+            stats.omega3 += dailyOmega;
+            stats.calories += dailyCal;
+            
             // Count a "Perfect Day" if they hit protein goal
-            if((d.protein || 0) >= USERS[this.user].goals.pro) stats.perfectDays++;
+            if(dailyProtein >= USERS[this.user].goals.pro) stats.perfectDays++;
         });
 
+        // Avoid division by zero if no days exist
+        const divisor = (days.length === 0) ? 1 : days.length;
+
         const avg = {
-            p: Math.round(stats.protein / count),
-            o: Math.round(stats.omega3 / count),
-            c: Math.round(stats.calories / count)
+            p: Math.round(stats.protein / divisor),
+            o: Math.round(stats.omega3 / divisor),
+            c: Math.round(stats.calories / divisor)
         };
 
         // 2. Generate HTML
@@ -883,17 +897,28 @@ const clickHandler = t.clickable ?
                  </div>`;
 
         // 4. Workout Log (Simple List)
-        html += `<div class="cook-section"><h2 class="cook-sec-title">🏋️ WORKOUT LOG</h2><div class="step-list">`;
-        if(days.length === 0) html += '<div class="step-item"><div class="step-txt">No data yet. Start logging!</div></div>';
+        html += `<div class="cook-section"><h2 class="cook-sec-title">🏆 HISTORY LOG</h2><div class="step-list">`;
         
-        days.slice().reverse().forEach((d, i) => { // Show newest first
-            const dateStr = new Date(d.date).toLocaleDateString('en-US', {weekday:'short'});
-            // We assume you might track workout names in future, for now showing calories
-            html += `<div class="step-item">
-                        <div class="step-num">${dateStr}</div>
-                        <div class="step-txt" style="color:#fff;">${d.cal} Calories Burned</div>
-                     </div>`;
-        });
+        if(days.length === 0) {
+            html += '<div class="step-item"><div class="step-txt">No data yet. Complete a day to see stats!</div></div>';
+        } else {
+            days.slice().reverse().forEach((d, i) => { // Show newest first
+                // Use saved date or just "Day X" if missing
+                let dateLabel = "Log Entry";
+                if(d.date) {
+                    try { dateLabel = new Date(d.date).toLocaleDateString('en-US', {weekday:'short'}); } 
+                    catch(e) {}
+                }
+                
+                html += `<div class="step-item">
+                            <div class="step-num">${dateLabel}</div>
+                            <div class="step-txt" style="color:#fff; display:flex; flex-direction:column; gap:2px;">
+                                <span>🔥 ${d.cal || 0} Cal Burned</span>
+                                <span style="font-size:0.8em; opacity:0.7;">🥩 ${d.p||0}g Pro | 🐟 ${d.o||0}mg Omega</span>
+                            </div>
+                         </div>`;
+            });
+        }
         html += `</div></div>`;
 
         document.getElementById('summaryContent').innerHTML = html;
