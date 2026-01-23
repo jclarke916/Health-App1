@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v15.4 COCKPIT</title>
+    <title>The Centurion | v15.6 TEA</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -127,56 +127,69 @@
         .picker-cancel, .picker-done { background: none; border: none; color: var(--cyan); font-size: 0.85rem; font-weight: 600; padding: 8px 12px; cursor: pointer; }
         .picker-done { color: var(--acid); }
         
-        /* --- FIXED PICKER WHEEL CSS --- */
+        /* --- NEW SCROLL WHEEL CSS --- */
         .picker-wheel {
             height: 220px;
             overflow-y: scroll;
-            -webkit-overflow-scrolling: touch;
+            -webkit-overflow-scrolling: touch; /* iOS momentum scrolling */
             scroll-snap-type: y mandatory;
+            scroll-behavior: smooth; /* Smooth native scrolling */
             padding: 0;
             position: relative;
             scrollbar-width: none; 
             -ms-overflow-style: none;
-            z-index: 5;
         }
         .picker-wheel::-webkit-scrollbar { display: none; }
-        
-        /* Fade Masks - Z-Index 10 to sit above unselected items but below selected */
-        .picker-wheel::before, .picker-wheel::after {
-            content: ''; position: absolute; left: 0; right: 0; height: 80px; z-index: 10; pointer-events: none;
-        }
-        .picker-wheel::before { top: 0; background: linear-gradient(to bottom, #1c1c1e 30%, rgba(28,28,30,0)); }
-        .picker-wheel::after { bottom: 0; background: linear-gradient(to top, #1c1c1e 30%, rgba(28,28,30,0)); }
 
-        /* Padding to center first/last items */
+        /* Fade masks for visual depth */
+        .picker-wheel::before, .picker-wheel::after {
+            content: ''; position: absolute; left: 0; right: 0; height: 80px; z-index: 1; pointer-events: none;
+        }
+        .picker-wheel::before { top: 0; background: linear-gradient(to bottom, #1c1c1e 20%, rgba(28,28,30,0)); }
+        .picker-wheel::after { bottom: 0; background: linear-gradient(to top, #1c1c1e 20%, rgba(28,28,30,0)); }
+
+        /* Spacers to center the first and last items */
         .picker-option:first-child { margin-top: 80px; }
         .picker-option:last-child { margin-bottom: 80px; }
 
         .picker-option {
-            height: 60px; line-height: 60px;
-            font-size: 0.9rem; color: #666; text-align: center;
+            padding: 0 20px;
+            height: 60px;
+            line-height: 60px;
+            font-size: 0.9rem;
+            color: #666;
+            text-align: center;
+            transition: all 0.15s ease-out; /* Faster, smoother transition */
+            cursor: pointer;
             font-weight: 500;
             scroll-snap-align: center;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-            opacity: 0.4; transform: scale(0.9); transition: all 0.2s ease;
-            position: relative; 
-            z-index: 1; /* Below masks */
-            padding: 0 20px;
+            scroll-snap-stop: always; /* Forces snap to each item */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            opacity: 0.4;
+            transform: scale(0.9);
+            position: relative;
+            z-index: 0;
+            will-change: transform, opacity; /* GPU acceleration hint */
         }
 
-        /* Selected State - Z-Index 20 to pop above masks */
         .picker-option.selected {
-            color: #ccff00; font-weight: 900; font-size: 1.1rem;
-            opacity: 1; transform: scale(1.05);
-            z-index: 20;
-            text-shadow: 0 0 10px rgba(204,255,0,0.3);
+            color: #ccff00;
+            font-weight: 900;
+            font-size: 1.1rem;
+            opacity: 1;
+            transform: scale(1.05);
+            background: rgba(204,255,0,0.1);
+            border-radius: 8px;
+            z-index: 10;
         }
     </style>
 </head>
 <body>
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v15.4 COCKPIT</div>
+            <div class="app-name">CENTURION v15.6 TEA</div>
             <div style="display:flex; gap:10px;">
                 <button onclick="centurion.openBio()" class="bio-btn">BIO</button>
                 <div class="user-switch">
@@ -439,7 +452,7 @@ const PROTOCOL = [
     {id:'lunch',time:'1:00',title:'Lunch 👆',desc:'Strategic protein rotation',colors:['red','green','white','purple'],macros:{p:52,o:3800,poly:240,f:16,cal:680},clickable:true,why:'Midday protein and omega-3'},
     {id:'snack',time:'4:00',title:'Gut Health Snack',desc:'Hombucha + Walnuts/Fruit',colors:['green','yellow'],macros:{p:5,o:0,poly:180,cal:200},why:'Probiotics for microbiome diversity (ANA support)'},
     {id:'dinner',time:'6:30',title:'Dinner 👆',desc:'Complete protein with vegetables',colors:['orange','green','white'],macros:{p:56,o:3600,poly:200,f:16,cal:720},clickable:true,why:'Evening nutrition optimization'},
-    {id:'evening',time:'9:00',title:'Wind-Down',desc:'Magnesium 400mg + Ashwagandha + Blue blockers',colors:[],macros:{p:0,o:0},calBurn:60,why:'Mag lowers CRP. Ashwa cuts cortisol 28%'}
+    {id:'evening',time:'9:00',title:'Wind-Down',desc:'Holy Basil (Tulsi) & Passionflower Tea',colors:['purple'],macros:{p:0,o:0},calBurn:60,why:'Tulsi lowers cortisol naturally. Passionflower boosts GABA for deep sleep.'}
 ];
 
 class CenturionCore {
@@ -854,7 +867,8 @@ class CenturionCore {
         
         items.forEach((item, i) => {
             const selected = i === currentIdx ? 'selected' : '';
-            html += `<div class="picker-option ${selected}" data-index="${i}">${item.title}</div>`;
+            const title = item.title || item.name || 'Option ' + (i + 1);
+            html += `<div class="picker-option ${selected}" data-index="${i}">${title}</div>`;
         });
         
         html += '</div></div></div>';
@@ -863,51 +877,62 @@ class CenturionCore {
         
         this.pickerCallback = callback;
         const wheel = document.getElementById('pickerWheel');
+        const ITEM_HEIGHT = 60;
         
-        setTimeout(() => {
-            const selectedOption = wheel.querySelector('.picker-option.selected');
-            if(selectedOption) {
-                selectedOption.scrollIntoView({block: 'center', behavior: 'smooth'});
-            }
-        }, 150);
+        // Scroll to current selection immediately
+        wheel.scrollTop = currentIdx * ITEM_HEIGHT;
         
-        let scrollTimeout;
+        // Use requestAnimationFrame for smoother updates
+        let rafId = null;
+        const smoothUpdate = () => {
+            this.updatePickerSelection();
+            rafId = null;
+        };
+        
         wheel.addEventListener('scroll', () => {
-            clearTimeout(scrollTimeout);
-            scrollTimeout = setTimeout(() => {
-                this.updatePickerSelection();
-            }, 50);
-        });
+            if (rafId) cancelAnimationFrame(rafId);
+            rafId = requestAnimationFrame(smoothUpdate);
+        }, { passive: true });
+        
+        // Snap to nearest item when scrolling stops
+        let snapTimeout;
+        wheel.addEventListener('scroll', () => {
+            clearTimeout(snapTimeout);
+            snapTimeout = setTimeout(() => {
+                const scrollPos = wheel.scrollTop;
+                const nearestIndex = Math.round(scrollPos / ITEM_HEIGHT);
+                const targetScroll = nearestIndex * ITEM_HEIGHT;
+                
+                wheel.scrollTo({
+                    top: targetScroll,
+                    behavior: 'smooth'
+                });
+            }, 150); // Snap after 150ms of no scrolling
+        }, { passive: true });
     }
 
     updatePickerSelection() {
         const wheel = document.getElementById('pickerWheel');
         if(!wheel) return;
         
-        const wheelRect = wheel.getBoundingClientRect();
-        const centerY = wheelRect.top + wheelRect.height / 2;
+        const ITEM_HEIGHT = 60;
+        const scrollPos = wheel.scrollTop;
+        const centerIndex = Math.round(scrollPos / ITEM_HEIGHT);
         
         const options = wheel.querySelectorAll('.picker-option');
-        let closestOption = null;
-        let closestDistance = Infinity;
-        
-        options.forEach(option => {
-            const rect = option.getBoundingClientRect();
-            const optionCenterY = rect.top + rect.height / 2;
-            const distance = Math.abs(centerY - optionCenterY);
+        options.forEach((opt, idx) => {
+            const distance = Math.abs(idx - centerIndex);
             
-            if(distance < closestDistance) {
-                closestDistance = distance;
-                closestOption = option;
+            if (idx === centerIndex) {
+                opt.classList.add('selected');
+                this.tempSelectionIndex = idx;
+            } else {
+                opt.classList.remove('selected');
+                // Fade out items further from center
+                const opacity = Math.max(0.3, 1 - (distance * 0.2));
+                opt.style.opacity = opacity;
             }
         });
-        
-        options.forEach(opt => opt.classList.remove('selected'));
-        
-        if(closestOption) {
-            closestOption.classList.add('selected');
-            this.tempSelectionIndex = parseInt(closestOption.getAttribute('data-index'));
-        }
     }
 
     confirmPicker() {
