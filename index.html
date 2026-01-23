@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v15.7 INTELLIGENCE</title>
+    <title>The Centurion | v15.8 MERGED</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -163,7 +163,7 @@
 <body>
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v15.7 INTELLIGENCE</div>
+            <div class="app-name">CENTURION v15.8 MERGED</div>
             <div style="display:flex; gap:10px;">
                 <button onclick="centurion.openBio()" class="bio-btn">BIO</button>
                 <div class="user-switch">
@@ -431,7 +431,7 @@ class CenturionCore {
         const d = new Date(); 
         d.setDate(d.getDate() + 1); 
         const end = d.toISOString().split('T')[0];
-        d.setDate(d.getDate() - 8); 
+        d.setDate(d.getDate() - 10); 
         const start = d.toISOString().split('T')[0]; 
         const ts = Date.now();
         
@@ -445,7 +445,23 @@ class CenturionCore {
             if(!sRes.ok) throw new Error("API Error");
             
             const sJson = await sRes.json(), rJson = await rRes.json(), aJson = await aRes.json();
-            let raw = sJson.data ? sJson.data.map(s => {
+            
+            // AGGREGATION LOGIC FOR NAPS
+            const sleepMap = new Map();
+            if(sJson.data) {
+                sJson.data.forEach(s => {
+                    if (!sleepMap.has(s.day)) {
+                        sleepMap.set(s.day, { ...s }); 
+                    } else {
+                        const existing = sleepMap.get(s.day);
+                        existing.total_sleep_duration += s.total_sleep_duration;
+                        existing.deep_sleep_duration += s.deep_sleep_duration;
+                        existing.rem_sleep_duration += s.rem_sleep_duration;
+                    }
+                });
+            }
+            
+            const consolidated = Array.from(sleepMap.values()).map(s => {
                 const r = rJson.data?.find(x => x.day === s.day);
                 const a = aJson.data?.find(x => x.day === s.day);
                 return { 
@@ -459,9 +475,10 @@ class CenturionCore {
                     high: (a?.high_activity_time || 0)/60, 
                     med: (a?.medium_activity_time || 0)/60 
                 };
-            }).sort((a,b) => b.date.localeCompare(a.date)) : [];
+            }).sort((a,b) => b.date.localeCompare(a.date));
             
-            this.history = raw.filter(d => d.score > 0 || d.totalSec > 0);
+            this.history = consolidated.filter(d => d.score > 0 || d.totalSec > 0);
+            
             if(this.history.length > 0) { 
                 this.currentIndex = 0; 
                 bar.innerText = "UPDATED"; 
@@ -491,7 +508,12 @@ class CenturionCore {
         const h = Math.floor(d.totalSec/3600);
         const m = Math.round((d.totalSec%3600)/60);
         
-        this.setText('dateDisplay', d.date); 
+        // DATE CHECK FOR DEAD BATTERY WARNING
+        const today = new Date().toISOString().split('T')[0];
+        let dateLabel = d.date;
+        if (d.date !== today) dateLabel = `⚠️ OLD DATA (${d.date})`;
+        
+        this.setText('dateDisplay', dateLabel); 
         this.setText('sleepVal', `${h}h ${m}m`);
         this.setText('deepVal', Math.round(d.deepSec/60)+"m"); 
         this.setText('remVal', Math.round(d.remSec/60)+"m");
@@ -948,16 +970,9 @@ class CenturionCore {
         const d = this.history[this.currentIndex];
         const ui = document.getElementById('aiOutput');
         const u = USERS[this.user];
-        const last7 = this.history.slice(0, 7);
-        const avgSleep = last7.reduce((sum, day) => sum + day.totalSec, 0) / last7.length / 3600;
+        const p = `Coach ${u.name} (${u.condition}). Sleep ${(d.totalSec/3600).toFixed(1)}h, Score ${d.score}, Z2 ${Math.round(d.med)}min, Z5 ${Math.round(d.high)}min. ${u.condition==='HIGH LP(A)'?'ApoB via omega-3, VO2max for arteries':'ANA via anti-inflam, mobility'}. 1 action TODAY.`;
         
-        const p = `You are a longevity coach for ${u.name} (${u.condition}). 
-        Today: Sleep ${(d.totalSec/3600).toFixed(1)}h, Score ${d.score}. 
-        7-day Trend: Avg Sleep ${avgSleep.toFixed(1)}h. 
-        ${u.condition==='HIGH LP(A)'?'Focus: Lower ApoB via omega-3 & Zone 5 cardio.':'Focus: Lower ANA via anti-inflammatory diet & Zone 2.'}
-        Give ONE specific, actionable advice for TODAY in 2 sentences max.`;
-        
-        ui.innerText = "Analyzing trends...";
+        ui.innerText = "Analyzing...";
         
         try {
             for(let m of ['gemini-1.5-flash-8b','gemini-2.0-flash-exp']) {
