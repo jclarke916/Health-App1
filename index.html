@@ -869,7 +869,100 @@ const clickHandler = t.clickable ?
         document.getElementById('cookingPage').classList.add('active');
         document.body.style.overflow = 'hidden';
     }
+// --- WORKOUT LOGIC START ---
+    showWorkout() {
+        const u = this.user; 
+        // Combine user specific + recovery workouts
+        const workouts = [...WORKOUT_DB[u], ...WORKOUT_DB.recovery]; 
+        
+        if (typeof this.currentWorkoutIdx === 'undefined') this.currentWorkoutIdx = 0;
+        
+        // Safety check to prevent crashing if index is out of bounds
+        if (this.currentWorkoutIdx >= workouts.length) this.currentWorkoutIdx = 0;
 
+        const w = workouts[this.currentWorkoutIdx];
+
+        let html = '<div class="cooking-header">';
+        html += '<button class="back-btn" onclick="centurion.closeCooking()">← BACK</button>';
+        html += '<h1 class="cook-title">' + w.title + '</h1>';
+        html += '<div class="cook-meta">';
+        html += '<span>⏱️ ' + w.time + '</span>';
+        html += '<span>🔥 ' + w.type + '</span>';
+        html += '</div>';
+        html += '</div>';
+        
+        // Reusing recipe styles for the workout card to save CSS space
+        html += '<div class="macro-grid-cook" style="grid-template-columns:repeat(3,1fr)">';
+        html += '<div class="macro-card-cook"><div class="macro-val-cook">' + w.stats.load + '</div><div class="macro-lab-cook">LOAD</div></div>';
+        html += '<div class="macro-card-cook"><div class="macro-val-cook">' + w.stats.hr + '</div><div class="macro-lab-cook">HEART RATE</div></div>';
+        html += '<div class="macro-card-cook"><div class="macro-val-cook">' + w.stats.cal + '</div><div class="macro-lab-cook">CALORIES</div></div>';
+        html += '</div>';
+        
+        html += '<div class="cook-section"><h2 class="cook-sec-title">🏋️ PROTOCOL</h2><div class="step-list">';
+        w.exercises.forEach((ex, i) => html += '<div class="step-item"><div class="step-num">' + (i+1) + '</div><div class="step-txt" style="font-size:0.9rem; font-weight:700; color:#fff;">' + ex + '</div></div>');
+        html += '</div></div>';
+        
+        html += '<div class="cook-section"><h2 class="cook-sec-title">💡 COACH TIPS</h2><div class="tip-list">';
+        w.tips.forEach(tip => html += '<div class="tip-item">✓ ' + tip + '</div>');
+        html += '</div></div>';
+        
+        html += '<div class="cook-section"><h2 class="cook-sec-title">🧬 LONGEVITY IMPACT</h2><div class="why-box">' + w.why + '</div></div>';
+        
+        html += '<div class="cook-footer">';
+        html += '<button class="done-btn change-meal-btn" onclick="centurion.openWorkoutPicker()">🔄 CHANGE ROUTINE</button>';
+        html += '<button class="done-btn" onclick="centurion.closeCooking()">✓ LOG SESSION</button>';
+        html += '</div>';
+        
+        document.getElementById('cookingPage').innerHTML = html;
+        document.getElementById('cookingPage').classList.add('active');
+    }
+
+    openWorkoutPicker() {
+        this.initAudio();
+        const u = this.user;
+        const workouts = [...WORKOUT_DB[u], ...WORKOUT_DB.recovery];
+        
+        let html = '<div class="picker-overlay" onclick="centurion.closeMealPicker()">';
+        html += '<div class="picker-container" onclick="event.stopPropagation()">';
+        html += '<div class="picker-header">';
+        html += '<button class="picker-cancel" onclick="centurion.closeMealPicker()">Cancel</button>';
+        html += '<div class="picker-title">Select Routine</div>';
+        html += '<button class="picker-done" onclick="centurion.confirmWorkoutPicker()">Done</button>';
+        html += '</div>';
+        html += '<div style="position:absolute; top:50%; left:0; right:0; height:40px; margin-top:10px; background:rgba(255,255,255,0.05); pointer-events:none; z-index:3;"></div>';
+        html += '<div class="picker-wheel" id="pickerWheel">';
+        
+        workouts.forEach((w, i) => {
+            html += `<div class="picker-option" data-index="${i}">${w.title}</div>`;
+        });
+        
+        html += '</div></div></div>';
+        document.body.insertAdjacentHTML('beforeend', html);
+        
+        const wheel = document.getElementById('pickerWheel');
+        this.lastSelection = -1;
+        
+        setTimeout(() => {
+            wheel.scrollTop = (this.currentWorkoutIdx || 0) * 60;
+            this.updatePickerPhysics(wheel);
+        }, 10);
+        
+        wheel.addEventListener('scroll', () => {
+            window.requestAnimationFrame(() => {
+                this.updatePickerPhysics(wheel);
+            });
+        }, { passive: true });
+    }
+
+    confirmWorkoutPicker() {
+        const selectedElement = document.querySelector('.picker-option.selected');
+        if(selectedElement) {
+            this.currentWorkoutIdx = parseInt(selectedElement.getAttribute('data-index'));
+        }
+        this.closeMealPicker();
+        this.showWorkout();
+    }
+    // --- WORKOUT LOGIC END ---
 // --- NEW: Audio Engine for Haptic Click ---
     initAudio() {
         if (!this.audioCtx) {
