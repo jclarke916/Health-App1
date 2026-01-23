@@ -721,14 +721,45 @@ class CenturionCore {
 
     renderCouplesSynergy() {
         const sync = this.getCouplesSyncData();
-        let html = '<div class="synergy-card"><div class="synergy-title">🤝 COUPLES SYNERGY</div>';
-        html += '<div class="synergy-grid">';
-        html += `<div class="synergy-person"><div class="synergy-name">JERMAINE</div><div class="synergy-score">${sync.jermaine.complete}%</div><div class="synergy-status">${sync.jermaine.trained ? '💪 Trained' : '⏸️ Rest Day'}</div></div>`;
-        html += `<div class="synergy-person"><div class="synergy-name">SOPHIA</div><div class="synergy-score">${sync.sophia.complete}%</div><div class="synergy-status">${sync.sophia.trained ? '💪 Trained' : '⏸️ Rest Day'}</div></div>`;
-        html += '</div>';
-        html += `<div class="sync-indicator"><span class="sync-dot ${sync.inSync ? 'active' : ''}"></span><span class="sync-text ${sync.inSync ? 'in-sync' : ''}">${sync.inSync ? '✅ IN SYNC' : '⚠️ OUT OF SYNC'} (${sync.syncScore}%)</span></div>`;
-        html += '</div>';
+        
+        // Colors for status
+        const jColor = sync.jermaine.complete >= 80 ? 'var(--acid)' : '#fff';
+        const sColor = sync.sophia.complete >= 80 ? 'var(--acid)' : '#fff';
+        const syncColor = sync.inSync ? 'var(--cyan)' : '#666';
+
+        let html = `
+        <div class="section-header"><span class="section-label">COUPLES SYNERGY</span></div>
+        
+        <div class="synergy-card">
+            <div class="syn-grid">
+                <div class="syn-col">
+                    <div class="syn-val" style="color: ${jColor}">${sync.jermaine.complete}%</div>
+                    <div class="syn-label">JERMAINE</div>
+                    <div class="syn-sub ${sync.jermaine.trained ? '' : 'rest'}">
+                        ${sync.jermaine.trained ? 'TRAINED' : 'RESTING'}
+                    </div>
+                </div>
+
+                <div class="syn-col" style="border-left: 1px solid #222; border-right: 1px solid #222;">
+                    <div class="syn-val" style="color: ${syncColor}">${sync.syncScore}%</div>
+                    <div class="syn-label">ALIGNMENT</div>
+                    <div class="syn-sub" style="color:${sync.inSync ? 'var(--cyan)' : '#666'}">
+                        ${sync.inSync ? 'LINKED' : 'UNLINKED'}
+                    </div>
+                </div>
+
+                <div class="syn-col">
+                    <div class="syn-val" style="color: ${sColor}">${sync.sophia.complete}%</div>
+                    <div class="syn-label">SOPHIA</div>
+                    <div class="syn-sub ${sync.sophia.trained ? '' : 'rest'}">
+                        ${sync.sophia.trained ? 'TRAINED' : 'RESTING'}
+                    </div>
+                </div>
+            </div>
+        </div>`;
+        
         document.getElementById('synergyDashboard').innerHTML = html;
+        localStorage.setItem('lastPartnerSync', new Date().toISOString());
     }
 
     getCouplesSyncData() {
