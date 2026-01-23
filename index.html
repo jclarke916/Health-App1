@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v16.12 ANTI-DECAY</title>
+    <title>The Centurion | v16.13 FAILSAFE</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -217,7 +217,7 @@
 <body>
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v16.12 ANTI-DECAY</div>
+            <div class="app-name">CENTURION v16.13 FAILSAFE</div>
             <div style="display:flex; gap:10px;">
                 <button onclick="centurion.openBio()" class="bio-btn">BIO</button>
                 <div class="user-switch">
@@ -512,12 +512,20 @@ class CenturionCore {
         this.PROTOCOL = JSON.parse(JSON.stringify(BASE_PROTOCOL)); 
         this.workouts = [];
         this.currentDateStr = new Date().toISOString().split('T')[0]; // Current view date
+        
+        // Immediate Failsafe Initialization
+        this.loadLocalData();
+        this.updateUI();
+        // Render IMMEDIATELY with cached/default data so user sees UI
+        // even if fetch hangs
+        this.history = [{ date: this.currentDateStr, score: 0, totalSec: 0 }]; 
+        this.render(); 
+        
+        // Then start async sync
         this.init();
     }
 
     async init() { 
-        this.loadLocalData(); 
-        this.updateUI(); 
         await this.fetchData(); 
         this.renderBio();
         this.setupSmartSync();
@@ -546,6 +554,9 @@ class CenturionCore {
         this.currentDateStr = new Date().toISOString().split('T')[0];
         this.loadLocalData(); 
         this.renderBio();
+        // Reset immediately with dummy data to unblock UI
+        this.history = [{ date: this.currentDateStr, score: 0, totalSec: 0 }];
+        this.render();
         this.fetchData();
     }
 
@@ -588,11 +599,19 @@ class CenturionCore {
         const ts = Date.now();
         
         try {
+            // FAILSAFE: 5-second timeout on fetch
+            const fetchWithTimeout = (url) => {
+                return Promise.race([
+                    fetch(url, { headers: { 'Authorization': `Bearer ${TOKENS[this.user]}` }, cache: 'no-store' }),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
+                ]);
+            };
+
             const [sRes, rRes, aRes, wRes] = await Promise.all([
-                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${start}&end_date=${end}&t=${ts}`)}`, { headers: { 'Authorization': `Bearer ${TOKENS[this.user]}` }, cache: 'no-store' }),
-                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${start}&end_date=${end}&t=${ts}`)}`, { headers: { 'Authorization': `Bearer ${TOKENS[this.user]}` }, cache: 'no-store' }),
-                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${start}&end_date=${end}&t=${ts}`)}`, { headers: { 'Authorization': `Bearer ${TOKENS[this.user]}` }, cache: 'no-store' }),
-                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/workout?start_date=${start}&end_date=${end}&t=${ts}`)}`, { headers: { 'Authorization': `Bearer ${TOKENS[this.user]}` }, cache: 'no-store' })
+                fetchWithTimeout(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${start}&end_date=${end}&t=${ts}`)}`),
+                fetchWithTimeout(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${start}&end_date=${end}&t=${ts}`)}`),
+                fetchWithTimeout(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${start}&end_date=${end}&t=${ts}`)}`),
+                fetchWithTimeout(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/workout?start_date=${start}&end_date=${end}&t=${ts}`)}`)
             ]);
             
             if(!sRes.ok) throw new Error("API Error");
@@ -752,6 +771,7 @@ class CenturionCore {
         
         // 2. PROTOCOL (30pts)
         const coreTaskIds = ['sunrise', 'breakfast', 'train', 'lunch', 'dinner', 'evening'];
+        // Hydration check
         const waterLogs = checked.filter(t => t.startsWith('water-')).length;
         const hitWaterGoal = (waterLogs * 16) >= (g.water || 140);
         
@@ -781,6 +801,7 @@ class CenturionCore {
         nutritionScore += Math.min(1, totalMacros.omega3 / g.omega3) * 6;
         nutritionScore += (rainbowColors.size / 6) * 4;
         
+        // Calorie balance (2pts)
         const bmr = parseInt(this.bios.bmr) || 2057;
         const workoutBurn = this.estimateFromType();
         const target = bmr + (checked.includes('train') ? workoutBurn : 0);
@@ -792,6 +813,7 @@ class CenturionCore {
         let activityScore = 0;
         if(checked.includes('train')) {
             activityScore += 10;
+            // Intensity match logic
             const type = this.getWorkoutTypeForDay();
             if(sleepScore >= 80 && type !== 'RECOVERY') activityScore += 5;
             else if(sleepScore < 70 && type === 'RECOVERY') activityScore += 5;
@@ -1205,7 +1227,7 @@ class CenturionCore {
             html += `<div class="time-slot">
                 <div class="ts-time">${t.time}</div>
                 <div class="ts-card ${chk?'checked':''} ${recoveryClass}" ${clickHandler}>
-                    <div class="ts-title ${t.clickable?'meal-clickable':'}">${t.title}</div>
+                    <div class="ts-title ${t.clickable?'meal-clickable':''}">${t.title}</div>
                     <div class="ts-desc">${t.desc}</div>
                     ${t.why?`<div class="ts-why">WHY: ${t.why}</div>`:''}
                     <div class="check-btn" onclick="event.stopPropagation(); centurion.toggleTask('${t.id}');">
