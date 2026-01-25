@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v16.20 FINAL</title>
+    <title>The Centurion | v16.21 COMPLETE</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -215,7 +215,7 @@
 <body>
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v16.20 FINAL</div>
+            <div class="app-name">CENTURION v16.21 COMPLETE</div>
             <div style="display:flex; gap:10px;">
                 <button onclick="centurion.openBio()" class="bio-btn">BIO</button>
                 <div class="user-switch">
@@ -664,7 +664,7 @@ class CenturionCore {
             
             this.history = consolidated; 
             
-            // Re-ensure Today Exists if missing from API
+            // Ensure Today exists in history even if Oura fails
             const today = this.currentDateStr;
             if (!this.history.find(h => h.date === today)) {
                 this.history.unshift({
@@ -679,7 +679,7 @@ class CenturionCore {
             this.setText('dataSource', 'LIVE');
             this.render();
             
-            // Check for new workouts
+            // Check for new workouts - THIS FUNCTION IS NOW PRESENT
             this.detectTodayWorkout();
 
         } catch(e) { 
@@ -749,7 +749,6 @@ class CenturionCore {
             this.renderTrendAnalysis();
             this.renderCouplesSynergy();
             
-            // RUN INTELLIGENCE
             this.runIntelligenceEngine();
             
             this.renderComplex(d.date); 
@@ -764,6 +763,173 @@ class CenturionCore {
     }
 
     // --- INTELLIGENCE ENGINE START ---
+    
+    // --- WORKOUT DETECTION METHODS (FIXED) ---
+    detectTodayWorkout() {
+        const today = this.currentDateStr;
+        const todayData = this.history.find(d => d.date === today);
+        if(!todayData || !todayData.workouts || todayData.workouts.length === 0) return;
+        
+        const checked = this.checked[today] || [];
+        if(checked.includes('train')) return;
+        
+        // Find latest workout
+        const latestWorkout = todayData.workouts.sort((a,b) => new Date(b.start_datetime) - new Date(a.start_datetime))[0];
+        const workoutTime = new Date(latestWorkout.start_datetime);
+        const hoursSince = (new Date() - workoutTime) / (1000 * 60 * 60);
+        
+        // Detect within 4 hours
+        if(hoursSince < 4) { 
+            this.showWorkoutDetection(latestWorkout);
+        }
+    }
+
+    showWorkoutDetection(workout) {
+        const activityMap = { 'cycling':'🚴', 'running':'🏃', 'walking':'🚶', 'strength_training':'💪', 'high_intensity_interval_training':'🔥', 'yoga':'🧘', 'swimming':'🏊', 'other':'🏋️' };
+        const icon = activityMap[workout.activity] || '🏋️';
+        const duration = Math.round((new Date(workout.end_datetime) - new Date(workout.start_datetime)) / 60000);
+        const calories = workout.calories || 0;
+        const avgHR = workout.average_heart_rate || 0;
+        const maxHR = workout.max_heart_rate || 0;
+        
+        let zoneBreakdown = this.calculateZoneBreakdown(workout.heart_rate);
+        
+        let html = '<div class="workout-detect show" id="workoutDetectBanner">';
+        html += `<div class="workout-detect-title">${icon} WORKOUT DETECTED</div>`;
+        html += `<div class="workout-detect-data">Activity: ${workout.activity.replace(/_/g, ' ').toUpperCase()}</div>`;
+        html += `<div class="workout-detect-data">Duration: ${duration} min | Calories: ${calories}</div>`;
+        html += `<div class="workout-detect-data">Avg HR: ${avgHR} bpm | Max HR: ${maxHR} bpm</div>`;
+        
+        if(zoneBreakdown) {
+            html += '<div class="workout-detect-data" style="margin-top: 8px; font-size: 0.65rem;">HR ZONES: ';
+            for(let zone in zoneBreakdown) {
+                if(zoneBreakdown[zone].minutes > 0) {
+                    html += `<span style="color: ${zoneBreakdown[zone].color};">${zone}: ${zoneBreakdown[zone].minutes}m</span> `;
+                }
+            }
+            html += '</div>';
+        } else {
+            const zone = this.getZoneFromHR(avgHR);
+            html += `<div class="workout-detect-data" style="color: ${zone.color};">Primary Zone: ${zone.name} (${avgHR} bpm avg)</div>`;
+        }
+        
+        html += '<button class="auto-log-btn" onclick="centurion.autoLogWorkout()">✓ AUTO-LOG TO TIMELINE</button>';
+        html += '</div>';
+        
+        const alertBanner = document.getElementById('alertBanner');
+        alertBanner.insertAdjacentHTML('afterend', html);
+        this.notifyPartner('workout', {activity: workout.activity, duration: duration});
+    }
+
+    calculateZoneBreakdown(heartRateData) {
+        if(!heartRateData || !heartRateData.items || heartRateData.items.length === 0) return null;
+        const zones = {
+            'Z1': { min: 0, max: 115, minutes: 0, color: '#30d158' },
+            'Z2': { min: 115, max: 135, minutes: 0, color: '#00f0ff' },
+            'Z3': { min: 135, max: 155, minutes: 0, color: '#FFD60A' },
+            'Z4': { min: 155, max: 175, minutes: 0, color: '#ff9f0a' },
+            'Z5': { min: 175, max: 220, minutes: 0, color: '#ff453a' }
+        };
+        const interval = heartRateData.interval || 5;
+        heartRateData.items.forEach(hr => {
+            for(let zoneName in zones) {
+                const zone = zones[zoneName];
+                if(hr >= zone.min && hr < zone.max) {
+                    zone.minutes += interval / 60;
+                    break;
+                }
+            }
+        });
+        for(let zoneName in zones) { zones[zoneName].minutes = Math.round(zones[zoneName].minutes); }
+        return zones;
+    }
+
+    getZoneFromHR(avgHR) {
+        for(let zone in OURA_ZONE_MAP) {
+            const z = OURA_ZONE_MAP[zone];
+            if(avgHR >= z.min && avgHR < z.max) return z;
+        }
+        return OURA_ZONE_MAP.zone2;
+    }
+
+    autoLogWorkout() {
+        const today = this.currentDateStr;
+        if(!this.checked[today]) this.checked[today] = [];
+        if(!this.checked[today].includes('train')) {
+            this.checked[today].push('train');
+            localStorage.setItem(`c_checked_${this.user}`, JSON.stringify(this.checked));
+            this.renderComplex(today);
+            document.getElementById('workoutDetectBanner').remove();
+            this.showNotification('✅ Workout logged to timeline!', 'success');
+        }
+    }
+
+    notifyPartner(type, data) {
+        const partner = this.user === 'jermaine' ? 'sophia' : 'jermaine';
+        const notifications = JSON.parse(localStorage.getItem(`notifications_${partner}`)) || [];
+        const notification = { from: this.user, type: type, data: data, timestamp: new Date().toISOString(), read: false };
+        notifications.unshift(notification);
+        localStorage.setItem(`notifications_${partner}`, JSON.stringify(notifications));
+        this.checkPartnerNotifications();
+    }
+
+    checkPartnerNotifications() {
+        const notifications = JSON.parse(localStorage.getItem(`notifications_${this.user}`)) || [];
+        const unread = notifications.filter(n => !n.read);
+        if(unread.length > 0) {
+            const latest = unread[0];
+            this.showPartnerNotification(latest);
+            latest.read = true;
+            localStorage.setItem(`notifications_${this.user}`, JSON.stringify(notifications));
+        }
+    }
+
+    showPartnerNotification(notification) {
+        const partnerName = notification.from === 'jermaine' ? 'Jermaine' : 'Sophia';
+        let message = '';
+        if(notification.type === 'workout') {
+            const activity = notification.data.activity.replace(/_/g, ' ');
+            message = `${partnerName} just completed a ${notification.data.duration}-min ${activity} workout! Your turn! 💪`;
+        }
+        const html = `<div class="partner-notification" id="partnerNotif"><span class="notif-icon">🤝</span>${message}<button class="notif-dismiss" onclick="centurion.dismissNotification()">Got it!</button></div>`;
+        document.body.insertAdjacentHTML('beforeend', html);
+        setTimeout(() => this.dismissNotification(), 10000);
+    }
+
+    dismissNotification() {
+        const notif = document.getElementById('partnerNotif');
+        if(notif) { notif.classList.add('hide'); setTimeout(() => notif.remove(), 400); }
+    }
+
+    showNotification(message, type = 'info') {
+        const colors = { success: 'linear-gradient(135deg, #30d158 0%, #00f0ff 100%)', info: 'linear-gradient(135deg, var(--acid) 0%, #00f0ff 100%)' };
+        const html = `<div class="partner-notification" id="generalNotif" style="background: ${colors[type]};">${message}</div>`;
+        document.body.insertAdjacentHTML('beforeend', html);
+        setTimeout(() => document.getElementById('generalNotif').remove(), 3000);
+    }
+
+    checkPartnerActivity() {
+        this.checkPartnerNotifications();
+        this.renderCouplesSynergy();
+        this.showNotification('✅ Partner sync complete', 'success');
+    }
+
+    setupSmartSync() {
+        window.addEventListener('storage', (e) => {
+            if(e.key === `notifications_${this.user}` || e.key.includes('c_checked_')) {
+                this.checkPartnerNotifications();
+                this.renderCouplesSynergy();
+            }
+        });
+        document.addEventListener('visibilitychange', () => {
+            if(!document.hidden) {
+                this.checkPartnerNotifications();
+                this.renderCouplesSynergy();
+            }
+        });
+    }
+
+    // --- INTELLIGENCE LOGIC ---
     calculateSleepDebt() {
         const last7 = this.history.slice(0, 7);
         const optimalSleep = 8;
@@ -949,6 +1115,7 @@ class CenturionCore {
         this.setText('longevityScore', longevity.total);
         const primaryBox = document.querySelector('.score-box.primary');
         if(primaryBox) primaryBox.style.borderColor = longevity.grade.color;
+        this.longevityData = longevity;
     }
     
     getUserLongevityData() {
@@ -1144,7 +1311,11 @@ class CenturionCore {
     }
     
     estimateFromType() {
-        const workout = WORKOUT_DB[this.user][this.currentWorkoutIdx];
+        // Safe access to workout DB
+        const userWorkouts = WORKOUT_DB[this.user] || [];
+        if (this.currentWorkoutIdx >= userWorkouts.length) return 400; // Default fallback
+        
+        const workout = userWorkouts[this.currentWorkoutIdx];
         return workout?.stats?.cal || 400;
     }
 
