@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v16.27 INTEGRATED</title>
+    <title>The Centurion | v16.28 FINAL-SYNC</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -215,7 +215,7 @@
 <body>
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v16.27 INTEGRATED</div>
+            <div class="app-name">CENTURION v16.28 FINAL-SYNC</div>
             <div style="display:flex; gap:10px;">
                 <button onclick="centurion.openBio()" class="bio-btn">BIO</button>
                 <div class="user-switch">
@@ -781,12 +781,23 @@ class CenturionCore {
             const dOrb = document.getElementById('deepOrb'); if(dOrb) dOrb.style.strokeDashoffset = 145-(Math.min((d.deepSec||0)/3600,2)/2)*145;
             const rOrb = document.getElementById('remOrb'); if(rOrb) rOrb.style.strokeDashoffset = 145-(Math.min((d.remSec||0)/3600,2)/2)*145;
             
-            // ISOLATED RENDER CALLS FOR SAFETY
+            // CORRECT RENDER ORDER:
+            // 1. Reset Protocol happens in Render (via runIntelligenceEngine or manual reset)
+            // But wait, runIntelligenceEngine MODIFIES protocol.
+            // So we must RESET first.
+            
+            this.PROTOCOL = JSON.parse(JSON.stringify(BASE_PROTOCOL)); // RESET
+            
+            // 2. Run Intelligence (Injects items)
+            try { this.runIntelligenceEngine(); } catch(e) { console.error("Intelligence failed", e); }
+            
+            // 3. Render Complex (Draws items)
+            try { this.renderComplex(d.date); } catch(e) { console.error("Complex failed", e); }
+            
+            // 4. Other Renders
             try { this.showIntelligentAlert(d); } catch(e) { console.error("Alert failed", e); }
             try { this.renderTrendAnalysis(); } catch(e) { console.error("Trends failed", e); }
             try { this.renderCouplesSynergy(); } catch(e) { console.error("Synergy failed", e); }
-            try { this.runIntelligenceEngine(); } catch(e) { console.error("Intelligence failed", e); }
-            try { this.renderComplex(d.date); } catch(e) { console.error("Complex failed", e); }
             try { this.renderBio(); } catch(e) { console.error("Bio failed", e); }
             
             document.querySelectorAll('.orb-card').forEach(orb => {
@@ -1476,7 +1487,7 @@ class CenturionCore {
         let html = '';
         
         const sleepScore = this.history[this.currentIndex].score;
-        this.PROTOCOL = JSON.parse(JSON.stringify(BASE_PROTOCOL)); 
+        // DO NOT RESET PROTOCOL HERE - IT IS RESET IN RENDER BEFORE INTELLIGENCE
         
         if(sleepScore > 0 && sleepScore < 60) {
             const trainTask = this.PROTOCOL.find(t => t.id === 'train');
