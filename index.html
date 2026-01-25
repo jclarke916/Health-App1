@@ -437,4 +437,214 @@ class DebugConsole {
 
 // Initialize debug console
 const debugConsole = new DebugConsole();
+// === INTELLIGENCE ENGINE ===
+class IntelligenceEngine {
+    constructor(app) {
+        this.app = app;
+    }
+    
+    run() {
+        console.log('🧠 Running intelligence engine...');
+        
+        // Reset protocol to base
+        this.app.protocol = JSON.parse(JSON.stringify(BASE_PROTOCOL));
+        
+        // Calculate sleep debt
+        const sleepDebt = this.calculateSleepDebt();
+        console.log('💤 Sleep debt:', sleepDebt.toFixed(1), 'hours');
+        
+        // Apply logic
+        if (sleepDebt > 7) {
+            this.app.sleepDebtCritical = true;
+            this.forcedRecoveryMode(sleepDebt);
+        } else {
+            this.app.sleepDebtCritical = false;
+        }
+        
+        // Inject supplements
+        this.injectSupplements();
+        
+        console.log('✅ Intelligence complete');
+    }
+    
+    calculateSleepDebt() {
+        const today = new Date().toLocaleDateString('en-CA');
+        const last7 = this.app.history
+            .filter(day => day.date !== today && day.totalSec > 0)
+            .slice(0, 7);
+        
+        if (last7.length === 0) return 0;
+        
+        let totalDebt = 0;
+        last7.forEach(day => {
+            const actual = day.totalSec / 3600;
+            const deficit = 8 - actual;
+            if (deficit > 0) totalDebt += deficit;
+        });
+        
+        console.log('  📊 Analyzed', last7.length, 'days');
+        return totalDebt;
+    }
+    
+    forcedRecoveryMode(debt) {
+        console.log('⚠️ FORCED RECOVERY - Debt:', debt.toFixed(1) + 'h');
+        
+        // Modify training task
+        const trainTask = this.app.protocol.find(t => t.id === 'train');
+        if (trainTask) {
+            trainTask.title = '🛏️ FORCED REST';
+            trainTask.desc = `Sleep debt: ${debt.toFixed(1)}h - No training`;
+            trainTask.calBurn = 0;
+        }
+    }
+    
+    injectSupplements() {
+        const supplements = [
+            { id: 'fish-oil', time: '07:30', title: 'Fish Oil 2g', desc: 'Omega-3', macros: {p:0,o:2000,cal:20} },
+            { id: 'vitamin-d', time: '07:30', title: 'Vitamin D3', desc: '5000 IU', macros: {p:0,o:0,cal:0} },
+            { id: 'magnesium', time: '21:00', title: 'Magnesium', desc: '400mg', macros: {p:0,o:0,cal:0} }
+        ];
+        
+        supplements.forEach(supp => {
+            if (!this.app.protocol.find(t => t.id === supp.id)) {
+                this.app.protocol.push(supp);
+            }
+        });
+        
+        // Sort by time
+        this.app.protocol.sort((a, b) => a.time.localeCompare(b.time));
+        
+        console.log('💊 Injected', supplements.length, 'supplements');
+    }
+}
+
+// === RENDERING ENGINE ===
+class RenderEngine {
+    constructor(app) {
+        this.app = app;
+    }
+    
+    render() {
+        console.log('🎨 Rendering UI...');
+        
+        try {
+            this.renderHeader();
+            this.renderStatus();
+            this.renderTimeline();
+            console.log('✅ Render complete');
+        } catch (error) {
+            console.error('❌ Render failed:', error.message);
+        }
+    }
+    
+    renderHeader() {
+        const day = this.app.history[this.app.currentIndex];
+        this.app.setText('dateLabel', day.date);
+        
+        // Calculate day score
+        const sleepHours = (day.totalSec || 0) / 3600;
+        const score = Math.min(100, Math.round(sleepHours / 8 * 100));
+        
+        this.app.setText('dayScore', score);
+        
+        const scoreEl = document.getElementById('dayScore');
+        if (scoreEl) {
+            scoreEl.style.color = score >= 80 ? '#ccff00' : score >= 60 ? '#FFD60A' : '#ff453a';
+        }
+    }
+    
+    renderStatus() {
+        const day = this.app.history[this.app.currentIndex];
+        const sleepHours = (day.totalSec || 0) / 3600;
+        
+        let status = '';
+        if (this.app.sleepDebtCritical) {
+            status = '⚠️ SLEEP DEBT CRITICAL - Recovery Mode';
+        } else if (sleepHours >= 7.5) {
+            status = '✅ OPTIMAL - Ready for training';
+        } else if (sleepHours >= 6) {
+            status = '⚠️ MODERATE - Light training only';
+        } else if (sleepHours > 0) {
+            status = '🛏️ POOR SLEEP - Rest day';
+        } else {
+            status = '📊 Waiting for data...';
+        }
+        
+        this.app.setText('statusMsg', status);
+        
+        // Alert banner
+        const banner = document.getElementById('alertBanner');
+        if (this.app.sleepDebtCritical) {
+            banner.className = 'alert-banner alert-warning show';
+            banner.innerText = '⚠️ SLEEP DEBT OVER 7 HOURS - FORCED RECOVERY';
+        } else {
+            banner.className = 'alert-banner';
+        }
+    }
+    
+    renderTimeline() {
+        const dateKey = this.app.history[this.app.currentIndex].date;
+        const checked = this.app.checked[dateKey] || [];
+        
+        let html = '';
+        
+        this.app.protocol.forEach(task => {
+            const isChecked = checked.includes(task.id);
+            
+            html += `
+                <div class="time-slot">
+                    <div class="ts-time">${task.time}</div>
+                    <div class="ts-card ${isChecked ? 'checked' : ''}">
+                        <div class="ts-title">${task.title}</div>
+                        <div class="ts-desc">${task.desc}</div>
+                        <div class="check-btn" onclick="app.toggleTask('${task.id}')">
+                            <div class="check-circle">${isChecked ? '✓' : ''}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        document.getElementById('timeline').innerHTML = html;
+        console.log('📋 Rendered', this.app.protocol.length, 'tasks');
+    }
+}
+
+// === TASK MANAGEMENT ===
+CenturionApp.prototype.toggleTask = function(taskId) {
+    const dateKey = this.history[this.currentIndex].date;
+    
+    if (!this.checked[dateKey]) {
+        this.checked[dateKey] = [];
+    }
+    
+    const index = this.checked[dateKey].indexOf(taskId);
+    
+    if (index === -1) {
+        // Check task
+        this.checked[dateKey].push(taskId);
+        console.log('✅ Checked:', taskId);
+    } else {
+        // Uncheck task
+        this.checked[dateKey].splice(index, 1);
+        console.log('⬜ Unchecked:', taskId);
+    }
+    
+    // Save and re-render
+    this.saveUserData();
+    this.render();
+};
+
+// === MAIN RENDER METHOD ===
+CenturionApp.prototype.render = function() {
+    console.log('🔄 Main render triggered');
+    
+    // Run intelligence engine
+    const intelligence = new IntelligenceEngine(this);
+    intelligence.run();
+    
+    // Render UI
+    const renderer = new RenderEngine(this);
+    renderer.render();
+};
 
