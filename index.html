@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Centurion v17.29 FIXED</title>
+<title>Centurion v17.30 OPTICAL-ALIGN</title>
 <style>
 /* --- CORE STYLES --- */
 :root { --bg:#050505; --panel:#121212; --border:#222; --acid:#ccff00; --cyan:#00f0ff; --purple:#bf5af2; --alert:#ff453a; --text:#fff; }
@@ -45,21 +45,41 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system, BlinkMacS
 .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:0 15px;margin-bottom:20px}
 .grid-4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;padding:0 15px;margin-bottom:20px}
 
-/* ORBS - HIGH CONTRAST NEON */
+/* ORBS - OPTICAL ALIGNMENT FIX */
 .orb-card{background:linear-gradient(145deg, #111 0%, #080808 100%); border:1px solid #222; border-radius:14px; padding:15px 5px; display:flex; flex-direction:column; align-items:center; transition:transform 0.1s;}
 .orb-card:active{transform:scale(0.96);}
-.orb-container{width:55px;height:55px;position:relative;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
-.orb-svg{transform:rotate(-90deg);width:100%;height:100%}
+.orb-container{width:55px;height:55px;position:relative;margin-bottom:8px;}
+
+/* SVG BACKGROUND */
+.orb-svg{transform:rotate(-90deg);width:100%;height:100%; position: absolute; top:0; left:0; z-index: 1;}
 .orb-bg{fill:none;stroke:#1a1a1a;stroke-width:5;}
 .orb-fg{fill:none;stroke-width:5;stroke-dasharray:145;stroke-dashoffset:145;transition:stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1); stroke-linecap:round; filter:drop-shadow(0 0 4px currentColor);}
 
-/* LEGIBILITY FIX */
-.orb-val-box{position:absolute; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center;}
-.orb-val{font-family:'Courier New', monospace; font-size:0.7rem; font-weight:900; color:#fff; text-shadow:0 0 4px #000, 0 0 4px #000; letter-spacing:-0.5px; z-index:2;}
+/* TEXT CENTERING MAGIC */
+.orb-val-box {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    text-align: center;
+    z-index: 10;
+    pointer-events: none;
+}
+.orb-val {
+    font-family: 'Courier New', monospace;
+    font-size: 0.7rem;
+    font-weight: 900;
+    color: #fff;
+    text-shadow: 0 0 4px #000, 0 0 3px #000;
+    letter-spacing: -0.5px;
+    line-height: 1;
+    margin-top: 2px; /* Optical correction for font baseline */
+}
 .orb-label{font-size:0.45rem;font-weight:800;color:#666;text-transform:uppercase;letter-spacing:0.5px}
 
 /* HEARTS */
-.heart-svg { width: 100%; height: 100%; overflow: visible; }
+.heart-svg { width: 100%; height: 100%; overflow: visible; z-index: 1;}
 .heart-bg { fill: none; stroke: #1a1a1a; stroke-width: 2.5; }
 .heart-fg { fill: none; stroke-width: 2.5; stroke-dasharray: 100; stroke-dashoffset: 100; transition: stroke-dashoffset 1s ease; filter:drop-shadow(0 0 3px currentColor); }
 .beating { animation: heartbeat 1.5s infinite; transform-origin: center; }
@@ -136,7 +156,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system, BlinkMacS
     padding: 20px;
     background: #000; /* Solid Black to cover scrolling content */
     border-top: 1px solid #333;
-    z-index: 100;
+    z-index: 999;
     display: flex;
     justify-content: center;
     box-shadow: 0 -10px 30px rgba(0,0,0,0.8);
@@ -540,7 +560,6 @@ class CenturionApp {
         this.saveUserData();
         
         // Select it immediately
-        // Calculate correct index offset for custom meals
         const standardCount = MEAL_DATABASE[mealSlot] ? MEAL_DATABASE[mealSlot].length : 0;
         const customCount = this.customMeals[mealSlot].length;
         const newIndex = standardCount + customCount - 1;
@@ -550,7 +569,7 @@ class CenturionApp {
 
     openMealPicker(mealSlot) {
         const modalBody = document.getElementById('modalBody');
-        modalBody.innerHTML = ''; // CLEAR PREVIOUS CONTENT (Fixes Duplication)
+        modalBody.innerHTML = ''; // CLEAR PREVIOUS CONTENT
         
         const slotName = mealSlot.charAt(0).toUpperCase() + mealSlot.slice(1);
         this.setText('modalTitle', slotName + ' MENU');
@@ -577,7 +596,6 @@ class CenturionApp {
             if(ingString.includes('salmon') && (ingString.includes('avocado') || ingString.includes('oil'))) badges += `<span class="badge boost">Ω-3</span>`;
             if(ingString.includes('bison') && ingString.includes('peppers')) badges += `<span class="badge boost">IRON+</span>`;
 
-            // CORRECT CLICK HANDLER: Always pass the absolute index in the combined array
             html += `<div class="menu-item" onclick="${meal.isCustom ? `app.selectMeal('${mealSlot}', ${index})` : `app.showRecipe('${mealSlot}', ${index})`}">
                 <div class="menu-left">
                     <div class="menu-name">${title}</div>
