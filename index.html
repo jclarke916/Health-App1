@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Centurion v17.15 POLISHED</title>
+<title>Centurion v17.16 CHRONOS</title>
 <style>
 /* --- CORE STYLES --- */
 *{box-sizing:border-box;margin:0;padding:0}
@@ -317,13 +317,12 @@ const WORKOUT_TYPES = { strength_training: 'Strength', cycling: 'Cycling', runni
 // --- APP CLASS ---
 class CenturionApp {
     constructor() {
-        console.log('🚀 Init v17.14 STABLE');
+        console.log('🚀 Init v17.16 CHRONOS');
         
-        // SELF-HEALING: Check version to force clear broken data
-        const CURRENT_VER = '17.14.0';
+        // SELF-HEALING
+        const CURRENT_VER = '17.16.0';
         const savedVer = localStorage.getItem('centurion_version');
         if(savedVer !== CURRENT_VER) {
-             console.warn('Version mismatch. Wiping clean.');
              localStorage.clear();
              localStorage.setItem('centurion_version', CURRENT_VER);
         }
@@ -393,7 +392,6 @@ class CenturionApp {
             const activityUrl = `https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${startStr}&end_date=${endStr}`)}`;
             const readinessUrl = `https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${startStr}&end_date=${endStr}`)}`;
 
-
             const [sleepRes, workoutRes, activityRes, readinessRes] = await Promise.all([
                 fetch(sleepUrl, { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch(workoutUrl, { headers: { 'Authorization': `Bearer ${token}` } }),
@@ -407,7 +405,6 @@ class CenturionApp {
             const workoutData = await workoutRes.json();
             const activityData = await activityRes.json();
             const readinessData = await readinessRes.json();
-
 
             this.processData(sleepData.data || [], workoutData.data || [], activityData.data || [], readinessData.data || []);
             
@@ -444,7 +441,6 @@ class CenturionApp {
             if (session.score && session.score > day.score) day.score = session.score;
         });
         
-        // FIX: RHR from Readiness
         readinessData.forEach(readiness => {
              const day = getDay(readiness.day);
              if (readiness.contributors?.resting_heart_rate) {
@@ -455,7 +451,7 @@ class CenturionApp {
         workoutData.forEach(workout => {
             const day = getDay(workout.day);
             const startTime = new Date(workout.start_datetime);
-            const timeStr = startTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+            const timeStr = startTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: false }); // 24h for sorting
             day.workouts.push({
                 type: workout.activity || 'other',
                 intensity: workout.intensity || 'moderate',
@@ -549,14 +545,12 @@ class CenturionApp {
         const meals = MEAL_DATABASE[mealSlot] || [];
         let html = '';
         meals.forEach((meal, index) => {
-            // FIX: Ensure title exists
             const title = meal.title || meal.name || "Unknown Meal";
             const colorDots = (meal.colors || []).map(c => {
                 const hex = RAINBOW_COLORS[c] ? RAINBOW_COLORS[c].hex : '#999';
                 return `<span class="color-dot" style="background:${hex}"></span>`;
             }).join('');
             
-            // ABSORPTION CHECK
             let alerts = '';
             const ingString = (meal.ingredients || []).join(' ');
             if(ABSORPTION_RULES.blockers.calcium_iron.check(ingString)) alerts += `<div class="abs-alert">⚠️ ${ABSORPTION_RULES.blockers.calcium_iron.warning}</div>`;
@@ -626,7 +620,6 @@ class CenturionApp {
         return colors;
     }
 
-    // RESTORED GRADE LOGIC
     calculateGrade(score) {
         if(score >= 95) return { letter: 'S+', color: '#00ff00' };
         if(score >= 90) return { letter: 'S', color: '#ccff00' };
@@ -647,6 +640,8 @@ class CenturionApp {
     render() {
         try {
             if (!this.history || this.history.length === 0) return;
+            
+            // CHRONOS: Clone Base Protocol
             this.protocol = JSON.parse(JSON.stringify(BASE_PROTOCOL));
             const dateKey = this.history[this.currentIndex].date;
             const day = this.history[this.currentIndex];
@@ -656,7 +651,6 @@ class CenturionApp {
             let selectedMeals = this.meals[dateKey] || {};
             this.protocol.forEach(task => {
                 if (task.mealSlot && selectedMeals[task.mealSlot] !== undefined) {
-                    // SAFE ACCESS TO DATABASE
                     const dbSlot = MEAL_DATABASE[task.mealSlot];
                     if(dbSlot && dbSlot[selectedMeals[task.mealSlot]]) {
                          const meal = dbSlot[selectedMeals[task.mealSlot]];
@@ -669,22 +663,48 @@ class CenturionApp {
                          task.desc = "Select meal";
                     }
                 }
-                // Auto Detect
-                if (task.autoDetect && day.workouts && day.workouts.length > 0) {
-                    const workout = day.workouts[0];
-                    task.title = `${WORKOUT_TYPES[workout.type] || 'Workout'} 🔄`;
-                    task.desc = `${workout.time} • ${workout.calories} cal`;
-                    task.calBurn = workout.calories;
-                    task.autoDetected = true;
-                    // Auto Check
-                    const checked = this.checked[dateKey] || [];
-                    if (!checked.includes('train')) {
-                        checked.push('train');
-                        this.checked[dateKey] = checked;
-                        this.saveUserData();
-                    }
-                }
             });
+            
+            // 2. CHRONOS: Dynamic Workout Injection
+            if (day.workouts && day.workouts.length > 0) {
+                // Remove the static 'train' placeholder
+                this.protocol = this.protocol.filter(t => t.id !== 'train');
+                
+                // Inject real workouts
+                day.workouts.forEach((w, i) => {
+                    const timeParts = w.time.split(':');
+                    let timeSort = w.time; // Use 24h format from processData for sorting
+                    
+                    // Format for display (AM/PM)
+                    const dateObj = new Date(w.start);
+                    const displayTime = dateObj.toLocaleTimeString('en-US', {hour: 'numeric', minute:'2-digit'});
+
+                    this.protocol.push({
+                        id: `workout-${i}`,
+                        time: timeSort, 
+                        displayTime: displayTime,
+                        title: `${WORKOUT_TYPES[w.type] || 'Workout'} 🔄`,
+                        desc: `${w.calories} cal • Auto-detected`,
+                        macros: {p:0,o:0,f:0,cal:0},
+                        colors: [],
+                        calBurn: w.calories,
+                        autoDetected: true
+                    });
+                    
+                    // Auto-check this dynamic ID
+                    const checked = this.checked[dateKey] || [];
+                    if (!checked.includes(`workout-${i}`)) {
+                        checked.push(`workout-${i}`);
+                        this.checked[dateKey] = checked;
+                    }
+                });
+                
+                // Sort Protocol by Time
+                this.protocol.sort((a, b) => a.time.localeCompare(b.time));
+                
+                // Save the auto-checks
+                this.saveUserData();
+            }
 
             // 2. Scores
             const sleepHours = (day.totalSec || 0) / 3600;
@@ -808,14 +828,17 @@ class CenturionApp {
         this.protocol.forEach(task => {
             const isChecked = checked.includes(task.id);
             const clickAction = task.clickable ? `onclick="app.openMealPicker('${task.mealSlot}')"` : '';
-            // FIX: Don't disable click for auto-detected if it's also a meal slot (unlikely but safe)
+            // Don't disable click for auto-detected if it's also a meal slot
             const cardClass = `task-card ${isChecked ? 'checked' : ''} ${task.clickable ? 'clickable' : ''} ${task.autoDetected ? 'auto-detected' : ''}`;
             
             // Add chevron only if clickable
             const chevron = task.clickable ? `<span class="chevron">›</span>` : '';
             
+            // Use displayTime if available (dynamic), else task.time (static)
+            const timeDisplay = task.displayTime || task.time;
+            
             html += `<div class="task">
-                <div class="task-time">${task.time}</div>
+                <div class="task-time">${timeDisplay}</div>
                 <div class="${cardClass}" ${clickAction}>
                     <div class="task-info">
                         <div class="task-title">${task.title} 
