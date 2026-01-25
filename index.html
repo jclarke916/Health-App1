@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v16.24 STABILIZED</title>
+    <title>The Centurion | v16.25 BULLETPROOF</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -25,7 +25,6 @@
         .date-display { min-width: 120px; text-align: center; letter-spacing: 1px; color: var(--acid); display: flex; flex-direction: column; align-items: center; line-height: 1.2; }
         .data-source { font-size: 0.45rem; color: #666; font-weight: 700; }
         
-        /* HERO SECTION */
         .hero-section { padding: 20px 16px; display: flex; align-items: center; justify-content: space-between; }
         .dual-score-container { display: flex; gap: 15px; align-items: center; }
         .score-box { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 50%; border: 3px solid var(--border); cursor: pointer; transition: transform 0.1s; }
@@ -216,7 +215,7 @@
 <body>
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v16.24 STABILIZED</div>
+            <div class="app-name">CENTURION v16.25 BULLETPROOF</div>
             <div style="display:flex; gap:10px;">
                 <button onclick="centurion.openBio()" class="bio-btn">BIO</button>
                 <div class="user-switch">
@@ -774,21 +773,20 @@ class CenturionCore {
             const dOrb = document.getElementById('deepOrb'); if(dOrb) dOrb.style.strokeDashoffset = 145-(Math.min((d.deepSec||0)/3600,2)/2)*145;
             const rOrb = document.getElementById('remOrb'); if(rOrb) rOrb.style.strokeDashoffset = 145-(Math.min((d.remSec||0)/3600,2)/2)*145;
             
-            this.showIntelligentAlert(d);
-            this.renderTrendAnalysis();
-            this.renderCouplesSynergy();
-            
-            // RUN INTELLIGENCE
-            this.runIntelligenceEngine();
-            
-            this.renderComplex(d.date); 
-            this.renderBio();
+            // ISOLATED RENDER CALLS FOR SAFETY
+            try { this.showIntelligentAlert(d); } catch(e) { console.error("Alert failed", e); }
+            try { this.renderTrendAnalysis(); } catch(e) { console.error("Trends failed", e); }
+            try { this.renderCouplesSynergy(); } catch(e) { console.error("Synergy failed", e); }
+            try { this.runIntelligenceEngine(); } catch(e) { console.error("Intelligence failed", e); }
+            try { this.renderComplex(d.date); } catch(e) { console.error("Complex failed", e); }
+            try { this.renderBio(); } catch(e) { console.error("Bio failed", e); }
             
             document.querySelectorAll('.orb-card').forEach(orb => {
                orb.style.cursor = 'default';
             });
         } catch(e) {
-            console.error("Render error:", e);
+            console.error("Render CRITICAL FAIL:", e);
+            alert("Render Crashed: " + e.message);
         }
     }
 
