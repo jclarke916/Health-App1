@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v16.23 REFACTORED</title>
+    <title>The Centurion | v16.24 STABILIZED</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -25,6 +25,7 @@
         .date-display { min-width: 120px; text-align: center; letter-spacing: 1px; color: var(--acid); display: flex; flex-direction: column; align-items: center; line-height: 1.2; }
         .data-source { font-size: 0.45rem; color: #666; font-weight: 700; }
         
+        /* HERO SECTION */
         .hero-section { padding: 20px 16px; display: flex; align-items: center; justify-content: space-between; }
         .dual-score-container { display: flex; gap: 15px; align-items: center; }
         .score-box { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 50%; border: 3px solid var(--border); cursor: pointer; transition: transform 0.1s; }
@@ -215,7 +216,7 @@
 <body>
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v16.23 REFACTORED</div>
+            <div class="app-name">CENTURION v16.24 STABILIZED</div>
             <div style="display:flex; gap:10px;">
                 <button onclick="centurion.openBio()" class="bio-btn">BIO</button>
                 <div class="user-switch">
@@ -707,7 +708,7 @@ class CenturionCore {
             this.setText('dataSource', 'LIVE');
             this.render();
             
-            // Check for new workouts
+            // Check for new workouts - THIS IS NOW PRESENT
             this.detectTodayWorkout();
 
         } catch(e) { 
@@ -773,20 +774,21 @@ class CenturionCore {
             const dOrb = document.getElementById('deepOrb'); if(dOrb) dOrb.style.strokeDashoffset = 145-(Math.min((d.deepSec||0)/3600,2)/2)*145;
             const rOrb = document.getElementById('remOrb'); if(rOrb) rOrb.style.strokeDashoffset = 145-(Math.min((d.remSec||0)/3600,2)/2)*145;
             
-            // ISOLATED RENDER CALLS FOR SAFETY
-            try { this.showIntelligentAlert(d); } catch(e) { console.error("Alert failed", e); }
-            try { this.renderTrendAnalysis(); } catch(e) { console.error("Trends failed", e); }
-            try { this.renderCouplesSynergy(); } catch(e) { console.error("Synergy failed", e); }
-            try { this.runIntelligenceEngine(); } catch(e) { console.error("Intelligence failed", e); }
-            try { this.renderComplex(d.date); } catch(e) { console.error("Complex failed", e); }
-            try { this.renderBio(); } catch(e) { console.error("Bio failed", e); }
+            this.showIntelligentAlert(d);
+            this.renderTrendAnalysis();
+            this.renderCouplesSynergy();
+            
+            // RUN INTELLIGENCE
+            this.runIntelligenceEngine();
+            
+            this.renderComplex(d.date); 
+            this.renderBio();
             
             document.querySelectorAll('.orb-card').forEach(orb => {
                orb.style.cursor = 'default';
             });
         } catch(e) {
-            console.error("Render CRITICAL FAIL:", e);
-            alert("Render Crashed: " + e.message);
+            console.error("Render error:", e);
         }
     }
 
@@ -797,7 +799,7 @@ class CenturionCore {
         this.renderBio(); 
     }
     
-    // --- WORKOUT DETECTION METHODS ---
+    // --- WORKOUT DETECTION METHODS (FIXED) ---
     detectTodayWorkout() {
         const today = this.currentDateStr;
         const todayData = this.history.find(d => d.date === today);
@@ -806,10 +808,12 @@ class CenturionCore {
         const checked = this.checked[today] || [];
         if(checked.includes('train')) return;
         
+        // Find latest workout
         const latestWorkout = todayData.workouts.sort((a,b) => new Date(b.start_datetime) - new Date(a.start_datetime))[0];
         const workoutTime = new Date(latestWorkout.start_datetime);
         const hoursSince = (new Date() - workoutTime) / (1000 * 60 * 60);
         
+        // Detect within 4 hours
         if(hoursSince < 4) { 
             this.showWorkoutDetection(latestWorkout);
         }
@@ -820,16 +824,27 @@ class CenturionCore {
         const icon = activityMap[workout.activity] || '🏋️';
         const duration = Math.round((new Date(workout.end_datetime) - new Date(workout.start_datetime)) / 60000);
         const calories = workout.calories || 0;
-        const avgHR = workout.average_heart_rate || 0;
-        const maxHR = workout.max_heart_rate || 0;
         
+        // --- PATCH FOR MISSING BPM ---
+        let avgHR = workout.average_heart_rate || 0;
+        
+        // If average is missing but items exist, calculate manually
+        if ((!avgHR || avgHR === 0) && workout.heart_rate && workout.heart_rate.items && workout.heart_rate.items.length > 0) {
+            const sum = workout.heart_rate.items.reduce((a, b) => a + b, 0);
+            avgHR = Math.round(sum / workout.heart_rate.items.length);
+        }
+        
+        const maxHR = workout.max_heart_rate || 0;
         let zoneBreakdown = this.calculateZoneBreakdown(workout.heart_rate);
         
         let html = '<div class="workout-detect show" id="workoutDetectBanner">';
         html += `<div class="workout-detect-title">${icon} WORKOUT DETECTED</div>`;
         html += `<div class="workout-detect-data">Activity: ${workout.activity.replace(/_/g, ' ').toUpperCase()}</div>`;
         html += `<div class="workout-detect-data">Duration: ${duration} min | Calories: ${calories}</div>`;
-        html += `<div class="workout-detect-data">Avg HR: ${avgHR} bpm | Max HR: ${maxHR} bpm</div>`;
+        
+        // Display Logic
+        const hrDisplay = avgHR > 0 ? `${avgHR} bpm` : 'N/A';
+        html += `<div class="workout-detect-data">Avg HR: ${hrDisplay} | Max HR: ${maxHR > 0 ? maxHR + ' bpm' : 'N/A'}</div>`;
         
         if(zoneBreakdown) {
             html += '<div class="workout-detect-data" style="margin-top: 8px; font-size: 0.65rem;">HR ZONES: ';
@@ -839,9 +854,10 @@ class CenturionCore {
                 }
             }
             html += '</div>';
-        } else {
-            const zone = this.getZoneFromHR(avgHR);
-            html += `<div class="workout-detect-data" style="color: ${zone.color};">Primary Zone: ${zone.name} (${avgHR} bpm avg)</div>`;
+        } else if (avgHR > 0) {
+             // Fallback estimator
+             const zone = this.getZoneFromHR(avgHR);
+             html += `<div class="workout-detect-data" style="color: ${zone.color};">Est. Zone: ${zone.name}</div>`;
         }
         
         html += '<button class="auto-log-btn" onclick="centurion.autoLogWorkout()">✓ AUTO-LOG TO TIMELINE</button>';
@@ -895,7 +911,6 @@ class CenturionCore {
         }
     }
 
-    // --- PARTNER & NOTIFICATION METHODS ---
     notifyPartner(type, data) {
         const partner = this.user === 'jermaine' ? 'sophia' : 'jermaine';
         const notifications = JSON.parse(localStorage.getItem(`notifications_${partner}`)) || [];
@@ -1245,6 +1260,138 @@ class CenturionCore {
         this.setText('statusMsg', "SYNC"); 
         this.wipeDashboard(); 
         this.renderBio(); 
+    }
+
+    calculateDailyScore(date) {
+        const dayData = this.history.find(d => d.date === date) || this.history[this.currentIndex];
+        const checked = this.checked[date] || [];
+        const g = USERS[this.user].goals;
+        
+        let breakdown = { sleep: 0, protocol: 0, nutrition: 0, activity: 0 };
+        
+        const sleepScore = dayData.score || 0;
+        const sleepHours = (dayData.totalSec || 0) / 3600;
+        breakdown.sleep += (sleepScore / 100) * 20;
+        if(sleepHours >= 7) breakdown.sleep += 10;
+        else if(sleepHours > 0) breakdown.sleep += (sleepHours / 7) * 10;
+        
+        const coreTaskIds = ['sunrise', 'breakfast', 'train', 'lunch', 'dinner', 'evening'];
+        const waterLogs = checked.filter(t => t.startsWith('water-')).length;
+        const hitWaterGoal = (waterLogs * 16) >= (g.water || 140);
+        
+        const totalTasks = coreTaskIds.length + 1; 
+        let tasksCompleted = coreTaskIds.filter(id => checked.includes(id)).length;
+        if(hitWaterGoal) tasksCompleted += 1;
+        
+        breakdown.protocol = Math.min(30, (tasksCompleted / totalTasks) * 30);
+        
+        let nutritionScore = 0;
+        let totalMacros = { protein: 0, omega3: 0, cal: 0 };
+        let rainbowColors = new Set();
+        
+        this.PROTOCOL.forEach(task => {
+            if(checked.includes(task.id)) {
+                if(task.macros) {
+                    totalMacros.protein += task.macros.p || 0;
+                    totalMacros.omega3 += task.macros.o || 0;
+                    totalMacros.cal += task.macros.cal || 0;
+                }
+                if(task.colors) task.colors.forEach(c => rainbowColors.add(c));
+            }
+        });
+        
+        nutritionScore += Math.min(1, totalMacros.protein / g.pro) * 8;
+        nutritionScore += Math.min(1, totalMacros.omega3 / g.omega3) * 6;
+        nutritionScore += (rainbowColors.size / 6) * 4;
+        
+        const bmr = parseInt(this.bios.bmr) || 2057;
+        const workoutBurn = this.estimateFromType();
+        const target = bmr + (checked.includes('train') ? workoutBurn : 0);
+        if(Math.abs(totalMacros.cal - target) <= 500) nutritionScore += 2;
+        
+        breakdown.nutrition = Math.min(20, nutritionScore);
+        
+        let activityScore = 0;
+        if(checked.includes('train')) {
+            activityScore += 10;
+            const type = this.getWorkoutTypeForDay();
+            if(sleepScore >= 80 && type !== 'RECOVERY') activityScore += 5;
+            else if(sleepScore < 70 && type === 'RECOVERY') activityScore += 5;
+            else activityScore += 3;
+        }
+        const activeCal = dayData.cal || 0;
+        if(activeCal >= (g.calBurn || 400)) activityScore += 5;
+        
+        breakdown.activity = Math.min(20, activityScore);
+        
+        const total = breakdown.sleep + breakdown.protocol + breakdown.nutrition + breakdown.activity;
+        
+        return {
+            total: total,
+            breakdown: breakdown,
+            grade: this.getDayGradeFromScore(total),
+            details: {
+                sleepHours: sleepHours.toFixed(1),
+                sleepScore: sleepScore,
+                tasksCompleted: `${Math.round(tasksCompleted)}/${totalTasks}`,
+                macros: totalMacros,
+                rainbowColors: rainbowColors.size,
+                activeCal: activeCal
+            }
+        };
+    }
+    
+    getDayGradeFromScore(score) {
+        for(let grade in DAY_GRADE_SCALE) {
+            const scale = DAY_GRADE_SCALE[grade];
+            if(score >= scale.min && score <= scale.max) {
+                return { letter: grade, color: scale.color, status: scale.status };
+            }
+        }
+        return { letter: 'F', color: '#990000', status: 'FAIL' };
+    }
+    
+    getWorkoutTypeForDay() {
+        if(this.currentWorkoutIdx >= WORKOUT_DB[this.user].length) return 'RECOVERY';
+        const workout = WORKOUT_DB[this.user][this.currentWorkoutIdx];
+        return workout?.type || 'UNKNOWN';
+    }
+    
+    estimateFromType() {
+        // Safe access to workout DB
+        const userWorkouts = WORKOUT_DB[this.user] || [];
+        if (this.currentWorkoutIdx >= userWorkouts.length) return 400; // Default fallback
+        
+        const workout = userWorkouts[this.currentWorkoutIdx];
+        return workout?.stats?.cal || 400;
+    }
+
+    showDayScoreBreakdown() {
+        if(!this.currentDayScore) return;
+        const score = this.currentDayScore;
+        
+        this.setText('dayScoreTotalNum', score.total.toFixed(0));
+        this.setText('dayScoreTotalGrade', score.grade.letter);
+        this.setText('dayScoreTotalStatus', score.grade.status);
+        document.getElementById('dayScoreTotalGrade').style.color = score.grade.color;
+        
+        let html = '';
+        html += this.renderScoreCategory('Sleep', score.breakdown.sleep, 30, `${score.details.sleepHours}h`, '#00f0ff');
+        html += this.renderScoreCategory('Protocol', score.breakdown.protocol, 30, `${score.details.tasksCompleted} tasks`, '#ccff00');
+        html += this.renderScoreCategory('Nutrition', score.breakdown.nutrition, 20, `${Math.round(score.details.macros.protein)}g pro`, '#bf5af2');
+        html += this.renderScoreCategory('Activity', score.breakdown.activity, 20, `${score.details.activeCal} cal`, '#ff453a');
+        
+        document.getElementById('dayScoreBreakdownContent').innerHTML = html;
+        document.getElementById('dayScoreModal').classList.add('active');
+    }
+    
+    renderScoreCategory(name, pts, max, det, col) {
+        const pct = (pts/max)*100;
+        return `<div class="score-category" style="border-left-color:${col}"><div class="score-category-header"><div class="score-category-name">${name}</div><div class="score-category-points" style="color:${col}">${pts.toFixed(0)}/${max}</div></div><div class="score-category-bar"><div class="score-category-fill" style="width:${pct}%; background:${col}"></div></div><div class="score-category-details">${det}</div></div>`;
+    }
+    
+    closeDayScoreBreakdown() {
+        document.getElementById('dayScoreModal').classList.remove('active');
     }
     
     // --- RESTORED RENDER METHODS ---
