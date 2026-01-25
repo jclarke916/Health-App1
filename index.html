@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Centurion v17.27 RESTORATION</title>
+<title>Centurion v17.28 LOCKED-LOG</title>
 <style>
 /* --- CORE STYLES --- */
 :root { --bg:#050505; --panel:#121212; --border:#222; --acid:#ccff00; --cyan:#00f0ff; --purple:#bf5af2; --alert:#ff453a; --text:#fff; }
@@ -127,7 +127,19 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system, BlinkMacS
 .abs-alert{background:rgba(255,69,58,0.1);border:1px solid var(--alert);padding:15px;border-radius:10px;margin-bottom:15px;font-size:0.8rem;color:#fff;line-height:1.4; display:flex; align-items:center; gap:12px;}
 .abs-boost{background:rgba(48,209,88,0.15);border:1px solid #30d158;padding:15px;border-radius:10px;margin-bottom:15px;font-size:0.8rem;color:#fff;line-height:1.4; display:flex; align-items:center; gap:12px;}
 
-.select-btn { width:100%; background:var(--acid); color:#000; padding:18px; border:none; border-radius:12px; font-weight:900; font-size:1rem; cursor:pointer; margin-top:10px; text-transform:uppercase; box-shadow:0 0 20px rgba(204,255,0,0.3); transition:transform 0.1s; position:fixed; bottom:20px; left:20px; width:calc(100% - 40px); z-index:20;}
+/* PINNED FOOTER BAR */
+.fixed-bottom-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 20px;
+    background: linear-gradient(to top, #000 80%, transparent 100%);
+    z-index: 100;
+    display: flex;
+    justify-content: center;
+}
+.select-btn { width:100%; background:var(--acid); color:#000; padding:18px; border:none; border-radius:12px; font-weight:900; font-size:1.1rem; cursor:pointer; text-transform:uppercase; box-shadow:0 0 20px rgba(204,255,0,0.3); letter-spacing:1px;}
 .select-btn:active { transform:scale(0.98); }
 
 /* MENU LIST - REDESIGNED WITH RIGHT ALIGNMENT */
@@ -346,9 +358,9 @@ const WORKOUT_TYPES = { strength_training: 'Strength', cycling: 'Cycling', runni
 // --- APP CLASS ---
 class CenturionApp {
     constructor() {
-        console.log('🚀 Init v17.27 RESTORATION');
+        console.log('🚀 Init v17.28 LOCKED-LOG');
         // FORCE RESET FOR NEW DB
-        const CURRENT_VER = '17.27.0';
+        const CURRENT_VER = '17.28.0';
         const savedVer = localStorage.getItem('centurion_version');
         if(savedVer !== CURRENT_VER) { localStorage.clear(); localStorage.setItem('centurion_version', CURRENT_VER); }
 
@@ -525,13 +537,17 @@ class CenturionApp {
         this.saveUserData();
         
         // Select it immediately
-        const newIndex = (MEAL_DATABASE[mealSlot] || []).length + this.customMeals[mealSlot].length - 1;
-        this.selectMeal(mealSlot, newIndex); // Note: Logic handles offset in render
+        // Calculate correct index offset for custom meals
+        const standardCount = MEAL_DATABASE[mealSlot] ? MEAL_DATABASE[mealSlot].length : 0;
+        const customCount = this.customMeals[mealSlot].length;
+        const newIndex = standardCount + customCount - 1;
+        
+        this.selectMeal(mealSlot, newIndex);
     }
 
     openMealPicker(mealSlot) {
         const modalBody = document.getElementById('modalBody');
-        modalBody.innerHTML = ''; // CLEAR PREVIOUS CONTENT (Fixes Duplication)
+        modalBody.innerHTML = ''; // CLEAR PREVIOUS CONTENT
         
         const slotName = mealSlot.charAt(0).toUpperCase() + mealSlot.slice(1);
         this.setText('modalTitle', slotName + ' MENU');
@@ -558,6 +574,7 @@ class CenturionApp {
             if(ingString.includes('salmon') && (ingString.includes('avocado') || ingString.includes('oil'))) badges += `<span class="badge boost">Ω-3</span>`;
             if(ingString.includes('bison') && ingString.includes('peppers')) badges += `<span class="badge boost">IRON+</span>`;
 
+            // CORRECT CLICK HANDLER: Always pass the absolute index in the combined array
             html += `<div class="menu-item" onclick="${meal.isCustom ? `app.selectMeal('${mealSlot}', ${index})` : `app.showRecipe('${mealSlot}', ${index})`}">
                 <div class="menu-left">
                     <div class="menu-name">${title}</div>
@@ -612,8 +629,10 @@ class CenturionApp {
 
             <div class="section-label">PREPARATION</div>
             <div class="step-list">${stepsHTML}</div>
-
-            <button class="select-btn" onclick="app.selectMeal('${mealSlot}', ${index})">LOG THIS MEAL</button>
+            
+            <div class="fixed-bottom-bar">
+                <button class="select-btn" onclick="app.selectMeal('${mealSlot}', ${index})">LOG THIS MEAL</button>
+            </div>
         `;
         
         this.setText('modalTitle', 'RECIPE DETAILS');
