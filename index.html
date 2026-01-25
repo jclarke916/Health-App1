@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v16.19 NUCLEAR</title>
+    <title>The Centurion | v16.20 FINAL</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -215,7 +215,7 @@
 <body>
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v16.19 NUCLEAR</div>
+            <div class="app-name">CENTURION v16.20 FINAL</div>
             <div style="display:flex; gap:10px;">
                 <button onclick="centurion.openBio()" class="bio-btn">BIO</button>
                 <div class="user-switch">
@@ -251,7 +251,7 @@
             </div>
             <div class="tactical-box">
                 <div class="tac-label" id="userLabel">USER: --</div>
-                <div class="tac-cmd" id="statusMsg">READY</div>
+                <div class="tac-cmd" id="statusMsg">INITIALIZING...</div>
                 <div class="tac-meta" id="bioDisplay">--</div>
             </div>
         </div>
@@ -514,33 +514,20 @@ class CenturionCore {
         this.workouts = [];
         this.currentDateStr = new Date().toLocaleDateString('en-CA'); 
         
-        // --- SAFE INITIALIZATION: Dummy Data ---
-        // We set dummy data IMMEDIATELY so render() never crashes on empty history
-        this.history = [{
-            date: this.currentDateStr,
-            score: 0,
-            totalSec: 0,
-            deepSec: 0,
-            remSec: 0,
-            rhr: '-',
-            cal: 0,
-            high: 0,
-            med: 0,
-            workouts: [] // MUST BE AN EMPTY ARRAY, NOT UNDEFINED
-        }];
-
+        // INTELLIGENCE ENGINE FLAGS
         this.restrictWorkoutIntensity = false;
         this.proteinWindowActive = false;
         this.sleepDebtCritical = false;
         this.overtrainingDetected = false;
 
+        // Initialization
         this.loadLocalData();
         this.updateUI();
         
-        // Initial render to show UI immediately
+        // Immediate render with empty/loading state
+        this.history = [{ date: this.currentDateStr, score: 0, totalSec: 0 }];
         this.render(); 
         
-        // Then start async fetch
         this.init();
     }
 
@@ -568,14 +555,12 @@ class CenturionCore {
         this.wipeDashboard();
         document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
         document.getElementById(`btn-${u}`).classList.add('active');
-        
+        this.history = []; 
         this.currentIndex = 0; 
         this.currentDateStr = new Date().toLocaleDateString('en-CA');
         this.loadLocalData(); 
         this.renderBio();
-        
-        // Reset to dummy data immediately on switch
-        this.history = [{ date: this.currentDateStr, score: 0, totalSec: 0, workouts: [] }];
+        this.history = [{ date: this.currentDateStr, score: 0, totalSec: 0 }];
         this.render();
         this.fetchData();
     }
@@ -624,10 +609,11 @@ class CenturionCore {
         const ts = Date.now();
         
         try {
+            // FAILSAFE: 8-second timeout on fetch
             const fetchWithTimeout = (url) => {
                 return Promise.race([
                     fetch(url, { headers: { 'Authorization': `Bearer ${TOKENS[this.user]}` }, cache: 'no-store' }),
-                    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 3000))
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 8000))
                 ]);
             };
 
@@ -763,8 +749,8 @@ class CenturionCore {
             this.renderTrendAnalysis();
             this.renderCouplesSynergy();
             
-            // EXECUTE INTELLIGENCE ENGINE (Wrapped safely)
-            try { this.runIntelligenceEngine(); } catch(err) { console.error("Intelligence Engine Failed", err); }
+            // RUN INTELLIGENCE
+            this.runIntelligenceEngine();
             
             this.renderComplex(d.date); 
             this.renderBio();
@@ -773,8 +759,7 @@ class CenturionCore {
                orb.style.cursor = 'default';
             });
         } catch(e) {
-            console.error("Render CRITICAL FAIL:", e);
-            alert("Render Crashed: " + e.message);
+            console.error("Render error:", e);
         }
     }
 
@@ -1159,11 +1144,7 @@ class CenturionCore {
     }
     
     estimateFromType() {
-        // Safe access to workout DB
-        const userWorkouts = WORKOUT_DB[this.user] || [];
-        if (this.currentWorkoutIdx >= userWorkouts.length) return 400; // Default fallback
-        
-        const workout = userWorkouts[this.currentWorkoutIdx];
+        const workout = WORKOUT_DB[this.user][this.currentWorkoutIdx];
         return workout?.stats?.cal || 400;
     }
 
@@ -1193,6 +1174,163 @@ class CenturionCore {
     
     closeDayScoreBreakdown() {
         document.getElementById('dayScoreModal').classList.remove('active');
+    }
+    
+    // --- RESTORED RENDER METHODS ---
+
+    showIntelligentAlert(d) {
+        const banner = document.getElementById('alertBanner');
+        const baselineRHR = 55; 
+
+        if(d.score < 60 && d.score > 0) {
+            banner.className = 'alert-banner alert-recovery show';
+            banner.innerHTML = '⚠️ FORCED RECOVERY - SLEEP CRITICAL';
+        } else if(d.score >= 60 && d.score < 75) {
+            banner.className = 'alert-banner alert-warning show';
+            banner.innerHTML = '⚠️ CAUTION - REDUCE LOAD';
+        } else if(d.rhr > baselineRHR + 5) {
+            banner.className = 'alert-banner alert-warning show';
+            banner.innerHTML = '⚠️ ELEVATED HEART RATE DETECTED';
+        } else if(d.score >= 85) {
+            banner.className = 'alert-banner alert-success show';
+            banner.innerHTML = '✅ OPTIMAL STATE - GO FOR PR';
+        } else {
+            banner.className = 'alert-banner'; 
+        }
+    }
+
+    renderTrendAnalysis() {
+        const last7 = this.history.slice(0, 7);
+        if(last7.length < 3) return; 
+
+        const avgSleep = last7.reduce((sum, day) => sum + day.totalSec, 0) / last7.length;
+        const avgScore = last7.reduce((sum, day) => sum + day.score, 0) / last7.length;
+        const avgRHR = last7.reduce((sum, day) => sum + (day.rhr !== '-' ? parseInt(day.rhr) : 0), 0) / last7.length;
+
+        let html = '<div class="trend-card">';
+        html += '<div class="trend-title">7-DAY ROLLING AVERAGE</div>';
+        html += '<div class="trend-grid">';
+        html += `<div class="trend-stat"><span class="trend-label">Avg Sleep</span><div class="trend-val">${(avgSleep/3600).toFixed(1)}h</div></div>`;
+        html += `<div class="trend-stat"><span class="trend-label">Avg Score</span><div class="trend-val">${Math.round(avgScore)}</div></div>`;
+        html += `<div class="trend-stat"><span class="trend-label">Avg RHR</span><div class="trend-val">${Math.round(avgRHR)}</div></div>`;
+        html += '</div></div>';
+
+        document.getElementById('trendAnalysis').innerHTML = html;
+    }
+
+    renderCouplesSynergy() {
+        const sync = this.getCouplesSyncData();
+        const jColor = sync.jermaine.complete >= 80 ? 'var(--acid)' : '#fff';
+        const sColor = sync.sophia.complete >= 80 ? 'var(--acid)' : '#fff';
+        const syncColor = sync.inSync ? 'var(--cyan)' : '#666';
+        const jStatus = sync.jermaine.trained ? 'COMPLETE' : 'PENDING';
+        const sStatus = sync.sophia.trained ? 'COMPLETE' : 'PENDING';
+        const jClass = sync.jermaine.trained ? 'syn-success' : 'syn-pending';
+        const sClass = sync.sophia.trained ? 'syn-success' : 'syn-pending';
+
+        let html = `
+        <style>.syn-success { color: var(--acid); } .syn-pending { color: #ff9f0a; animation: pulse-text 2s infinite; } @keyframes pulse-text { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }</style>
+        <div class="section-header"><span class="section-label">COUPLES SYNERGY</span></div>
+        <div class="synergy-card"><div class="syn-grid">
+        <div class="syn-col"><div class="syn-val" style="color: ${jColor}">${sync.jermaine.complete}%</div><div class="syn-label">JERMAINE</div><div class="syn-sub ${jClass}">${jStatus}</div></div>
+        <div class="syn-col" style="border-left: 1px solid #222; border-right: 1px solid #222;"><div class="syn-val" style="color: ${syncColor}">${sync.syncScore}%</div><div class="syn-label">ALIGNMENT</div><div class="syn-sub" style="color:${sync.inSync ? 'var(--cyan)' : '#666'}">${sync.inSync ? 'LINKED' : 'UNLINKED'}</div></div>
+        <div class="syn-col"><div class="syn-val" style="color: ${sColor}">${sync.sophia.complete}%</div><div class="syn-label">SOPHIA</div><div class="syn-sub ${sClass}">${sStatus}</div></div>
+        </div></div>`;
+        
+        document.getElementById('synergyDashboard').innerHTML = html;
+        localStorage.setItem('lastPartnerSync', new Date().toISOString());
+    }
+    
+    renderComplex(dk) {
+        const done = this.checked[dk] || [];
+        const g = USERS[this.user].goals;
+        let tot = {p:0,o:0,poly:0,f:0,cal:0,burn:0};
+        let cols = new Set();
+        let html = '';
+        
+        const sleepScore = this.history[this.currentIndex].score;
+        this.PROTOCOL = JSON.parse(JSON.stringify(BASE_PROTOCOL)); 
+        
+        if(sleepScore > 0 && sleepScore < 60) {
+            const trainTask = this.PROTOCOL.find(t => t.id === 'train');
+            if(trainTask) {
+                trainTask.title = "FORCED RECOVERY";
+                trainTask.desc = "⚠️ CRITICAL SLEEP DEBT.";
+                trainTask.colors = ['green'];
+                trainTask.calBurn = 100;
+                trainTask.why = "Sleep score < 60. Training now increases injury risk by 45%.";
+            }
+        }
+
+        this.PROTOCOL.forEach(t => {
+            const chk = done.includes(t.id);
+            if(chk) { 
+                tot.p += t.macros.p||0; 
+                tot.o += t.macros.o||0; 
+                tot.poly += t.macros.poly||0; 
+                tot.f += t.macros.f||0;
+                tot.cal += t.macros.cal||0;
+                tot.burn += t.calBurn||0;
+                t.colors?.forEach(c => cols.add(c)); 
+            }
+            
+            const clickHandler = t.clickable ? `onclick="event.stopPropagation(); centurion.handleClick('${t.id}');"` : '';
+            const recoveryClass = (t.id === 'train' && sleepScore > 0 && sleepScore < 60) ? 'forced-recovery' : '';
+            
+            html += `<div class="time-slot">
+                <div class="ts-time">${t.time}</div>
+                <div class="ts-card ${chk?'checked':''} ${recoveryClass}" ${clickHandler}>
+                    <div class="ts-title ${t.clickable?'meal-clickable':''}">${t.title}</div>
+                    <div class="ts-desc">${t.desc}</div>
+                    ${t.why?`<div class="ts-why">WHY: ${t.why}</div>`:''}
+                    <div class="check-btn" onclick="event.stopPropagation(); centurion.toggleTask('${t.id}');">
+                        <div class="check-circle">${chk?'✓':''}</div>
+                    </div>
+                </div>
+            </div>`;
+        });
+        
+        document.getElementById('timelineList').innerHTML = html;
+        
+        const orb = (l,v,go,co) => `<div class="orb-card"><div class="orb-container"><svg class="orb-svg"><circle class="orb-bg" cx="25" cy="25" r="20"></circle>
+            <circle class="orb-fg" cx="25" cy="25" r="20" style="stroke:${co}; stroke-dashoffset:${145-(Math.min(v/go,1)*145)}"></circle></svg>
+            <div class="orb-val-box"><div class="orb-val">${v}</div></div></div><div class="orb-label">${l}</div></div>`;
+        
+        document.getElementById('macroList').innerHTML = 
+            orb('PROTEIN',tot.p,g.pro,'#fff')+
+            orb('OMEGA-3',tot.o,g.omega3,'#00d4ff')+
+            orb('POLY',tot.poly,g.poly,'#bf5af2')+
+            orb('FIBER',tot.f,g.fib,'#30d158');
+        
+        const currentDay = this.history[this.currentIndex];
+        const activeBurn = currentDay?.cal || 0;
+        const bmr = parseInt(this.bios.bmr) || 2057;
+        const totalBurn = bmr + activeBurn;
+        tot.net = tot.cal - totalBurn;
+        
+        const netGoal = g.cal - bmr - (g.calBurn || 400);
+        const totalBurnGoal = bmr + (g.calBurn || 400);
+        
+        document.getElementById('calorieGrid').innerHTML = 
+            orb('INTAKE',tot.cal,g.cal,'#FFD60A') +
+            orb('TOTAL BURN',totalBurn,totalBurnGoal,'#ff453a') +
+            orb('NET',tot.net,netGoal,'#30d158');
+        
+        this.setText('rainbowScore', Math.round(cols.size/6*100)+"%");
+        const cb = {red:'#ff453a',orange:'#ff9f0a',yellow:'#ffd60a',green:'#30d158',purple:'#bf5af2',white:'#fff'};
+        document.getElementById('rainbowTrack').innerHTML = ['red','orange','yellow','green','purple','white'].map(c => 
+            `<div class="rainbow-seg" style="background:${cb[c]}; width:${cols.has(c)?'16.66%':'0%'}"></div>`).join('');
+
+        const missing = ['red','orange','yellow','green','purple','white'].filter(c => !cols.has(c));
+        if(missing.length > 0 && cols.size > 0) {
+            const nextColor = missing[0];
+            const suggestion = RAINBOW_EXAMPLES[nextColor];
+            document.getElementById('rainbowSuggestion').innerText = `Tip: Eat ${suggestion} to hit ${nextColor.toUpperCase()}`;
+        } else if(cols.size === 6) {
+            document.getElementById('rainbowSuggestion').innerText = "🌈 Full Spectrum Achieved!";
+        } else {
+            document.getElementById('rainbowSuggestion').innerText = "";
+        }
     }
 }
 
