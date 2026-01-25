@@ -309,3 +309,132 @@ class CenturionApp {
         this.fetchOuraData();
     }
 }
+// === VISUAL DEBUG CONSOLE ===
+class DebugConsole {
+    constructor() {
+        this.logs = [];
+        this.maxLogs = 50;
+        this.createUI();
+        this.hijackConsole();
+    }
+    
+    createUI() {
+        const debugDiv = document.createElement('div');
+        debugDiv.id = 'debugConsole';
+        debugDiv.style.cssText = `
+            position: fixed;
+            bottom: 60px;
+            left: 0;
+            right: 0;
+            height: 200px;
+            background: rgba(0,0,0,0.95);
+            border-top: 2px solid #ccff00;
+            z-index: 9999;
+            display: none;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            padding: 10px;
+            color: #0f0;
+        `;
+        document.body.appendChild(debugDiv);
+        
+        // Toggle button
+        const toggleBtn = document.createElement('button');
+        toggleBtn.innerText = '🐛 DEBUG';
+        toggleBtn.style.cssText = `
+            position: fixed;
+            bottom: 70px;
+            right: 10px;
+            z-index: 10000;
+            background: #ccff00;
+            color: #000;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-weight: 900;
+            font-size: 0.7rem;
+            cursor: pointer;
+        `;
+        toggleBtn.onclick = () => {
+            const console = document.getElementById('debugConsole');
+            console.style.display = console.style.display === 'none' ? 'block' : 'none';
+        };
+        document.body.appendChild(toggleBtn);
+        
+        // Clear button
+        const clearBtn = document.createElement('button');
+        clearBtn.innerText = '🗑️';
+        clearBtn.style.cssText = `
+            position: fixed;
+            bottom: 70px;
+            right: 90px;
+            z-index: 10000;
+            background: #ff453a;
+            color: #fff;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-weight: 900;
+            font-size: 0.7rem;
+            cursor: pointer;
+        `;
+        clearBtn.onclick = () => {
+            this.logs = [];
+            this.render();
+        };
+        document.body.appendChild(clearBtn);
+    }
+    
+    hijackConsole() {
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        console.log = (...args) => {
+            originalLog.apply(console, args);
+            this.addLog('LOG', args.join(' '), '#0f0');
+        };
+        
+        console.error = (...args) => {
+            originalError.apply(console, args);
+            this.addLog('ERROR', args.join(' '), '#ff453a');
+        };
+        
+        console.warn = (...args) => {
+            originalWarn.apply(console, args);
+            this.addLog('WARN', args.join(' '), '#FFD60A');
+        };
+    }
+    
+    addLog(type, message, color) {
+        const timestamp = new Date().toLocaleTimeString();
+        this.logs.push({ timestamp, type, message, color });
+        
+        // Keep only last N logs
+        if (this.logs.length > this.maxLogs) {
+            this.logs.shift();
+        }
+        
+        this.render();
+    }
+    
+    render() {
+        const debugDiv = document.getElementById('debugConsole');
+        if (!debugDiv) return;
+        
+        debugDiv.innerHTML = this.logs.map(log => 
+            `<div style="color: ${log.color}; margin-bottom: 4px;">
+                <span style="color: #666;">[${log.timestamp}]</span> 
+                <span style="color: #00f0ff;">${log.type}</span>: ${log.message}
+            </div>`
+        ).join('');
+        
+        // Auto-scroll to bottom
+        debugDiv.scrollTop = debugDiv.scrollHeight;
+    }
+}
+
+// Initialize debug console
+const debugConsole = new DebugConsole();
+
