@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Centurion v17.28 LOCKED-LOG</title>
+<title>Centurion v17.29 PRECISION</title>
 <style>
 /* --- CORE STYLES --- */
 :root { --bg:#050505; --panel:#121212; --border:#222; --acid:#ccff00; --cyan:#00f0ff; --purple:#bf5af2; --alert:#ff453a; --text:#fff; }
@@ -45,21 +45,40 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system, BlinkMacS
 .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:0 15px;margin-bottom:20px}
 .grid-4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;padding:0 15px;margin-bottom:20px}
 
-/* ORBS - HIGH CONTRAST NEON */
+/* ORBS - FIXED CENTERING */
 .orb-card{background:linear-gradient(145deg, #111 0%, #080808 100%); border:1px solid #222; border-radius:14px; padding:15px 5px; display:flex; flex-direction:column; align-items:center; transition:transform 0.1s;}
 .orb-card:active{transform:scale(0.96);}
-.orb-container{width:55px;height:55px;position:relative;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
-.orb-svg{transform:rotate(-90deg);width:100%;height:100%}
+.orb-container{width:55px;height:55px;position:relative;display:flex;align-items:center;justify-content:center;margin-bottom:8px;}
+
+/* SVG BACKGROUND */
+.orb-svg{transform:rotate(-90deg);width:100%;height:100%; position: absolute; top:0; left:0; z-index: 1;}
 .orb-bg{fill:none;stroke:#1a1a1a;stroke-width:5;}
 .orb-fg{fill:none;stroke-width:5;stroke-dasharray:145;stroke-dashoffset:145;transition:stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1); stroke-linecap:round; filter:drop-shadow(0 0 4px currentColor);}
 
-/* LEGIBILITY FIX */
-.orb-val-box{position:absolute; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center;}
-.orb-val{font-family:'Courier New', monospace; font-size:0.75rem; font-weight:900; color:#fff; text-shadow:0 0 4px #000, 0 0 4px #000; letter-spacing:-0.5px; z-index:2;}
+/* TEXT CENTERING FIX */
+.orb-val-box{
+    position:absolute; 
+    inset: 0; /* Forces full coverage of parent */
+    display:flex; 
+    align-items:center; 
+    justify-content:center; 
+    z-index: 10;
+}
+.orb-val{
+    font-family:'Courier New', monospace; 
+    font-size:0.7rem; 
+    font-weight:900; 
+    color:#fff; 
+    text-shadow:0 0 5px #000, 0 0 3px #000; /* Deep shadow for contrast */
+    letter-spacing:-0.5px; 
+    margin: 0; 
+    padding: 0; 
+    line-height: 1; /* Prevents vertical drift */
+}
 .orb-label{font-size:0.45rem;font-weight:800;color:#666;text-transform:uppercase;letter-spacing:0.5px}
 
 /* HEARTS */
-.heart-svg { width: 100%; height: 100%; overflow: visible; }
+.heart-svg { width: 100%; height: 100%; overflow: visible; z-index: 1;}
 .heart-bg { fill: none; stroke: #1a1a1a; stroke-width: 2.5; }
 .heart-fg { fill: none; stroke-width: 2.5; stroke-dasharray: 100; stroke-dashoffset: 100; transition: stroke-dashoffset 1s ease; filter:drop-shadow(0 0 3px currentColor); }
 .beating { animation: heartbeat 1.5s infinite; transform-origin: center; }
@@ -358,11 +377,15 @@ const WORKOUT_TYPES = { strength_training: 'Strength', cycling: 'Cycling', runni
 // --- APP CLASS ---
 class CenturionApp {
     constructor() {
-        console.log('🚀 Init v17.28 LOCKED-LOG');
-        // FORCE RESET FOR NEW DB
-        const CURRENT_VER = '17.28.0';
+        console.log('🚀 Init v17.29 PRECISION-ALIGN');
+        
+        // SELF-HEALING: Force reset to clear old cache/data
+        const CURRENT_VER = '17.29.0';
         const savedVer = localStorage.getItem('centurion_version');
-        if(savedVer !== CURRENT_VER) { localStorage.clear(); localStorage.setItem('centurion_version', CURRENT_VER); }
+        if(savedVer !== CURRENT_VER) {
+             localStorage.clear();
+             localStorage.setItem('centurion_version', CURRENT_VER);
+        }
 
         this.user = localStorage.getItem('centurion_user') || 'jermaine';
         this.history = [];
@@ -537,7 +560,6 @@ class CenturionApp {
         this.saveUserData();
         
         // Select it immediately
-        // Calculate correct index offset for custom meals
         const standardCount = MEAL_DATABASE[mealSlot] ? MEAL_DATABASE[mealSlot].length : 0;
         const customCount = this.customMeals[mealSlot].length;
         const newIndex = standardCount + customCount - 1;
@@ -574,7 +596,6 @@ class CenturionApp {
             if(ingString.includes('salmon') && (ingString.includes('avocado') || ingString.includes('oil'))) badges += `<span class="badge boost">Ω-3</span>`;
             if(ingString.includes('bison') && ingString.includes('peppers')) badges += `<span class="badge boost">IRON+</span>`;
 
-            // CORRECT CLICK HANDLER: Always pass the absolute index in the combined array
             html += `<div class="menu-item" onclick="${meal.isCustom ? `app.selectMeal('${mealSlot}', ${index})` : `app.showRecipe('${mealSlot}', ${index})`}">
                 <div class="menu-left">
                     <div class="menu-name">${title}</div>
@@ -605,6 +626,8 @@ class CenturionApp {
         const ingString = (meal.ingredients||[]).join(' ').toLowerCase();
         if((ingString.includes('bison') || ingString.includes('steak')) && (ingString.includes('peppers') || ingString.includes('citrus'))) synergyHTML += `<div class="abs-boost">🚀 <strong>IRON SUPER-CHARGE:</strong> Vitamin C boosts Heme Iron absorption.</div>`;
         if(ingString.includes('salmon') && ingString.includes('yogurt')) synergyHTML += `<div class="abs-alert">⚠️ <strong>BLOCKER ALERT:</strong> Calcium in Yogurt blocks Iron absorption.</div>`;
+        if(ingString.includes('salmon') && (ingString.includes('avocado') || ingString.includes('oil'))) synergyHTML += `<div class="abs-boost">🥑 <strong>FAT SOLUBLE UNLOCK:</strong> Healthy fats increase Omega-3 bioavailability.</div>`;
+        if(ingString.includes('turmeric') && !ingString.includes('pepper')) synergyHTML += `<div class="abs-alert">⚠️ Add Black Pepper to activate Turmeric!</div>`;
 
         let html = `
             <div class="recipe-hero">
@@ -624,12 +647,17 @@ class CenturionApp {
 
             ${synergyHTML}
 
+            <div class="synergy-box">
+                <div class="syn-title">LONGEVITY SCIENCE</div>
+                <div class="syn-text">${meal.why || "High nutrient density meal selected for inflammation control."}</div>
+            </div>
+
             <div class="section-label">INGREDIENTS</div>
             <div class="ing-list">${ingredientsHTML}</div>
 
             <div class="section-label">PREPARATION</div>
             <div class="step-list">${stepsHTML}</div>
-            
+
             <div class="fixed-bottom-bar">
                 <button class="select-btn" onclick="app.selectMeal('${mealSlot}', ${index})">LOG THIS MEAL</button>
             </div>
@@ -756,6 +784,7 @@ class CenturionApp {
             const bmr = parseInt(this.bios.bmr) || 2057;
             const totalBurn = bmr + macros.burn;
             
+            // COLOR FIX: Pass active color to update function
             const updateOrb = (id, val, goal, activeColor) => {
                 const el = document.getElementById(id);
                 if(el) {
