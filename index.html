@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v16.17 INTELLIGENCE-PATCHED</title>
+    <title>The Centurion | v16.18 STABLE</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -25,7 +25,6 @@
         .date-display { min-width: 120px; text-align: center; letter-spacing: 1px; color: var(--acid); display: flex; flex-direction: column; align-items: center; line-height: 1.2; }
         .data-source { font-size: 0.45rem; color: #666; font-weight: 700; }
         
-        /* HERO SECTION */
         .hero-section { padding: 20px 16px; display: flex; align-items: center; justify-content: space-between; }
         .dual-score-container { display: flex; gap: 15px; align-items: center; }
         .score-box { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 50%; border: 3px solid var(--border); cursor: pointer; transition: transform 0.1s; }
@@ -216,7 +215,7 @@
 <body>
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v16.17 INTELLIGENCE-PATCHED</div>
+            <div class="app-name">CENTURION v16.18 STABLE</div>
             <div style="display:flex; gap:10px;">
                 <button onclick="centurion.openBio()" class="bio-btn">BIO</button>
                 <div class="user-switch">
@@ -704,8 +703,400 @@ class CenturionCore {
         }
     }
 
-    // ========== INTELLIGENCE ENGINE ==========
+    render() {
+        if(!this.history.length) return;
 
+        const d = this.history[this.currentIndex];
+        const h = Math.floor(d.totalSec/3600);
+        const m = Math.round((d.totalSec%3600)/60);
+        
+        const today = new Date().toISOString().split('T')[0];
+        let dateLabel = d.date;
+        if (d.date !== today) dateLabel = `${d.date}`;
+        
+        this.setText('dateLabel', dateLabel); 
+        this.setText('sleepVal', `${h}h ${m}m`);
+        this.setText('deepVal', Math.round((d.deepSec||0)/60)+"m"); 
+        this.setText('remVal', Math.round((d.remSec||0)/60)+"m");
+        this.setText('rhrVal', d.rhr); 
+        
+        const g = USERS[this.user].goals;
+        this.setText('z2Val', Math.round(d.med || 0)); 
+        this.setText('z5Val', Math.round(d.high || 0)); 
+        this.setText('calVal', d.cal || 0);
+        
+        const uh = (id,val,goal) => { 
+            const e = document.getElementById(id); 
+            if(e) e.style.strokeDashoffset = 100-(Math.min(val/goal,1)*100); 
+        };
+        uh('z2Heart', d.med || 0, g.z2); 
+        uh('z5Heart', d.high || 0, g.z5); 
+        uh('calHeart', d.cal || 0, g.calBurn||400);
+        
+        const c = d.score >= 80 ? '#ccff00' : d.score >= 60 ? '#FFD60A' : '#ff453a';
+        document.querySelector('.tactical-box').style.borderLeftColor = c;
+        
+        const u = USERS[this.user];
+        const s = d.score >= 85 ? `PEAK - ${u.condition} MANAGED` : d.score < 60 ? `RECOVERY - ${u.condition} RISK` : `${u.condition} PROTOCOL`;
+        this.setText('statusMsg', s); 
+        
+        this.renderGrade(d.score, h);
+        
+        document.getElementById('sleepOrb').style.strokeDashoffset = 145-(Math.min(d.totalSec/3600,9)/9)*145;
+        document.getElementById('deepOrb').style.strokeDashoffset = 145-(Math.min((d.deepSec||0)/3600,2)/2)*145;
+        document.getElementById('remOrb').style.strokeDashoffset = 145-(Math.min((d.remSec||0)/3600,2)/2)*145;
+        
+        this.showIntelligentAlert(d);
+        this.renderTrendAnalysis();
+        this.renderCouplesSynergy();
+        
+        this.runIntelligenceEngine();
+        
+        this.renderComplex(d.date); 
+        this.renderBio();
+        
+        document.querySelectorAll('.orb-card').forEach(orb => {
+           orb.style.cursor = 'default';
+        });
+    }
+
+    renderEmpty() { 
+        this.setText('dateLabel', "NO DATA"); 
+        this.setText('statusMsg', "SYNC"); 
+        this.wipeDashboard(); 
+        this.renderBio(); 
+    }
+
+    calculateDailyScore(date) {
+        const dayData = this.history.find(d => d.date === date) || this.history[this.currentIndex];
+        const checked = this.checked[date] || [];
+        const g = USERS[this.user].goals;
+        
+        let breakdown = { sleep: 0, protocol: 0, nutrition: 0, activity: 0 };
+        
+        // 1. SLEEP (30pts)
+        const sleepScore = dayData.score || 0;
+        const sleepHours = (dayData.totalSec || 0) / 3600;
+        breakdown.sleep += (sleepScore / 100) * 20;
+        if(sleepHours >= 7) breakdown.sleep += 10;
+        else if(sleepHours > 0) breakdown.sleep += (sleepHours / 7) * 10;
+        
+        // 2. PROTOCOL (30pts)
+        const coreTaskIds = ['sunrise', 'breakfast', 'train', 'lunch', 'dinner', 'evening'];
+        const waterLogs = checked.filter(t => t.startsWith('water-')).length;
+        const hitWaterGoal = (waterLogs * 16) >= (g.water || 140);
+        
+        const totalTasks = coreTaskIds.length + 1; 
+        let tasksCompleted = coreTaskIds.filter(id => checked.includes(id)).length;
+        if(hitWaterGoal) tasksCompleted += 1;
+        
+        breakdown.protocol = Math.min(30, (tasksCompleted / totalTasks) * 30);
+        
+        // 3. NUTRITION (20pts)
+        let nutritionScore = 0;
+        let totalMacros = { protein: 0, omega3: 0, cal: 0 };
+        let rainbowColors = new Set();
+        
+        this.PROTOCOL.forEach(task => {
+            if(checked.includes(task.id)) {
+                if(task.macros) {
+                    totalMacros.protein += task.macros.p || 0;
+                    totalMacros.omega3 += task.macros.o || 0;
+                    totalMacros.cal += task.macros.cal || 0;
+                }
+                if(task.colors) task.colors.forEach(c => rainbowColors.add(c));
+            }
+        });
+        
+        nutritionScore += Math.min(1, totalMacros.protein / g.pro) * 8;
+        nutritionScore += Math.min(1, totalMacros.omega3 / g.omega3) * 6;
+        nutritionScore += (rainbowColors.size / 6) * 4;
+        
+        const bmr = parseInt(this.bios.bmr) || 2057;
+        const workoutBurn = this.estimateFromType();
+        const target = bmr + (checked.includes('train') ? workoutBurn : 0);
+        if(Math.abs(totalMacros.cal - target) <= 500) nutritionScore += 2;
+        
+        breakdown.nutrition = Math.min(20, nutritionScore);
+        
+        // 4. ACTIVITY (20pts)
+        let activityScore = 0;
+        if(checked.includes('train')) {
+            activityScore += 10;
+            const type = this.getWorkoutTypeForDay();
+            if(sleepScore >= 80 && type !== 'RECOVERY') activityScore += 5;
+            else if(sleepScore < 70 && type === 'RECOVERY') activityScore += 5;
+            else activityScore += 3;
+        }
+        const activeCal = dayData.cal || 0;
+        if(activeCal >= (g.calBurn || 400)) activityScore += 5;
+        
+        breakdown.activity = Math.min(20, activityScore);
+        
+        const total = breakdown.sleep + breakdown.protocol + breakdown.nutrition + breakdown.activity;
+        
+        return {
+            total: total,
+            breakdown: breakdown,
+            grade: this.getDayGradeFromScore(total),
+            details: {
+                sleepHours: sleepHours.toFixed(1),
+                sleepScore: sleepScore,
+                tasksCompleted: `${Math.round(tasksCompleted)}/${totalTasks}`,
+                macros: totalMacros,
+                rainbowColors: rainbowColors.size,
+                activeCal: activeCal
+            }
+        };
+    }
+    
+    getDayGradeFromScore(score) {
+        for(let grade in DAY_GRADE_SCALE) {
+            const scale = DAY_GRADE_SCALE[grade];
+            if(score >= scale.min && score <= scale.max) {
+                return { letter: grade, color: scale.color, status: scale.status };
+            }
+        }
+        return { letter: 'F', color: '#990000', status: 'FAIL' };
+    }
+    
+    getWorkoutTypeForDay() {
+        if(this.currentWorkoutIdx >= WORKOUT_DB[this.user].length) return 'RECOVERY';
+        const workout = WORKOUT_DB[this.user][this.currentWorkoutIdx];
+        return workout?.type || 'UNKNOWN';
+    }
+    
+    estimateFromType() {
+        const workout = WORKOUT_DB[this.user][this.currentWorkoutIdx];
+        return workout?.stats?.cal || 400;
+    }
+
+    showDayScoreBreakdown() {
+        if(!this.currentDayScore) return;
+        const score = this.currentDayScore;
+        
+        this.setText('dayScoreTotalNum', score.total.toFixed(0));
+        this.setText('dayScoreTotalGrade', score.grade.letter);
+        this.setText('dayScoreTotalStatus', score.grade.status);
+        document.getElementById('dayScoreTotalGrade').style.color = score.grade.color;
+        
+        let html = '';
+        html += this.renderScoreCategory('Sleep', score.breakdown.sleep, 30, `${score.details.sleepHours}h`, '#00f0ff');
+        html += this.renderScoreCategory('Protocol', score.breakdown.protocol, 30, `${score.details.tasksCompleted} tasks`, '#ccff00');
+        html += this.renderScoreCategory('Nutrition', score.breakdown.nutrition, 20, `${Math.round(score.details.macros.protein)}g pro`, '#bf5af2');
+        html += this.renderScoreCategory('Activity', score.breakdown.activity, 20, `${score.details.activeCal} cal`, '#ff453a');
+        
+        document.getElementById('dayScoreBreakdownContent').innerHTML = html;
+        document.getElementById('dayScoreModal').classList.add('active');
+    }
+    
+    renderScoreCategory(name, pts, max, det, col) {
+        const pct = (pts/max)*100;
+        return `<div class="score-category" style="border-left-color:${col}"><div class="score-category-header"><div class="score-category-name">${name}</div><div class="score-category-points" style="color:${col}">${pts.toFixed(0)}/${max}</div></div><div class="score-category-bar"><div class="score-category-fill" style="width:${pct}%; background:${col}"></div></div><div class="score-category-details">${det}</div></div>`;
+    }
+    
+    closeDayScoreBreakdown() {
+        document.getElementById('dayScoreModal').classList.remove('active');
+    }
+
+    renderGrade(sc, sl) {
+        const today = this.history[this.currentIndex];
+        const dayScore = this.calculateDailyScore(today.date);
+        this.currentDayScore = dayScore;
+        
+        this.setText('dayGrade', dayScore.grade.letter); 
+        document.getElementById('dayGrade').style.color = dayScore.grade.color;
+        const smallBox = document.querySelector('.score-box.small');
+        if(smallBox) smallBox.style.borderColor = dayScore.grade.color;
+        
+        const userData = this.getUserLongevityData();
+        const longevity = this.calculateLongevityScore(userData);
+        this.setText('longevityScore', longevity.total);
+        const primaryBox = document.querySelector('.score-box.primary');
+        if(primaryBox) primaryBox.style.borderColor = longevity.grade.color;
+        this.longevityData = longevity;
+    }
+    
+    getUserLongevityData() {
+        const today = this.history[this.currentIndex];
+        const bios = this.bios;
+        return {
+            apob: parseFloat(bios.apob) || null,
+            lpa: parseFloat(bios.lpa) || null,
+            ldl: parseFloat(bios.ldl) || null,
+            hscrp: parseFloat(bios.hscrp) || null,
+            hba1c: parseFloat(bios.hba1c) || null,
+            glucose: parseFloat(bios.glucose) || null,
+            bmi: this.calculateBMI(),
+            visceralFat: parseFloat(bios.visceralFat) || null,
+            bmr: parseFloat(bios.bmr) || null,
+            weight: parseFloat(bios.weight) || null,
+            weightTarget: USERS[this.user].goals.weightTarget || 210,
+            vo2max: today.vo2max || parseFloat(bios.vo2max) || null,
+            rhr: parseInt(today.rhr) || null,
+            sleepScore: today.score || null,
+            hrv: today.hrv || null
+        };
+    }
+    
+    calculateBMI() {
+        const weight = parseFloat(this.bios.weight);
+        const heightInches = USERS[this.user].goals.heightInches || 70;
+        if(!weight || !heightInches) return null;
+        return (weight / (heightInches * heightInches)) * 703;
+    }
+
+    calculateLongevityScore(userData) {
+        let totalScore = 0;
+        const breakdown = {};
+        
+        for(let marker in LONGEVITY_MARKERS) {
+            const config = LONGEVITY_MARKERS[marker];
+            const userValue = userData[marker];
+            
+            if(userValue === null || userValue === undefined) {
+                breakdown[marker] = { score: 0, max: config.weight, reason: 'No data' };
+                continue;
+            }
+            
+            let score = 0;
+            
+            if (marker === 'lpa' && userValue > config.threshold && userData.apob && userData.apob < 80) {
+                 score = config.weight * 0.5; 
+            } 
+            else if(config.direction === 'lower') {
+                if(userValue <= config.optimal) score = config.weight;
+                else if(userValue >= config.threshold) score = 0;
+                else {
+                    const range = config.threshold - config.optimal;
+                    const diff = userValue - config.optimal;
+                    score = config.weight * (1 - (diff / range));
+                }
+            } else if(config.direction === 'higher') {
+                if(userValue >= config.optimal) score = config.weight;
+                else if(userValue <= config.threshold) score = 0;
+                else {
+                    const range = config.optimal - config.threshold;
+                    const diff = config.optimal - userValue;
+                    score = config.weight * (1 - (diff / range));
+                }
+            } else if(config.direction === 'range') {
+                if(userValue >= config.range[0] && userValue <= config.range[1]) score = config.weight;
+                else score = 0;
+            } else if(config.direction === 'target') {
+                const target = config.optimal || userData.weightTarget || 210;
+                const diff = Math.abs(userValue - target);
+                if(diff <= 5) score = config.weight;
+                else if(diff > 20) score = 0;
+                else score = config.weight * (1 - ((diff - 5) / 15));
+            }
+            
+            breakdown[marker] = { score: Math.max(0, Math.min(config.weight, score)), max: config.weight, value: userValue };
+            totalScore += breakdown[marker].score;
+        }
+
+        return {
+            total: Math.round(totalScore),
+            max: 120,
+            breakdown: breakdown,
+            grade: this.getLongevityGrade(totalScore)
+        };
+    }
+    
+    getLongevityGrade(score) {
+        if(score >= 110) return { letter: 'S+', color: '#00ff00' };
+        if(score >= 100) return { letter: 'S', color: '#ccff00' };
+        if(score >= 90) return { letter: 'A+', color: '#00f0ff' };
+        if(score >= 80) return { letter: 'A', color: '#00d4ff' };
+        if(score >= 70) return { letter: 'B+', color: '#FFD60A' };
+        if(score >= 60) return { letter: 'B', color: '#ff9f0a' };
+        if(score >= 50) return { letter: 'C', color: '#ff6b35' };
+        return { letter: 'D', color: '#ff453a' };
+    }
+
+    showIntelligentAlert(d) {
+        const banner = document.getElementById('alertBanner');
+        const baselineRHR = 55; 
+
+        if(d.score < 60 && d.score > 0) {
+            banner.className = 'alert-banner alert-recovery show';
+            banner.innerHTML = '⚠️ FORCED RECOVERY - SLEEP CRITICAL';
+        } else if(d.score >= 60 && d.score < 75) {
+            banner.className = 'alert-banner alert-warning show';
+            banner.innerHTML = '⚠️ CAUTION - REDUCE LOAD';
+        } else if(d.rhr > baselineRHR + 5) {
+            banner.className = 'alert-banner alert-warning show';
+            banner.innerHTML = '⚠️ ELEVATED HEART RATE DETECTED';
+        } else if(d.score >= 85) {
+            banner.className = 'alert-banner alert-success show';
+            banner.innerHTML = '✅ OPTIMAL STATE - GO FOR PR';
+        } else {
+            banner.className = 'alert-banner'; 
+        }
+    }
+
+    renderTrendAnalysis() {
+        const last7 = this.history.slice(0, 7);
+        if(last7.length < 3) return; 
+
+        const avgSleep = last7.reduce((sum, day) => sum + day.totalSec, 0) / last7.length;
+        const avgScore = last7.reduce((sum, day) => sum + day.score, 0) / last7.length;
+        const avgRHR = last7.reduce((sum, day) => sum + (day.rhr !== '-' ? parseInt(day.rhr) : 0), 0) / last7.length;
+
+        let html = '<div class="trend-card">';
+        html += '<div class="trend-title">7-DAY ROLLING AVERAGE</div>';
+        html += '<div class="trend-grid">';
+        html += `<div class="trend-stat"><span class="trend-label">Avg Sleep</span><div class="trend-val">${(avgSleep/3600).toFixed(1)}h</div></div>`;
+        html += `<div class="trend-stat"><span class="trend-label">Avg Score</span><div class="trend-val">${Math.round(avgScore)}</div></div>`;
+        html += `<div class="trend-stat"><span class="trend-label">Avg RHR</span><div class="trend-val">${Math.round(avgRHR)}</div></div>`;
+        html += '</div></div>';
+
+        document.getElementById('trendAnalysis').innerHTML = html;
+    }
+
+    renderCouplesSynergy() {
+        const sync = this.getCouplesSyncData();
+        const jColor = sync.jermaine.complete >= 80 ? 'var(--acid)' : '#fff';
+        const sColor = sync.sophia.complete >= 80 ? 'var(--acid)' : '#fff';
+        const syncColor = sync.inSync ? 'var(--cyan)' : '#666';
+        const jStatus = sync.jermaine.trained ? 'COMPLETE' : 'PENDING';
+        const sStatus = sync.sophia.trained ? 'COMPLETE' : 'PENDING';
+        const jClass = sync.jermaine.trained ? 'syn-success' : 'syn-pending';
+        const sClass = sync.sophia.trained ? 'syn-success' : 'syn-pending';
+
+        let html = `
+        <style>.syn-success { color: var(--acid); } .syn-pending { color: #ff9f0a; animation: pulse-text 2s infinite; } @keyframes pulse-text { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }</style>
+        <div class="section-header"><span class="section-label">COUPLES SYNERGY</span></div>
+        <div class="synergy-card"><div class="syn-grid">
+        <div class="syn-col"><div class="syn-val" style="color: ${jColor}">${sync.jermaine.complete}%</div><div class="syn-label">JERMAINE</div><div class="syn-sub ${jClass}">${jStatus}</div></div>
+        <div class="syn-col" style="border-left: 1px solid #222; border-right: 1px solid #222;"><div class="syn-val" style="color: ${syncColor}">${sync.syncScore}%</div><div class="syn-label">ALIGNMENT</div><div class="syn-sub" style="color:${sync.inSync ? 'var(--cyan)' : '#666'}">${sync.inSync ? 'LINKED' : 'UNLINKED'}</div></div>
+        <div class="syn-col"><div class="syn-val" style="color: ${sColor}">${sync.sophia.complete}%</div><div class="syn-label">SOPHIA</div><div class="syn-sub ${sClass}">${sStatus}</div></div>
+        </div></div>`;
+        
+        document.getElementById('synergyDashboard').innerHTML = html;
+        localStorage.setItem('lastPartnerSync', new Date().toISOString());
+    }
+
+    getCouplesSyncData() {
+        const jermaineChecked = JSON.parse(localStorage.getItem('c_checked_jermaine')) || {};
+        const sophiaChecked = JSON.parse(localStorage.getItem('c_checked_sophia')) || {};
+        const today = this.currentDateStr;
+        const jTasks = jermaineChecked[today] || [];
+        const sTasks = sophiaChecked[today] || [];
+        const total = 8;
+        
+        const syncScore = Math.round(((jTasks.length + sTasks.length) / (total * 2)) * 100);
+        
+        return {
+            jermaine: { complete: Math.round((jTasks.length/total)*100), trained: jTasks.includes('train') },
+            sophia: { complete: Math.round((sTasks.length/total)*100), trained: sTasks.includes('train') },
+            syncScore,
+            inSync: Math.abs(jTasks.length - sTasks.length) < 2
+        };
+    }
+
+    // ========== INTELLIGENCE ENGINE ==========
+    
     calculateSleepDebt() {
         const last7 = this.history.slice(0, 7);
         const optimalSleep = 8;
@@ -949,68 +1340,151 @@ class CenturionCore {
         console.log('✅ Intelligence Engine Complete');
     }
 
-    // ========== RENDER METHODS ==========
+    async runAI() {
+        if(!this.history.length) return;
+        const today = this.history[this.currentIndex];
+        
+        // --- ANTI-DECAY DIAGNOSTIC ---
+        const dayScore = this.calculateDailyScore(today.date);
+        
+        const hour = new Date().getHours();
+        const isEvening = hour >= 18;
+        const tasksDone = dayScore.breakdown.protocol >= 25; 
+        
+        const checked = this.checked[today.date] || [];
+        const missedTrain = !checked.includes('train');
+        
+        const stressHigh = today.rhr > 55 || today.score < 70;
 
-    render() {
+        let focus = "General Optimization";
+        let tactic = "Execute standard protocol.";
+        
+        if(missedTrain) {
+            focus = "FIGHTING SARCOPENIA (Muscle Loss)";
+            tactic = "You missed the lift. Do 50 pushups NOW to signal muscle retention.";
+        } else if(stressHigh) {
+            focus = "FIGHTING CORTISOL (Insulin Resistance)";
+            tactic = "High stress detected. No sugar/alcohol tonight. Zone 2 walk only.";
+        } else if(isEvening && !tasksDone) {
+            focus = "FIGHTING DECISION FATIGUE";
+            tactic = "Brain is tired. Don't think. Just finish the list.";
+        }
+        
+        const ui = document.getElementById('aiOutput');
+        ui.innerText = "Analyzing Anti-Decay Status...";
+        
+        const u = USERS[this.user];
+        const last7 = this.history.slice(0, 7);
+        const avgSleep = last7.reduce((sum, day) => sum + day.totalSec, 0) / last7.length / 3600;
+        
+        const p = `You are a longevity coach for ${u.name} (${u.condition}, Age ${u.age}). 
+        CONTEXT: We are fighting the '5 Killers of the 50s' (Sarcopenia, Insulin Resistance, Hormonal Drop, Decision Fatigue, Comfort Trap).
+        TODAY'S STATUS: 
+        - Sleep: ${(today.totalSec/3600).toFixed(1)}h (Avg ${avgSleep.toFixed(1)}h)
+        - Day Grade: ${dayScore.grade.letter}
+        - Current Threat: ${focus}
+        
+        Give ONE specific, punchy command to defeat this threat. Max 2 sentences. Be direct and military-style.`;
+        
         try {
-            if(!this.history.length) return;
-
-            const d = this.history[this.currentIndex];
-            const h = Math.floor(d.totalSec/3600);
-            const m = Math.round((d.totalSec%3600)/60);
-            
-            this.setText('dateLabel', d.date); 
-            this.setText('sleepVal', `${h}h ${m}m`);
-            this.setText('deepVal', Math.round((d.deepSec||0)/60)+"m"); 
-            this.setText('remVal', Math.round((d.remSec||0)/60)+"m");
-            this.setText('rhrVal', d.rhr); 
-            
-            const g = USERS[this.user].goals;
-            this.setText('z2Val', Math.round(d.med || 0)); 
-            this.setText('z5Val', Math.round(d.high || 0)); 
-            this.setText('calVal', d.cal || 0);
-            
-            const uh = (id,val,goal) => { 
-                const e = document.getElementById(id); 
-                if(e) e.style.strokeDashoffset = 100-(Math.min(val/goal,1)*100); 
-            };
-            uh('z2Heart', d.med || 0, g.z2); 
-            uh('z5Heart', d.high || 0, g.z5); 
-            uh('calHeart', d.cal || 0, g.calBurn||400);
-            
-            const c = d.score >= 80 ? '#ccff00' : d.score >= 60 ? '#FFD60A' : '#ff453a';
-            const tBox = document.querySelector('.tactical-box');
-            if(tBox) tBox.style.borderLeftColor = c;
-            
-            const u = USERS[this.user];
-            const s = d.score >= 85 ? `PEAK - ${u.condition} MANAGED` : d.score < 60 ? `RECOVERY - ${u.condition} RISK` : `${u.condition} PROTOCOL`;
-            this.setText('statusMsg', s); 
-            
-            this.renderGrade(d.score, h);
-            
-            const sOrb = document.getElementById('sleepOrb'); if(sOrb) sOrb.style.strokeDashoffset = 145-(Math.min(d.totalSec/3600,9)/9)*145;
-            const dOrb = document.getElementById('deepOrb'); if(dOrb) dOrb.style.strokeDashoffset = 145-(Math.min((d.deepSec||0)/3600,2)/2)*145;
-            const rOrb = document.getElementById('remOrb'); if(rOrb) rOrb.style.strokeDashoffset = 145-(Math.min((d.remSec||0)/3600,2)/2)*145;
-            
-            this.showIntelligentAlert(d);
-            this.renderTrendAnalysis();
-            this.renderCouplesSynergy();
-            
-            // RUN INTELLIGENCE
-            this.runIntelligenceEngine();
-            
-            this.renderComplex(d.date); 
-            this.renderBio();
-            
-            document.querySelectorAll('.orb-card').forEach(orb => {
-               orb.style.cursor = 'default';
-            });
+            for(let m of ['gemini-1.5-flash-8b','gemini-2.0-flash-exp']) {
+                try {
+                    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${API_KEY}`, {
+                        method:'POST', headers:{'Content-Type':'application/json'},
+                        body:JSON.stringify({contents:[{parts:[{text:p}]}]}),
+                        signal: AbortSignal.timeout(10000) 
+                    });
+                    if(r.ok) {
+                        const j = await r.json();
+                        if(j.candidates?.[0]?.content?.parts?.[0]?.text) {
+                            ui.innerText = j.candidates[0].content.parts[0].text;
+                            return;
+                        }
+                    }
+                } catch(e) { console.warn(`Model ${m} failed:`, e.message); }
+            }
+            ui.innerText = `${focus}: ${tactic}`;
         } catch(e) {
-            console.error("Render error:", e);
+            console.error('AI generation failed:', e);
+            ui.innerText = 'AI unavailable. Focus on recovery.';
         }
     }
 
-    // ... (All other existing methods remain the same)
+    openBio() {
+        ['apob','lpa','ldl','weight','bmr','glucose','hgb','hscrp','hba1c'].forEach(k => { const el = document.getElementById(`in-${k}`); if(el) el.value = this.bios[k]||''; });
+        ['cardio','inbody'].forEach(k => { const el = document.getElementById(`in-${k}-date`); if(el) el.value = this.bios[k+'Date']||''; });
+        document.getElementById('bioModal').classList.add('active');
+        
+        const trends = this.analyzeBiomarkerTrends();
+        if(trends && trends.length > 0) {
+            const bioModal = document.getElementById('bioModal');
+            const modalContent = bioModal.querySelector('.modal-content');
+            
+            const oldAlert = bioModal.querySelector('.bio-trend-alert');
+            if(oldAlert) oldAlert.remove();
+            
+            let trendHTML = '<div class="bio-trend-alert" style="padding:10px; background:rgba(255,165,0,0.1); border:1px solid #ff9f0a; border-radius:8px; margin-bottom:15px;">';
+            trends.forEach(t => {
+                const color = t.type === 'warning' ? '#ff9f0a' : '#30d158';
+                trendHTML += `<div style="font-size:0.7rem; color:${color}; margin-bottom:5px;">📊 ${t.message}</div>`;
+                trendHTML += `<div style="font-size:0.65rem; color:#ccc;">→ ${t.action}</div>`;
+            });
+            trendHTML += '</div>';
+            
+            const firstInputGroup = modalContent.querySelector('.input-group');
+            if(firstInputGroup) {
+                firstInputGroup.insertAdjacentHTML('beforebegin', trendHTML);
+            }
+        }
+    }
+
+    closeBio() { document.getElementById('bioModal').classList.remove('active'); }
+
+    saveBio() {
+        this.bios = { 
+            apob: document.getElementById('in-apob').value,
+            lpa: document.getElementById('in-lpa').value,
+            ldl: document.getElementById('in-ldl').value,
+            glucose: document.getElementById('in-glucose').value,
+            hgb: document.getElementById('in-hgb').value,
+            hscrp: document.getElementById('in-hscrp').value,
+            hba1c: document.getElementById('in-hba1c').value,
+            weight: document.getElementById('in-weight').value,
+            bmr: document.getElementById('in-bmr').value,
+            cardioDate: document.getElementById('in-cardio-date').value,
+            inbodyDate: document.getElementById('in-inbody-date').value
+        };
+        localStorage.setItem(`c_bios_${this.user}`, JSON.stringify(this.bios));
+        
+        const history = JSON.parse(localStorage.getItem(`biomarker_history_${this.user}`)) || [];
+        history.unshift({
+            date: new Date().toISOString(),
+            ...this.bios
+        });
+        if(history.length > 10) history.pop();
+        localStorage.setItem(`biomarker_history_${this.user}`, JSON.stringify(history));
+        
+        const trends = this.analyzeBiomarkerTrends();
+        if(trends && trends.length > 0) {
+            alert(`📊 BIOMARKER ALERT\n\n${trends[0].message}\n\n→ ${trends[0].action}`);
+        }
+        
+        this.closeBio(); 
+        this.renderBio();
+    }
+
+    renderBio() {
+        const u = USERS[this.user]; 
+        let t = u.condition;
+        if(u.condition === 'HIGH LP(A)') {
+            document.querySelector('.tac-label').innerHTML = `USER: ${u.name.toUpperCase()} <span class="health-badge badge-lpa">LP(A)</span>`;
+            if(this.bios.lpa) t += ` • Lp(a): ${this.bios.lpa}`;
+        } else if(u.condition === 'HIGH ANA') {
+            document.querySelector('.tac-label').innerHTML = `USER: ${u.name.toUpperCase()} <span class="health-badge badge-ana">ANA</span>`;
+        }
+        if(this.bios.apob) t += ` • ApoB: ${this.bios.apob}`;
+        this.setText('bioDisplay', t);
+    }
 }
 
 const centurion = new CenturionCore();
