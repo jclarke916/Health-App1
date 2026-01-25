@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Centurion v17.6 AUTO-DETECT</title>
+<title>Centurion v17.7 STABILITY</title>
 <style>
 /* --- CORE STYLES --- */
 *{box-sizing:border-box;margin:0;padding:0}
@@ -37,6 +37,7 @@ body{background:#000;color:#fff;font-family:sans-serif;padding-bottom:80px; -web
 .alert.show{display:block;animation:pulse 2s infinite}
 .alert-warning{background:#FFD60A;color:#000}
 .alert-protein{background:#00f0ff;color:#000}
+@keyframes pulse{0%{opacity:1}50%{opacity:0.8}100%{opacity:1}}
 
 /* GRIDS */
 .section-header{padding:10px 15px;font-size:0.55rem;font-weight:900;color:#666;letter-spacing:1px;text-transform:uppercase;margin-top:10px}
@@ -242,7 +243,17 @@ const WORKOUT_TYPES = { strength_training: 'Strength', cycling: 'Cycling', runni
 // --- APP CLASS ---
 class CenturionApp {
     constructor() {
-        log('🚀 Init v17.6');
+        log('🚀 Init v17.7');
+        
+        // SELF-HEALING: Check version to force clear broken data from previous attempts
+        const CURRENT_VER = '17.7';
+        const savedVer = localStorage.getItem('centurion_version');
+        if(savedVer !== CURRENT_VER) {
+             console.warn('Version mismatch. Wiping clean.');
+             localStorage.clear();
+             localStorage.setItem('centurion_version', CURRENT_VER);
+        }
+
         this.user = localStorage.getItem('centurion_user') || 'jermaine';
         this.history = [];
         this.currentIndex = 0;
@@ -259,14 +270,20 @@ class CenturionApp {
     }
 
     loadUserData() {
-        const savedChecked = localStorage.getItem(`c_checked_${this.user}`);
-        this.checked = savedChecked ? JSON.parse(savedChecked) : {};
-        
-        const savedMeals = localStorage.getItem(`c_meals_${this.user}`);
-        this.meals = savedMeals ? JSON.parse(savedMeals) : {};
-        
-        const savedBios = localStorage.getItem(`c_bios_${this.user}`);
-        this.bios = savedBios ? JSON.parse(savedBios) : USERS[this.user].defaultBios;
+        try {
+            const savedChecked = localStorage.getItem(`c_checked_${this.user}`);
+            this.checked = savedChecked ? JSON.parse(savedChecked) : {};
+            
+            const savedMeals = localStorage.getItem(`c_meals_${this.user}`);
+            this.meals = savedMeals ? JSON.parse(savedMeals) : {};
+            
+            const savedBios = localStorage.getItem(`c_bios_${this.user}`);
+            this.bios = savedBios ? JSON.parse(savedBios) : USERS[this.user].defaultBios;
+        } catch(e) {
+            logerr('Data corrupt, resetting user data');
+            this.checked = {};
+            this.meals = {};
+        }
     }
 
     saveUserData() {
@@ -315,8 +332,9 @@ class CenturionApp {
             const sleepData = await sleepRes.json();
             const workoutData = await workoutRes.json();
 
-            this.processSleepData(sleepData.data || []);
-            this.processWorkoutData(workoutData.data || []);
+            // Safety check for data arrays
+            this.processSleepData(Array.isArray(sleepData.data) ? sleepData.data : []);
+            this.processWorkoutData(Array.isArray(workoutData.data) ? workoutData.data : []);
             
             this.setText('syncStatus', 'SYNCED ✓');
             this.render();
@@ -406,12 +424,12 @@ class CenturionApp {
         // Reset state
         this.user = newUser;
         localStorage.setItem('centurion_user', newUser);
-        this.history = [];
-        this.loadUserData();
-        this.setPlaceholderData();
+        this.history = []; // Clear old user history
+        this.loadUserData(); // Load new user settings
+        this.setPlaceholderData(); // Set dummy data to prevent crash
         
-        this.render();
-        this.fetchOuraData();
+        this.render(); // Render empty state
+        this.fetchOuraData(); // Fetch real data
     }
 
     toggleTask(taskId) {
@@ -561,87 +579,95 @@ class CenturionApp {
 
     // --- RENDER ---
     render() {
-        this.protocol = JSON.parse(JSON.stringify(BASE_PROTOCOL));
-        this.proteinWindowActive = false;
-        
-        const dateKey = this.history[this.currentIndex].date;
-        const day = this.history[this.currentIndex];
-        
-        // 1. Hydrate Meal Slots
-        let selectedMeals = this.meals[dateKey];
-        if (!selectedMeals) {
-            // Default meals if none selected
-            selectedMeals = { breakfast: 0, lunch: 0, dinner: 0 };
-            this.meals[dateKey] = selectedMeals;
-        }
-        
-        this.protocol.forEach(task => {
-            if (task.mealSlot && selectedMeals[task.mealSlot] !== undefined) {
-                const meal = MEAL_DATABASE[task.mealSlot][selectedMeals[task.mealSlot]];
-                task.title = meal.name + ' 👆';
-                task.desc = `P: ${meal.macros.p}g Ω3: ${meal.macros.o}mg Cal: ${meal.macros.cal}`;
-                task.macros = meal.macros;
-                task.colors = meal.colors;
+        try {
+            if (!this.history || this.history.length === 0) return;
+
+            this.protocol = JSON.parse(JSON.stringify(BASE_PROTOCOL));
+            this.proteinWindowActive = false;
+            
+            const dateKey = this.history[this.currentIndex].date;
+            const day = this.history[this.currentIndex];
+            
+            // 1. Hydrate Meal Slots
+            let selectedMeals = this.meals[dateKey];
+            if (!selectedMeals) {
+                // Default meals if none selected
+                selectedMeals = { breakfast: 0, lunch: 0, dinner: 0 };
+                this.meals[dateKey] = selectedMeals;
             }
             
-            // Auto Detect Workout in Protocol
-            if (task.autoDetect && day.workouts && day.workouts.length > 0) {
-                const workout = day.workouts[0]; // Take first workout
-                const workoutName = WORKOUT_TYPES[workout.type] || 'Workout';
-                task.title = `${workoutName} 🔄`;
-                task.desc = `${workout.time} • ${workout.calories} cal burned`;
-                task.calBurn = workout.calories;
-                task.autoDetected = true;
-                
-                // Auto-check the box
-                const checked = this.checked[dateKey] || [];
-                if (!checked.includes('train')) {
-                    checked.push('train');
-                    this.checked[dateKey] = checked;
-                    this.saveUserData();
+            this.protocol.forEach(task => {
+                if (task.mealSlot && selectedMeals[task.mealSlot] !== undefined) {
+                    const meal = MEAL_DATABASE[task.mealSlot][selectedMeals[task.mealSlot]];
+                    task.title = meal.name + ' 👆';
+                    task.desc = `P: ${meal.macros.p}g Ω3: ${meal.macros.o}mg Cal: ${meal.macros.cal}`;
+                    task.macros = meal.macros;
+                    task.colors = meal.colors;
                 }
-            }
-        });
+                
+                // Auto Detect Workout in Protocol
+                if (task.autoDetect && day.workouts && day.workouts.length > 0) {
+                    const workout = day.workouts[0]; // Take first workout
+                    const workoutName = WORKOUT_TYPES[workout.type] || 'Workout';
+                    task.title = `${workoutName} 🔄`;
+                    task.desc = `${workout.time} • ${workout.calories} cal burned`;
+                    task.calBurn = workout.calories;
+                    task.autoDetected = true;
+                    
+                    // Auto-check the box
+                    const checked = this.checked[dateKey] || [];
+                    if (!checked.includes('train')) {
+                        checked.push('train');
+                        this.checked[dateKey] = checked;
+                        this.saveUserData();
+                    }
+                }
+            });
 
-        // 2. Logic Engines
-        const sleepDebt = this.calculateSleepDebt();
-        if (sleepDebt > 7) {
-            this.sleepDebtCritical = true;
-            const trainTask = this.protocol.find(t => t.id === 'train');
-            if (trainTask) {
-                trainTask.title = '🛏️ FORCED REST';
-                trainTask.desc = `Sleep debt: ${sleepDebt.toFixed(1)}h - Training Disabled`;
-                trainTask.calBurn = 0;
-                trainTask.autoDetected = false;
+            // 2. Logic Engines
+            const sleepDebt = this.calculateSleepDebt();
+            if (sleepDebt > 7) {
+                this.sleepDebtCritical = true;
+                const trainTask = this.protocol.find(t => t.id === 'train');
+                if (trainTask) {
+                    trainTask.title = '🛏️ FORCED REST';
+                    trainTask.desc = `Sleep debt: ${sleepDebt.toFixed(1)}h - Training Disabled`;
+                    trainTask.calBurn = 0;
+                    trainTask.autoDetected = false;
+                }
+            } else {
+                this.sleepDebtCritical = false;
             }
-        } else {
-            this.sleepDebtCritical = false;
+            
+            // 3. Inject Supplements
+            const supplements = [
+                { id: 'fish-oil', time: '07:30', title: 'Fish Oil 2g', desc: 'Omega-3', macros: {p:0,o:2000,cal:20}, colors: [], calBurn: 0 },
+                { id: 'vitamin-d', time: '07:30', title: 'Vitamin D3', desc: '5000 IU', macros: {p:0,o:0,cal:0}, colors: [], calBurn: 0 },
+                { id: 'magnesium', time: '21:00', title: 'Magnesium', desc: '400mg', macros: {p:0,o:0,cal:0}, colors: [], calBurn: 0 }
+            ];
+            
+            supplements.forEach(supp => {
+                if (!this.protocol.find(t => t.id === supp.id)) {
+                    this.protocol.push(supp);
+                }
+            });
+            this.protocol.sort((a, b) => a.time.localeCompare(b.time));
+            
+            // 4. Check Alerts
+            this.checkProteinWindow();
+
+            // 5. Render Components
+            this.renderScores();
+            this.renderSleepMetrics();
+            this.renderMacros();
+            this.renderRainbow();
+            this.renderStatus();
+            this.renderTimeline();
+            
+            log('✅ Render complete');
+        } catch (e) {
+            logerr('⚠️ Render Error: ' + e);
         }
-        
-        // 3. Inject Supplements
-        const supplements = [
-            { id: 'fish-oil', time: '07:30', title: 'Fish Oil 2g', desc: 'Omega-3', macros: {p:0,o:2000,cal:20}, colors: [], calBurn: 0 },
-            { id: 'vitamin-d', time: '07:30', title: 'Vitamin D3', desc: '5000 IU', macros: {p:0,o:0,cal:0}, colors: [], calBurn: 0 },
-            { id: 'magnesium', time: '21:00', title: 'Magnesium', desc: '400mg', macros: {p:0,o:0,cal:0}, colors: [], calBurn: 0 }
-        ];
-        
-        supplements.forEach(supp => {
-            if (!this.protocol.find(t => t.id === supp.id)) {
-                this.protocol.push(supp);
-            }
-        });
-        this.protocol.sort((a, b) => a.time.localeCompare(b.time));
-        
-        // 4. Check Alerts
-        this.checkProteinWindow();
-
-        // 5. Render Components
-        this.renderScores();
-        this.renderSleepMetrics();
-        this.renderMacros();
-        this.renderRainbow();
-        this.renderStatus();
-        this.renderTimeline();
     }
 
     renderScores() {
