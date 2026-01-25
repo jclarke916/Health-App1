@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Centurion v17.14 STABLE</title>
+<title>Centurion v17.16 LOVE</title>
 <style>
 /* --- CORE STYLES --- */
 *{box-sizing:border-box;margin:0;padding:0}
@@ -33,6 +33,8 @@ body{background:#000;color:#fff;font-family:sans-serif;padding-bottom:100px; -we
 .alert.show{display:block;animation:pulse 2s infinite}
 .alert-warning{background:#FFD60A;color:#000}
 .alert-protein{background:#00f0ff;color:#000}
+/* LOVE MODE STYLE */
+.alert-love{background:linear-gradient(135deg, #e056fd 0%, #000000 100%); color:#fff; border:1px solid #e056fd; text-shadow:0 1px 2px rgba(0,0,0,0.5); line-height:1.6;}
 @keyframes pulse{0%{opacity:1}50%{opacity:0.8}100%{opacity:1}}
 
 /* SECTIONS & GRIDS */
@@ -208,17 +210,19 @@ body{background:#000;color:#fff;font-family:sans-serif;padding-bottom:100px; -we
 const USERS = {
     jermaine: {
         name: "Jermaine",
+        dob: "1983-01-13",
         goals: { protein: 172, omega3: 12000, fiber: 50, water: 140, weightTarget: 210, heightInches: 70, z2: 45, z5: 20, calBurn: 500 },
         defaultBios: { bmr: '2057', apob: '114', lpa: '178', weight: '217.1', hscrp: '0.4', hba1c: '5.4' }
     },
     sophia: {
         name: "Sophia",
+        dob: "1987-01-25",
         goals: { protein: 130, omega3: 4000, fiber: 35, water: 100, weightTarget: 140, heightInches: 64, z2: 30, z5: 15, calBurn: 350 },
         defaultBios: { bmr: '1450', apob: '70', lpa: '20', weight: '148', hscrp: '0.5', hba1c: '5.2' }
     }
 };
 
-// GLOBAL RECIPE DATABASE - UPDATED KEYS TO 'title'
+// GLOBAL RECIPE DATABASE - KEYS UPDATED TO 'title'
 const MEAL_DATABASE = {
     breakfast: [
         {title:"Omega Breakfast",time:"15min",servings:1,macros:{p:58,o:3500,poly:220,f:12,cal:680},ingredients:["salmon","kale","berries","walnuts","avocado"],colors:['orange','purple','green']},
@@ -531,8 +535,8 @@ class CenturionApp {
         const meals = MEAL_DATABASE[mealSlot] || [];
         let html = '';
         meals.forEach((meal, index) => {
-            // FIX: Use || for title/name fallback
-            const mealName = meal.title || meal.name || 'Unknown Meal';
+            // FIX: Ensure title exists
+            const title = meal.title || meal.name || "Unknown Meal";
             const colorDots = (meal.colors || []).map(c => {
                 const hex = RAINBOW_COLORS[c] ? RAINBOW_COLORS[c].hex : '#999';
                 return `<span class="color-dot" style="background:${hex}"></span>`;
@@ -545,7 +549,7 @@ class CenturionApp {
             if(ABSORPTION_RULES.boosters.fat_omega.check(ingString)) alerts += `<div class="abs-boost">✅ ${ABSORPTION_RULES.boosters.fat_omega.boost}</div>`;
 
             html += `<div class="meal-option" onclick="app.selectMeal('${mealSlot}', ${index})">
-                <div class="meal-name">${mealName}</div>
+                <div class="meal-name">${title}</div>
                 <div class="meal-macros">P:${meal.macros.p}g Ω3:${meal.macros.o}mg Fib:${meal.macros.f||0}g Cal:${meal.macros.cal}</div>
                 <div class="meal-colors">${colorDots}</div>
                 ${alerts}
@@ -607,7 +611,7 @@ class CenturionApp {
         });
         return colors;
     }
-    
+
     // RESTORED GRADE LOGIC
     calculateGrade(score) {
         if(score >= 95) return { letter: 'S+', color: '#00ff00' };
@@ -642,7 +646,7 @@ class CenturionApp {
                     const dbSlot = MEAL_DATABASE[task.mealSlot];
                     if(dbSlot && dbSlot[selectedMeals[task.mealSlot]]) {
                          const meal = dbSlot[selectedMeals[task.mealSlot]];
-                         const mealTitle = meal.title || meal.name; // Fallback
+                         const mealTitle = meal.title || meal.name || 'Meal'; 
                          task.title = mealTitle + ' 👆';
                          task.desc = `P:${meal.macros.p} F:${meal.macros.f||0} Ω3:${meal.macros.o}`;
                          task.macros = meal.macros;
@@ -671,7 +675,7 @@ class CenturionApp {
             // 2. Scores
             const sleepHours = (day.totalSec || 0) / 3600;
             const dayScore = Math.min(100, Math.round((sleepHours / 8) * 100));
-            this.renderGrade(dayScore); // FIX: Calling the restored function
+            this.renderGrade(dayScore); 
             this.setText('dateLabel', day.date);
             
             // 3. Orbs & Hearts
@@ -712,9 +716,31 @@ class CenturionApp {
             this.setText('z5Val', Math.round(day.high||0)); updateHeart('z5Heart', day.high||0, goals.z5||20);
             this.setText('calVal', Math.round(day.cal||0)); updateHeart('calHeart', day.cal||0, goals.calBurn||500);
 
-            // RAINBOW
+            // BIRTHDAY CHECK
+            const userDob = USERS[this.user].dob;
+            if(userDob) {
+                const [y, m, d] = userDob.split('-').map(Number);
+                const today = new Date();
+                if(today.getMonth()+1 === m && today.getDate() === d) {
+                     const age = today.getFullYear() - y;
+                     const banner = document.getElementById('alertBanner');
+                     if (this.user === 'sophia' && m === 1 && d === 25) {
+                         banner.className = 'alert alert-love show';
+                         banner.innerHTML = `🎂 <strong>HAPPY BIRTHDAY SOPHIA!</strong> 🎉<br><br>I love you so much. You inspire me every single day.<br>Let's crush 39 together. ❤️ - Jermaine`;
+                     } else {
+                         banner.className = 'alert alert-protein show';
+                         banner.innerText = `🎂 HAPPY ${age}TH BIRTHDAY ${USERS[this.user].name.toUpperCase()}! 🎉`;
+                     }
+                     this.setText('statusMsg', 'CELEBRATION MODE 🎂');
+                } else {
+                     this.renderStatus(sleepHours);
+                }
+            } else {
+                 this.renderStatus(sleepHours);
+            }
+            
+            // RAINBOW & TIMELINE
             this.renderRainbow();
-            this.renderStatus(sleepHours);
             this.renderTimeline(dateKey);
 
         } catch (e) {
