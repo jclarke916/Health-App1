@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v16.25 BULLETPROOF</title>
+    <title>The Centurion | v16.26 POLISHED</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -215,7 +215,7 @@
 <body>
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v16.25 BULLETPROOF</div>
+            <div class="app-name">CENTURION v16.26 POLISHED</div>
             <div style="display:flex; gap:10px;">
                 <button onclick="centurion.openBio()" class="bio-btn">BIO</button>
                 <div class="user-switch">
@@ -537,7 +537,9 @@ class CenturionCore {
             med: 0,
             workouts: [] 
         }];
-        this.render(); 
+        
+        // Wait for next tick to render to ensure DOM is ready
+        setTimeout(() => this.render(), 0);
         
         this.init();
     }
@@ -561,36 +563,43 @@ class CenturionCore {
 
     switchUser(u) {
         if(u === this.user) return;
-        this.user = u; 
-        localStorage.setItem('centurion_user', u); 
-        this.wipeDashboard();
+        
+        // VISUAL FEEDBACK FIRST
+        this.setText('statusMsg', 'SWITCHING...');
         document.querySelectorAll('.u-badge').forEach(b => b.classList.remove('active'));
         document.getElementById(`btn-${u}`).classList.add('active');
         
-        // RESET PROTOCOL TO BASE ON SWITCH TO PREVENT STATE LEAK
-        this.PROTOCOL = JSON.parse(JSON.stringify(BASE_PROTOCOL));
-        
-        this.history = []; 
-        this.currentIndex = 0; 
-        this.currentDateStr = new Date().toLocaleDateString('en-CA');
-        this.loadLocalData(); 
-        this.renderBio();
-        
-        // Set dummy data immediately
-        this.history = [{ 
-            date: this.currentDateStr, 
-            score: 0, 
-            totalSec: 0, 
-            deepSec: 0,
-            remSec: 0,
-            rhr: '-',
-            cal: 0,
-            high: 0,
-            med: 0,
-            workouts: [] 
-        }];
-        this.render();
-        this.fetchData();
+        // FORCE UI UPDATE BEFORE DATA PROCESSING
+        setTimeout(() => {
+            this.user = u; 
+            localStorage.setItem('centurion_user', u); 
+            this.wipeDashboard();
+            
+            // RESET PROTOCOL TO BASE ON SWITCH TO PREVENT STATE LEAK
+            this.PROTOCOL = JSON.parse(JSON.stringify(BASE_PROTOCOL));
+            
+            this.history = []; 
+            this.currentIndex = 0; 
+            this.currentDateStr = new Date().toLocaleDateString('en-CA');
+            this.loadLocalData(); 
+            this.renderBio();
+            
+            // Set dummy data immediately
+            this.history = [{ 
+                date: this.currentDateStr, 
+                score: 0, 
+                totalSec: 0, 
+                deepSec: 0,
+                remSec: 0,
+                rhr: '-',
+                cal: 0,
+                high: 0,
+                med: 0,
+                workouts: [] 
+            }];
+            this.render();
+            this.fetchData();
+        }, 10);
     }
 
     setText(id, val) { 
@@ -615,7 +624,6 @@ class CenturionCore {
         document.getElementById('calorieGrid').innerHTML = "";
         document.getElementById('rainbowTrack').innerHTML = ""; 
         this.setText('rainbowScore', "0%");
-        this.setText('statusMsg', "SWITCHING..."); 
         document.querySelectorAll('circle.orb-fg').forEach(el => el.style.strokeDashoffset = 145);
         document.querySelectorAll('path.heart-fg').forEach(el => el.style.strokeDashoffset = 100);
     }
@@ -980,9 +988,12 @@ class CenturionCore {
         const optimalSleep = 8;
         let totalDebt = 0;
         last7.forEach(day => {
-            const actual = (day.totalSec || 0) / 3600;
-            const deficit = optimalSleep - actual;
-            if(deficit > 0) totalDebt += deficit;
+            // Fix: Only calculate debt on completed days with data
+            if(day.totalSec > 0 && day.date !== this.currentDateStr) {
+                const actual = day.totalSec / 3600;
+                const deficit = optimalSleep - actual;
+                if(deficit > 0) totalDebt += deficit;
+            }
         });
         return totalDebt;
     }
@@ -1147,6 +1158,7 @@ class CenturionCore {
 
     renderGrade(sc, sl) {
         const today = this.history[this.currentIndex];
+        // Calculate Day Score using the now-present function
         const dayScore = this.calculateDailyScore(today.date);
         this.currentDayScore = dayScore;
         
