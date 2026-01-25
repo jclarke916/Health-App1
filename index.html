@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Centurion v17.16 LOVE</title>
+<title>Centurion v17.15 POLISHED</title>
 <style>
 /* --- CORE STYLES --- */
 *{box-sizing:border-box;margin:0;padding:0}
@@ -33,7 +33,6 @@ body{background:#000;color:#fff;font-family:sans-serif;padding-bottom:100px; -we
 .alert.show{display:block;animation:pulse 2s infinite}
 .alert-warning{background:#FFD60A;color:#000}
 .alert-protein{background:#00f0ff;color:#000}
-/* LOVE MODE STYLE */
 .alert-love{background:linear-gradient(135deg, #e056fd 0%, #000000 100%); color:#fff; border:1px solid #e056fd; text-shadow:0 1px 2px rgba(0,0,0,0.5); line-height:1.6;}
 @keyframes pulse{0%{opacity:1}50%{opacity:0.8}100%{opacity:1}}
 
@@ -71,17 +70,20 @@ body{background:#000;color:#fff;font-family:sans-serif;padding-bottom:100px; -we
 .timeline{padding:0 15px;margin-bottom:40px}
 .task{display:flex;gap:10px;margin-bottom:15px;min-height:60px}
 .task-time{width:45px;color:#666;font-size:0.7rem;padding-top:12px;text-align:right;font-family:monospace;font-weight:bold}
-.task-card{flex:1;background:#0a0a0a;border:1px solid #333;border-radius:12px;padding:12px 60px 12px 12px;position:relative;transition:all 0.2s}
+.task-card{flex:1;background:#0a0a0a;border:1px solid #333;border-radius:12px;padding:12px 15px;position:relative;transition:all 0.2s; display:flex; justify-content:space-between; align-items:center;}
 .task-card.checked{border-color:#ccff00;background:rgba(204,255,0,0.05)}
 .task-card.clickable:active{transform:scale(0.98);background:#222}
-.task-card.auto-detected{border-color:#00f0ff;background:rgba(0,240,255,0.05)}
+.task-card.auto-detected{border-color:#00f0ff;background:rgba(0,240,255,0.05); opacity:0.9;}
+
+.task-info { flex:1; }
 .task-title{font-weight:900;font-size:0.8rem;margin-bottom:4px;color:#fff}
 .task-desc{font-size:0.65rem;color:#888;line-height:1.4}
-.workout-badge{display:inline-block;background:#00f0ff;color:#000;padding:2px 6px;border-radius:4px;font-size:0.5rem;font-weight:900;margin-left:4px;vertical-align:text-bottom}
-.check-btn{position:absolute;top:0;right:0;width:60px;height:100%;display:flex;align-items:center;justify-content:center;cursor:pointer;border-left:1px solid #222}
+.workout-badge{display:inline-block;background:#00f0ff;color:#000;padding:2px 6px;border-radius:4px;font-size:0.5rem;font-weight:900;margin-left:5px; vertical-align:middle;}
+.chevron { font-size:1.2rem; color:#666; margin-left:15px; font-weight:900; }
+
+.check-btn{width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;margin-left:10px;}
 .check-circle{width:24px;height:24px;border:2px solid #666;border-radius:50%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:0.9rem;transition:all 0.2s}
 .task-card.checked .check-circle{background:#ccff00;border-color:#ccff00;color:#000}
-.task-card.auto-detected .check-circle{background:#00f0ff;border-color:#00f0ff;color:#000}
 
 /* MODALS */
 .modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:500;display:none;overflow-y:auto}
@@ -389,11 +391,14 @@ class CenturionApp {
             const sleepUrl = `https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${startStr}&end_date=${endStr}`)}`;
             const workoutUrl = `https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/workout?start_date=${startStr}&end_date=${endStr}`)}`;
             const activityUrl = `https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${startStr}&end_date=${endStr}`)}`;
+            const readinessUrl = `https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${startStr}&end_date=${endStr}`)}`;
 
-            const [sleepRes, workoutRes, activityRes] = await Promise.all([
+
+            const [sleepRes, workoutRes, activityRes, readinessRes] = await Promise.all([
                 fetch(sleepUrl, { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch(workoutUrl, { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch(activityUrl, { headers: { 'Authorization': `Bearer ${token}` } })
+                fetch(activityUrl, { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch(readinessUrl, { headers: { 'Authorization': `Bearer ${token}` } })
             ]);
 
             if (!sleepRes.ok || !workoutRes.ok || !activityRes.ok) throw new Error('API failed');
@@ -401,8 +406,10 @@ class CenturionApp {
             const sleepData = await sleepRes.json();
             const workoutData = await workoutRes.json();
             const activityData = await activityRes.json();
+            const readinessData = await readinessRes.json();
 
-            this.processData(sleepData.data || [], workoutData.data || [], activityData.data || []);
+
+            this.processData(sleepData.data || [], workoutData.data || [], activityData.data || [], readinessData.data || []);
             
             this.setText('syncStatus', 'SYNCED ✓');
             this.render();
@@ -414,7 +421,7 @@ class CenturionApp {
         }
     }
 
-    processData(sleepData, workoutData, activityData) {
+    processData(sleepData, workoutData, activityData, readinessData) {
         const dataMap = new Map();
         
         const getDay = (date) => {
@@ -435,7 +442,14 @@ class CenturionApp {
             day.deepSec += session.deep_sleep_duration || 0;
             day.remSec += session.rem_sleep_duration || 0;
             if (session.score && session.score > day.score) day.score = session.score;
-            if (session.contributors?.resting_heart_rate) day.rhr = session.contributors.resting_heart_rate;
+        });
+        
+        // FIX: RHR from Readiness
+        readinessData.forEach(readiness => {
+             const day = getDay(readiness.day);
+             if (readiness.contributors?.resting_heart_rate) {
+                 day.rhr = readiness.contributors.resting_heart_rate;
+             }
         });
         
         workoutData.forEach(workout => {
@@ -794,14 +808,25 @@ class CenturionApp {
         this.protocol.forEach(task => {
             const isChecked = checked.includes(task.id);
             const clickAction = task.clickable ? `onclick="app.openMealPicker('${task.mealSlot}')"` : '';
+            // FIX: Don't disable click for auto-detected if it's also a meal slot (unlikely but safe)
+            const cardClass = `task-card ${isChecked ? 'checked' : ''} ${task.clickable ? 'clickable' : ''} ${task.autoDetected ? 'auto-detected' : ''}`;
+            
+            // Add chevron only if clickable
+            const chevron = task.clickable ? `<span class="chevron">›</span>` : '';
+            
             html += `<div class="task">
                 <div class="task-time">${task.time}</div>
-                <div class="task-card ${isChecked ? 'checked' : ''} ${task.autoDetected ? 'auto-detected' : ''}" ${clickAction}>
-                    <div class="task-title">${task.title}</div>
-                    <div class="task-desc">${task.desc}</div>
-                    <div class="check-btn" onclick="event.stopPropagation(); app.toggleTask('${task.id}')">
-                        <div class="check-circle">${isChecked ? '✓' : ''}</div>
+                <div class="${cardClass}" ${clickAction}>
+                    <div class="task-info">
+                        <div class="task-title">${task.title} 
+                            ${task.autoDetected ? '<span class="workout-badge">AUTO</span>' : ''}
+                        </div>
+                        <div class="task-desc">${task.desc}</div>
                     </div>
+                    ${chevron}
+                    ${!task.autoDetected ? `<div class="check-btn" onclick="event.stopPropagation(); app.toggleTask('${task.id}')">
+                        <div class="check-circle">${isChecked ? '✓' : ''}</div>
+                    </div>` : ''}
                 </div>
             </div>`;
         });
