@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Centurion | v16.21 COMPLETE</title>
+    <title>The Centurion | v16.22 SENSOR-PATCHED</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -215,7 +215,7 @@
 <body>
     <div class="hud-header">
         <div class="top-bar">
-            <div class="app-name">CENTURION v16.21 COMPLETE</div>
+            <div class="app-name">CENTURION v16.22 SENSOR-PATCHED</div>
             <div style="display:flex; gap:10px;">
                 <button onclick="centurion.openBio()" class="bio-btn">BIO</button>
                 <div class="user-switch">
@@ -664,7 +664,7 @@ class CenturionCore {
             
             this.history = consolidated; 
             
-            // Ensure Today exists in history even if Oura fails
+            // Re-ensure Today Exists if missing from API
             const today = this.currentDateStr;
             if (!this.history.find(h => h.date === today)) {
                 this.history.unshift({
@@ -679,7 +679,7 @@ class CenturionCore {
             this.setText('dataSource', 'LIVE');
             this.render();
             
-            // Check for new workouts - THIS FUNCTION IS NOW PRESENT
+            // Check for new workouts - THIS IS NOW PRESENT
             this.detectTodayWorkout();
 
         } catch(e) { 
@@ -749,6 +749,7 @@ class CenturionCore {
             this.renderTrendAnalysis();
             this.renderCouplesSynergy();
             
+            // RUN INTELLIGENCE
             this.runIntelligenceEngine();
             
             this.renderComplex(d.date); 
@@ -789,16 +790,27 @@ class CenturionCore {
         const icon = activityMap[workout.activity] || '🏋️';
         const duration = Math.round((new Date(workout.end_datetime) - new Date(workout.start_datetime)) / 60000);
         const calories = workout.calories || 0;
-        const avgHR = workout.average_heart_rate || 0;
-        const maxHR = workout.max_heart_rate || 0;
         
+        // --- PATCH FOR MISSING BPM ---
+        let avgHR = workout.average_heart_rate || 0;
+        
+        // If average is missing but items exist, calculate manually
+        if ((!avgHR || avgHR === 0) && workout.heart_rate && workout.heart_rate.items && workout.heart_rate.items.length > 0) {
+            const sum = workout.heart_rate.items.reduce((a, b) => a + b, 0);
+            avgHR = Math.round(sum / workout.heart_rate.items.length);
+        }
+        
+        const maxHR = workout.max_heart_rate || 0;
         let zoneBreakdown = this.calculateZoneBreakdown(workout.heart_rate);
         
         let html = '<div class="workout-detect show" id="workoutDetectBanner">';
         html += `<div class="workout-detect-title">${icon} WORKOUT DETECTED</div>`;
         html += `<div class="workout-detect-data">Activity: ${workout.activity.replace(/_/g, ' ').toUpperCase()}</div>`;
         html += `<div class="workout-detect-data">Duration: ${duration} min | Calories: ${calories}</div>`;
-        html += `<div class="workout-detect-data">Avg HR: ${avgHR} bpm | Max HR: ${maxHR} bpm</div>`;
+        
+        // Display Logic
+        const hrDisplay = avgHR > 0 ? `${avgHR} bpm` : 'N/A';
+        html += `<div class="workout-detect-data">Avg HR: ${hrDisplay} | Max HR: ${maxHR > 0 ? maxHR + ' bpm' : 'N/A'}</div>`;
         
         if(zoneBreakdown) {
             html += '<div class="workout-detect-data" style="margin-top: 8px; font-size: 0.65rem;">HR ZONES: ';
@@ -808,9 +820,10 @@ class CenturionCore {
                 }
             }
             html += '</div>';
-        } else {
-            const zone = this.getZoneFromHR(avgHR);
-            html += `<div class="workout-detect-data" style="color: ${zone.color};">Primary Zone: ${zone.name} (${avgHR} bpm avg)</div>`;
+        } else if (avgHR > 0) {
+             // Fallback estimator
+             const zone = this.getZoneFromHR(avgHR);
+             html += `<div class="workout-detect-data" style="color: ${zone.color};">Est. Zone: ${zone.name}</div>`;
         }
         
         html += '<button class="auto-log-btn" onclick="centurion.autoLogWorkout()">✓ AUTO-LOG TO TIMELINE</button>';
@@ -1115,7 +1128,6 @@ class CenturionCore {
         this.setText('longevityScore', longevity.total);
         const primaryBox = document.querySelector('.score-box.primary');
         if(primaryBox) primaryBox.style.borderColor = longevity.grade.color;
-        this.longevityData = longevity;
     }
     
     getUserLongevityData() {
