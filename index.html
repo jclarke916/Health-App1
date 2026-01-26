@@ -526,7 +526,7 @@ class CenturionApp {
         this.render();
     }
 
-    // --- MODAL & LOGIC ---
+        // --- MODAL & LOGIC ---
     calculateBMI() {
         const weight = parseFloat(this.bios.weight);
         const heightInches = USERS[this.user].goals.heightInches || 70;
@@ -717,8 +717,402 @@ class CenturionApp {
                         style="width:100%; background:#1a1a1a; border:1px solid #333; color:#fff; padding:10px; border-radius:6px; font-family:monospace;">
                 </div>
             </div>
-        </div>
-        <button onclick="app.saveBio()" 
+        </div>`;
+
+        // SMART RECOMMENDATIONS ENGINE
+        const recommendations = [];
+        const today = new Date(day.date).getDay();
+        const hadWorkout = day.workouts && day.workouts.length > 0;
+        const workoutType = hadWorkout ? day.workouts[0].type : null;
+        const highIntensity = workoutType === 'strength_training' || workoutType === 'hiit' || workoutType === 'running';
+        const sleepDebt = this.calculateSleepDebt();
+        const poorSleep = day.score < 75 || sleepDebt > 3;
+        const elevatedRHR = parseFloat(day.rhr) > 60;
+
+        // Blood Work Recommendations - FOOD ONLY
+        if (parseFloat(this.bios.apob) > 80) {
+            recommendations.push({
+                category: '🩸 BLOOD WORK',
+                issue: 'ApoB Elevated',
+                rec: 'Soluble Fiber from Food',
+                items: ['Oats (1 cup daily)', 'Beans/Lentils', 'Ground Flaxseed (2 tbsp)', 'Reduce Saturated Fat', 'Increase Fish/Nuts'],
+                why: 'Soluble fiber binds cholesterol in gut. Oat beta-glucan proven to lower LDL 5-10%'
+            });
+        }
+        
+        if (parseFloat(this.bios.lpa) > 30) {
+            recommendations.push({
+                category: '🩸 BLOOD WORK',
+                issue: 'Lp(a) Elevated',
+                rec: 'ALA Omega-3 Stack',
+                items: ['Ground Flaxseed (2 tbsp/day)', 'Walnuts (1/4 cup daily)', 'Chia Seeds', 'Increase Fatty Fish'],
+                why: 'ALA from flax/walnuts shown to reduce Lp(a) by 14%. Only dietary intervention proven to work.'
+            });
+        }
+        
+        if (parseFloat(this.bios.hscrp) > 0.5) {
+            recommendations.push({
+                category: '🩸 BLOOD WORK',
+                issue: 'Inflammation Detected',
+                rec: 'Anti-Inflammatory Foods',
+                items: ['Turmeric + Black Pepper (in meals)', 'Ginger Tea', 'Fatty Fish 3x/week', 'Berries Daily', 'Reduce Processed Foods', 'Extra Virgin Olive Oil'],
+                why: 'Curcumin + Piperine = 2000% absorption. Mediterranean diet lowers hsCRP 30%.'
+            });
+        }
+        
+        if (parseFloat(this.bios.hba1c) > 5.4) {
+            recommendations.push({
+                category: '🩸 BLOOD WORK',
+                issue: 'Blood Sugar Creeping',
+                rec: 'Glucose Control Protocol',
+                items: ['Increase Fiber to 50g/day', 'Cinnamon (1 tsp daily)', 'Vinegar before meals', 'Walk after eating', 'Reduce Refined Carbs'],
+                why: 'Fiber slows glucose absorption. Post-meal walks lower blood sugar spikes 15-20%.'
+            });
+        }
+
+        // JERMAINE UFC GYM DAYS (Tue/Thu with Marcus)
+        if (this.user === 'jermaine' && (today === 2 || today === 4)) {
+            if (hadWorkout) {
+                recommendations.push({
+                    category: '🥊 UFC GYM RECOVERY',
+                    issue: 'Technical Training with Marcus',
+                    rec: 'Post-Session Protocol',
+                    items: [
+                        '🧊 **Theragun Pro (Cold)** - Shoulders/neck (15min)',
+                        '🦵 **Theraknee (Cold)** - If heavy kicking drills',
+                        '🔥 **Hyperice Back** - If grappling/ground work',
+                        '🍖 **Protein Meal** - Within 2hrs (38-54g)',
+                        '💧 **Electrolytes** - Rehydrate from pad work',
+                        '**EVENING:** Normatec Legs + Heat therapy before bed'
+                    ],
+                    why: 'Technical work = shoulder/neck fatigue from pads. Less muscle damage than strength training but joint stress. Evening Normatec = full recovery.'
+                });
+            } else {
+                recommendations.push({
+                    category: '🥊 UFC GYM DAY',
+                    issue: 'Tuesday/Thursday - Marcus Training',
+                    rec: 'Pre-Session Prep',
+                    items: [
+                        '🔥 **Theraknee (Heat)** - Warmup (10min)',
+                        '🔥 **Hyperice Back (Heat)** - If planning grappling',
+                        '💧 **Hydration** - 24oz water pre-session',
+                        '🍖 **Light protein** - 1-2hrs before (30g)',
+                        '**POST:** Follow UFC recovery protocol above'
+                    ],
+                    why: 'Heat pre-session = joint pliability. Technique work requires mobility over strength.'
+                });
+            }
+        }
+
+        // SOPHIA REBOUND DAYS (Wed/Fri at Club Studio)
+        if (this.user === 'sophia' && (today === 3 || today === 5)) {
+            if (hadWorkout) {
+                recommendations.push({
+                    category: '🏃 REBOUND RECOVERY',
+                    issue: 'Club Studio Class Complete',
+                    rec: 'Post-Class Protocol',
+                    items: [
+                        '🧊 **Club Studio Cryo** - Immediately after (3min)',
+                        '🔥 **Club Studio Sauna** - 10min after cryo',
+                        '🦵 **Normatec Legs** - At home (30min)',
+                        '🍖 **Protein + Carbs** - Glycogen replenishment',
+                        '💧 **Hydration** - 32oz water',
+                        '**EVENING:** Theraface heat + skincare'
+                    ],
+                    why: 'Rebound = high-impact cardio. Cryo immediately after = inflammation control. Sauna = circulation boost. Legs need compression.'
+                });
+            } else {
+                recommendations.push({
+                    category: '🏃 REBOUND DAY',
+                    issue: 'Wednesday/Friday - Club Studio',
+                    rec: 'Pre-Class Prep',
+                    items: [
+                        '🦵 **Theraknee (Heat)** - Warmup (10min)',
+                        '💧 **Hydration** - 20oz water 1hr before',
+                        '🍌 **Light carbs** - 30min before class',
+                        '**POST:** Cryo → Sauna at Club Studio',
+                        '**EVENING:** Normatec + skincare routine'
+                    ],
+                    why: 'Rebound is high-impact. Knee warmup = injury prevention. Post-class contrast therapy built into Club Studio visit.'
+                });
+            }
+        }
+
+        // SOPHIA CUPPING (BACK RECOVERY)
+        if (this.user === 'sophia' && (today === 2 || today === 4)) {
+            recommendations.push({
+                category: '🔵 CUPPING THERAPY',
+                issue: 'Tue/Thu - Back Recovery',
+                rec: 'Myofascial Release Session',
+                items: [
+                    '🔵 **Back Cupping** - 15-20min (upper/mid/lower back)',
+                    '🔥 **Hyperice Back (Heat)** - After cupping (warmth)',
+                    '🧘 **Light Stretching** - Post-cupping mobility',
+                    '💧 **Hydration** - 24oz water (flush toxins)',
+                    '⏰ **Best Time:** Evening before bed'
+                ],
+                why: 'Cupping = deep fascia release + blood flow. Back tension from training/posture. Heat after = muscle relaxation. Perfect for non-training days.'
+            });
+        }
+
+        // POST-WORKOUT RECOVERY (Any hard training)
+        if (hadWorkout && highIntensity && today !== 2 && today !== 4 && (this.user === 'jermaine' || (today !== 3 && today !== 5))) {
+            recommendations.push({
+                category: '💪 POST-WORKOUT (TODAY)',
+                issue: `${WORKOUT_TYPES[workoutType] || 'Workout'} Detected - Immediate Recovery`,
+                rec: 'Within 2 Hours of Training',
+                items: workoutType === 'strength_training' ? [
+                    '🧊 **Theragun Pro (Cold)** - Worked muscles (10min)',
+                    '🦵 **Normatec Legs** - If lower body (30min)',
+                    '🦵 **Normatec Hips** - If squats/deadlifts (30min)',
+                    '🍖 **Protein Meal** - 54g minimum',
+                    '💧 **Hydration** - 32oz water immediately'
+                ] : [
+                    '🧊 **Theragun Pro (Cold)** - Primary muscles (15min)',
+                    '🦵 **Normatec Legs** - Full compression (30min)',
+                    '🍖 **Protein + Carbs** - Glycogen replenishment',
+                    '💧 **Electrolytes** - Salt + potassium'
+                ],
+                why: 'Cold + compression within 2hrs = 40% faster recovery. Protein window = max muscle synthesis.'
+            });
+        }
+
+        // EVENING RECOVERY (Same day as workout)
+        if (hadWorkout) {
+            recommendations.push({
+                category: '🌙 TONIGHT (PRE-SLEEP)',
+                issue: 'Trained Today - Sleep Optimization',
+                rec: 'Evening Recovery Routine',
+                items: [
+                    '🔥 **Hyperice Back (Heat)** - 20min relaxation',
+                    '🦵 **Normatec Session #2** - If hard training',
+                    '🧊 **Theragun Cube (Cold)** - Neck/traps for sleep',
+                    '🛁 **Hot Shower** - Cool down last 30sec',
+                    '📱 **No Screens** - 1hr before bed',
+                    '🌡️ **Cool Room** - 65-68°F'
+                ],
+                why: 'Trained muscles need 2x recovery sessions. Heat → Cold = body temp drop = deep sleep trigger.'
+            });
+        }
+
+        // ACTIVE RECOVERY DAY
+        if (!hadWorkout && !poorSleep && !elevatedRHR) {
+            recommendations.push({
+                category: '♻️ ACTIVE RECOVERY',
+                issue: 'Rest Day - Light Movement',
+                rec: 'Low-Intensity Protocol',
+                items: [
+                    '🏊 **InShape Pool** - Light swim/stretch (20min)',
+                    '🌊 **InShape Aqua Massage** - Full session (30min)',
+                    '🛁 **InShape Steam** - If visiting (15min)',
+                    '🚶 **Walk** - 15-30min easy',
+                    '🧘 **Mobility/Yoga** - Light stretching',
+                    this.user === 'sophia' ? '⚡ **Microcurrent** - Facial workout (15min)' : '📖 **Recovery reading/planning**'
+                ],
+                why: 'Movement without fatigue = circulation boost. Aqua massage = lymphatic drainage. Active recovery aids muscle repair.'
+            });
+        }
+
+        // FORCED REST DAY
+        if (poorSleep || elevatedRHR || sleepDebt > 5) {
+            recommendations.push({
+                category: '🛑 FORCED REST (CRITICAL)',
+                issue: elevatedRHR ? `RHR Elevated (${day.rhr} bpm) - CNS Fatigue` : `Sleep Debt: ${sleepDebt.toFixed(1)}hrs`,
+                rec: 'Full Recovery Day - NO TRAINING',
+                items: [
+                    '❌ **CANCEL WORKOUT** - Recovery takes priority',
+                    '🧊 **Club Studio Cryo** - Morning (3min)',
+                    '🔥 **Club Studio Sauna** - After cryo (20min)',
+                    '🛁 **InShape Steam Room** - Mid-day (15min)',
+                    '🌊 **InShape Aqua Massage** - Afternoon (30min)',
+                    '🦵 **Normatec Full Session** - Evening (45min)',
+                    '🔥 **Hyperice Back (Heat)** - Extended relaxation',
+                    '😴 **Early Bedtime** - 9pm target'
+                ],
+                why: elevatedRHR 
+                    ? 'RHR >60 = overtraining signal. Training now = injury risk + performance decline. Rest drops RHR 5-10 bpm.'
+                    : 'Sleep debt >5hrs = immune compromise + injury risk 3x higher. Full recovery day is training.'
+            });
+        }
+
+        // MONDAY - FRESH WEEK START
+        if (today === 1) {
+            recommendations.push({
+                category: '🔋 MONDAY PROTOCOL',
+                issue: 'Week Kickoff',
+                rec: this.user === 'jermaine' ? 'Jermaine Monday' : 'Sophia Monday',
+                items: this.user === 'jermaine' ? [
+                    '💪 **Traditional Gym** - Strength focus',
+                    '🔥 **Pre-workout:** Hyperice Back (heat)',
+                    '🧊 **Post-workout:** Theragun Pro (cold)',
+                    '🦵 **Evening:** Normatec legs',
+                    '📊 **Review:** Check Oura readiness score'
+                ] : [
+                    '💪 **Traditional Gym** - Strength training',
+                    '⚡ **AM Skincare:** Microcurrent + Cold wand',
+                    '🧊 **Post-workout:** Theragun (cold)',
+                    '🦵 **Evening:** Light Normatec',
+                    '📊 **Plan:** Wed/Fri Rebound classes'
+                ],
+                why: 'Monday sets tone for week. Strength training early = recovery time before mid-week sessions.'
+            });
+        }
+
+        // WEDNESDAY - MID-WEEK (Jermaine only)
+        if (today === 3 && this.user === 'jermaine') {
+            recommendations.push({
+                category: '🏋️ WEDNESDAY PROTOCOL',
+                issue: 'Mid-Week Training',
+                rec: 'Traditional Gym or Club Studio',
+                items: [
+                    '💪 **Option A:** Traditional Gym strength',
+                    '🏃 **Option B:** Club Studio cardio',
+                    '🧊 **Club Studio Cryo** - If training there (3min)',
+                    '🔥 **Club Studio Sauna** - Post-workout (20min)',
+                    '🦵 **Normatec** - Evening recovery',
+                    '💡 **Tomorrow:** UFC with Marcus - save legs'
+                ],
+                why: 'Wednesday between UFC days. Contrast therapy = active recovery + conditioning. Light on legs if training Thursday.'
+            });
+        }
+
+        // SATURDAY - WEEK WRAP
+        if (today === 6) {
+            recommendations.push({
+                category: '💪 SATURDAY PROTOCOL',
+                issue: 'Weekend Training',
+                rec: 'Optional Hard Session',
+                items: this.user === 'jermaine' ? [
+                    '🏋️ **Optional:** Heavy strength if feeling good',
+                    '🥊 **OR:** Light UFC technique work',
+                    '🦵 **Normatec Full Session** - Extended (45min)',
+                    '🔥 **Hyperice Back** - Recovery mode',
+                    '🧊 **Theragun Pro** - Any sore spots',
+                    '😴 **Prep:** Sunday full recovery day'
+                ] : [
+                    '💪 **Optional:** Light strength or cardio',
+                    '🧘 **Yoga/Pilates** - Active recovery',
+                    '🦵 **Normatec** - If trained (30min)',
+                    '⚡ **Skincare:** Avoid if microneedling tomorrow',
+                    '😴 **Prep:** Sunday recovery ritual'
+                ],
+                why: 'Saturday = flex day. Train if metrics good, rest if needed. Prep for Sunday reset.'
+            });
+        }
+
+        // SUNDAY FULL RECOVERY RITUAL
+        if (today === 0) {
+            const isFirstSunday = new Date(day.date).getDate() <= 7;
+            const sophiaExtra = this.user === 'sophia' ? [
+                isFirstSunday ? '📍 **Microneedling** - First Sunday only (PM)' : '⚡ **Microcurrent** - Regular facial workout',
+                '🧊 **Theraface Cold** - Morning depuff',
+                '🔥 **Theraface Heat** - Evening absorption'
+            ] : [];
+
+            recommendations.push({
+                category: '🧘 SUNDAY RITUAL',
+                issue: 'Weekly Reset & Recovery',
+                rec: 'Full Mind-Body Protocol',
+                items: [
+                    '🏊 **InShape Full Experience:**',
+                    '  → Steam Room (15min)',
+                    '  → Sauna (20min)', 
+                    '  → Pool stretching (15min)',
+                    '  → Aqua Massage Bed (30min)',
+                    '🔥 **Hyperice Back** - Extended (30min)',
+                    '🦵 **Normatec Hip + Legs** - Full (45min)',
+                    ...sophiaExtra,
+                    '📱 **Digital Detox** - Minimal screens',
+                    '📊 **Week Review** - Oura data analysis',
+                    '📅 **Week Ahead:** Plan training schedule',
+                    '😴 **Early Bed** - 9pm for Monday readiness'
+                ],
+                why: 'Sunday = parasympathetic reset. Full recovery arsenal prepares body for training week. Planning = mental clarity.'
+            });
+        }
+
+        // SOPHIA SKINCARE
+        if (this.user === 'sophia') {
+            if (today === 1 || today === 3 || today === 5) {
+                recommendations.push({
+                    category: '✨ SOPHIA AM SKINCARE',
+                    issue: 'Mon/Wed/Fri - Microcurrent',
+                    rec: 'Morning Facial Routine',
+                    items: [
+                        '⚡ **Microcurrent** - 15min facial workout',
+                        '🧊 **Theraface Cold** - Depuff (5min)',
+                        '💧 **Serum Application** - While skin cool',
+                        '☀️ **SPF Always** - UV protection'
+                    ],
+                    why: 'Microcurrent 3x/week = cumulative toning. Cold tightens pores. Consistency = results in 4-6 weeks.'
+                });
+            }
+
+            if (!hadWorkout || (today !== 3 && today !== 5)) {
+                recommendations.push({
+                    category: '✨ SOPHIA PM SKINCARE',
+                    issue: 'Evening Routine',
+                    rec: 'Nighttime Protocol',
+                    items: [
+                        '🔥 **Theraface Heat** - 5min (product absorption)',
+                        '💧 **Rich Serum/Night Cream** - Apply during heat',
+                        '🧊 **Theraface Cold** - Under eyes (optional)'
+                    ],
+                    why: 'Heat = deeper penetration. Skin repairs overnight. Simple routine > complicated sporadic.'
+                });
+            }
+        }
+
+        // TRAINING FACILITIES
+        recommendations.push({
+            category: '🏋️ TRAINING FACILITIES',
+            issue: 'Centurion Training Stack',
+            rec: this.user === 'jermaine' ? 'Jermaine Access' : 'Sophia Access',
+            items: this.user === 'jermaine' ? [
+                '🏃 **Club Studio** - Treadmill, Cryo, Sauna',
+                '💪 **Traditional Gym** - Iron Temple', 
+                '🥊 **UFC Gym** - Marcus Reaves (Tue/Thu)',
+                '🏊 **InShape** - Aqua Massage, Steam, Pools',
+                '🔫 **Home Arsenal** - Theragun Pro, Normatec, Hyperice, Theraknee'
+            ] : [
+                '🏃 **Club Studio** - Rebound (Wed/Fri), Cryo, Sauna',
+                '💪 **Traditional Gym** - Strength',
+                '🏊 **InShape** - Aqua Massage, Steam, Pools',
+                '🔫 **Home Recovery** - Theragun, Normatec, Theraface',
+                '💎 **Home MedSpa** - Microcurrent, Microneedling, Cupping'
+            ],
+            why: this.user === 'sophia' 
+                ? '4 facilities + home medspa = professional self-care. Consistency = visible results.'
+                : '4 facilities = zero excuses. Recovery tech = train harder, recover faster.'
+        });
+
+        // RENDER RECOMMENDATIONS
+        if (recommendations.length > 0) {
+            html += `<div style="margin-top:30px;">
+                <div style="font-size:0.75rem; font-weight:900; color:var(--cyan); margin-bottom:15px; text-transform:uppercase; border-bottom:2px solid #222; padding-bottom:8px;">
+                    💊 PERSONALIZED RECOMMENDATIONS
+                </div>`;
+            
+            recommendations.forEach(rec => {
+                html += `<div style="background:#111; border:1px solid #333; border-radius:10px; padding:15px; margin-bottom:15px;">
+                    <div style="font-size:0.7rem; color:var(--cyan); font-weight:900; margin-bottom:5px;">${rec.category}</div>
+                    <div style="font-size:0.9rem; font-weight:900; color:#fff; margin-bottom:8px;">${rec.rec}</div>
+                    <div style="font-size:0.65rem; color:#888; margin-bottom:10px; font-style:italic;">${rec.issue}</div>
+                    <div style="background:#0a0a0a; padding:12px; border-radius:6px; margin-bottom:10px;">`;
+                
+                rec.items.forEach(item => {
+                    html += `<div style="color:#ccc; font-size:0.75rem; padding:4px 0; border-bottom:1px solid #1a1a1a;">• ${item}</div>`;
+                });
+                
+                html += `</div>
+                    <div style="font-size:0.65rem; color:var(--acid); font-weight:700;">💡 ${rec.why}</div>
+                </div>`;
+            });
+            
+            html += `</div>`;
+        }
+
+        html += `<button onclick="app.saveBio()" 
             style="width:100%; background:var(--acid); color:#000; border:none; padding:15px; border-radius:10px; font-weight:900; font-size:1rem; margin-top:25px; cursor:pointer; text-transform:uppercase; letter-spacing:1px;">
             💾 SAVE BIOMARKERS
         </button></div>`;
@@ -737,7 +1131,7 @@ class CenturionApp {
         this.closeModal();
         this.render();
     }
-// --- TO HERE ---
+
 
 
     // --- CUSTOM MEAL BUILDER ---
