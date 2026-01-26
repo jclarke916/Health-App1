@@ -526,24 +526,220 @@ class CenturionApp {
         this.render();
     }
 
+    // --- REPLACE FROM HERE ---
     // --- MODAL & LOGIC ---
+    calculateBMI() {
+        const weight = parseFloat(this.bios.weight);
+        const heightInches = USERS[this.user].goals.heightInches || 70;
+        if (!weight || !heightInches) return null;
+        return ((weight / (heightInches * heightInches)) * 703).toFixed(1);
+    }
+
+    calculateLongevityScore() {
+        const day = this.history[this.currentIndex];
+        let totalScore = 0;
+        const bmi = this.calculateBMI();
+        
+        const userData = {
+            apob: parseFloat(this.bios.apob) || null,
+            lpa: parseFloat(this.bios.lpa) || null,
+            hscrp: parseFloat(this.bios.hscrp) || null,
+            hba1c: parseFloat(this.bios.hba1c) || null,
+            bmi: bmi ? parseFloat(bmi) : null,
+            sleepScore: day.score || null,
+            rhr: day.rhr !== '-' ? parseInt(day.rhr) : null
+        };
+
+        // ApoB (15 pts)
+        if (userData.apob !== null) {
+            if (userData.apob <= 80) totalScore += 15;
+            else if (userData.apob >= 130) totalScore += 0;
+            else totalScore += 15 * (1 - ((userData.apob - 80) / (130 - 80)));
+        }
+
+        // Lp(a) (15 pts) - Special rule
+        if (userData.lpa !== null) {
+            if (userData.lpa > 150 && userData.apob && userData.apob < 80) {
+                totalScore += 7.5;
+            } else if (userData.lpa <= 30) {
+                totalScore += 15;
+            } else if (userData.lpa >= 150) {
+                totalScore += 0;
+            } else {
+                totalScore += 15 * (1 - ((userData.lpa - 30) / (150 - 30)));
+            }
+        }
+
+        // hsCRP (10 pts)
+        if (userData.hscrp !== null) {
+            if (userData.hscrp <= 0.5) totalScore += 10;
+            else if (userData.hscrp >= 2.0) totalScore += 0;
+            else totalScore += 10 * (1 - ((userData.hscrp - 0.5) / (2.0 - 0.5)));
+        }
+
+        // HbA1c (10 pts)
+        if (userData.hba1c !== null) {
+            if (userData.hba1c <= 5.4) totalScore += 10;
+            else if (userData.hba1c >= 6.0) totalScore += 0;
+            else totalScore += 10 * (1 - ((userData.hba1c - 5.4) / (6.0 - 5.4)));
+        }
+
+        // BMI (10 pts)
+        if (userData.bmi !== null) {
+            if (userData.bmi >= 18.5 && userData.bmi <= 27) totalScore += 10;
+        }
+
+        // Sleep Score (10 pts)
+        if (userData.sleepScore !== null) {
+            if (userData.sleepScore >= 85) totalScore += 10;
+            else if (userData.sleepScore <= 60) totalScore += 0;
+            else totalScore += 10 * ((userData.sleepScore - 60) / (85 - 60));
+        }
+
+        // RHR (10 pts)
+        if (userData.rhr !== null) {
+            if (userData.rhr <= 50) totalScore += 10;
+            else if (userData.rhr >= 75) totalScore += 0;
+            else totalScore += 10 * (1 - ((userData.rhr - 50) / (75 - 50)));
+        }
+
+        return Math.round(totalScore);
+    }
+
     openBio() {
         const modalBody = document.getElementById('modalBody');
-        this.setText('modalTitle', 'BIOMETRICS');
-        let html = '';
-        ['apob','lpa','ldl','hscrp','glucose','hba1c','weight','bmr'].forEach(f => {
-            html += `<div class="bio-row"><div class="bio-group"><label>${f.toUpperCase()}</label><input class="bio-input" id="bio-${f}" type="number" value="${this.bios[f] || ''}"></div></div>`;
+        this.setText('modalTitle', 'BIOMARKERS & LONGEVITY');
+        
+        const bmi = this.calculateBMI() || '--';
+        const longevityScore = this.calculateLongevityScore();
+        const day = this.history[this.currentIndex];
+        
+        const biomarkers = [
+            { id: 'apob', label: 'ApoB', unit: 'mg/dL', optimal: '<80', threshold: '130', current: this.bios.apob || '', points: 15, why: 'Best predictor of heart disease risk' },
+            { id: 'lpa', label: 'Lp(a)', unit: 'mg/dL', optimal: '<30', threshold: '150', current: this.bios.lpa || '', points: 15, why: 'Genetic CVD risk - Lower with walnuts/flax' },
+            { id: 'hscrp', label: 'hsCRP', unit: 'mg/L', optimal: '<0.5', threshold: '2.0', current: this.bios.hscrp || '', points: 10, why: 'Inflammation marker' },
+            { id: 'hba1c', label: 'HbA1c', unit: '%', optimal: '5.4', threshold: '6.0', current: this.bios.hba1c || '', points: 10, why: '3-month glucose average' },
+            { id: 'bmi', label: 'BMI', unit: '', optimal: '18.5-27', threshold: '>30', current: bmi, points: 10, why: 'Body composition', calculated: true },
+            { id: 'sleepscore', label: 'Sleep', unit: '', optimal: '85+', threshold: '60', current: day.score || '--', points: 10, why: 'Recovery quality', calculated: true },
+            { id: 'rhr', label: 'RHR', unit: 'bpm', optimal: '<50', threshold: '75', current: day.rhr !== '-' ? day.rhr : '--', points: 10, why: 'CV fitness', calculated: true }
+        ];
+
+        let html = `<div style="padding:20px;">
+            <div style="background:linear-gradient(135deg, rgba(204,255,0,0.1) 0%, rgba(0,240,255,0.1) 100%); border:2px solid var(--acid); border-radius:12px; padding:20px; margin-bottom:25px; text-align:center;">
+                <div style="font-size:3rem; font-weight:900; background:linear-gradient(135deg,var(--acid) 0%,var(--cyan) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">${longevityScore}</div>
+                <div style="font-size:0.7rem; color:#888; margin-top:5px;">LONGEVITY SCORE / 120</div>
+                <div style="font-size:0.6rem; color:${longevityScore >= 100 ? '#30d158' : longevityScore >= 80 ? 'var(--acid)' : 'var(--cyan)'}; margin-top:8px; font-weight:700;">
+                    ${longevityScore >= 100 ? '🏆 OPTIMAL' : longevityScore >= 80 ? '⚡ EXCELLENT' : longevityScore >= 60 ? '✓ GOOD' : '⚠️ NEEDS WORK'}
+                </div>
+            </div>`;
+
+        biomarkers.forEach(bio => {
+            const current = parseFloat(bio.current);
+            let status = '⚪', statusColor = '#666';
+            
+            if (!bio.calculated && bio.current) {
+                if (bio.id === 'apob') {
+                    if (current <= 80) { status = '🟢'; statusColor = '#30d158'; }
+                    else if (current <= 130) { status = '🟡'; statusColor = '#FFD60A'; }
+                    else { status = '🔴'; statusColor = '#ff453a'; }
+                } else if (bio.id === 'lpa') {
+                    if (current <= 30) { status = '🟢'; statusColor = '#30d158'; }
+                    else if (current <= 150) { status = '🟡'; statusColor = '#FFD60A'; }
+                    else { status = '🔴'; statusColor = '#ff453a'; }
+                } else if (bio.id === 'hscrp') {
+                    if (current <= 0.5) { status = '🟢'; statusColor = '#30d158'; }
+                    else if (current <= 2.0) { status = '🟡'; statusColor = '#FFD60A'; }
+                    else { status = '🔴'; statusColor = '#ff453a'; }
+                } else if (bio.id === 'hba1c') {
+                    if (current <= 5.4) { status = '🟢'; statusColor = '#30d158'; }
+                    else if (current <= 6.0) { status = '🟡'; statusColor = '#FFD60A'; }
+                    else { status = '🔴'; statusColor = '#ff453a'; }
+                }
+            } else if (bio.calculated && bio.current !== '--') {
+                if (bio.id === 'bmi') {
+                    const bmiVal = parseFloat(bio.current);
+                    if (bmiVal >= 18.5 && bmiVal <= 27) { status = '🟢'; statusColor = '#30d158'; }
+                    else { status = '🟡'; statusColor = '#FFD60A'; }
+                } else if (bio.id === 'sleepscore') {
+                    const score = parseFloat(bio.current);
+                    if (score >= 85) { status = '🟢'; statusColor = '#30d158'; }
+                    else if (score >= 60) { status = '🟡'; statusColor = '#FFD60A'; }
+                    else { status = '🔴'; statusColor = '#ff453a'; }
+                } else if (bio.id === 'rhr') {
+                    const rhr = parseFloat(bio.current);
+                    if (rhr <= 50) { status = '🟢'; statusColor = '#30d158'; }
+                    else if (rhr <= 75) { status = '🟡'; statusColor = '#FFD60A'; }
+                    else { status = '🔴'; statusColor = '#ff453a'; }
+                }
+            }
+
+            html += `<div style="background:#111; border:1px solid #222; border-radius:10px; padding:15px; margin-bottom:15px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <div>
+                        <div style="font-size:0.9rem; font-weight:900; color:#fff; margin-bottom:3px;">${bio.label} ${status}</div>
+                        <div style="font-size:0.6rem; color:#888;">${bio.why}</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-size:0.5rem; color:#666;">WORTH ${bio.points} PTS</div>
+                    </div>
+                </div>
+                ${bio.calculated ? `
+                    <div style="background:#0a0a0a; padding:12px; border-radius:8px; border:1px solid ${statusColor};">
+                        <div style="font-size:1.5rem; font-weight:900; color:${statusColor}; font-family:monospace;">${bio.current} ${bio.unit}</div>
+                    </div>
+                ` : `
+                    <input type="number" id="bio-${bio.id}" value="${bio.current}" 
+                        style="width:100%; background:#0a0a0a; border:1px solid ${statusColor}; color:#fff; padding:12px; border-radius:8px; font-size:1.2rem; font-weight:700; font-family:monospace;" placeholder="Enter value">
+                `}
+                <div style="display:flex; gap:15px; margin-top:10px; font-size:0.65rem;">
+                    <div style="flex:1;">
+                        <div style="color:#30d158; font-weight:700;">✓ OPTIMAL</div>
+                        <div style="color:#888; margin-top:2px;">${bio.optimal} ${bio.unit}</div>
+                    </div>
+                    <div style="flex:1; text-align:right;">
+                        <div style="color:#ff453a; font-weight:700;">⚠ THRESHOLD</div>
+                        <div style="color:#888; margin-top:2px;">${bio.threshold} ${bio.unit}</div>
+                    </div>
+                </div>
+            </div>`;
         });
-        html += `<button class="save-btn" onclick="app.saveBio()">SAVE BIOMETRICS</button>`;
+
+        html += `<div style="margin-top:10px;">
+            <div style="font-size:0.75rem; font-weight:900; color:var(--acid); margin-bottom:10px; text-transform:uppercase;">BODY COMPOSITION</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <div>
+                    <label style="font-size:0.6rem; color:#888; display:block; margin-bottom:5px;">WEIGHT (lbs)</label>
+                    <input type="number" id="bio-weight" value="${this.bios.weight || ''}" 
+                        style="width:100%; background:#1a1a1a; border:1px solid #333; color:#fff; padding:10px; border-radius:6px; font-family:monospace;">
+                </div>
+                <div>
+                    <label style="font-size:0.6rem; color:#888; display:block; margin-bottom:5px;">BMR (cal/day)</label>
+                    <input type="number" id="bio-bmr" value="${this.bios.bmr || ''}" 
+                        style="width:100%; background:#1a1a1a; border:1px solid #333; color:#fff; padding:10px; border-radius:6px; font-family:monospace;">
+                </div>
+            </div>
+        </div>
+        <button onclick="app.saveBio()" 
+            style="width:100%; background:var(--acid); color:#000; border:none; padding:15px; border-radius:10px; font-weight:900; font-size:1rem; margin-top:25px; cursor:pointer; text-transform:uppercase; letter-spacing:1px;">
+            💾 SAVE BIOMARKERS
+        </button></div>`;
+
         modalBody.innerHTML = html;
         document.getElementById('mainModal').classList.add('show');
         document.getElementById('fixedFooter').classList.remove('show');
     }
 
     saveBio() {
-        ['apob','lpa','ldl','hscrp','glucose','hba1c','weight','bmr'].forEach(f => { const el = document.getElementById(`bio-${f}`); if(el) this.bios[f] = el.value; });
-        this.saveUserData(); this.closeModal(); this.render();
+        ['apob', 'lpa', 'hscrp', 'hba1c', 'weight', 'bmr'].forEach(f => {
+            const el = document.getElementById(`bio-${f}`);
+            if (el && el.value) this.bios[f] = el.value;
+        });
+        this.saveUserData();
+        this.closeModal();
+        this.render();
     }
+// --- TO HERE ---
+
 
     // --- CUSTOM MEAL BUILDER ---
     openCustomBuilder(mealSlot) {
