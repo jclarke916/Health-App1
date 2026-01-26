@@ -479,30 +479,82 @@ class CenturionApp {
     }
 
     processData(sleepData, workoutData, activityData, readinessData) {
-        const dataMap = new Map();
-        const getDay = (date) => {
-            if(!dataMap.has(date)) { dataMap.set(date, { date: date, score: 0, totalSec: 0, deepSec: 0, remSec: 0, rhr: '-', cal: 0, high: 0, med: 0, workouts: [] }); }
-            return dataMap.get(date);
-        };
-        sleepData.forEach(s => {
-            const d = getDay(s.day);
-            d.totalSec += s.total_sleep_duration || 0;
-            d.deepSec += s.deep_sleep_duration || 0;
-            d.remSec += s.rem_sleep_duration || 0;
-            if (s.score && s.score > d.score) d.score = s.score;
+    const dataMap = new Map();
+    const getDay = (date) => {
+        if(!dataMap.has(date)) { 
+            dataMap.set(date, { 
+                date: date, 
+                score: 0, 
+                totalSec: 0, 
+                deepSec: 0, 
+                remSec: 0, 
+                rhr: '-',  // Will be set by readiness data
+                cal: 0, 
+                high: 0, 
+                med: 0, 
+                workouts: [] 
+            }); 
+        }
+        return dataMap.get(date);
+    };
+    
+    sleepData.forEach(s => {
+        const d = getDay(s.day);
+        d.totalSec += s.total_sleep_duration || 0;
+        d.deepSec += s.deep_sleep_duration || 0;
+        d.remSec += s.rem_sleep_duration || 0;
+        if (s.score && s.score > d.score) d.score = s.score;
+        // REMOVE RHR FROM HERE - don't use sleep API for RHR
+    });
+    
+    // GET RHR FROM READINESS API (CORRECT SOURCE)
+    readinessData.forEach(r => { 
+        const d = getDay(r.day); 
+        // This is the correct RHR field
+        if (r.contributors?.resting_heart_rate) {
+            d.rhr = r.contributors.resting_heart_rate;
+        }
+    });
+    
+    workoutData.forEach(w => {
+        const d = getDay(w.day);
+        const dateObj = new Date(w.start_datetime);
+        const timeStr = dateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: false });
+        d.workouts.push({ 
+            type: w.activity || 'other', 
+            intensity: w.intensity || 'moderate', 
+            calories: w.calories || 300, 
+            time: timeStr, 
+            start: w.start_datetime 
         });
-        readinessData.forEach(r => { const d = getDay(r.day); if (r.contributors?.resting_heart_rate) d.rhr = r.contributors.resting_heart_rate; });
-        workoutData.forEach(w => {
-            const d = getDay(w.day);
-            const dateObj = new Date(w.start_datetime);
-            const timeStr = dateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: false });
-            d.workouts.push({ type: w.activity || 'other', intensity: w.intensity || 'moderate', calories: w.calories || 300, time: timeStr, start: w.start_datetime });
-        });
-        activityData.forEach(a => { const d = getDay(a.day); d.cal = a.active_calories || 0; d.high = (a.high_activity_time || 0)/60; d.med = (a.medium_activity_time || 0)/60; });
-        this.history = Array.from(dataMap.values()).sort((a, b) => b.date.localeCompare(a.date));
-        this.currentIndex = this.history.findIndex(h => h.date === this.currentDateStr);
-        if (this.currentIndex === -1) { this.history.unshift({ date: this.currentDateStr, score: 0, totalSec: 0, deepSec: 0, remSec: 0, rhr: '-', cal: 0, high: 0, med: 0, workouts: [] }); this.currentIndex = 0; }
+    });
+    
+    activityData.forEach(a => { 
+        const d = getDay(a.day); 
+        d.cal = a.active_calories || 0; 
+        d.high = (a.high_activity_time || 0)/60; 
+        d.med = (a.medium_activity_time || 0)/60; 
+    });
+    
+    this.history = Array.from(dataMap.values()).sort((a, b) => b.date.localeCompare(a.date));
+    this.currentIndex = this.history.findIndex(h => h.date === this.currentDateStr);
+    if (this.currentIndex === -1) { 
+        this.history.unshift({ 
+            date: this.currentDateStr, 
+            score: 0, 
+            totalSec: 0, 
+            deepSec: 0, 
+            remSec: 0, 
+            rhr: '-', 
+            cal: 0, 
+            high: 0, 
+            med: 0, 
+            workouts: [] 
+        }); 
+        this.currentIndex = 0; 
     }
+}
+
 
     changeDate(direction) {
         const newIndex = this.currentIndex - direction;
