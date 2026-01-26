@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Centurion v17.50 OPTIMIZED</title>
+<title>Centurion v17.51 COUPLES-SYNC</title>
 <style>
 /* --- CORE STYLES --- */
 :root { --bg:#050505; --panel:#121212; --border:#222; --acid:#ccff00; --cyan:#00f0ff; --purple:#bf5af2; --alert:#ff453a; --text:#fff; }
@@ -59,8 +59,8 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system, BlinkMacS
 .orb-val { font-family: 'Courier New', monospace; font-size: 0.7rem; font-weight: 900; color: #fff; text-shadow: 0 0 4px #000, 0 0 3px #000; letter-spacing: -0.5px; line-height: 1; margin-top: 2px; }
 .orb-label{font-size:0.45rem;font-weight:800;color:#666;text-transform:uppercase;letter-spacing:0.5px}
 
-/* HEARTS */
-.heart-svg { width: 100%; height: 100%; overflow: visible; z-index: 1;}
+/* HEARTS - FIXED Z-INDEX */
+.heart-svg { width: 100%; height: 100%; overflow: visible; z-index: 1; position: absolute; top: 0; left: 0; }
 .heart-bg { fill: none; stroke: #1a1a1a; stroke-width: 2.5; }
 .heart-fg { fill: none; stroke-width: 2.5; stroke-dasharray: 100; stroke-dashoffset: 100; transition: stroke-dashoffset 1s ease; filter:drop-shadow(0 0 3px currentColor); }
 .beating { animation: heartbeat 1.5s infinite; transform-origin: center; }
@@ -270,7 +270,7 @@ const USERS = {
     }
 };
 
-// GLOBAL RECIPE DATABASE - UPDATED WITH PHO, STEW, & SHRIMP TACOS
+// GLOBAL RECIPE DATABASE
 const MEAL_DATABASE = {
     breakfast: [
         {title:"Greek Yogurt & Berries",time:"5min",servings:1,macros:{p:20,o:0,f:4,cal:250},ingredients:["1 cup Greek Yogurt","1/2 cup Mixed Berries","1 tbsp Honey","1 tbsp Walnuts"],steps:["Scoop yogurt into bowl","Top with berries and walnuts","Drizzle with honey"],why:"Probiotics + Antioxidants. Quick high protein start.",colors:['white','purple','brown']},
@@ -404,8 +404,8 @@ const WORKOUT_TYPES = { strength_training: 'Strength', cycling: 'Cycling', runni
 // --- APP CLASS ---
 class CenturionApp {
     constructor() {
-        console.log('🚀 Init v17.49 PROTOCOL-SHIFT');
-        const CURRENT_VER = '17.49.0';
+        console.log('🚀 Init v17.51 COUPLES-SYNC');
+        const CURRENT_VER = '17.51.0';
         const savedVer = localStorage.getItem('centurion_version');
         if(savedVer !== CURRENT_VER) { localStorage.clear(); localStorage.setItem('centurion_version', CURRENT_VER); }
 
@@ -479,82 +479,30 @@ class CenturionApp {
     }
 
     processData(sleepData, workoutData, activityData, readinessData) {
-    const dataMap = new Map();
-    const getDay = (date) => {
-        if(!dataMap.has(date)) { 
-            dataMap.set(date, { 
-                date: date, 
-                score: 0, 
-                totalSec: 0, 
-                deepSec: 0, 
-                remSec: 0, 
-                rhr: '-',  // Will be set by readiness data
-                cal: 0, 
-                high: 0, 
-                med: 0, 
-                workouts: [] 
-            }); 
-        }
-        return dataMap.get(date);
-    };
-    
-    sleepData.forEach(s => {
-        const d = getDay(s.day);
-        d.totalSec += s.total_sleep_duration || 0;
-        d.deepSec += s.deep_sleep_duration || 0;
-        d.remSec += s.rem_sleep_duration || 0;
-        if (s.score && s.score > d.score) d.score = s.score;
-        // REMOVE RHR FROM HERE - don't use sleep API for RHR
-    });
-    
-    // GET RHR FROM READINESS API (CORRECT SOURCE)
-    readinessData.forEach(r => { 
-        const d = getDay(r.day); 
-        // This is the correct RHR field
-        if (r.contributors?.resting_heart_rate) {
-            d.rhr = r.contributors.resting_heart_rate;
-        }
-    });
-    
-    workoutData.forEach(w => {
-        const d = getDay(w.day);
-        const dateObj = new Date(w.start_datetime);
-        const timeStr = dateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: false });
-        d.workouts.push({ 
-            type: w.activity || 'other', 
-            intensity: w.intensity || 'moderate', 
-            calories: w.calories || 300, 
-            time: timeStr, 
-            start: w.start_datetime 
+        const dataMap = new Map();
+        const getDay = (date) => {
+            if(!dataMap.has(date)) { dataMap.set(date, { date: date, score: 0, totalSec: 0, deepSec: 0, remSec: 0, rhr: '-', cal: 0, high: 0, med: 0, workouts: [] }); }
+            return dataMap.get(date);
+        };
+        sleepData.forEach(s => {
+            const d = getDay(s.day);
+            d.totalSec += s.total_sleep_duration || 0;
+            d.deepSec += s.deep_sleep_duration || 0;
+            d.remSec += s.rem_sleep_duration || 0;
+            if (s.score && s.score > d.score) d.score = s.score;
         });
-    });
-    
-    activityData.forEach(a => { 
-        const d = getDay(a.day); 
-        d.cal = a.active_calories || 0; 
-        d.high = (a.high_activity_time || 0)/60; 
-        d.med = (a.medium_activity_time || 0)/60; 
-    });
-    
-    this.history = Array.from(dataMap.values()).sort((a, b) => b.date.localeCompare(a.date));
-    this.currentIndex = this.history.findIndex(h => h.date === this.currentDateStr);
-    if (this.currentIndex === -1) { 
-        this.history.unshift({ 
-            date: this.currentDateStr, 
-            score: 0, 
-            totalSec: 0, 
-            deepSec: 0, 
-            remSec: 0, 
-            rhr: '-', 
-            cal: 0, 
-            high: 0, 
-            med: 0, 
-            workouts: [] 
-        }); 
-        this.currentIndex = 0; 
+        readinessData.forEach(r => { const d = getDay(r.day); if (r.contributors?.resting_heart_rate) d.rhr = r.contributors.resting_heart_rate; });
+        workoutData.forEach(w => {
+            const d = getDay(w.day);
+            const dateObj = new Date(w.start_datetime);
+            const timeStr = dateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: false });
+            d.workouts.push({ type: w.activity || 'other', intensity: w.intensity || 'moderate', calories: w.calories || 300, time: timeStr, start: w.start_datetime });
+        });
+        activityData.forEach(a => { const d = getDay(a.day); d.cal = a.active_calories || 0; d.high = (a.high_activity_time || 0)/60; d.med = (a.medium_activity_time || 0)/60; });
+        this.history = Array.from(dataMap.values()).sort((a, b) => b.date.localeCompare(a.date));
+        this.currentIndex = this.history.findIndex(h => h.date === this.currentDateStr);
+        if (this.currentIndex === -1) { this.history.unshift({ date: this.currentDateStr, score: 0, totalSec: 0, deepSec: 0, remSec: 0, rhr: '-', cal: 0, high: 0, med: 0, workouts: [] }); this.currentIndex = 0; }
     }
-}
-
 
     changeDate(direction) {
         const newIndex = this.currentIndex - direction;
@@ -578,7 +526,7 @@ class CenturionApp {
         this.render();
     }
 
-        // --- MODAL & LOGIC ---
+    // --- MODAL & LOGIC ---
     calculateBMI() {
         const weight = parseFloat(this.bios.weight);
         const heightInches = USERS[this.user].goals.heightInches || 70;
@@ -601,14 +549,12 @@ class CenturionApp {
             rhr: day.rhr !== '-' ? parseInt(day.rhr) : null
         };
 
-        // ApoB (15 pts)
         if (userData.apob !== null) {
             if (userData.apob <= 80) totalScore += 15;
             else if (userData.apob >= 130) totalScore += 0;
             else totalScore += 15 * (1 - ((userData.apob - 80) / (130 - 80)));
         }
 
-        // Lp(a) (15 pts) - Special rule
         if (userData.lpa !== null) {
             if (userData.lpa > 150 && userData.apob && userData.apob < 80) {
                 totalScore += 7.5;
@@ -621,33 +567,28 @@ class CenturionApp {
             }
         }
 
-        // hsCRP (10 pts)
         if (userData.hscrp !== null) {
             if (userData.hscrp <= 0.5) totalScore += 10;
             else if (userData.hscrp >= 2.0) totalScore += 0;
             else totalScore += 10 * (1 - ((userData.hscrp - 0.5) / (2.0 - 0.5)));
         }
 
-        // HbA1c (10 pts)
         if (userData.hba1c !== null) {
             if (userData.hba1c <= 5.4) totalScore += 10;
             else if (userData.hba1c >= 6.0) totalScore += 0;
             else totalScore += 10 * (1 - ((userData.hba1c - 5.4) / (6.0 - 5.4)));
         }
 
-        // BMI (10 pts)
         if (userData.bmi !== null) {
             if (userData.bmi >= 18.5 && userData.bmi <= 27) totalScore += 10;
         }
 
-        // Sleep Score (10 pts)
         if (userData.sleepScore !== null) {
             if (userData.sleepScore >= 85) totalScore += 10;
             else if (userData.sleepScore <= 60) totalScore += 0;
             else totalScore += 10 * ((userData.sleepScore - 60) / (85 - 60));
         }
 
-        // RHR (10 pts)
         if (userData.rhr !== null) {
             if (userData.rhr <= 50) totalScore += 10;
             else if (userData.rhr >= 75) totalScore += 0;
@@ -781,7 +722,7 @@ class CenturionApp {
         const poorSleep = day.score < 75 || sleepDebt > 3;
         const elevatedRHR = parseFloat(day.rhr) > 60;
 
-        // Blood Work Recommendations - FOOD ONLY
+        // Blood Work Recommendations
         if (parseFloat(this.bios.apob) > 80) {
             recommendations.push({
                 category: '🩸 BLOOD WORK',
@@ -802,366 +743,31 @@ class CenturionApp {
             });
         }
         
-        if (parseFloat(this.bios.hscrp) > 0.5) {
-            recommendations.push({
-                category: '🩸 BLOOD WORK',
-                issue: 'Inflammation Detected',
-                rec: 'Anti-Inflammatory Foods',
-                items: ['Turmeric + Black Pepper (in meals)', 'Ginger Tea', 'Fatty Fish 3x/week', 'Berries Daily', 'Reduce Processed Foods', 'Extra Virgin Olive Oil'],
-                why: 'Curcumin + Piperine = 2000% absorption. Mediterranean diet lowers hsCRP 30%.'
-            });
-        }
-        
-        if (parseFloat(this.bios.hba1c) > 5.4) {
-            recommendations.push({
-                category: '🩸 BLOOD WORK',
-                issue: 'Blood Sugar Creeping',
-                rec: 'Glucose Control Protocol',
-                items: ['Increase Fiber to 50g/day', 'Cinnamon (1 tsp daily)', 'Vinegar before meals', 'Walk after eating', 'Reduce Refined Carbs'],
-                why: 'Fiber slows glucose absorption. Post-meal walks lower blood sugar spikes 15-20%.'
-            });
-        }
-
-        // JERMAINE UFC GYM DAYS (Tue/Thu with Marcus)
-        if (this.user === 'jermaine' && (today === 2 || today === 4)) {
-            if (hadWorkout) {
-                recommendations.push({
-                    category: '🥊 UFC GYM RECOVERY',
-                    issue: 'Technical Training with Marcus',
-                    rec: 'Post-Session Protocol',
-                    items: [
-                        '🧊 **Theragun Pro (Cold)** - Shoulders/neck (15min)',
-                        '🦵 **Theraknee (Cold)** - If heavy kicking drills',
-                        '🔥 **Hyperice Back** - If grappling/ground work',
-                        '🍖 **Protein Meal** - Within 2hrs (38-54g)',
-                        '💧 **Electrolytes** - Rehydrate from pad work',
-                        '**EVENING:** Normatec Legs + Heat therapy before bed'
-                    ],
-                    why: 'Technical work = shoulder/neck fatigue from pads. Less muscle damage than strength training but joint stress. Evening Normatec = full recovery.'
-                });
-            } else {
-                recommendations.push({
-                    category: '🥊 UFC GYM DAY',
-                    issue: 'Tuesday/Thursday - Marcus Training',
-                    rec: 'Pre-Session Prep',
-                    items: [
-                        '🔥 **Theraknee (Heat)** - Warmup (10min)',
-                        '🔥 **Hyperice Back (Heat)** - If planning grappling',
-                        '💧 **Hydration** - 24oz water pre-session',
-                        '🍖 **Light protein** - 1-2hrs before (30g)',
-                        '**POST:** Follow UFC recovery protocol above'
-                    ],
-                    why: 'Heat pre-session = joint pliability. Technique work requires mobility over strength.'
-                });
-            }
-        }
-
-        // SOPHIA REBOUND DAYS (Wed/Fri at Club Studio)
-        if (this.user === 'sophia' && (today === 3 || today === 5)) {
-            if (hadWorkout) {
-                recommendations.push({
-                    category: '🏃 REBOUND RECOVERY',
-                    issue: 'Club Studio Class Complete',
-                    rec: 'Post-Class Protocol',
-                    items: [
-                        '🧊 **Club Studio Cryo** - Immediately after (3min)',
-                        '🔥 **Club Studio Sauna** - 10min after cryo',
-                        '🦵 **Normatec Legs** - At home (30min)',
-                        '🍖 **Protein + Carbs** - Glycogen replenishment',
-                        '💧 **Hydration** - 32oz water',
-                        '**EVENING:** Theraface heat + skincare'
-                    ],
-                    why: 'Rebound = high-impact cardio. Cryo immediately after = inflammation control. Sauna = circulation boost. Legs need compression.'
-                });
-            } else {
-                recommendations.push({
-                    category: '🏃 REBOUND DAY',
-                    issue: 'Wednesday/Friday - Club Studio',
-                    rec: 'Pre-Class Prep',
-                    items: [
-                        '🦵 **Theraknee (Heat)** - Warmup (10min)',
-                        '💧 **Hydration** - 20oz water 1hr before',
-                        '🍌 **Light carbs** - 30min before class',
-                        '**POST:** Cryo → Sauna at Club Studio',
-                        '**EVENING:** Normatec + skincare routine'
-                    ],
-                    why: 'Rebound is high-impact. Knee warmup = injury prevention. Post-class contrast therapy built into Club Studio visit.'
-                });
-            }
-        }
-
-        // SOPHIA CUPPING (BACK RECOVERY)
-        if (this.user === 'sophia' && (today === 2 || today === 4)) {
-            recommendations.push({
-                category: '🔵 CUPPING THERAPY',
-                issue: 'Tue/Thu - Back Recovery',
-                rec: 'Myofascial Release Session',
-                items: [
-                    '🔵 **Back Cupping** - 15-20min (upper/mid/lower back)',
-                    '🔥 **Hyperice Back (Heat)** - After cupping (warmth)',
-                    '🧘 **Light Stretching** - Post-cupping mobility',
-                    '💧 **Hydration** - 24oz water (flush toxins)',
-                    '⏰ **Best Time:** Evening before bed'
-                ],
-                why: 'Cupping = deep fascia release + blood flow. Back tension from training/posture. Heat after = muscle relaxation. Perfect for non-training days.'
-            });
-        }
-
-        // POST-WORKOUT RECOVERY (Any hard training)
-        if (hadWorkout && highIntensity && today !== 2 && today !== 4 && (this.user === 'jermaine' || (today !== 3 && today !== 5))) {
-            recommendations.push({
-                category: '💪 POST-WORKOUT (TODAY)',
-                issue: `${WORKOUT_TYPES[workoutType] || 'Workout'} Detected - Immediate Recovery`,
-                rec: 'Within 2 Hours of Training',
-                items: workoutType === 'strength_training' ? [
-                    '🧊 **Theragun Pro (Cold)** - Worked muscles (10min)',
-                    '🦵 **Normatec Legs** - If lower body (30min)',
-                    '🦵 **Normatec Hips** - If squats/deadlifts (30min)',
-                    '🍖 **Protein Meal** - 54g minimum',
-                    '💧 **Hydration** - 32oz water immediately'
-                ] : [
-                    '🧊 **Theragun Pro (Cold)** - Primary muscles (15min)',
-                    '🦵 **Normatec Legs** - Full compression (30min)',
-                    '🍖 **Protein + Carbs** - Glycogen replenishment',
-                    '💧 **Electrolytes** - Salt + potassium'
-                ],
-                why: 'Cold + compression within 2hrs = 40% faster recovery. Protein window = max muscle synthesis.'
-            });
-        }
-
-        // EVENING RECOVERY (Same day as workout)
-        if (hadWorkout) {
-            recommendations.push({
-                category: '🌙 TONIGHT (PRE-SLEEP)',
-                issue: 'Trained Today - Sleep Optimization',
-                rec: 'Evening Recovery Routine',
-                items: [
-                    '🔥 **Hyperice Back (Heat)** - 20min relaxation',
-                    '🦵 **Normatec Session #2** - If hard training',
-                    '🧊 **Theragun Cube (Cold)** - Neck/traps for sleep',
-                    '🛁 **Hot Shower** - Cool down last 30sec',
-                    '📱 **No Screens** - 1hr before bed',
-                    '🌡️ **Cool Room** - 65-68°F'
-                ],
-                why: 'Trained muscles need 2x recovery sessions. Heat → Cold = body temp drop = deep sleep trigger.'
-            });
-        }
-
-        // ACTIVE RECOVERY DAY
-        if (!hadWorkout && !poorSleep && !elevatedRHR) {
-            recommendations.push({
-                category: '♻️ ACTIVE RECOVERY',
-                issue: 'Rest Day - Light Movement',
-                rec: 'Low-Intensity Protocol',
-                items: [
-                    '🏊 **InShape Pool** - Light swim/stretch (20min)',
-                    '🌊 **InShape Aqua Massage** - Full session (30min)',
-                    '🛁 **InShape Steam** - If visiting (15min)',
-                    '🚶 **Walk** - 15-30min easy',
-                    '🧘 **Mobility/Yoga** - Light stretching',
-                    this.user === 'sophia' ? '⚡ **Microcurrent** - Facial workout (15min)' : '📖 **Recovery reading/planning**'
-                ],
-                why: 'Movement without fatigue = circulation boost. Aqua massage = lymphatic drainage. Active recovery aids muscle repair.'
-            });
-        }
-
-        // FORCED REST DAY
-        if (poorSleep || elevatedRHR || sleepDebt > 5) {
-            recommendations.push({
-                category: '🛑 FORCED REST (CRITICAL)',
-                issue: elevatedRHR ? `RHR Elevated (${day.rhr} bpm) - CNS Fatigue` : `Sleep Debt: ${sleepDebt.toFixed(1)}hrs`,
-                rec: 'Full Recovery Day - NO TRAINING',
-                items: [
-                    '❌ **CANCEL WORKOUT** - Recovery takes priority',
-                    '🧊 **Club Studio Cryo** - Morning (3min)',
-                    '🔥 **Club Studio Sauna** - After cryo (20min)',
-                    '🛁 **InShape Steam Room** - Mid-day (15min)',
-                    '🌊 **InShape Aqua Massage** - Afternoon (30min)',
-                    '🦵 **Normatec Full Session** - Evening (45min)',
-                    '🔥 **Hyperice Back (Heat)** - Extended relaxation',
-                    '😴 **Early Bedtime** - 9pm target'
-                ],
-                why: elevatedRHR 
-                    ? 'RHR >60 = overtraining signal. Training now = injury risk + performance decline. Rest drops RHR 5-10 bpm.'
-                    : 'Sleep debt >5hrs = immune compromise + injury risk 3x higher. Full recovery day is training.'
-            });
-        }
-
-        // MONDAY - FRESH WEEK START
-        if (today === 1) {
-            recommendations.push({
-                category: '🔋 MONDAY PROTOCOL',
-                issue: 'Week Kickoff',
-                rec: this.user === 'jermaine' ? 'Jermaine Monday' : 'Sophia Monday',
-                items: this.user === 'jermaine' ? [
-                    '💪 **Traditional Gym** - Strength focus',
-                    '🔥 **Pre-workout:** Hyperice Back (heat)',
-                    '🧊 **Post-workout:** Theragun Pro (cold)',
-                    '🦵 **Evening:** Normatec legs',
-                    '📊 **Review:** Check Oura readiness score'
-                ] : [
-                    '💪 **Traditional Gym** - Strength training',
-                    '⚡ **AM Skincare:** Microcurrent + Cold wand',
-                    '🧊 **Post-workout:** Theragun (cold)',
-                    '🦵 **Evening:** Light Normatec',
-                    '📊 **Plan:** Wed/Fri Rebound classes'
-                ],
-                why: 'Monday sets tone for week. Strength training early = recovery time before mid-week sessions.'
-            });
-        }
-
-        // WEDNESDAY - MID-WEEK (Jermaine only)
-        if (today === 3 && this.user === 'jermaine') {
-            recommendations.push({
-                category: '🏋️ WEDNESDAY PROTOCOL',
-                issue: 'Mid-Week Training',
-                rec: 'Traditional Gym or Club Studio',
-                items: [
-                    '💪 **Option A:** Traditional Gym strength',
-                    '🏃 **Option B:** Club Studio cardio',
-                    '🧊 **Club Studio Cryo** - If training there (3min)',
-                    '🔥 **Club Studio Sauna** - Post-workout (20min)',
-                    '🦵 **Normatec** - Evening recovery',
-                    '💡 **Tomorrow:** UFC with Marcus - save legs'
-                ],
-                why: 'Wednesday between UFC days. Contrast therapy = active recovery + conditioning. Light on legs if training Thursday.'
-            });
-        }
-
-        // SATURDAY - WEEK WRAP
-        if (today === 6) {
-            recommendations.push({
-                category: '💪 SATURDAY PROTOCOL',
-                issue: 'Weekend Training',
-                rec: 'Optional Hard Session',
-                items: this.user === 'jermaine' ? [
-                    '🏋️ **Optional:** Heavy strength if feeling good',
-                    '🥊 **OR:** Light UFC technique work',
-                    '🦵 **Normatec Full Session** - Extended (45min)',
-                    '🔥 **Hyperice Back** - Recovery mode',
-                    '🧊 **Theragun Pro** - Any sore spots',
-                    '😴 **Prep:** Sunday full recovery day'
-                ] : [
-                    '💪 **Optional:** Light strength or cardio',
-                    '🧘 **Yoga/Pilates** - Active recovery',
-                    '🦵 **Normatec** - If trained (30min)',
-                    '⚡ **Skincare:** Avoid if microneedling tomorrow',
-                    '😴 **Prep:** Sunday recovery ritual'
-                ],
-                why: 'Saturday = flex day. Train if metrics good, rest if needed. Prep for Sunday reset.'
-            });
-        }
-
-        // SUNDAY FULL RECOVERY RITUAL
-        if (today === 0) {
+        // COUPLES PROTOCOLS
+        if (this.user === 'jermaine' || this.user === 'sophia') {
+            const dayOfWeek = new Date(day.date).getDay();
             const isFirstSunday = new Date(day.date).getDate() <= 7;
-            const sophiaExtra = this.user === 'sophia' ? [
-                isFirstSunday ? '📍 **Microneedling** - First Sunday only (PM)' : '⚡ **Microcurrent** - Regular facial workout',
-                '🧊 **Theraface Cold** - Morning depuff',
-                '🔥 **Theraface Heat** - Evening absorption'
-            ] : [];
-
+            
             recommendations.push({
-                category: '🧘 SUNDAY RITUAL',
-                issue: 'Weekly Reset & Recovery',
-                rec: 'Full Mind-Body Protocol',
-                items: [
-                    '🏊 **InShape Full Experience:**',
-                    '  → Steam Room (15min)',
-                    '  → Sauna (20min)', 
-                    '  → Pool stretching (15min)',
-                    '  → Aqua Massage Bed (30min)',
-                    '🔥 **Hyperice Back** - Extended (30min)',
-                    '🦵 **Normatec Hip + Legs** - Full (45min)',
-                    ...sophiaExtra,
-                    '📱 **Digital Detox** - Minimal screens',
-                    '📊 **Week Review** - Oura data analysis',
-                    '📅 **Week Ahead:** Plan training schedule',
-                    '😴 **Early Bed** - 9pm for Monday readiness'
-                ],
-                why: 'Sunday = parasympathetic reset. Full recovery arsenal prepares body for training week. Planning = mental clarity.'
+                category: '💑 COUPLES FACIAL PROTOCOL',
+                issue: 'Daily Facial Routine',
+                rec: this.user === 'jermaine' ? 'Jermaine → Sophia Facial' : 'Sophia → Jermaine Facial',
+                items: this.user === 'jermaine' 
+                    ? this.getJermaineFacialProtocol(dayOfWeek, isFirstSunday)
+                    : this.getSophiaFacialProtocol(dayOfWeek),
+                why: this.user === 'jermaine'
+                    ? 'Microcurrent 3x/week = lift. Cupping 2x/week = drainage. Consistency = visible results in 4-6 weeks.'
+                    : 'Cold therapy = depuff + recovery. Massage = jaw tension release from boxing/stress.'
+            });
+            
+            recommendations.push({
+                category: '💑 COUPLES RECOVERY PROTOCOL',
+                issue: 'Partner-Assisted Recovery',
+                rec: 'Use Recovery Equipment On Each Other',
+                items: this.getCouplesRecoveryProtocol(dayOfWeek, hadWorkout, workoutType),
+                why: 'Partner-assisted = better pressure, reach hard spots, bonding time. Recovery together = accountability.'
             });
         }
-
-        // SOPHIA SKINCARE
-        if (this.user === 'sophia') {
-            if (today === 1 || today === 3 || today === 5) {
-                recommendations.push({
-                    category: '✨ SOPHIA AM SKINCARE',
-                    issue: 'Mon/Wed/Fri - Microcurrent',
-                    rec: 'Morning Facial Routine',
-                    items: [
-                        '⚡ **Microcurrent** - 15min facial workout',
-                        '🧊 **Theraface Cold** - Depuff (5min)',
-                        '💧 **Serum Application** - While skin cool',
-                        '☀️ **SPF Always** - UV protection'
-                    ],
-                    why: 'Microcurrent 3x/week = cumulative toning. Cold tightens pores. Consistency = results in 4-6 weeks.'
-                });
-            }
-
-            if (!hadWorkout || (today !== 3 && today !== 5)) {
-                recommendations.push({
-                    category: '✨ SOPHIA PM SKINCARE',
-                    issue: 'Evening Routine',
-                    rec: 'Nighttime Protocol',
-                    items: [
-                        '🔥 **Theraface Heat** - 5min (product absorption)',
-                        '💧 **Rich Serum/Night Cream** - Apply during heat',
-                        '🧊 **Theraface Cold** - Under eyes (optional)'
-                    ],
-                    why: 'Heat = deeper penetration. Skin repairs overnight. Simple routine > complicated sporadic.'
-                });
-            }
-        }
-
-        // TRAINING FACILITIES
-        recommendations.push({
-            category: '🏋️ TRAINING FACILITIES',
-            issue: 'Centurion Training Stack',
-            rec: this.user === 'jermaine' ? 'Jermaine Access' : 'Sophia Access',
-            items: this.user === 'jermaine' ? [
-                '🏃 **Club Studio** - Treadmill, Cryo, Sauna',
-                '💪 **Traditional Gym** - Iron Temple', 
-                '🥊 **UFC Gym** - Marcus Reaves (Tue/Thu)',
-                '🏊 **InShape** - Aqua Massage, Steam, Pools',
-                '🔫 **Home Arsenal** - Theragun Pro, Normatec, Hyperice, Theraknee'
-            ] : [
-                '🏃 **Club Studio** - Rebound (Wed/Fri), Cryo, Sauna',
-                '💪 **Traditional Gym** - Strength',
-                '🏊 **InShape** - Aqua Massage, Steam, Pools',
-                '🔫 **Home Recovery** - Theragun, Normatec, Theraface',
-                '💎 **Home MedSpa** - Microcurrent, Microneedling, Cupping'
-            ],
-            why: this.user === 'sophia' 
-                ? '4 facilities + home medspa = professional self-care. Consistency = visible results.'
-                : '4 facilities = zero excuses. Recovery tech = train harder, recover faster.'
-        });
-// COUPLES PROTOCOLS
-if (this.user === 'jermaine' || this.user === 'sophia') {
-    const dayOfWeek = new Date(day.date).getDay();
-    const isFirstSunday = new Date(day.date).getDate() <= 7;
-    
-    recommendations.push({
-        category: '💑 COUPLES FACIAL PROTOCOL',
-        issue: 'Daily Facial Routine',
-        rec: this.user === 'jermaine' ? 'Jermaine → Sophia Facial' : 'Sophia → Jermaine Facial',
-        items: this.user === 'jermaine' 
-            ? this.getJermaineFacialProtocol(dayOfWeek, isFirstSunday)
-            : this.getSophiaFacialProtocol(dayOfWeek),
-        why: this.user === 'jermaine'
-            ? 'Microcurrent 3x/week = lift. Cupping 2x/week = drainage. Consistency = visible results in 4-6 weeks.'
-            : 'Cold therapy = depuff + recovery. Massage = jaw tension release from boxing/stress.'
-    });
-    
-    recommendations.push({
-        category: '💑 COUPLES RECOVERY PROTOCOL',
-        issue: 'Partner-Assisted Recovery',
-        rec: 'Use Recovery Equipment On Each Other',
-        items: this.getCouplesRecoveryProtocol(dayOfWeek, hadWorkout, workoutType),
-        why: 'Partner-assisted = better pressure, reach hard spots, bonding time. Recovery together = accountability.'
-    });
-}
 
         // RENDER RECOMMENDATIONS
         if (recommendations.length > 0) {
@@ -1208,8 +814,6 @@ if (this.user === 'jermaine' || this.user === 'sophia') {
         this.closeModal();
         this.render();
     }
-
-
 
     // --- CUSTOM MEAL BUILDER ---
     openCustomBuilder(mealSlot) {
@@ -1558,254 +1162,6 @@ if (this.user === 'jermaine' || this.user === 'sophia') {
             this.renderTimeline(dateKey);
         } catch (e) { console.error('Render Error: ' + e); }
     }
-getJermaineFacialProtocol(dayOfWeek, isFirstSunday) {
-    // Jermaine doing Sophia's facial
-    
-    // First Sunday of month = Microneedling
-    if (dayOfWeek === 0 && isFirstSunday) {
-        return [
-            '📍 **MICRONEEDLING DAY** (1x/month only)',
-            '⏰ **Time:** 45min (evening)',
-            '**PROTOCOL:**',
-            '1. Deep cleanse Sophia\'s face 2x',
-            '2. Sanitize microneedling device',
-            '3. Microneedle all areas (avoid under eyes)',
-            '   → Forehead, cheeks, jawline, around mouth',
-            '   → Light pressure, let device do work',
-            '4. WAIT 10min (let skin calm)',
-            '5. Apply serum (HA or growth factor)',
-            '6. 🧊 Theraface Wand COLD - 5min (calm)',
-            '7. Light moisturizer',
-            '**NEXT 24HRS:** No makeup, no sweating, SPF mandatory',
-            '**AVOID:** Heat mode, other treatments today'
-        ];
-    }
-    
-    // Mon/Wed/Fri = Microcurrent
-    if (dayOfWeek === 1 || dayOfWeek === 3 || dayOfWeek === 5) {
-        return [
-            '⚡ **MICROCURRENT DAY** (Mon/Wed/Fri)',
-            '⏰ **Time:** 25min (AM for glow or PM for absorption)',
-            '**PROTOCOL:**',
-            '1. Cleanse Sophia\'s face',
-            '2. Apply conductive gel (generous)',
-            '3. ⚡ Microcurrent device - 15min:',
-            '   → Forehead: Upward strokes (3min)',
-            '   → Cheeks: Nose to ear, up to temple (4min each)',
-            '   → Jawline: Jaw to ear (3min each)',
-            '   → Neck: Upward only (2min)',
-            '   → SLOW movements (let current work)',
-            '4. Wipe gel, apply rich serum',
-            '5. 🔥 Theraface Wand HEAT - 5min (push serum deep)',
-            '6. 🧊 Theragun Cube COLD - 3min (seal, tighten)',
-            '7. Moisturizer + SPF (AM) or night cream (PM)',
-            '**TIP:** Slower = better results with microcurrent'
-        ];
-    }
-    
-    // Tue/Thu = Massage + Wand Sculpting
-    if (dayOfWeek === 2 || dayOfWeek === 4) {
-        return [
-            '💆 **MASSAGE + SCULPTING DAY** (Tue/Thu)',
-            '⏰ **Time:** 20min (evening)',
-            '**PROTOCOL:**',
-            '1. Cleanse Sophia\'s face',
-            '2. Apply facial oil or serum',
-            '3. Hand Massage - 10min:',
-            '   → Forehead: Horizontal strokes (tension release)',
-            '   → Under eyes: GENTLE inner to outer (depuff)',
-            '   → Cheeks: Nose to ear strokes (lymphatic drainage)',
-            '   → Jawline: Under chin to jaw (sculpt)',
-            '   → Temples: Firm circles (stress release)',
-            '4. 🔥 Theraface Wand HEAT - 5min:',
-            '   → Follow massage pathways',
-            '   → Push product deep',
-            '5. 🧊 Theragun Cube COLD - 3min:',
-            '   → Under eyes (depuff)',
-            '   → Jawline (tighten)',
-            '   → Cheeks (seal)',
-            '6. Moisturizer',
-            '**TIP:** Firm pressure on jawline for definition'
-        ];
-    }
-    
-    // Sat = Optional maintenance
-    if (dayOfWeek === 6) {
-        return [
-            '✨ **OPTIONAL MAINTENANCE** (Saturday)',
-            '⏰ **Time:** 10min (evening if desired)',
-            '**SIMPLE PROTOCOL:**',
-            '1. 🔥 Theraface Wand HEAT - 3min (with serum)',
-            '2. 🧊 Theragun Cube COLD - 2min (under eyes, jaw)',
-            '3. Hand massage - 5min (temples, jaw, scalp)',
-            '**OR:** Full rest day for face too'
-        ];
-    }
-    
-    // Sunday (non-microneedling) = Microcurrent
-    if (dayOfWeek === 0) {
-        return [
-            '⚡ **SUNDAY MICROCURRENT** (Weekly reset)',
-            '⏰ **Time:** 25min (morning)',
-            '**Same as Mon/Wed/Fri protocol:**',
-            '1. Cleanse + conductive gel',
-            '2. ⚡ Microcurrent 15min',
-            '3. 🔥 Heat 5min',
-            '4. 🧊 Cold 3min',
-            '5. Moisturizer',
-            '**AFTER:** InShape recovery ritual together'
-        ];
-    }
-    
-    // Default (shouldn't hit this)
-    return ['No facial scheduled today'];
-}
-
-getSophiaFacialProtocol(dayOfWeek) {
-    // Sophia doing Jermaine's facial
-    
-    // Tue/Thu/Sun = Recovery facial (post-training)
-    if (dayOfWeek === 2 || dayOfWeek === 4 || dayOfWeek === 0) {
-        return [
-            '💪 **RECOVERY FACIAL** (Post-Training)',
-            '⏰ **Time:** 15min (evening)',
-            '**PROTOCOL:**',
-            '1. Cleanse Jermaine\'s face',
-            '2. Light serum',
-            '3. 🧊 Theragun Cube COLD - 5min:',
-            '   → Under eyes: Depuff (60sec each)',
-            '   → Forehead: Reduce tension (90sec)',
-            '   → Jaw muscles: Release from boxing (90sec each)',
-            '   → Temples: Headache prevention (30sec each)',
-            '4. Hand massage - 5min:',
-            '   → Jaw muscles (masseter) - find tight spots',
-            '   → Temples - firm circles',
-            '   → Scalp - fingertip massage',
-            '5. 🧊 Theraface Wand COLD - 3min (final depuff)',
-            '6. Light moisturizer',
-            '**WHY:** Cold = inflammation from training'
-        ];
-    }
-    
-    // Wed = Deep clean + massage
-    if (dayOfWeek === 3) {
-        return [
-            '🧼 **DEEP CLEAN + MASSAGE** (Wednesday)',
-            '⏰ **Time:** 20min (evening)',
-            '**PROTOCOL:**',
-            '1. Deep cleanse 2x (remove training sweat)',
-            '2. 🔥 Theraface Wand HEAT - 5min (open pores):',
-            '   → Forehead, cheeks, nose, jaw',
-            '3. Hand massage - 8min:',
-            '   → Forehead: Horizontal strokes (tension)',
-            '   → Jaw muscles: Firm pressure (tight from boxing)',
-            '   → Temples: Circular motions',
-            '   → Scalp: Fingertip massage (stress relief)',
-            '4. 🧊 Theragun Cube COLD - 3min (close pores)',
-            '5. Moisturizer',
-            '**TIP:** Jaw massage = key for men (boxing tension)'
-        ];
-    }
-    
-    // Mon/Fri = Simple maintenance
-    if (dayOfWeek === 1 || dayOfWeek === 5) {
-        return [
-            '✨ **QUICK MAINTENANCE** (Mon/Fri)',
-            '⏰ **Time:** 10min (evening)',
-            '**PROTOCOL:**',
-            '1. Cleanse',
-            '2. 🧊 Theragun Cube COLD - 3min',
-            '3. Hand massage - 5min (jaw, temples, scalp)',
-            '4. Light moisturizer',
-            '**SIMPLE:** Focus on depuff + relaxation'
-        ];
-    }
-    
-    // Sat = Optional
-    if (dayOfWeek === 6) {
-        return [
-            '✨ **OPTIONAL** (Saturday)',
-            '⏰ **Time:** 10min if desired',
-            '**SIMPLE:**',
-            '1. 🧊 Cold therapy 3min',
-            '2. Massage 5min',
-            '**OR:** Rest day'
-        ];
-    }
-    
-    // Default
-    return ['Light maintenance: Cold therapy + massage'];
-}
-
-getCouplesRecoveryProtocol(dayOfWeek, hadWorkout, workoutType) {
-    const protocols = [];
-    
-    // Tue/Thu = Back cupping nights
-    if (dayOfWeek === 2 || dayOfWeek === 4) {
-        protocols.push('🔵 **BACK CUPPING SESSION** (Both)');
-        protocols.push('⏰ **Time:** 15-20min each (evening)');
-        protocols.push('**Sophia → Jermaine back cupping:**');
-        protocols.push('→ Upper back/traps (5min)');
-        protocols.push('→ Mid-back along shoulder blades (5min)');
-        protocols.push('→ Lower back/lumbar (5min)');
-        protocols.push('**Then switch: Jermaine → Sophia**');
-        protocols.push('**AFTER:** 🔥 Hyperice Back (heat) 15min each');
-    }
-    
-    // Post-workout Theragun
-    if (hadWorkout) {
-        if (workoutType === 'strength_training' || workoutType === 'other') {
-            protocols.push('🔫 **POST-BOXING THERAGUN** (Sophia → Jermaine)');
-            protocols.push('⏰ **Time:** 10min');
-            protocols.push('🧊 **Cold attachment:**');
-            protocols.push('→ Shoulders (heavy from pads) - 3min each');
-            protocols.push('→ Neck/traps - 2min');
-            protocols.push('→ Upper back - 2min');
-        }
-        
-        if (this.user === 'sophia' && (workoutType === 'running' || workoutType === 'hiit')) {
-            protocols.push('🔫 **POST-REBOUND THERAGUN** (Jermaine → Sophia)');
-            protocols.push('⏰ **Time:** 10min');
-            protocols.push('🧊 **Cold attachment:**');
-            protocols.push('→ Calves (high-impact) - 2min each');
-            protocols.push('→ Quads - 2min each');
-            protocols.push('→ Glutes - 2min each');
-        }
-    }
-    
-    // Evening Normatec together
-    if (dayOfWeek === 1 || dayOfWeek === 5 || dayOfWeek === 0) {
-        protocols.push('🦵 **NORMATEC TOGETHER TIME**');
-        protocols.push('⏰ **Time:** 30-45min');
-        protocols.push('**Both wear Normatec (legs/hips)**');
-        protocols.push('→ Couch/bed together');
-        protocols.push('→ Talk about day, plan week');
-        protocols.push('→ Watch show together');
-        protocols.push('→ Quality recovery time');
-    }
-    
-    // Sunday InShape together
-    if (dayOfWeek === 0) {
-        protocols.push('🏊 **SUNDAY INSHAPE RITUAL** (Together)');
-        protocols.push('⏰ **Time:** 90min');
-        protocols.push('**Protocol:**');
-        protocols.push('→ Pool together (20min) - light swim/stretch');
-        protocols.push('→ Steam room together (15min)');
-        protocols.push('→ Sauna together (15min)');
-        protocols.push('→ Take turns aqua massage (30min each)');
-        protocols.push('→ Pool stretch together (10min)');
-        protocols.push('**AFTER:** Lunch + meal prep together');
-    }
-    
-    // If no specific protocol
-    if (protocols.length === 0) {
-        protocols.push('✨ **LIGHT RECOVERY** (Optional)');
-        protocols.push('→ Hand massage on each other (10min)');
-        protocols.push('→ OR Normatec together if desired');
-    }
-    
-    return protocols;
-}
 
     renderRainbow() {
         const colors = this.calculateRainbow();
@@ -1870,6 +1226,219 @@ getCouplesRecoveryProtocol(dayOfWeek, hadWorkout, workoutType) {
 
     setText(id, text) { const el = document.getElementById(id); if (el) el.innerText = text; }
     sync() { this.fetchOuraData(); }
+
+    getJermaineFacialProtocol(dayOfWeek, isFirstSunday) {
+        if (dayOfWeek === 0 && isFirstSunday) {
+            return [
+                '📍 **MICRONEEDLING DAY** (1x/month only)',
+                '⏰ **Time:** 45min (evening)',
+                '**PROTOCOL:**',
+                '1. Deep cleanse Sophia\'s face 2x',
+                '2. Sanitize microneedling device',
+                '3. Microneedle all areas (avoid under eyes)',
+                '   → Forehead, cheeks, jawline, around mouth',
+                '   → Light pressure, let device do work',
+                '4. WAIT 10min (let skin calm)',
+                '5. Apply serum (HA or growth factor)',
+                '6. 🧊 Theraface Wand COLD - 5min (calm)',
+                '7. Light moisturizer',
+                '**NEXT 24HRS:** No makeup, no sweating, SPF mandatory',
+                '**AVOID:** Heat mode, other treatments today'
+            ];
+        }
+        if (dayOfWeek === 1 || dayOfWeek === 3 || dayOfWeek === 5) {
+            return [
+                '⚡ **MICROCURRENT DAY** (Mon/Wed/Fri)',
+                '⏰ **Time:** 25min (AM for glow or PM for absorption)',
+                '**PROTOCOL:**',
+                '1. Cleanse Sophia\'s face',
+                '2. Apply conductive gel (generous)',
+                '3. ⚡ Microcurrent device - 15min:',
+                '   → Forehead: Upward strokes (3min)',
+                '   → Cheeks: Nose to ear, up to temple (4min each)',
+                '   → Jawline: Jaw to ear (3min each)',
+                '   → Neck: Upward only (2min)',
+                '   → SLOW movements (let current work)',
+                '4. Wipe gel, apply rich serum',
+                '5. 🔥 Theraface Wand HEAT - 5min (push serum deep)',
+                '6. 🧊 Theragun Cube COLD - 3min (seal, tighten)',
+                '7. Moisturizer + SPF (AM) or night cream (PM)',
+                '**TIP:** Slower = better results with microcurrent'
+            ];
+        }
+        if (dayOfWeek === 2 || dayOfWeek === 4) {
+            return [
+                '💆 **MASSAGE + SCULPTING DAY** (Tue/Thu)',
+                '⏰ **Time:** 20min (evening)',
+                '**PROTOCOL:**',
+                '1. Cleanse Sophia\'s face',
+                '2. Apply facial oil or serum',
+                '3. Hand Massage - 10min:',
+                '   → Forehead: Horizontal strokes (tension release)',
+                '   → Under eyes: GENTLE inner to outer (depuff)',
+                '   → Cheeks: Nose to ear strokes (lymphatic drainage)',
+                '   → Jawline: Under chin to jaw (sculpt)',
+                '   → Temples: Firm circles (stress release)',
+                '4. 🔥 Theraface Wand HEAT - 5min:',
+                '   → Follow massage pathways',
+                '   → Push product deep',
+                '5. 🧊 Theragun Cube COLD - 3min:',
+                '   → Under eyes (depuff)',
+                '   → Jawline (tighten)',
+                '   → Cheeks (seal)',
+                '6. Moisturizer',
+                '**TIP:** Firm pressure on jawline for definition'
+            ];
+        }
+        if (dayOfWeek === 6) {
+            return [
+                '✨ **OPTIONAL MAINTENANCE** (Saturday)',
+                '⏰ **Time:** 10min (evening if desired)',
+                '**SIMPLE PROTOCOL:**',
+                '1. 🔥 Theraface Wand HEAT - 3min (with serum)',
+                '2. 🧊 Theragun Cube COLD - 2min (under eyes, jaw)',
+                '3. Hand massage - 5min (temples, jaw, scalp)',
+                '**OR:** Full rest day for face too'
+            ];
+        }
+        if (dayOfWeek === 0) {
+            return [
+                '⚡ **SUNDAY MICROCURRENT** (Weekly reset)',
+                '⏰ **Time:** 25min (morning)',
+                '**Same as Mon/Wed/Fri protocol:**',
+                '1. Cleanse + conductive gel',
+                '2. ⚡ Microcurrent 15min',
+                '3. 🔥 Heat 5min',
+                '4. 🧊 Cold 3min',
+                '5. Moisturizer',
+                '**AFTER:** InShape recovery ritual together'
+            ];
+        }
+        return ['No facial scheduled today'];
+    }
+
+    getSophiaFacialProtocol(dayOfWeek) {
+        if (dayOfWeek === 2 || dayOfWeek === 4 || dayOfWeek === 0) {
+            return [
+                '💪 **RECOVERY FACIAL** (Post-Training)',
+                '⏰ **Time:** 15min (evening)',
+                '**PROTOCOL:**',
+                '1. Cleanse Jermaine\'s face',
+                '2. Light serum',
+                '3. 🧊 Theragun Cube COLD - 5min:',
+                '   → Under eyes: Depuff (60sec each)',
+                '   → Forehead: Reduce tension (90sec)',
+                '   → Jaw muscles: Release from boxing (90sec each)',
+                '   → Temples: Headache prevention (30sec each)',
+                '4. Hand massage - 5min:',
+                '   → Jaw muscles (masseter) - find tight spots',
+                '   → Temples - firm circles',
+                '   → Scalp - fingertip massage',
+                '5. 🧊 Theraface Wand COLD - 3min (final depuff)',
+                '6. Light moisturizer',
+                '**WHY:** Cold = inflammation from training'
+            ];
+        }
+        if (dayOfWeek === 3) {
+            return [
+                '🧼 **DEEP CLEAN + MASSAGE** (Wednesday)',
+                '⏰ **Time:** 20min (evening)',
+                '**PROTOCOL:**',
+                '1. Deep cleanse 2x (remove training sweat)',
+                '2. 🔥 Theraface Wand HEAT - 5min (open pores):',
+                '   → Forehead, cheeks, nose, jaw',
+                '3. Hand massage - 8min:',
+                '   → Forehead: Horizontal strokes (tension)',
+                '   → Jaw muscles: Firm pressure (tight from boxing)',
+                '   → Temples: Circular motions',
+                '   → Scalp: Fingertip massage (stress relief)',
+                '4. 🧊 Theragun Cube COLD - 3min (close pores)',
+                '5. Moisturizer',
+                '**TIP:** Jaw massage = key for men (boxing tension)'
+            ];
+        }
+        if (dayOfWeek === 1 || dayOfWeek === 5) {
+            return [
+                '✨ **QUICK MAINTENANCE** (Mon/Fri)',
+                '⏰ **Time:** 10min (evening)',
+                '**PROTOCOL:**',
+                '1. Cleanse',
+                '2. 🧊 Theragun Cube COLD - 3min',
+                '3. Hand massage - 5min (jaw, temples, scalp)',
+                '4. Light moisturizer',
+                '**SIMPLE:** Focus on depuff + relaxation'
+            ];
+        }
+        if (dayOfWeek === 6) {
+            return [
+                '✨ **OPTIONAL** (Saturday)',
+                '⏰ **Time:** 10min if desired',
+                '**SIMPLE:**',
+                '1. 🧊 Cold therapy 3min',
+                '2. Massage 5min',
+                '**OR:** Rest day'
+            ];
+        }
+        return ['Light maintenance: Cold therapy + massage'];
+    }
+
+    getCouplesRecoveryProtocol(dayOfWeek, hadWorkout, workoutType) {
+        const protocols = [];
+        if (dayOfWeek === 2 || dayOfWeek === 4) {
+            protocols.push('🔵 **BACK CUPPING SESSION** (Both)');
+            protocols.push('⏰ **Time:** 15-20min each (evening)');
+            protocols.push('**Sophia → Jermaine back cupping:**');
+            protocols.push('→ Upper back/traps (5min)');
+            protocols.push('→ Mid-back along shoulder blades (5min)');
+            protocols.push('→ Lower back/lumbar (5min)');
+            protocols.push('**Then switch: Jermaine → Sophia**');
+            protocols.push('**AFTER:** 🔥 Hyperice Back (heat) 15min each');
+        }
+        if (hadWorkout) {
+            if (workoutType === 'strength_training' || workoutType === 'other') {
+                protocols.push('🔫 **POST-BOXING THERAGUN** (Sophia → Jermaine)');
+                protocols.push('⏰ **Time:** 10min');
+                protocols.push('🧊 **Cold attachment:**');
+                protocols.push('→ Shoulders (heavy from pads) - 3min each');
+                protocols.push('→ Neck/traps - 2min');
+                protocols.push('→ Upper back - 2min');
+            }
+            if (this.user === 'sophia' && (workoutType === 'running' || workoutType === 'hiit')) {
+                protocols.push('🔫 **POST-REBOUND THERAGUN** (Jermaine → Sophia)');
+                protocols.push('⏰ **Time:** 10min');
+                protocols.push('🧊 **Cold attachment:**');
+                protocols.push('→ Calves (high-impact) - 2min each');
+                protocols.push('→ Quads - 2min each');
+                protocols.push('→ Glutes - 2min each');
+            }
+        }
+        if (dayOfWeek === 1 || dayOfWeek === 5 || dayOfWeek === 0) {
+            protocols.push('🦵 **NORMATEC TOGETHER TIME**');
+            protocols.push('⏰ **Time:** 30-45min');
+            protocols.push('**Both wear Normatec (legs/hips)**');
+            protocols.push('→ Couch/bed together');
+            protocols.push('→ Talk about day, plan week');
+            protocols.push('→ Watch show together');
+            protocols.push('→ Quality recovery time');
+        }
+        if (dayOfWeek === 0) {
+            protocols.push('🏊 **SUNDAY INSHAPE RITUAL** (Together)');
+            protocols.push('⏰ **Time:** 90min');
+            protocols.push('**Protocol:**');
+            protocols.push('→ Pool together (20min) - light swim/stretch');
+            protocols.push('→ Steam room together (15min)');
+            protocols.push('→ Sauna together (15min)');
+            protocols.push('→ Take turns aqua massage (30min each)');
+            protocols.push('→ Pool stretch together (10min)');
+            protocols.push('**AFTER:** Lunch + meal prep together');
+        }
+        if (protocols.length === 0) {
+            protocols.push('✨ **LIGHT RECOVERY** (Optional)');
+            protocols.push('→ Hand massage on each other (10min)');
+            protocols.push('→ OR Normatec together if desired');
+        }
+        return protocols;
+    }
 }
 
 let app;
