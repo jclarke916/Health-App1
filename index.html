@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Centurion v17.56 LUNCH-FINAL</title>
+<title>Centurion v17.58 COMPLETE</title>
 <style>
 /* --- CORE STYLES --- */
 :root { --bg:#050505; --panel:#121212; --border:#222; --acid:#ccff00; --cyan:#00f0ff; --purple:#bf5af2; --alert:#ff453a; --text:#fff; }
@@ -205,7 +205,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system, BlinkMacS
 <div class="section-header">ENGINE (CARDIO)</div>
 <div class="grid-4">
     <div class="orb-card">
-        <div class="orb-container"><svg class="heart-svg beating" viewBox="0 0 24 24"><path class="heart-bg" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" style="stroke:#ff453a; fill:rgba(255,69,58,0.2);"></path></svg><div class="orb-val-box"><div class="orb-val" id="rhrVal">--</div></div></div>
+        <div class="orb-container"><svg class="heart-svg beating" viewBox="0 0 24 24"><path class="heart-bg" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path><svg class="heart-fg" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" style="fill:none; stroke:#ff453a; stroke-width:2.5;"></path></svg></svg><div class="orb-val-box"><div class="orb-val" id="rhrVal">--</div></div></div>
         <div class="orb-label" style="color:#ff453a">RHR</div>
     </div>
     <div class="orb-card">
@@ -257,7 +257,7 @@ const USERS = {
     jermaine: {
         name: "Jermaine",
         dob: "1983-01-13",
-        goals: { protein: 175, omega3: 4000, fiber: 50, water: 140, weightTarget: 210, heightInches: 70, z2: 45, z5: 20, calBurn: 500 },
+        goals: { protein: 175, omega3: 4000, fiber: 50, water: 140, weightTarget: 210, heightInches: 76.5, z2: 45, z5: 20, calBurn: 500 },
         defaultBios: { bmr: '2028', apob: '114', lpa: '178', weight: '215.7', hscrp: '0.4', hba1c: '5.4', bodyfat: '21.6', muscle: '97.0' }
     },
     sophia: {
@@ -403,8 +403,8 @@ const WORKOUT_TYPES = { strength_training: 'Strength', cycling: 'Cycling', runni
 // --- APP CLASS ---
 class CenturionApp {
     constructor() {
-        console.log('🚀 Init v17.56 LUNCH-FINAL');
-        const CURRENT_VER = '17.56.0';
+        console.log('🚀 Init v17.57 REPAIR-PROTOCOL');
+        const CURRENT_VER = '17.57.0';
         const savedVer = localStorage.getItem('centurion_version');
         if(savedVer !== CURRENT_VER) { localStorage.clear(); localStorage.setItem('centurion_version', CURRENT_VER); }
 
@@ -816,219 +816,225 @@ class CenturionApp {
         const modalBody = document.getElementById('modalBody');
         this.setText('modalTitle', 'BIOMARKERS & LONGEVITY');
         
-        const bmi = this.calculateBMI() || '--';
-        const longevityScore = this.calculateLongevityScore();
-        const day = this.history[this.currentIndex];
-        
-        const biomarkers = [
-            { id: 'apob', label: 'ApoB', unit: 'mg/dL', optimal: '<80', threshold: '130', current: this.bios.apob || '', points: 15, why: 'Best predictor of heart disease risk' },
-            { id: 'lpa', label: 'Lp(a)', unit: 'mg/dL', optimal: '<30', threshold: '150', current: this.bios.lpa || '', points: 15, why: 'Genetic CVD risk - Lower with walnuts/flax' },
-            { id: 'hscrp', label: 'hsCRP', unit: 'mg/L', optimal: '<0.5', threshold: '2.0', current: this.bios.hscrp || '', points: 10, why: 'Inflammation marker' },
-            { id: 'hba1c', label: 'HbA1c', unit: '%', optimal: '5.4', threshold: '6.0', current: this.bios.hba1c || '', points: 10, why: '3-month glucose average' },
-            { id: 'bmi', label: 'BMI', unit: '', optimal: '18.5-27', threshold: '>30', current: bmi, points: 10, why: 'Body composition', calculated: true },
-            { id: 'sleepscore', label: 'Sleep', unit: '', optimal: '85+', threshold: '60', current: day.score || '--', points: 10, why: 'Recovery quality', calculated: true },
-            { id: 'rhr', label: 'RHR', unit: 'bpm', optimal: '<50', threshold: '75', current: day.rhr !== '-' ? day.rhr : '--', points: 10, why: 'CV fitness', calculated: true }
-        ];
-
-        let html = `<div style="padding:20px;">
-            <div style="background:linear-gradient(135deg, rgba(204,255,0,0.1) 0%, rgba(0,240,255,0.1) 100%); border:2px solid var(--acid); border-radius:12px; padding:20px; margin-bottom:25px; text-align:center;">
-                <div style="font-size:3rem; font-weight:900; background:linear-gradient(135deg,var(--acid) 0%,var(--cyan) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">${longevityScore}</div>
-                <div style="font-size:0.7rem; color:#888; margin-top:5px;">LONGEVITY SCORE / 120</div>
-                <div style="font-size:0.6rem; color:${longevityScore >= 100 ? '#30d158' : longevityScore >= 80 ? 'var(--acid)' : 'var(--cyan)'}; margin-top:8px; font-weight:700;">
-                    ${longevityScore >= 100 ? '🏆 OPTIMAL' : longevityScore >= 80 ? '⚡ EXCELLENT' : longevityScore >= 60 ? '✓ GOOD' : '⚠️ NEEDS WORK'}
-                </div>
-            </div>`;
-
-        biomarkers.forEach(bio => {
-            const current = parseFloat(bio.current);
-            let status = '⚪', statusColor = '#666';
+        try {
+            const bmi = this.calculateBMI() || '--';
+            const longevityScore = this.calculateLongevityScore();
+            const day = this.history[this.currentIndex];
             
-            if (!bio.calculated && bio.current) {
-                if (bio.id === 'apob') {
-                    if (current <= 80) { status = '🟢'; statusColor = '#30d158'; }
-                    else if (current <= 130) { status = '🟡'; statusColor = '#FFD60A'; }
-                    else { status = '🔴'; statusColor = '#ff453a'; }
-                } else if (bio.id === 'lpa') {
-                    if (current <= 30) { status = '🟢'; statusColor = '#30d158'; }
-                    else if (current <= 150) { status = '🟡'; statusColor = '#FFD60A'; }
-                    else { status = '🔴'; statusColor = '#ff453a'; }
-                } else if (bio.id === 'hscrp') {
-                    if (current <= 0.5) { status = '🟢'; statusColor = '#30d158'; }
-                    else if (current <= 2.0) { status = '🟡'; statusColor = '#FFD60A'; }
-                    else { status = '🔴'; statusColor = '#ff453a'; }
-                } else if (bio.id === 'hba1c') {
-                    if (current <= 5.4) { status = '🟢'; statusColor = '#30d158'; }
-                    else if (current <= 6.0) { status = '🟡'; statusColor = '#FFD60A'; }
-                    else { status = '🔴'; statusColor = '#ff453a'; }
-                }
-            } else if (bio.calculated && bio.current !== '--') {
-                if (bio.id === 'bmi') {
-                    const bmiVal = parseFloat(bio.current);
-                    if (bmiVal >= 18.5 && bmiVal <= 27) { status = '🟢'; statusColor = '#30d158'; }
-                    else { status = '🟡'; statusColor = '#FFD60A'; }
-                } else if (bio.id === 'sleepscore') {
-                    const score = parseFloat(bio.current);
-                    if (score >= 85) { status = '🟢'; statusColor = '#30d158'; }
-                    else if (score >= 60) { status = '🟡'; statusColor = '#FFD60A'; }
-                    else { status = '🔴'; statusColor = '#ff453a'; }
-                } else if (bio.id === 'rhr') {
-                    const rhr = parseFloat(bio.current);
-                    if (rhr <= 50) { status = '🟢'; statusColor = '#30d158'; }
-                    else if (rhr <= 75) { status = '🟡'; statusColor = '#FFD60A'; }
-                    else { status = '🔴'; statusColor = '#ff453a'; }
-                }
-            }
+            const biomarkers = [
+                { id: 'apob', label: 'ApoB', unit: 'mg/dL', optimal: '<80', threshold: '130', current: this.bios.apob || '', points: 15, why: 'Best predictor of heart disease risk' },
+                { id: 'lpa', label: 'Lp(a)', unit: 'mg/dL', optimal: '<30', threshold: '150', current: this.bios.lpa || '', points: 15, why: 'Genetic CVD risk - Lower with walnuts/flax' },
+                { id: 'hscrp', label: 'hsCRP', unit: 'mg/L', optimal: '<0.5', threshold: '2.0', current: this.bios.hscrp || '', points: 10, why: 'Inflammation marker' },
+                { id: 'hba1c', label: 'HbA1c', unit: '%', optimal: '5.4', threshold: '6.0', current: this.bios.hba1c || '', points: 10, why: '3-month glucose average' },
+                { id: 'bmi', label: 'BMI', unit: '', optimal: '18.5-27', threshold: '>30', current: bmi, points: 10, why: 'Body composition', calculated: true },
+                { id: 'sleepscore', label: 'Sleep', unit: '', optimal: '85+', threshold: '60', current: day.score || '--', points: 10, why: 'Recovery quality', calculated: true },
+                { id: 'rhr', label: 'RHR', unit: 'bpm', optimal: '<50', threshold: '75', current: day.rhr !== '-' ? day.rhr : '--', points: 10, why: 'CV fitness', calculated: true }
+            ];
 
-            html += `<div style="background:#111; border:1px solid #222; border-radius:10px; padding:15px; margin-bottom:15px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                    <div>
-                        <div style="font-size:0.9rem; font-weight:900; color:#fff; margin-bottom:3px;">${bio.label} ${status}</div>
-                        <div style="font-size:0.6rem; color:#888;">${bio.why}</div>
+            let html = `<div style="padding:20px;">
+                <div style="background:linear-gradient(135deg, rgba(204,255,0,0.1) 0%, rgba(0,240,255,0.1) 100%); border:2px solid var(--acid); border-radius:12px; padding:20px; margin-bottom:25px; text-align:center;">
+                    <div style="font-size:3rem; font-weight:900; background:linear-gradient(135deg,var(--acid) 0%,var(--cyan) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">${longevityScore}</div>
+                    <div style="font-size:0.7rem; color:#888; margin-top:5px;">LONGEVITY SCORE / 120</div>
+                    <div style="font-size:0.6rem; color:${longevityScore >= 100 ? '#30d158' : longevityScore >= 80 ? 'var(--acid)' : 'var(--cyan)'}; margin-top:8px; font-weight:700;">
+                        ${longevityScore >= 100 ? '🏆 OPTIMAL' : longevityScore >= 80 ? '⚡ EXCELLENT' : longevityScore >= 60 ? '✓ GOOD' : '⚠️ NEEDS WORK'}
                     </div>
-                    <div style="text-align:right;">
-                        <div style="font-size:0.5rem; color:#666;">WORTH ${bio.points} PTS</div>
-                    </div>
-                </div>
-                ${bio.calculated ? `
-                    <div style="background:#0a0a0a; padding:12px; border-radius:8px; border:1px solid ${statusColor};">
-                        <div style="font-size:1.5rem; font-weight:900; color:${statusColor}; font-family:monospace;">${bio.current} ${bio.unit}</div>
-                    </div>
-                ` : `
-                    <input type="number" id="bio-${bio.id}" value="${bio.current}" 
-                        style="width:100%; background:#0a0a0a; border:1px solid ${statusColor}; color:#fff; padding:12px; border-radius:8px; font-size:1.2rem; font-weight:700; font-family:monospace;" placeholder="Enter value">
-                `}
-                <div style="display:flex; gap:15px; margin-top:10px; font-size:0.65rem;">
-                    <div style="flex:1;">
-                        <div style="color:#30d158; font-weight:700;">✓ OPTIMAL</div>
-                        <div style="color:#888; margin-top:2px;">${bio.optimal} ${bio.unit}</div>
-                    </div>
-                    <div style="flex:1; text-align:right;">
-                        <div style="color:#ff453a; font-weight:700;">⚠ THRESHOLD</div>
-                        <div style="color:#888; margin-top:2px;">${bio.threshold} ${bio.unit}</div>
-                    </div>
-                </div>
-            </div>`;
-        });
-
-        html += `<div style="margin-top:10px;">
-            <div style="font-size:0.75rem; font-weight:900; color:var(--acid); margin-bottom:10px; text-transform:uppercase;">BODY COMPOSITION</div>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                <div>
-                    <label style="font-size:0.6rem; color:#888; display:block; margin-bottom:5px;">WEIGHT (lbs)</label>
-                    <input type="number" id="bio-weight" value="${this.bios.weight || ''}" 
-                        style="width:100%; background:#1a1a1a; border:1px solid #333; color:#fff; padding:10px; border-radius:6px; font-family:monospace;">
-                </div>
-                <div>
-                    <label style="font-size:0.6rem; color:#888; display:block; margin-bottom:5px;">BMR (cal/day)</label>
-                    <input type="number" id="bio-bmr" value="${this.bios.bmr || ''}" 
-                        style="width:100%; background:#1a1a1a; border:1px solid #333; color:#fff; padding:10px; border-radius:6px; font-family:monospace;">
-                </div>
-            </div>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
-                <div>
-                    <label style="font-size:0.6rem; color:#888; display:block; margin-bottom:5px;">BODY FAT %</label>
-                    <input type="number" id="bio-bodyfat" value="${this.bios.bodyfat || ''}" 
-                        style="width:100%; background:#1a1a1a; border:1px solid #333; color:#fff; padding:10px; border-radius:6px; font-family:monospace;">
-                </div>
-                <div>
-                    <label style="font-size:0.6rem; color:#888; display:block; margin-bottom:5px;">MUSCLE MASS (lbs)</label>
-                    <input type="number" id="bio-muscle" value="${this.bios.muscle || ''}" 
-                        style="width:100%; background:#1a1a1a; border:1px solid #333; color:#fff; padding:10px; border-radius:6px; font-family:monospace;">
-                </div>
-            </div>
-        </div>`;
-
-        // SMART RECOMMENDATIONS ENGINE
-        const recommendations = [];
-        const today = new Date(day.date).getDay();
-        const hadWorkout = day.workouts && day.workouts.length > 0;
-        const workoutType = hadWorkout ? day.workouts[0].type : null;
-        const highIntensity = workoutType === 'strength_training' || workoutType === 'hiit' || workoutType === 'running';
-        const sleepDebt = this.calculateSleepDebt();
-        const poorSleep = day.score < 75 || sleepDebt > 3;
-        const elevatedRHR = parseFloat(day.rhr) > 60;
-
-        // Blood Work Recommendations
-        if (parseFloat(this.bios.apob) > 80) {
-            recommendations.push({
-                category: '🩸 BLOOD WORK',
-                issue: 'ApoB Elevated',
-                rec: 'Soluble Fiber from Food',
-                items: ['Oats (1 cup daily)', 'Beans/Lentils', 'Ground Flaxseed (2 tbsp)', 'Reduce Saturated Fat', 'Increase Fish/Nuts'],
-                why: 'Soluble fiber binds cholesterol in gut. Oat beta-glucan proven to lower LDL 5-10%'
-            });
-        }
-        
-        if (parseFloat(this.bios.lpa) > 30) {
-            recommendations.push({
-                category: '🩸 BLOOD WORK',
-                issue: 'Lp(a) Elevated',
-                rec: 'ALA Omega-3 Stack',
-                items: ['Ground Flaxseed (2 tbsp/day)', 'Walnuts (1/4 cup daily)', 'Chia Seeds', 'Increase Fatty Fish'],
-                why: 'ALA from flax/walnuts shown to reduce Lp(a) by 14%. Only dietary intervention proven to work.'
-            });
-        }
-        
-        // COUPLES PROTOCOLS
-        if (this.user === 'jermaine' || this.user === 'sophia') {
-            const dayOfWeek = new Date(day.date).getDay();
-            const isFirstSunday = new Date(day.date).getDate() <= 7;
-            
-            recommendations.push({
-                category: '💑 COUPLES FACIAL PROTOCOL',
-                issue: 'Daily Facial Routine',
-                rec: this.user === 'jermaine' ? 'Jermaine → Sophia Facial' : 'Sophia → Jermaine Facial',
-                items: this.user === 'jermaine' 
-                    ? this.getJermaineFacialProtocol(dayOfWeek, isFirstSunday)
-                    : this.getSophiaFacialProtocol(dayOfWeek),
-                why: this.user === 'jermaine'
-                    ? 'Microcurrent 3x/week = lift. Cupping 2x/week = drainage. Consistency = visible results in 4-6 weeks.'
-                    : 'Cold therapy = depuff + recovery. Massage = jaw tension release from boxing/stress.'
-            });
-            
-            recommendations.push({
-                category: '💑 COUPLES RECOVERY PROTOCOL',
-                issue: 'Partner-Assisted Recovery',
-                rec: 'Use Recovery Equipment On Each Other',
-                items: this.getCouplesRecoveryProtocol(dayOfWeek, hadWorkout, workoutType),
-                why: 'Partner-assisted = better pressure, reach hard spots, bonding time. Recovery together = accountability.'
-            });
-        }
-
-        // RENDER RECOMMENDATIONS
-        if (recommendations.length > 0) {
-            html += `<div style="margin-top:30px;">
-                <div style="font-size:0.75rem; font-weight:900; color:var(--cyan); margin-bottom:15px; text-transform:uppercase; border-bottom:2px solid #222; padding-bottom:8px;">
-                    💊 PERSONALIZED RECOMMENDATIONS
                 </div>`;
-            
-            recommendations.forEach(rec => {
-                html += `<div style="background:#111; border:1px solid #333; border-radius:10px; padding:15px; margin-bottom:15px;">
-                    <div style="font-size:0.7rem; color:var(--cyan); font-weight:900; margin-bottom:5px;">${rec.category}</div>
-                    <div style="font-size:0.9rem; font-weight:900; color:#fff; margin-bottom:8px;">${rec.rec}</div>
-                    <div style="font-size:0.65rem; color:#888; margin-bottom:10px; font-style:italic;">${rec.issue}</div>
-                    <div style="background:#0a0a0a; padding:12px; border-radius:6px; margin-bottom:10px;">`;
+
+            biomarkers.forEach(bio => {
+                const current = parseFloat(bio.current);
+                let status = '⚪', statusColor = '#666';
                 
-                rec.items.forEach(item => {
-                    html += `<div style="color:#ccc; font-size:0.75rem; padding:4px 0; border-bottom:1px solid #1a1a1a;">• ${item}</div>`;
+                if (!bio.calculated && bio.current) {
+                    if (bio.id === 'apob') {
+                        if (current <= 80) { status = '🟢'; statusColor = '#30d158'; }
+                        else if (current <= 130) { status = '🟡'; statusColor = '#FFD60A'; }
+                        else { status = '🔴'; statusColor = '#ff453a'; }
+                    } else if (bio.id === 'lpa') {
+                        if (current <= 30) { status = '🟢'; statusColor = '#30d158'; }
+                        else if (current <= 150) { status = '🟡'; statusColor = '#FFD60A'; }
+                        else { status = '🔴'; statusColor = '#ff453a'; }
+                    } else if (bio.id === 'hscrp') {
+                        if (current <= 0.5) { status = '🟢'; statusColor = '#30d158'; }
+                        else if (current <= 2.0) { status = '🟡'; statusColor = '#FFD60A'; }
+                        else { status = '🔴'; statusColor = '#ff453a'; }
+                    } else if (bio.id === 'hba1c') {
+                        if (current <= 5.4) { status = '🟢'; statusColor = '#30d158'; }
+                        else if (current <= 6.0) { status = '🟡'; statusColor = '#FFD60A'; }
+                        else { status = '🔴'; statusColor = '#ff453a'; }
+                    }
+                } else if (bio.calculated && bio.current !== '--') {
+                    if (bio.id === 'bmi') {
+                        const bmiVal = parseFloat(bio.current);
+                        if (bmiVal >= 18.5 && bmiVal <= 27) { status = '🟢'; statusColor = '#30d158'; }
+                        else { status = '🟡'; statusColor = '#FFD60A'; }
+                    } else if (bio.id === 'sleepscore') {
+                        const score = parseFloat(bio.current);
+                        if (score >= 85) { status = '🟢'; statusColor = '#30d158'; }
+                        else if (score >= 60) { status = '🟡'; statusColor = '#FFD60A'; }
+                        else { status = '🔴'; statusColor = '#ff453a'; }
+                    } else if (bio.id === 'rhr') {
+                        const rhr = parseFloat(bio.current);
+                        if (rhr <= 50) { status = '🟢'; statusColor = '#30d158'; }
+                        else if (rhr <= 75) { status = '🟡'; statusColor = '#FFD60A'; }
+                        else { status = '🔴'; statusColor = '#ff453a'; }
+                    }
+                }
+
+                html += `<div style="background:#111; border:1px solid #222; border-radius:10px; padding:15px; margin-bottom:15px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <div>
+                            <div style="font-size:0.9rem; font-weight:900; color:#fff; margin-bottom:3px;">${bio.label} ${status}</div>
+                            <div style="font-size:0.6rem; color:#888;">${bio.why}</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-size:0.5rem; color:#666;">WORTH ${bio.points} PTS</div>
+                        </div>
+                    </div>
+                    ${bio.calculated ? `
+                        <div style="background:#0a0a0a; padding:12px; border-radius:8px; border:1px solid ${statusColor};">
+                            <div style="font-size:1.5rem; font-weight:900; color:${statusColor}; font-family:monospace;">${bio.current} ${bio.unit}</div>
+                        </div>
+                    ` : `
+                        <input type="number" id="bio-${bio.id}" value="${bio.current}" 
+                            style="width:100%; background:#0a0a0a; border:1px solid ${statusColor}; color:#fff; padding:12px; border-radius:8px; font-size:1.2rem; font-weight:700; font-family:monospace;" placeholder="Enter value">
+                    `}
+                    <div style="display:flex; gap:15px; margin-top:10px; font-size:0.65rem;">
+                        <div style="flex:1;">
+                            <div style="color:#30d158; font-weight:700;">✓ OPTIMAL</div>
+                            <div style="color:#888; margin-top:2px;">${bio.optimal} ${bio.unit}</div>
+                        </div>
+                        <div style="flex:1; text-align:right;">
+                            <div style="color:#ff453a; font-weight:700;">⚠ THRESHOLD</div>
+                            <div style="color:#888; margin-top:2px;">${bio.threshold} ${bio.unit}</div>
+                        </div>
+                    </div>
+                </div>`;
+            });
+
+            html += `<div style="margin-top:10px;">
+                <div style="font-size:0.75rem; font-weight:900; color:var(--acid); margin-bottom:10px; text-transform:uppercase;">BODY COMPOSITION</div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                    <div>
+                        <label style="font-size:0.6rem; color:#888; display:block; margin-bottom:5px;">WEIGHT (lbs)</label>
+                        <input type="number" id="bio-weight" value="${this.bios.weight || ''}" 
+                            style="width:100%; background:#1a1a1a; border:1px solid #333; color:#fff; padding:10px; border-radius:6px; font-family:monospace;">
+                    </div>
+                    <div>
+                        <label style="font-size:0.6rem; color:#888; display:block; margin-bottom:5px;">BMR (cal/day)</label>
+                        <input type="number" id="bio-bmr" value="${this.bios.bmr || ''}" 
+                            style="width:100%; background:#1a1a1a; border:1px solid #333; color:#fff; padding:10px; border-radius:6px; font-family:monospace;">
+                    </div>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
+                    <div>
+                        <label style="font-size:0.6rem; color:#888; display:block; margin-bottom:5px;">BODY FAT %</label>
+                        <input type="number" id="bio-bodyfat" value="${this.bios.bodyfat || ''}" 
+                            style="width:100%; background:#1a1a1a; border:1px solid #333; color:#fff; padding:10px; border-radius:6px; font-family:monospace;">
+                    </div>
+                    <div>
+                        <label style="font-size:0.6rem; color:#888; display:block; margin-bottom:5px;">MUSCLE MASS (lbs)</label>
+                        <input type="number" id="bio-muscle" value="${this.bios.muscle || ''}" 
+                            style="width:100%; background:#1a1a1a; border:1px solid #333; color:#fff; padding:10px; border-radius:6px; font-family:monospace;">
+                    </div>
+                </div>
+            </div>`;
+
+            // SMART RECOMMENDATIONS ENGINE
+            const recommendations = [];
+            const today = new Date(day.date).getDay();
+            const hadWorkout = day.workouts && day.workouts.length > 0;
+            const workoutType = hadWorkout ? day.workouts[0].type : null;
+            const sleepDebt = this.calculateSleepDebt();
+            const poorSleep = day.score < 75 || sleepDebt > 3;
+            const elevatedRHR = parseFloat(day.rhr) > 60;
+
+            // Blood Work Recommendations
+            if (parseFloat(this.bios.apob) > 80) {
+                recommendations.push({
+                    category: '🩸 BLOOD WORK',
+                    issue: 'ApoB Elevated',
+                    rec: 'Soluble Fiber from Food',
+                    items: ['Oats (1 cup daily)', 'Beans/Lentils', 'Ground Flaxseed (2 tbsp)', 'Reduce Saturated Fat', 'Increase Fish/Nuts'],
+                    why: 'Soluble fiber binds cholesterol in gut. Oat beta-glucan proven to lower LDL 5-10%'
+                });
+            }
+            
+            if (parseFloat(this.bios.lpa) > 30) {
+                recommendations.push({
+                    category: '🩸 BLOOD WORK',
+                    issue: 'Lp(a) Elevated',
+                    rec: 'ALA Omega-3 Stack',
+                    items: ['Ground Flaxseed (2 tbsp/day)', 'Walnuts (1/4 cup daily)', 'Chia Seeds', 'Increase Fatty Fish'],
+                    why: 'ALA from flax/walnuts shown to reduce Lp(a) by 14%. Only dietary intervention proven to work.'
+                });
+            }
+            
+            // COUPLES PROTOCOLS
+            if (this.user === 'jermaine' || this.user === 'sophia') {
+                const dayOfWeek = new Date(day.date).getDay();
+                const isFirstSunday = new Date(day.date).getDate() <= 7;
+                
+                recommendations.push({
+                    category: '💑 COUPLES FACIAL PROTOCOL',
+                    issue: 'Daily Facial Routine',
+                    rec: this.user === 'jermaine' ? 'Jermaine → Sophia Facial' : 'Sophia → Jermaine Facial',
+                    items: this.user === 'jermaine' 
+                        ? this.getJermaineFacialProtocol(dayOfWeek, isFirstSunday)
+                        : this.getSophiaFacialProtocol(dayOfWeek),
+                    why: this.user === 'jermaine'
+                        ? 'Microcurrent 3x/week = lift. Cupping 2x/week = drainage. Consistency = visible results in 4-6 weeks.'
+                        : 'Cold therapy = depuff + recovery. Massage = jaw tension release from boxing/stress.'
                 });
                 
-                html += `</div>
-                    <div style="font-size:0.65rem; color:var(--acid); font-weight:700;">💡 ${rec.why}</div>
-                </div>`;
-            });
-            
-            html += `</div>`;
+                recommendations.push({
+                    category: '💑 COUPLES RECOVERY PROTOCOL',
+                    issue: 'Partner-Assisted Recovery',
+                    rec: 'Use Recovery Equipment On Each Other',
+                    items: this.getCouplesRecoveryProtocol(dayOfWeek, hadWorkout, workoutType),
+                    why: 'Partner-assisted = better pressure, reach hard spots, bonding time. Recovery together = accountability.'
+                });
+            }
+
+            // RENDER RECOMMENDATIONS
+            if (recommendations.length > 0) {
+                html += `<div style="margin-top:30px;">
+                    <div style="font-size:0.75rem; font-weight:900; color:var(--cyan); margin-bottom:15px; text-transform:uppercase; border-bottom:2px solid #222; padding-bottom:8px;">
+                        💊 PERSONALIZED RECOMMENDATIONS
+                    </div>`;
+                
+                recommendations.forEach(rec => {
+                    html += `<div style="background:#111; border:1px solid #333; border-radius:10px; padding:15px; margin-bottom:15px;">
+                        <div style="font-size:0.7rem; color:var(--cyan); font-weight:900; margin-bottom:5px;">${rec.category}</div>
+                        <div style="font-size:0.9rem; font-weight:900; color:#fff; margin-bottom:8px;">${rec.rec}</div>
+                        <div style="font-size:0.65rem; color:#888; margin-bottom:10px; font-style:italic;">${rec.issue}</div>
+                        <div style="background:#0a0a0a; padding:12px; border-radius:6px; margin-bottom:10px;">`;
+                    
+                    rec.items.forEach(item => {
+                        html += `<div style="color:#ccc; font-size:0.75rem; padding:4px 0; border-bottom:1px solid #1a1a1a;">• ${item}</div>`;
+                    });
+                    
+                    html += `</div>
+                        <div style="font-size:0.65rem; color:var(--acid); font-weight:700;">💡 ${rec.why}</div>
+                    </div>`;
+                });
+                
+                html += `</div>`;
+            }
+
+            html += `<button onclick="app.saveBio()" 
+                style="width:100%; background:var(--acid); color:#000; border:none; padding:15px; border-radius:10px; font-weight:900; font-size:1rem; margin-top:25px; cursor:pointer; text-transform:uppercase; letter-spacing:1px;">
+                💾 SAVE BIOMARKERS
+            </button></div>`;
+
+            modalBody.innerHTML = html;
+            document.getElementById('mainModal').classList.add('show');
+            document.getElementById('fixedFooter').classList.remove('show');
+        } catch (error) {
+            console.error('Bio Modal Error:', error);
+            // Fallback content if something breaks
+            modalBody.innerHTML = `<div style="padding:20px; color:red;">Error loading Bio Recommendations. Please check console.</div>`;
+            document.getElementById('mainModal').classList.add('show');
         }
-
-        html += `<button onclick="app.saveBio()" 
-            style="width:100%; background:var(--acid); color:#000; border:none; padding:15px; border-radius:10px; font-weight:900; font-size:1rem; margin-top:25px; cursor:pointer; text-transform:uppercase; letter-spacing:1px;">
-            💾 SAVE BIOMARKERS
-        </button></div>`;
-
-        modalBody.innerHTML = html;
-        document.getElementById('mainModal').classList.add('show');
-        document.getElementById('fixedFooter').classList.remove('show');
     }
 
     saveBio() {
@@ -1041,417 +1047,6 @@ class CenturionApp {
         this.render();
     }
 
-    // --- CUSTOM MEAL BUILDER ---
-    openCustomBuilder(mealSlot) {
-        const modalBody = document.getElementById('modalBody');
-        this.setText('modalTitle', 'ADD CUSTOM MEAL');
-        
-        let html = `
-            <div class="builder-form">
-                <div class="form-group"><label class="form-label">Meal Name</label><input id="cust-name" class="form-input" type="text" placeholder="e.g. Volleyball Pancakes"></div>
-                <div class="form-group"><label class="form-label">Protein (g)</label><input id="cust-p" class="form-input" type="number" placeholder="0"></div>
-                <div class="form-group"><label class="form-label">Calories</label><input id="cust-cal" class="form-input" type="number" placeholder="0"></div>
-                <div class="form-group"><label class="form-label">Omega-3 (mg) [Optional]</label><input id="cust-o" class="form-input" type="number" placeholder="0"></div>
-                <button class="select-btn" onclick="app.saveCustomMeal('${mealSlot}')">SAVE & SELECT</button>
-            </div>
-        `;
-        modalBody.innerHTML = html;
-        document.getElementById('fixedFooter').classList.remove('show');
-    }
-
-    saveCustomMeal(mealSlot) {
-        const name = document.getElementById('cust-name').value;
-        const p = parseInt(document.getElementById('cust-p').value) || 0;
-        const cal = parseInt(document.getElementById('cust-cal').value) || 0;
-        const o = parseInt(document.getElementById('cust-o').value) || 0;
-        
-        if(!name) return;
-
-        if(!this.customMeals[mealSlot]) this.customMeals[mealSlot] = [];
-        this.customMeals[mealSlot].push({
-            title: name,
-            macros: {p: p, o: o, f: 0, cal: cal},
-            ingredients: ["Custom Meal"],
-            colors: ['white'],
-            isCustom: true
-        });
-        
-        this.saveUserData();
-        
-        const standardCount = MEAL_DATABASE[mealSlot] ? MEAL_DATABASE[mealSlot].length : 0;
-        const customCount = this.customMeals[mealSlot].length;
-        const newIndex = standardCount + customCount - 1;
-        
-        this.selectMeal(mealSlot, newIndex);
-    }
-
-    openMealPicker(mealSlot) {
-        const modalBody = document.getElementById('modalBody');
-        modalBody.innerHTML = ''; // CLEAR PREVIOUS CONTENT
-        
-        const slotName = mealSlot.charAt(0).toUpperCase() + mealSlot.slice(1);
-        this.setText('modalTitle', slotName + ' MENU');
-        
-        document.getElementById('fixedFooter').classList.remove('show');
-        
-        const standardMeals = MEAL_DATABASE[mealSlot] || [];
-        const userMeals = this.customMeals[mealSlot] || [];
-        const allMeals = [...standardMeals, ...userMeals];
-        
-        let html = `
-            <div class="custom-btn-container">
-                <button class="custom-btn" onclick="app.openCustomBuilder('${mealSlot}')">＋ CREATE CUSTOM MEAL</button>
-            </div>
-        `;
-        
-        allMeals.forEach((meal, index) => {
-            const title = meal.title || meal.name || "Meal";
-            const colorDots = (meal.colors || []).map(c => `<span class="color-dot" style="background:${RAINBOW_COLORS[c] ? RAINBOW_COLORS[c].hex : '#fff'}"></span>`).join('');
-            
-            let badges = '';
-            if(meal.isCustom) badges += `<span class="badge user">USER</span>`;
-            
-            const ingString = (meal.ingredients||[]).join(' ').toLowerCase();
-            if(ingString.includes('salmon') && (ingString.includes('avocado') || ingString.includes('oil'))) badges += `<span class="badge boost">Ω-3</span>`;
-            if(ingString.includes('bison') && ingString.includes('peppers')) badges += `<span class="badge boost">IRON+</span>`;
-
-            html += `<div class="menu-item" onclick="${meal.isCustom ? `app.selectMeal('${mealSlot}', ${index})` : `app.showRecipe('${mealSlot}', ${index})`}">
-                <div class="menu-left">
-                    <div class="menu-name">${title}</div>
-                    <div class="menu-meta">P:${meal.macros.p}g • Ω3:${meal.macros.o}mg</div>
-                    <div class="menu-badges">${colorDots}</div>
-                </div>
-                <div class="menu-right">
-                    ${badges}
-                    <div class="menu-arrow">›</div>
-                </div>
-            </div>`;
-        });
-        modalBody.innerHTML += html;
-        document.getElementById('mainModal').classList.add('show');
-    }
-
-    showRecipe(mealSlot, index) {
-        const meal = MEAL_DATABASE[mealSlot][index];
-        const modalBody = document.getElementById('modalBody');
-        
-        // SHOW EXTERNAL FOOTER
-        const footer = document.getElementById('fixedFooter');
-        const btn = document.getElementById('logBtnAction');
-        footer.classList.add('show');
-        btn.onclick = () => app.selectMeal(mealSlot, index);
-        
-        let ingredientsHTML = '';
-        (meal.ingredients||[]).forEach(ing => ingredientsHTML += `<div class="ing-item">${ing}</div>`);
-        
-        let stepsHTML = '';
-        (meal.steps||[]).forEach((step, i) => stepsHTML += `<div class="step-item"><span class="step-num">${i+1}</span> <span class="step-desc">${step}</span></div>`);
-        
-        let synergyHTML = '';
-        const ingString = (meal.ingredients||[]).join(' ').toLowerCase();
-        if((ingString.includes('bison') || ingString.includes('steak')) && (ingString.includes('peppers') || ingString.includes('citrus'))) synergyHTML += `<div class="abs-boost">🚀 <strong>IRON SUPER-CHARGE:</strong> Vitamin C boosts Heme Iron absorption.</div>`;
-        if(ingString.includes('salmon') && ingString.includes('yogurt')) synergyHTML += `<div class="abs-alert">⚠️ <strong>BLOCKER ALERT:</strong> Calcium in Yogurt blocks Iron absorption.</div>`;
-        if(ingString.includes('salmon') && (ingString.includes('avocado') || ingString.includes('oil'))) synergyHTML += `<div class="abs-boost">🥑 <strong>FAT SOLUBLE UNLOCK:</strong> Healthy fats increase Omega-3 bioavailability.</div>`;
-
-        let html = `
-            <div class="recipe-hero">
-                <div class="recipe-title">${meal.title}</div>
-                <div class="recipe-stats">
-                    <span>⏱️ ${meal.time}</span>
-                    <span>🍽️ ${meal.servings} serving</span>
-                </div>
-            </div>
-            
-            <div class="macro-grid">
-                <div class="macro-stat"><div class="m-val">${meal.macros.p}</div><div class="m-lbl">PRO</div></div>
-                <div class="macro-stat"><div class="m-val">${meal.macros.o}</div><div class="m-lbl">Ω-3</div></div>
-                <div class="macro-stat"><div class="m-val">${meal.macros.f}</div><div class="m-lbl">FIBER</div></div>
-                <div class="macro-stat"><div class="m-val">${meal.macros.cal}</div><div class="m-lbl">CAL</div></div>
-            </div>
-
-            ${synergyHTML}
-
-            <div class="synergy-box">
-                <div class="syn-title">LONGEVITY SCIENCE</div>
-                <div class="syn-text">${meal.why || "High nutrient density meal selected for inflammation control."}</div>
-            </div>
-
-            <div class="section-label">INGREDIENTS</div>
-            <div class="ing-list">${ingredientsHTML}</div>
-
-            <div class="section-label">PREPARATION</div>
-            <div class="step-list">${stepsHTML}</div>
-        `;
-        
-        this.setText('modalTitle', 'RECIPE DETAILS');
-        modalBody.innerHTML = html;
-    }
-
-    closeModal() { 
-        document.getElementById('mainModal').classList.remove('show'); 
-        document.getElementById('fixedFooter').classList.remove('show');
-    }
-
-    selectMeal(mealSlot, mealIndex) {
-        const dateKey = this.history[this.currentIndex].date;
-        if (!this.meals[dateKey]) this.meals[dateKey] = {};
-        this.meals[dateKey][mealSlot] = mealIndex;
-        this.saveUserData();
-        this.closeModal();
-        this.render();
-    }
-
-    // --- CALCULATORS ---
-    calculateSleepDebt() {
-        const today = new Date().toLocaleDateString('en-CA');
-        const last7Days = this.history.filter(day => day.date !== today && day.totalSec > 0).slice(0, 7);
-        if (last7Days.length === 0) return 0;
-        let totalDebt = 0;
-        last7Days.forEach(day => {
-            const actual = day.totalSec / 3600;
-            const deficit = 8 - actual;
-            if (deficit > 0) totalDebt += deficit;
-        });
-        return totalDebt;
-    }
-
-    calculateMacros() {
-        const dateKey = this.history[this.currentIndex].date;
-        const checked = this.checked[dateKey] || [];
-        let totals = { protein: 0, omega3: 0, fiber: 0, calories: 0, burn: 0 };
-        this.protocol.forEach(task => {
-            if (checked.includes(task.id)) {
-                totals.protein += task.macros.p || 0;
-                totals.omega3 += task.macros.o || 0;
-                totals.fiber += task.macros.f || 0;
-                totals.calories += task.macros.cal || 0;
-                totals.burn += task.calBurn || 0;
-            }
-        });
-        return totals;
-    }
-
-    calculateRainbow() {
-        const dateKey = this.history[this.currentIndex].date;
-        const checked = this.checked[dateKey] || [];
-        let colors = new Set();
-        this.protocol.forEach(task => { if (checked.includes(task.id) && task.colors) task.colors.forEach(c => colors.add(c)); });
-        return colors;
-    }
-
-    calculateGrade(score) {
-        if(score >= 95) return { letter: 'S+', color: '#00ff00' };
-        if(score >= 90) return { letter: 'S', color: '#ccff00' };
-        if(score >= 85) return { letter: 'A+', color: '#00f0ff' };
-        if(score >= 80) return { letter: 'A', color: '#00d4ff' };
-        if(score >= 70) return { letter: 'B', color: '#FFD60A' };
-        return { letter: 'C', color: '#ff453a' };
-    }
-
-    // --- RENDER ---
-    renderGrade(score) {
-        const grade = this.calculateGrade(score);
-        this.setText('dayGrade', grade.letter);
-        const el = document.getElementById('dayGrade');
-        if(el) el.style.color = grade.color;
-        
-        // 7-DAY AVG LOGIC
-        const scores = this.history.map(day => {
-             const h = (day.totalSec || 0) / 3600;
-             return Math.min(100, Math.round((h/8)*100));
-        }).slice(0, 7);
-        const avg = scores.length > 0 ? Math.round(scores.reduce((a,b)=>a+b,0)/scores.length) : 0;
-        this.setText('longevityScore', avg);
-    }
-
-    render() {
-        try {
-            if (!this.history || this.history.length === 0) return;
-            this.protocol = JSON.parse(JSON.stringify(BASE_PROTOCOL));
-            const dateKey = this.history[this.currentIndex].date;
-            const day = this.history[this.currentIndex];
-            const goals = USERS[this.user].goals;
-
-            let selectedMeals = this.meals[dateKey] || {};
-            this.protocol.forEach(task => {
-                if (task.mealSlot && selectedMeals[task.mealSlot] !== undefined) {
-                    const standardMeals = MEAL_DATABASE[task.mealSlot] || [];
-                    const userMeals = this.customMeals[task.mealSlot] || [];
-                    const allMeals = [...standardMeals, ...userMeals];
-                    
-                    if(allMeals[selectedMeals[task.mealSlot]]) {
-                         const meal = allMeals[selectedMeals[task.mealSlot]];
-                         task.title = meal.title || meal.name; 
-                         task.desc = `P:${meal.macros.p} F:${meal.macros.f||0} Ω3:${meal.macros.o}`;
-                         task.macros = meal.macros;
-                         task.colors = meal.colors;
-                    } else { task.desc = "Select meal"; }
-                }
-            });
-            
-            // AUTO RECOVERY INJECTION
-            const activeCal = day.cal || 0;
-            const recoveryTitle = activeCal > 500 ? '❄️ COLD PLUNGE' : '🔥 SAUNA SESSION';
-            const recoveryDesc = activeCal > 500 ? 'High Exertion (>500 cal) • Inflammation Control' : 'GH Boost & Cardio Mimic (<500 cal)';
-            
-            this.protocol.push({
-                id: 'recovery_session',
-                time: '10:15',
-                title: recoveryTitle,
-                desc: recoveryDesc,
-                macros: {p:0,o:0,f:0,cal:0},
-                colors: activeCal > 500 ? ['blue'] : ['red'],
-                calBurn: 0,
-                autoDetected: true 
-            });
-            
-            if (day.workouts && day.workouts.length > 0) {
-                this.protocol = this.protocol.filter(t => t.id !== 'train');
-                day.workouts.forEach((w, i) => {
-                    const dateObj = new Date(w.start);
-                    const displayTime = dateObj.toLocaleTimeString('en-US', {hour: 'numeric', minute:'2-digit'});
-                    this.protocol.push({
-                        id: `workout-${i}`, time: w.time, displayTime: displayTime,
-                        title: `${WORKOUT_TYPES[w.type] || 'Workout'} 🔄`,
-                        desc: `${w.calories} cal • Auto-detected`, macros: {p:0,o:0,f:0,cal:0}, colors: [], calBurn: w.calories, autoDetected: true
-                    });
-                    const checked = this.checked[dateKey] || [];
-                    if (!checked.includes(`workout-${i}`)) { checked.push(`workout-${i}`); this.checked[dateKey] = checked; }
-                });
-                this.protocol.sort((a, b) => a.time.localeCompare(b.time));
-                this.saveUserData();
-            } else {
-                this.protocol.sort((a, b) => a.time.localeCompare(b.time));
-            }
-
-            const sleepHours = (day.totalSec || 0) / 3600;
-            const dayScore = Math.min(100, Math.round((sleepHours / 8) * 100));
-            this.renderGrade(dayScore); 
-            this.setText('dateLabel', day.date);
-            
-            const macros = this.calculateMacros();
-            const bmr = parseInt(this.bios.bmr) || 2057;
-            const totalBurn = bmr + macros.burn;
-            
-            const updateOrb = (id, val, goal, activeColor) => {
-                const el = document.getElementById(id);
-                if(el) {
-                   const pct = Math.min(val/goal, 1);
-                   el.style.strokeDashoffset = 145 - (pct * 145);
-                   el.style.stroke = activeColor;
-                }
-            };
-            const updateHeart = (id, val, goal) => {
-                 const el = document.getElementById(id);
-                 if(el) el.style.strokeDashoffset = 100 - (Math.min(val/goal, 1) * 100);
-            };
-
-            this.setText('sleepVal', `${Math.floor(sleepHours)}h ${Math.round((day.totalSec%3600)/60)}m`);
-            this.setText('deepVal', `${Math.round((day.deepSec||0)/60)}m`);
-            this.setText('remVal', `${Math.round((day.remSec||0)/60)}m`);
-            updateOrb('sleepOrb', sleepHours, 8, '#bf5af2');
-            updateOrb('deepOrb', (day.deepSec||0)/60, 90, '#007aff');
-            updateOrb('remOrb', (day.remSec||0)/60, 90, '#bf5af2');
-
-            this.setText('proteinVal', macros.protein); updateOrb('proteinOrb', macros.protein, goals.protein, '#fff');
-            this.setText('omega3Val', Math.round(macros.omega3/1000)+'g'); updateOrb('omega3Orb', macros.omega3, goals.omega3, '#00d4ff');
-            this.setText('fiberVal', macros.fiber); updateOrb('fiberOrb', macros.fiber, goals.fiber, '#30d158');
-            this.setText('calorieVal', macros.calories); updateOrb('calorieOrb', macros.calories, 2500, '#FFD60A');
-
-            this.setText('rhrVal', day.rhr); 
-            this.setText('z2Val', Math.round(day.med||0)); updateHeart('z2Heart', day.med||0, goals.z2||45);
-            this.setText('z5Val', Math.round(day.high||0)); updateHeart('z5Heart', day.high||0, goals.z5||20);
-            this.setText('calVal', Math.round(day.cal||0)); updateHeart('calHeart', day.cal||0, goals.calBurn||500);
-
-            const userDob = USERS[this.user].dob;
-            if(userDob) {
-                const [y, m, d] = userDob.split('-').map(Number);
-                const today = new Date();
-                if(today.getMonth()+1 === m && today.getDate() === d) {
-                     const age = today.getFullYear() - y;
-                     const banner = document.getElementById('alertBanner');
-                     if (this.user === 'sophia' && m === 1 && d === 25) {
-                         banner.className = 'alert alert-love show';
-                         banner.innerHTML = `🎂 <strong>HAPPY BIRTHDAY SOPHIA!</strong> 🎉<br><br>I love you so much. You inspire me every single day.<br>Let's crush 39 together. ❤️ - Jermaine`;
-                     } else {
-                         banner.className = 'alert alert-protein show';
-                         banner.innerText = `🎂 HAPPY ${age}TH BIRTHDAY ${USERS[this.user].name.toUpperCase()}! 🎉`;
-                     }
-                     this.setText('statusMsg', 'CELEBRATION MODE 🎂');
-                } else {
-                     this.renderStatus(sleepHours);
-                }
-            } else {
-                 this.renderStatus(sleepHours);
-            }
-            this.renderRainbow();
-            this.renderTimeline(dateKey);
-        } catch (e) { console.error('Render Error: ' + e); }
-    }
-
-    renderRainbow() {
-        const colors = this.calculateRainbow();
-        const score = Math.round((colors.size / 6) * 100);
-        this.setText('rainbowScore', score + '%');
-        let html = '';
-        ['red', 'orange', 'yellow', 'green', 'purple', 'white'].forEach(c => {
-            const width = colors.has(c) ? 16.66 : 0;
-            const hex = RAINBOW_COLORS[c] ? RAINBOW_COLORS[c].hex : '#999';
-            html += `<div class="rainbow-seg" style="background:${hex}; width:${width}%"></div>`;
-        });
-        document.getElementById('rainbowTrack').innerHTML = html;
-        const sugg = document.getElementById('rainbowSuggestion');
-        if(colors.size < 6 && colors.size > 0) {
-            const missing = ['red', 'orange', 'yellow', 'green', 'purple', 'white'].find(c => !colors.has(c));
-            sugg.innerText = `Tip: Add ${missing.toUpperCase()} foods!`;
-            sugg.style.display = 'block';
-        } else { sugg.style.display = 'none'; }
-    }
-
-    renderStatus(sleepHours) {
-        const debt = this.calculateSleepDebt();
-        const banner = document.getElementById('alertBanner');
-        let status = '';
-        if (debt > 7) {
-            status = `⚠️ SLEEP DEBT: ${debt.toFixed(1)}h`;
-            banner.className = 'alert alert-warning show';
-            banner.innerText = "FORCED RECOVERY: Sleep Debt Critical";
-        } else if (sleepHours >= 7) {
-            status = "✅ OPTIMAL READY";
-            banner.className = 'alert';
-        } else {
-            status = "⚠️ CAUTION";
-            banner.className = 'alert';
-        }
-        this.setText('statusMsg', status);
-    }
-
-    renderTimeline(dateKey) {
-        const checked = this.checked[dateKey] || [];
-        let html = '';
-        this.protocol.forEach(task => {
-            const isChecked = checked.includes(task.id);
-            const clickAction = task.clickable ? `onclick="app.openMealPicker('${task.mealSlot}')"` : '';
-            const cardClass = `task-card ${isChecked ? 'checked' : ''} ${task.clickable ? 'clickable' : ''} ${task.autoDetected ? 'auto-detected' : ''}`;
-            const chevron = task.clickable ? `<span class="chevron">›</span>` : '';
-            const timeDisplay = task.displayTime || task.time;
-            html += `<div class="task">
-                <div class="task-time">${timeDisplay}</div>
-                <div class="${cardClass}" ${clickAction}>
-                    <div class="task-info">
-                        <div class="task-title">${task.title} ${task.autoDetected ? '<span class="workout-badge">AUTO</span>' : ''}</div>
-                        <div class="task-desc">${task.desc}</div>
-                    </div>
-                    ${chevron}
-                    ${!task.autoDetected ? `<div class="check-btn" onclick="event.stopPropagation(); app.toggleTask('${task.id}')"><div class="check-circle">${isChecked ? '✓' : ''}</div></div>` : ''}
-                </div>
-            </div>`;
-        });
-        document.getElementById('timeline').innerHTML = html;
-    }
-
-    setText(id, text) { const el = document.getElementById(id); if (el) el.innerText = text; }
-    sync() { this.fetchOuraData(); }
 }
 
 let app;
