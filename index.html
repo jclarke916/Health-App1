@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Centurion v17.45 FACTORY-RESET</title>
+<title>Centurion v17.47 CUMULATIVE</title>
 <style>
 /* --- CORE STYLES --- */
 :root { --bg:#050505; --panel:#121212; --border:#222; --acid:#ccff00; --cyan:#00f0ff; --purple:#bf5af2; --alert:#ff453a; --text:#fff; }
@@ -29,6 +29,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system, BlinkMacS
 .score-val{font-size:1.4rem;font-weight:900;line-height:1; color:#fff;}
 .score-val.longevity{font-size:2.2rem;background:linear-gradient(135deg,var(--acid) 0%,var(--cyan) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent; filter:drop-shadow(0 0 8px rgba(204,255,0,0.6));}
 .score-label{font-size:0.45rem;color:#666;text-transform:uppercase;margin-top:4px;font-weight:800;letter-spacing:1px;}
+.score-avg-badge{position:absolute; bottom:-12px; background:#111; border:1px solid #333; padding:2px 6px; border-radius:8px; font-size:0.4rem; color:var(--cyan); font-weight:900; letter-spacing:0.5px;}
 
 /* ALERTS */
 .alert{margin:0 15px 20px;padding:15px;border-radius:10px;text-align:center;font-weight:800;display:none;font-size:0.75rem;text-transform:uppercase;letter-spacing:1px; line-height:1.4;}
@@ -196,7 +197,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system, BlinkMacS
         <div class="score-box primary">
             <div class="score-val longevity" id="longevityScore">--</div>
             <div class="score-label">LONGEVITY</div>
-            <div class="score-max">/120</div>
+            <div class="score-avg-badge">7-DAY AVG</div>
         </div>
     </div>
     <div class="status" id="statusMsg">INITIALIZING...</div>
@@ -410,8 +411,8 @@ const WORKOUT_TYPES = { strength_training: 'Strength', cycling: 'Cycling', runni
 // --- APP CLASS ---
 class CenturionApp {
     constructor() {
-        console.log('🚀 Init v17.36 PERFECT-STACK');
-        const CURRENT_VER = '17.36.0';
+        console.log('🚀 Init v17.44 STABLE');
+        const CURRENT_VER = '17.44.0';
         const savedVer = localStorage.getItem('centurion_version');
         if(savedVer !== CURRENT_VER) { localStorage.clear(); localStorage.setItem('centurion_version', CURRENT_VER); }
 
@@ -597,7 +598,7 @@ class CenturionApp {
 
     openMealPicker(mealSlot) {
         const modalBody = document.getElementById('modalBody');
-        modalBody.innerHTML = '';
+        modalBody.innerHTML = ''; // CLEAR PREVIOUS CONTENT
         
         const slotName = mealSlot.charAt(0).toUpperCase() + mealSlot.slice(1);
         this.setText('modalTitle', slotName + ' MENU');
@@ -621,6 +622,7 @@ class CenturionApp {
             let badges = '';
             if(meal.isCustom) badges += `<span class="badge user">USER</span>`;
             
+            // MENU BADGES
             const ingString = (meal.ingredients||[]).join(' ').toLowerCase();
             if(ingString.includes('salmon') && (ingString.includes('avocado') || ingString.includes('oil'))) badges += `<span class="badge boost">Ω-3</span>`;
             if(ingString.includes('bison') && ingString.includes('peppers')) badges += `<span class="badge boost">IRON+</span>`;
@@ -662,6 +664,7 @@ class CenturionApp {
         if((ingString.includes('bison') || ingString.includes('steak')) && (ingString.includes('peppers') || ingString.includes('citrus'))) synergyHTML += `<div class="abs-boost">🚀 <strong>IRON SUPER-CHARGE:</strong> Vitamin C boosts Heme Iron absorption.</div>`;
         if(ingString.includes('salmon') && ingString.includes('yogurt')) synergyHTML += `<div class="abs-alert">⚠️ <strong>BLOCKER ALERT:</strong> Calcium in Yogurt blocks Iron absorption.</div>`;
         if(ingString.includes('salmon') && (ingString.includes('avocado') || ingString.includes('oil'))) synergyHTML += `<div class="abs-boost">🥑 <strong>FAT SOLUBLE UNLOCK:</strong> Healthy fats increase Omega-3 bioavailability.</div>`;
+        if(ingString.includes('turmeric') && !ingString.includes('pepper')) synergyHTML += `<div class="abs-alert">⚠️ Add Black Pepper to activate Turmeric!</div>`;
 
         let html = `
             <div class="recipe-hero">
@@ -764,6 +767,14 @@ class CenturionApp {
         this.setText('dayGrade', grade.letter);
         const el = document.getElementById('dayGrade');
         if(el) el.style.color = grade.color;
+        
+        // 7-DAY AVG LOGIC
+        const scores = this.history.map(day => {
+             const h = (day.totalSec || 0) / 3600;
+             return Math.min(100, Math.round((h/8)*100));
+        }).slice(0, 7);
+        const avg = scores.length > 0 ? Math.round(scores.reduce((a,b)=>a+b,0)/scores.length) : 0;
+        this.setText('longevityScore', avg);
     }
 
     render() {
