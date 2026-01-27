@@ -550,6 +550,45 @@ if(!this.meals[d])this.meals[d]={};
 this.meals[d][slot]=idx;
 this.saveUserData();this.closeModal();this.render()}
 
+getDailyRecommendation(mac,day,avgScore){
+const apob=parseFloat(this.bios.apob||0);
+const lpa=parseFloat(this.bios.lpa||0);
+const hscrp=parseFloat(this.bios.hscrp||0);
+const goals=USERS[this.user].goals;
+
+// Priority 1: Critical biomarker issues
+if(lpa>150&&mac.omega3<3000)return'🔴 Lp(a) ALERT: Add walnuts + flax to hit 4000mg omega-3';
+if(apob>100&&mac.fiber<30)return'⚠️ ApoB elevated: Need 20g more fiber to lower cholesterol';
+if(hscrp>1.0)return'🔥 Inflammation high: Focus on turmeric, ginger, omega-3';
+
+// Priority 2: Daily macro gaps
+const proteinGap=goals.protein-mac.protein;
+const omega3Gap=goals.omega3-mac.omega3;
+const fiberGap=goals.fiber-mac.fiber;
+
+if(proteinGap>50)return`💪 Protein deficit: Add ${Math.round(proteinGap)}g (try Power Berry Smoothie)`;
+if(omega3Gap>2000)return`🐟 Omega-3 low: Add salmon or 2 tbsp flax (need ${Math.round(omega3Gap)}mg)`;
+if(fiberGap>20)return`🌾 Fiber gap: Add ${Math.round(fiberGap)}g (beans, oats, or veggies)`;
+
+// Priority 3: Activity targets
+const z2Gap=goals.z2-(day.med||0);
+const z5Gap=goals.z5-(day.high||0);
+if(z2Gap>20)return`🚴 Zone 2 needed: ${Math.round(z2Gap)} more mins (light cardio/walk)`;
+if(z5Gap>10)return`🔥 Zone 5 needed: ${Math.round(z5Gap)} more mins (HIIT or boxing)`;
+
+// Priority 4: Sleep quality
+const sleepHours=(day.totalSec||0)/3600;
+if(sleepHours<7)return'😴 Sleep deficit: Aim for 8h tonight (current: '+sleepHours.toFixed(1)+'h)';
+
+// Priority 5: Longevity score feedback
+if(avgScore>=90)return'🏆 CRUSHING IT! Longevity score: '+avgScore+' - Keep this momentum!';
+if(avgScore>=75)return'✅ Solid week! Score: '+avgScore+' - Fine-tune sleep or activity';
+if(avgScore<60)return'📈 Focus week: Score '+avgScore+' - Prioritize sleep + movement';
+
+// Default: On track
+return'✅ All systems optimal - maintain current protocol';
+}
+
 calculateMacros(){
 const d=this.history[this.currentIndex].date;
 const c=this.checked[d]||[];
@@ -627,6 +666,10 @@ const last7=this.history.slice(0,7);
 const avgScore=last7.length>0?Math.round(last7.reduce((sum,d)=>sum+(d.score||0),0)/last7.length):0;
 this.setText('longevityScore',avgScore);
 log(`💯 Longevity Score: ${avgScore} (7-day avg)`);
+
+// AI-powered daily recommendation based on biomarkers and progress
+const rec=this.getDailyRecommendation(mac,day,avgScore);
+this.setText('statusMsg',rec);
 
 const upd=(id,val,max,col)=>{const el=document.getElementById(id);if(el){el.style.strokeDashoffset=145-(Math.min(val/max,1)*145);el.style.stroke=col}const txt=document.getElementById(id.replace('Orb','Val'));if(txt)txt.innerText=Math.round(val)};
 const updOrb=(id,val,max,col)=>{const el=document.getElementById(id);if(el){el.style.strokeDashoffset=145-(Math.min(val/max,1)*145);el.style.stroke=col}};
