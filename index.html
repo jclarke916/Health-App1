@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Centurion v17.70 STABLE</title>
+<title>Centurion v17.71 STABLE</title>
 <style>
 /* CORE */
 :root{--bg:#050505;--panel:#121212;--border:#222;--acid:#ccff00;--cyan:#00f0ff;--purple:#bf5af2;--alert:#ff453a;--text:#fff}
@@ -21,11 +21,14 @@ body{background:var(--bg);color:var(--text);padding-bottom:120px}
 .nav-btn{background:none;border:none;color:var(--cyan);font-size:1.4rem;padding:0 20px;cursor:pointer}
 #dateLabel{font-weight:700;font-family:monospace;letter-spacing:1px}
 .bio-btn{position:absolute;right:15px;top:15px;background:rgba(255,255,255,0.1);color:var(--acid);border:1px solid var(--acid);padding:6px 12px;border-radius:6px;font-size:0.6rem;font-weight:900}
-/* DASHBOARD */
+/* DASHBOARD - FIXED LAYOUT */
 .hero{padding:25px 15px;display:flex;gap:20px;align-items:center;justify-content:center}
-.score-box{width:90px;height:90px;border-radius:50%;background:radial-gradient(circle,rgba(204,255,0,0.1) 0%,transparent 70%);border:3px solid var(--acid);display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 0 30px rgba(204,255,0,0.15)}
-.score-val{font-size:2.2rem;font-weight:900;color:#fff;line-height:1}
+.score-box{width:100px;height:100px;border-radius:50%;background:radial-gradient(circle,rgba(204,255,0,0.1) 0%,transparent 70%);border:3px solid var(--acid);display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 0 30px rgba(204,255,0,0.15); flex-shrink: 0;}
+.score-val{font-size:2rem;font-weight:900;color:#fff;line-height:1}
 .score-lbl{font-size:0.5rem;color:var(--acid);margin-top:4px;font-weight:900;letter-spacing:1px}
+.hero-stat{background:#111; border:1px solid #333; border-radius:10px; padding:12px; text-align:center; flex:1;}
+.stat-lbl{font-size:0.6rem; color:#888; margin-bottom:4px;}
+.stat-val{font-size:1.1rem; font-weight:900; color:#fff;}
 /* ORBS */
 .orb-card{background:#111;border:1px solid #222;border-radius:12px;padding:10px 5px;display:flex;flex-direction:column;align-items:center}
 .orb-con{width:50px;height:50px;position:relative;margin-bottom:6px}
@@ -81,14 +84,14 @@ body{background:var(--bg);color:var(--text);padding-bottom:120px}
         <div class="score-val" id="longevityScore">--</div>
         <div class="score-lbl">READY</div>
     </div>
-    <div class="grid-2" style="flex:1; margin-left:15px;">
-        <div style="background:#111; border:1px solid #333; border-radius:10px; padding:10px; text-align:center;">
-            <div style="font-size:0.6rem; color:#888;">SLEEP</div>
-            <div style="font-size:1.1rem; font-weight:900; color:#fff;" id="heroSleep">--</div>
+    <div class="grid-2" style="flex:1; margin-left:5px;">
+        <div class="hero-stat">
+            <div class="stat-lbl">SLEEP</div>
+            <div class="stat-val" id="heroSleep">--</div>
         </div>
-        <div style="background:#111; border:1px solid #333; border-radius:10px; padding:10px; text-align:center;">
-            <div style="font-size:0.6rem; color:#888;">PROTEIN</div>
-            <div style="font-size:1.1rem; font-weight:900; color:#fff;" id="heroProtein">0g</div>
+        <div class="hero-stat">
+            <div class="stat-lbl">PROTEIN</div>
+            <div class="stat-val" id="heroProtein">0g</div>
         </div>
     </div>
 </div>
@@ -168,9 +171,8 @@ const PROTOCOLS = {
 class CenturionApp {
     constructor() {
         this.user = localStorage.getItem('c_user') || 'jermaine';
-        this.todayKey = new Date().toLocaleDateString('en-CA'); // Fix timezone issue
+        this.todayKey = new Date().toLocaleDateString('en-CA'); 
         
-        // Init Storage
         const raw = localStorage.getItem(`c_data_${this.user}`);
         this.data = raw ? JSON.parse(raw) : {};
         if (!this.data[this.todayKey]) this.data[this.todayKey] = { checked: [], meals: {} };
@@ -185,7 +187,6 @@ class CenturionApp {
         localStorage.setItem('c_user', u);
         document.getElementById(`btn-${u}`).classList.add('active');
         
-        // Re-load data for new user
         this.todayKey = new Date().toLocaleDateString('en-CA');
         const raw = localStorage.getItem(`c_data_${this.user}`);
         this.data = raw ? JSON.parse(raw) : {};
@@ -219,7 +220,7 @@ class CenturionApp {
     // --- PROTOCOL LOGIC ---
     getFacial(d) {
         if (this.user === 'jermaine') {
-            if (d === 0) return { key: 'microneedling', title: 'Microneedling' }; // Sunday
+            if (d === 0) return { key: 'microneedling', title: 'Microneedling' }; 
             if (d === 1 || d === 3 || d === 5) return { key: 'microcurrent', title: 'Microcurrent' };
             return { key: 'massage', title: 'Massage' };
         } else {
@@ -239,8 +240,7 @@ class CenturionApp {
         const day = this.data[this.todayKey];
         document.getElementById('dateLabel').innerText = this.todayKey;
         
-        // 1. Build Task List
-        const dow = new Date(this.todayKey).getDay(); // 0=Sun, 1=Mon...
+        const dow = new Date(this.todayKey).getDay();
         const facial = this.getFacial(dow);
         const recovery = this.getRecovery(dow);
 
@@ -254,7 +254,6 @@ class CenturionApp {
             { id: 't7', time: '21:15', title: facial.title, proto: facial.key, type: 'facial' }
         ];
 
-        // 2. Generate HTML
         let html = '';
         let totalP = 0;
 
@@ -264,19 +263,17 @@ class CenturionApp {
             let action = "";
             let css = "";
 
-            // Handle Meals
             if (t.slot) {
                 const mealIdx = day.meals[t.slot];
                 if (mealIdx !== undefined && MEAL_DATABASE[t.slot][mealIdx]) {
                     const m = MEAL_DATABASE[t.slot][mealIdx];
                     sub = `${m.title} (${m.p}g P)`;
                     totalP += m.p;
-                    css = "checked"; // Highlight if meal selected
+                    css = "checked";
                 }
                 action = `onclick="app.openPicker('${t.slot}')"`;
             }
 
-            // Handle Protocols
             if (t.proto) {
                 sub = "Tap for protocol";
                 action = `onclick="app.openProtocol('${t.proto}')"`;
@@ -301,8 +298,6 @@ class CenturionApp {
         });
 
         document.getElementById('timeline').innerHTML = html;
-        
-        // Update Hero Metrics
         document.getElementById('heroProtein').innerText = totalP + 'g';
     }
 
@@ -326,7 +321,7 @@ class CenturionApp {
 
     selectMeal(slot, idx) {
         this.data[this.todayKey].meals[slot] = idx;
-        this.save(); // Renders automatically
+        this.save();
         this.closeModal();
     }
 
@@ -340,7 +335,6 @@ class CenturionApp {
     }
 
     openBio() {
-        // Simple Bio Placeholder
         document.getElementById('modalTitle').innerText = "BIOMETRICS";
         document.getElementById('modalBody').innerHTML = `<div style="text-align:center; padding:20px; color:#888;">Bio-Marker inputs coming in v18</div>`;
         document.getElementById('mainModal').classList.add('show');
@@ -348,7 +342,7 @@ class CenturionApp {
 
     closeModal() { document.getElementById('mainModal').classList.remove('show'); }
 
-    // --- OURA SYNC ---
+    // --- OURA SYNC (SAFE MODE) ---
     async sync() {
         document.getElementById('syncStatus').innerText = 'SYNCING...';
         const token = USERS[this.user].token;
@@ -375,13 +369,13 @@ class CenturionApp {
     }
 
     updateOuraUI(d) {
-        // Update Orbs
-        const hrs = (d.total_sleep_duration / 3600).toFixed(1);
-        const deep = Math.round(d.deep_sleep_duration / 60);
-        const rem = Math.round(d.rem_sleep_duration / 60);
+        const hrs = d.total_sleep_duration ? (d.total_sleep_duration / 3600).toFixed(1) : '0';
+        const deep = d.deep_sleep_duration ? Math.round(d.deep_sleep_duration / 60) : 0;
+        const rem = d.rem_sleep_duration ? Math.round(d.rem_sleep_duration / 60) : 0;
+        const score = d.score || '--'; // ERROR FIX HERE
         
         document.getElementById('val-sleep').innerText = hrs;
-        document.getElementById('orb-sleep').style.strokeDashoffset = 126 - ((d.total_sleep_duration / 28800) * 126);
+        if(d.total_sleep_duration) document.getElementById('orb-sleep').style.strokeDashoffset = 126 - ((d.total_sleep_duration / 28800) * 126);
         
         document.getElementById('val-deep').innerText = deep;
         document.getElementById('orb-deep').style.strokeDashoffset = 126 - ((deep / 90) * 126);
@@ -390,12 +384,11 @@ class CenturionApp {
         document.getElementById('orb-rem').style.strokeDashoffset = 126 - ((rem / 90) * 126);
 
         document.getElementById('heroSleep').innerText = hrs + 'h';
-        document.getElementById('longevityScore').innerText = d.score;
+        document.getElementById('longevityScore').innerText = score;
     }
 }
 
-// Global Init
-window.app = new CenturionApp();
+window.onload = () => { window.app = new CenturionApp(); };
 </script>
 </body>
 </html>
