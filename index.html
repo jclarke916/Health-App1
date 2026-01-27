@@ -334,8 +334,15 @@ log('Workout entries to process: '+workoutData.length);
 const m=new Map();
 const g=(d)=>{if(!m.has(d))m.set(d,{date:d,score:0,totalSec:0,deepSec:0,remSec:0,rhr:'-',cal:0,high:0,med:0,workouts:[]});return m.get(d)};
 sleepData.forEach(s=>{
-log(`Sleep for ${s.day}: total=${s.total_sleep_duration}s, deep=${s.deep_sleep_duration}s, rem=${s.rem_sleep_duration}s, score=${s.score}`);
-const d=g(s.day);d.totalSec+=s.total_sleep_duration||0;d.deepSec+=s.deep_sleep_duration||0;d.remSec+=s.rem_sleep_duration||0;if(s.score&&s.score>d.score)d.score=s.score});
+const d=g(s.day);
+d.totalSec+=s.total_sleep_duration||0;
+d.deepSec+=s.deep_sleep_duration||0;
+d.remSec+=s.rem_sleep_duration||0;
+// Calculate sleep score from efficiency if not provided
+const sleepScore = s.score || (s.efficiency ? Math.round(s.efficiency) : 0);
+if(sleepScore && sleepScore>d.score)d.score=sleepScore;
+log(`Sleep ${s.day}: ${(s.total_sleep_duration/3600).toFixed(1)}h - Score: ${sleepScore} (from ${s.score ? 'API' : 'efficiency '+s.efficiency})`);
+});
 readinessData.forEach(r=>{const d=g(r.day);if(r.contributors?.resting_heart_rate)d.rhr=r.contributors.resting_heart_rate});
 workoutData.forEach(w=>{const d=g(w.day);const dt=new Date(w.start_datetime);const t=dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:false});d.workouts.push({type:w.activity||'other',intensity:w.intensity||'moderate',calories:w.calories||300,time:t,start:w.start_datetime})});
 activityData.forEach(a=>{const d=g(a.day);d.cal=a.active_calories||0;d.high=(a.high_activity_time||0)/60;d.med=(a.medium_activity_time||0)/60});
