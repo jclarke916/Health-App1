@@ -3,18 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Centurion v17.79 SAFETY</title>
+<title>Centurion v17.80 PATCHED</title>
 <style>
 /* --- CORE STYLES --- */
 :root { --bg:#050505; --panel:#121212; --border:#222; --acid:#ccff00; --cyan:#00f0ff; --purple:#bf5af2; --alert:#ff453a; --text:#fff; }
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;padding-bottom:120px;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding-bottom:120px;-webkit-tap-highlight-color:transparent}
 .header{background:rgba(10,10,10,0.95);padding:15px;border-bottom:1px solid #333;position:sticky;top:0;z-index:100;backdrop-filter:blur(10px)}
 
 /* CONTROLS */
 .user-switch{display:flex;gap:8px;background:#1a1a1a;padding:4px;border-radius:24px;margin-bottom:10px;border:1px solid #333}
 .user-switch button{flex:1;padding:10px;border:none;background:transparent;color:#666;border-radius:20px;cursor:pointer;font-weight:800;font-size:0.75rem;transition:all 0.3s;letter-spacing:1px}
-.user-switch button.active{background:var(--acid);color:#000;box-shadow:0 0 15px rgba(204,255,0,0.4);text-shadow:none}
+.user-switch button.active{background:var(--acid);color:#000;box-shadow:0 0 15px rgba(204,255,0,0.4)}
 .date-nav{display:flex;justify-content:space-between;align-items:center;margin-top:10px;background:#000;border:1px solid #333;border-radius:10px;padding:6px}
 .nav-btn{background:transparent;border:none;color:var(--cyan);padding:5px 20px;font-size:1.2rem;cursor:pointer;text-shadow:0 0 8px rgba(0,240,255,0.6)}
 #dateLabel{flex:1;text-align:center;color:#fff;font-weight:700;font-size:0.9rem;font-family:monospace;letter-spacing:1px}
@@ -45,7 +45,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .orb-bg{fill:none;stroke:#1a1a1a;stroke-width:5}
 .orb-fg{fill:none;stroke-width:5;stroke-dasharray:145;stroke-dashoffset:145;transition:stroke-dashoffset 1s cubic-bezier(0.4,0,0.2,1);stroke-linecap:round;filter:drop-shadow(0 0 4px currentColor)}
 .orb-val-box{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:100%;text-align:center;z-index:10;pointer-events:none}
-.orb-val{font-family:'Courier New',monospace;font-size:0.7rem;font-weight:900;color:#fff;text-shadow:0 0 4px #000,0 0 3px #000;letter-spacing:-0.5px;line-height:1;margin-top:2px}
+.orb-val{font-family:'Courier New',monospace;font-size:0.7rem;font-weight:900;color:#fff;text-shadow:0 0 4px #000;letter-spacing:-0.5px;line-height:1;margin-top:2px}
 .orb-label{font-size:0.45rem;font-weight:800;color:#666;text-transform:uppercase;letter-spacing:0.5px}
 
 /* HEARTS */
@@ -102,6 +102,13 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .footer{position:fixed;bottom:0;left:0;width:100%;background:#000;padding:12px 15px;border-top:1px solid #333;display:flex;justify-content:space-between;align-items:center;z-index:90}
 .sync-status{font-size:0.6rem;color:#666;font-family:monospace}
 .sync-btn{background:var(--acid);color:#000;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-weight:900;font-size:0.7rem}
+
+.debug-console{position:fixed;bottom:60px;left:0;right:0;max-height:300px;background:rgba(0,0,0,0.98);border-top:2px solid var(–acid);z-index:199;overflow-y:auto;padding:10px;font-size:0.65rem;color:#0f0;font-family:monospace;display:none}
+.debug-console.show{display:block}
+.debug-btn{position:fixed;bottom:70px;right:10px;z-index:200;background:var(–acid);color:#000;border:none;padding:8px 12px;border-radius:6px;font-weight:900;cursor:pointer;font-size:0.7rem}
+.debug-log{margin-bottom:4px;border-bottom:1px solid #222;padding-bottom:4px}
+.debug-time{color:#666;margin-right:8px}
+.debug-type{color:var(–cyan);margin-right:8px;font-weight:900}
 </style>
 </head>
 <body>
@@ -193,19 +200,40 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
     <button class="sync-btn" onclick="if(window.app)app.sync()">🔄 SYNC</button>
 </div>
 
+<button class="debug-btn" onclick="toggleDebug()">🐛 DEBUG</button>
+
+<div class="debug-console" id="debugConsole"></div>
+
 <script>
-const USERS = {
-    jermaine: { name: "Jermaine", dob: "1983-01-13", goals: { protein: 175, omega3: 4000, fiber: 50, water: 140, weightTarget: 210, heightInches: 76.5, z2: 45, z5: 20, calBurn: 500 }, defaultBios: { bmr: '2028', apob: '114', lpa: '178', weight: '215.7', hscrp: '0.4', hba1c: '5.4', bodyfat: '21.6', muscle: '97.0' } },
-    sophia: { name: "Sophia", dob: "1987-01-25", goals: { protein: 130, omega3: 4000, fiber: 35, water: 100, weightTarget: 140, heightInches: 64, z2: 30, z5: 15, calBurn: 350 }, defaultBios: { bmr: '1450', apob: '70', lpa: '20', weight: '148', hscrp: '0.5', hba1c: '5.2' } }
+const debugLogs=[];
+function log(msg,type='LOG'){
+const t=new Date().toLocaleTimeString();
+debugLogs.push({t:t,type:type,msg:msg});
+if(debugLogs.length>50)debugLogs.shift();
+console.log(msg);
+renderDebug();
+}
+function logerr(msg){log(msg,'ERROR')}
+function renderDebug(){
+const el=document.getElementById('debugConsole');
+if(!el)return;
+let html='';
+debugLogs.forEach(l=>{
+const color=l.type==='ERROR'?'#ff453a':'#0f0';
+html+=`<div class="debug-log"><span class="debug-time">[${l.t}]</span><span class="debug-type" style="color:${color}">${l.type}</span><span style="color:#ccc">${l.msg}</span></div>`;
+});
+el.innerHTML=html;
+el.scrollTop=el.scrollHeight;
+}
+function toggleDebug(){
+const el=document.getElementById('debugConsole');
+if(el.classList.contains('show')){el.classList.remove('show')}else{el.classList.add('show')}
+}
+
+const USERS={jermaine:{name:"Jermaine",goals:{protein:175,omega3:4000,fiber:50,heightInches:76.5},defaultBios:{bmr:'2028',weight:'215.7'}},sophia:{name:"Sophia",goals:{protein:130,omega3:4000,fiber:35,heightInches:64},defaultBios:{bmr:'1450',weight:'148'}}};
+const MEALS={breakfast:[{title:"Greek Yogurt & Berries",macros:{p:20,o:0,f:4,cal:250},colors:['white','purple','brown']},{title:"Smoked Salmon Toast",macros:{p:28,o:2500,f:8,cal:450},colors:['orange','green','brown']},{title:"Omega Breakfast",macros:{p:58,o:3500,f:12,cal:680},colors:['orange','purple','green']},{title:"Sophia's Sea Moss Oatmeal",macros:{p:48,o:8200,f:18,cal:580},colors:['purple','white']},{title:"PB Sea Moss Power Shake",macros:{p:54,o:7200,f:16,cal:680},colors:['green','white']},{title:"Smoked Trout Hash",macros:{p:54,o:3200,f:16,cal:640},colors:['orange','green']},{title:"Savory Turmeric Oats",macros:{p:20,o:1200,f:12,cal:450},colors:['yellow','green']},{title:"Mackerel Scramble",macros:{p:56,o:4800,f:10,cal:660},colors:['yellow','green']},{title:"Flax Protein Parfait",macros:{p:48,o:8600,f:18,cal:580},colors:['white','purple']},{title:"Protein Pancakes",macros:{p:52,o:6400,f:14,cal:620},colors:['purple','white']},{title:"Eggs & Oatmeal Combo",macros:{p:52,o:7800,f:16,cal:640},colors:['green','white']}],lunch:[{title:"Salmon & Quinoa Bowl",macros:{p:48,o:3000,f:14,cal:780},colors:['orange','brown','green']},{title:"Sriracha Shrimp Tacos",macros:{p:35,o:400,f:6,cal:420},colors:['pink','white','red']},{title:"Salmon Poke Bowl",macros:{p:45,o:2800,f:8,cal:580},colors:['orange','green','brown']},{title:"Pepper Fin Ahi",macros:{p:38,o:800,f:2,cal:320},colors:['red','green','white']},{title:"Smoked Mackerel Super Salad",macros:{p:35,o:4500,f:8,cal:520},colors:['green','brown','orange']},{title:"Classic Bison Burger",macros:{p:42,o:400,f:8,cal:550},colors:['brown','green','red']},{title:"Turkey Club Wrap",macros:{p:38,o:400,f:6,cal:540},colors:['white','green','red']},{title:"Bean & Cheese Burrito",macros:{p:22,o:200,f:14,cal:580},colors:['brown','green','white']},{title:"Zoodles & Shrimp",macros:{p:35,o:600,f:5,cal:400},colors:['green','pink']},{title:"Cottage Cheese Bowl",macros:{p:30,o:200,f:4,cal:350},colors:['white','yellow']},{title:"Salmon Pesto Pasta",macros:{p:56,o:4200,f:12,cal:740},colors:['pink','green','red']},{title:"Chipotle Bowl (Bison)",macros:{p:58,o:2800,f:20,cal:740},colors:['brown','black','green','red']},{title:"Chipotle Bowl (Tofu)",macros:{p:46,o:3200,f:22,cal:680},colors:['white','black','green']},{title:"Mediterranean Quinoa Salad",macros:{p:22,o:1200,f:14,cal:580},colors:['white','green','red','black']},{title:"Lentil Soup with Kale",macros:{p:24,o:800,f:18,cal:450},colors:['brown','green','orange']},{title:"Turkey Burger & Sweet Potato",macros:{p:38,o:300,f:8,cal:580},colors:['white','orange','green']},{title:"Chickpea Curry (Quick)",macros:{p:18,o:400,f:14,cal:480},colors:['yellow','green','white']},{title:"Bison Taco Salad",macros:{p:45,o:800,f:12,cal:620},colors:['brown','black','green','red']},{title:"Edamame & Quinoa Bowl",macros:{p:24,o:1800,f:12,cal:540},colors:['green','purple','orange']},{title:"Smoked Salmon Bagel (Open)",macros:{p:32,o:2800,f:6,cal:480},colors:['orange','white','green']},{title:"Leftover Roast Chicken Salad",macros:{p:40,o:600,f:8,cal:520},colors:['white','green','brown']},{title:"Tempeh Reuben Bowl",macros:{p:28,o:1200,f:16,cal:560},colors:['brown','green']},{title:"Shrimp & Asparagus Stir Fry",macros:{p:35,o:800,f:8,cal:450},colors:['pink','green','white']},{title:"Turkey Club (Sourdough)",macros:{p:40,o:500,f:6,cal:550},colors:['white','red','green']}],dinner:[{title:"Bone Broth Pho",macros:{p:40,o:600,f:4,cal:450},colors:['brown','white','green']},{title:"Healthy Beef Stew",macros:{p:38,o:400,f:8,cal:520},colors:['brown','orange','red']},{title:"Bone Broth & Ginger Soup",macros:{p:10,o:0,f:0,cal:60},colors:['yellow','brown']},{title:"Whole Branzino",macros:{p:52,o:2800,f:12,cal:580},colors:['white','pink','red']},{title:"Turkey Chili",macros:{p:35,o:400,f:15,cal:500},colors:['brown','red']},{title:"Beef Bolognese (Zoodles)",macros:{p:40,o:500,f:10,cal:550},colors:['red','green']},{title:"Stuffed Peppers",macros:{p:30,o:400,f:10,cal:450},colors:['red','green','brown']},{title:"Sesame Seared Tuna",macros:{p:50,o:1500,f:2,cal:400},colors:['red','white','green']},{title:"Seafood Cioppino",macros:{p:42,o:1800,f:8,cal:480},colors:['white','red','green']},{title:"Herb Crusted Cod",macros:{p:52,o:2800,f:10,cal:580},colors:['white','green']},{title:"Grass-Fed Steak",macros:{p:60,o:1200,f:14,cal:720},colors:['red','green','orange']},{title:"Mediterranean Chicken",macros:{p:55,o:800,f:12,cal:640},colors:['white','black','red']},{title:"Tempeh Stir Fry",macros:{p:42,o:2200,f:18,cal:580},colors:['brown','green','red']},{title:"Sheet Pan Salmon",macros:{p:45,o:3200,f:10,cal:620},colors:['orange','green','red']},{title:"Shrimp Scampi",macros:{p:30,o:600,f:6,cal:420},colors:['pink','green','white']},{title:"Lamb Kofta",macros:{p:40,o:900,f:10,cal:680},colors:['brown','green','white','red']},{title:"Pesto Chicken",macros:{p:45,o:500,f:8,cal:550},colors:['green','white','red']},{title:"Seared Scallops",macros:{p:35,o:700,f:4,cal:580},colors:['white','green']},{title:"Chicken Stir Fry",macros:{p:40,o:300,f:8,cal:520},colors:['white','green','orange']},{title:"Baked Cod Salsa",macros:{p:45,o:2000,f:8,cal:480},colors:['white','red','green']},{title:"Egg Roll Bowl",macros:{p:35,o:600,f:10,cal:480},colors:['white','green']},{title:"Lemon Garlic Shrimp",macros:{p:30,o:500,f:4,cal:380},colors:['pink','green','white']},{title:"Meatballs",macros:{p:32,o:400,f:8,cal:550},colors:['red','green']},{title:"Curry Chicken Salad",macros:{p:40,o:800,f:8,cal:560},colors:['yellow','green']}],juices:[{title:"The Red Pipe Clearer",macros:{p:2,o:0,f:1,cal:110},colors:['red','orange']},{title:"The ANA Green Soother",macros:{p:2,o:0,f:1,cal:90},colors:['green','yellow']},{title:"Longevity Gold Elixir",macros:{p:1,o:0,f:0,cal:60},colors:['orange','yellow']},{title:"Homemade Kombucha",macros:{p:0,o:0,f:0,cal:35},colors:['yellow']}],snack:[{title:"Hard Boiled Eggs",macros:{p:12,o:100,f:0,cal:140},colors:['white','yellow']},{title:"Bone Broth Cup",macros:{p:10,o:0,f:0,cal:45},colors:['brown']},{title:"Beef Jerky",macros:{p:12,o:0,f:0,cal:80},colors:['brown']},{title:"Pulp Crackers",macros:{p:6,o:1200,f:12,cal:140},colors:['brown']},{title:"Pulp Chews",macros:{p:3,o:200,f:8,cal:110},colors:['orange','white']},{title:"Oatmeal Balls",macros:{p:10,o:300,f:5,cal:210},colors:['brown']},{title:"Protein Balls",macros:{p:12,o:800,f:4,cal:220},colors:['brown']},{title:"Hummus & Carrots",macros:{p:4,o:0,f:6,cal:150},colors:['orange','white']},{title:"Seaweed",macros:{p:1,o:100,f:1,cal:30},colors:['green']},{title:"Omega Nuts",macros:{p:6,o:2500,f:4,cal:180},colors:['brown']}]
 };
-const MEALS={
-    breakfast:[{title:"Greek Yogurt & Berries",macros:{p:20,o:0,f:4,cal:250},colors:['white','purple','brown']},{title:"Smoked Salmon Toast",macros:{p:28,o:2500,f:8,cal:450},colors:['orange','green','brown']},{title:"Omega Breakfast",macros:{p:58,o:3500,f:12,cal:680},colors:['orange','purple','green']},{title:"Sophia's Sea Moss Oatmeal",macros:{p:48,o:8200,f:18,cal:580},colors:['purple','white']},{title:"PB Sea Moss Power Shake",macros:{p:54,o:7200,f:16,cal:680},colors:['green','white']},{title:"Smoked Trout Hash",macros:{p:54,o:3200,f:16,cal:640},colors:['orange','green']},{title:"Savory Turmeric Oats",macros:{p:20,o:1200,f:12,cal:450},colors:['yellow','green']},{title:"Mackerel Scramble",macros:{p:56,o:4800,f:10,cal:660},colors:['yellow','green']},{title:"Flax Protein Parfait",macros:{p:48,o:8600,f:18,cal:580},colors:['white','purple']},{title:"Protein Pancakes",macros:{p:52,o:6400,f:14,cal:620},colors:['purple','white']},{title:"Eggs & Oatmeal Combo",macros:{p:52,o:7800,f:16,cal:640},colors:['green','white']}],
-    lunch:[{title:"Salmon & Quinoa Bowl",macros:{p:48,o:3000,f:14,cal:780},colors:['orange','brown','green']},{title:"Sriracha Shrimp Tacos",macros:{p:35,o:400,f:6,cal:420},colors:['pink','white','red']},{title:"Salmon Poke Bowl",macros:{p:45,o:2800,f:8,cal:580},colors:['orange','green','brown']},{title:"Pepper Fin Ahi",macros:{p:38,o:800,f:2,cal:320},colors:['red','green','white']},{title:"Smoked Mackerel Super Salad",macros:{p:35,o:4500,f:8,cal:520},colors:['green','brown','orange']},{title:"Classic Bison Burger",macros:{p:42,o:400,f:8,cal:550},colors:['brown','green','red']},{title:"Turkey Club Wrap",macros:{p:38,o:400,f:6,cal:540},colors:['white','green','red']},{title:"Bean & Cheese Burrito",macros:{p:22,o:200,f:14,cal:580},colors:['brown','green','white']},{title:"Zoodles & Shrimp",macros:{p:35,o:600,f:5,cal:400},colors:['green','pink']},{title:"Cottage Cheese Bowl",macros:{p:30,o:200,f:4,cal:350},colors:['white','yellow']},{title:"Salmon Pesto Pasta",macros:{p:56,o:4200,f:12,cal:740},colors:['pink','green','red']},{title:"Chipotle Bowl (Bison)",macros:{p:58,o:2800,f:20,cal:740},colors:['brown','black','green','red']},{title:"Chipotle Bowl (Tofu)",macros:{p:46,o:3200,f:22,cal:680},colors:['white','black','green']},{title:"Mediterranean Quinoa Salad",macros:{p:22,o:1200,f:14,cal:580},colors:['white','green','red','black']},{title:"Lentil Soup with Kale",macros:{p:24,o:800,f:18,cal:450},colors:['brown','green','orange']},{title:"Turkey Burger & Sweet Potato",macros:{p:38,o:300,f:8,cal:580},colors:['white','orange','green']},{title:"Chickpea Curry (Quick)",macros:{p:18,o:400,f:14,cal:480},colors:['yellow','green','white']},{title:"Bison Taco Salad",macros:{p:45,o:800,f:12,cal:620},colors:['brown','black','green','red']},{title:"Edamame & Quinoa Bowl",macros:{p:24,o:1800,f:12,cal:540},colors:['green','purple','orange']},{title:"Smoked Salmon Bagel (Open)",macros:{p:32,o:2800,f:6,cal:480},colors:['orange','white','green']},{title:"Leftover Roast Chicken Salad",macros:{p:40,o:600,f:8,cal:520},colors:['white','green','brown']},{title:"Tempeh Reuben Bowl",macros:{p:28,o:1200,f:16,cal:560},colors:['brown','green']},{title:"Shrimp & Asparagus Stir Fry",macros:{p:35,o:800,f:8,cal:450},colors:['pink','green','white']},{title:"Turkey Club (Sourdough)",macros:{p:40,o:500,f:6,cal:550},colors:['white','red','green']}],
-    dinner:[{title:"Bone Broth Pho",macros:{p:40,o:600,f:4,cal:450},colors:['brown','white','green']},{title:"Healthy Beef Stew",macros:{p:38,o:400,f:8,cal:520},colors:['brown','orange','red']},{title:"Bone Broth & Ginger Soup",macros:{p:10,o:0,f:0,cal:60},colors:['yellow','brown']},{title:"Whole Branzino",macros:{p:52,o:2800,f:12,cal:580},colors:['white','pink','red']},{title:"Turkey Chili",macros:{p:35,o:400,f:15,cal:500},colors:['brown','red']},{title:"Beef Bolognese (Zoodles)",macros:{p:40,o:500,f:10,cal:550},colors:['red','green']},{title:"Stuffed Peppers",macros:{p:30,o:400,f:10,cal:450},colors:['red','green','brown']},{title:"Sesame Seared Tuna",macros:{p:50,o:1500,f:2,cal:400},colors:['red','white','green']},{title:"Seafood Cioppino",macros:{p:42,o:1800,f:8,cal:480},colors:['white','red','green']},{title:"Herb Crusted Cod",macros:{p:52,o:2800,f:10,cal:580},colors:['white','green']},{title:"Grass-Fed Steak",macros:{p:60,o:1200,f:14,cal:720},colors:['red','green','orange']},{title:"Mediterranean Chicken",macros:{p:55,o:800,f:12,cal:640},colors:['white','black','red']},{title:"Tempeh Stir Fry",macros:{p:42,o:2200,f:18,cal:580},colors:['brown','green','red']},{title:"Sheet Pan Salmon",macros:{p:45,o:3200,f:10,cal:620},colors:['orange','green','red']},{title:"Shrimp Scampi",macros:{p:30,o:600,f:6,cal:420},colors:['pink','green','white']},{title:"Lamb Kofta",macros:{p:40,o:900,f:10,cal:680},colors:['brown','green','white','red']},{title:"Pesto Chicken",macros:{p:45,o:500,f:8,cal:550},colors:['green','white','red']},{title:"Seared Scallops",macros:{p:35,o:700,f:4,cal:580},colors:['white','green']},{title:"Chicken Stir Fry",macros:{p:40,o:300,f:8,cal:520},colors:['white','green','orange']},{title:"Baked Cod Salsa",macros:{p:45,o:2000,f:8,cal:480},colors:['white','red','green']},{title:"Egg Roll Bowl",macros:{p:35,o:600,f:10,cal:480},colors:['white','green']},{title:"Lemon Garlic Shrimp",macros:{p:30,o:500,f:4,cal:380},colors:['pink','green','white']},{title:"Meatballs",macros:{p:32,o:400,f:8,cal:550},colors:['red','green']},{title:"Curry Chicken Salad",macros:{p:40,o:800,f:8,cal:560},colors:['yellow','green']}],
-    juices:[{title:"The Red Pipe Clearer",macros:{p:2,o:0,f:1,cal:110},colors:['red','orange']},{title:"The ANA Green Soother",macros:{p:2,o:0,f:1,cal:90},colors:['green','yellow']},{title:"Longevity Gold Elixir",macros:{p:1,o:0,f:0,cal:60},colors:['orange','yellow']},{title:"Homemade Kombucha",macros:{p:0,o:0,f:0,cal:35},colors:['yellow']}],
-    snack:[{title:"Hard Boiled Eggs",macros:{p:12,o:100,f:0,cal:140},colors:['white','yellow']},{title:"Bone Broth Cup",macros:{p:10,o:0,f:0,cal:45},colors:['brown']},{title:"Beef Jerky",macros:{p:12,o:0,f:0,cal:80},colors:['brown']},{title:"Pulp Crackers",macros:{p:6,o:1200,f:12,cal:140},colors:['brown']},{title:"Pulp Chews",macros:{p:3,o:200,f:8,cal:110},colors:['orange','white']},{title:"Oatmeal Balls",macros:{p:10,o:300,f:5,cal:210},colors:['brown']},{title:"Protein Balls",macros:{p:12,o:800,f:4,cal:220},colors:['brown']},{title:"Hummus & Carrots",macros:{p:4,o:0,f:6,cal:150},colors:['orange','white']},{title:"Seaweed",macros:{p:1,o:100,f:1,cal:30},colors:['green']},{title:"Omega Nuts",macros:{p:6,o:2500,f:4,cal:180},colors:['brown']}]
-};
-const BASE=[{id:'breakfast',time:'07:30',title:'Breakfast',desc:'Tap to select',macros:{p:0,o:0,f:0,cal:0},colors:[],clickable:true,mealSlot:'breakfast'},{id:'juice',time:'08:30',title:'Fresh Juice/Elixir',desc:'Tap to select juice',macros:{p:0,o:0,f:0,cal:0},colors:[],clickable:true,mealSlot:'juices'},{id:'train',time:'09:00',title:'Training',desc:'Auto-detected from Oura',macros:{p:0,o:0,f:0,cal:0},colors:[],clickable:false,autoDetect:true},{id:'lunch',time:'13:00',title:'Lunch',desc:'Tap to select',macros:{p:0,o:0,f:0,cal:0},colors:[],clickable:true,mealSlot:'lunch'},{id:'snack',time:'15:30',title:'Longevity Snack',desc:'Tap to select snack',macros:{p:0,o:0,f:0,cal:0},colors:[],clickable:true,mealSlot:'snack'},{id:'dinner',time:'18:30',title:'Dinner',desc:'Tap to select',macros:{p:0,o:0,f:0,cal:0},colors:[],clickable:true,mealSlot:'dinner'},{id:'evening',time:'21:00',title:'Wind Down',desc:'Chamomile tea + stretch',macros:{p:0,o:0,f:0,cal:0},colors:['purple'],calBurn:0}];
+const BASE_PROTOCOL=[{id:'breakfast',time:'07:30',title:'Breakfast',desc:'Tap to select',macros:{p:0,o:0,f:0,cal:0},colors:[],clickable:true,mealSlot:'breakfast'},{id:'lunch',time:'13:00',title:'Lunch',desc:'Tap to select',macros:{p:0,o:0,f:0,cal:0},colors:[],clickable:true,mealSlot:'lunch'},{id:'dinner',time:'18:30',title:'Dinner',desc:'Tap to select',macros:{p:0,o:0,f:0,cal:0},colors:[],clickable:true,mealSlot:'dinner'}];
 const TOKENS={jermaine:'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y',sophia:'4QSDWYJJUZFHRWRH727NCK7WH4COQJF4'};
 const COLORS={red:{hex:'#ff453a'},orange:{hex:'#ff9f0a'},yellow:{hex:'#ffd60a'},green:{hex:'#30d158'},purple:{hex:'#bf5af2'},white:{hex:'#fff'},brown:{hex:'#A0522D'},pink:{hex:'#FF69B4'},black:{hex:'#333'}};
 const PROTOCOLS={
@@ -218,317 +246,315 @@ inshape:{title:"🏊 INSHAPE",steps:["1. STEAM 15min","2. SAUNA 20min","3. POOL 
 clubstudio:{title:"🏢 CLUB STUDIO",steps:["OPTION A: Full Recovery (45min)","1. CRYO Chamber 3min (full body cold)","2. WAIT 5min (let body warm)","3. SAUNA 20min (contrast therapy)","4. LOCAL CRYO areas as needed","5. MASSAGE BED 20min","6. HYPERICE suite if available","","OPTION B: Quick Session (20min)","1. CRYO 3min OR Sauna 20min","2. MASSAGE BED 15min","","OPTION C: Home Instead","Use Theragun + Normatec + Hyperice"]}
 };
 
-class CenturionApp {
-    constructor() {
-        console.log('🚀 v17.79 SAFETY-FIRST');
-        try {
-            this.user = (localStorage.getItem('centurion_user') || 'jermaine').toLowerCase();
-            this.history = [];
-            this.currentIndex = 0;
-            this.currentDateStr = new Date().toLocaleDateString('en-CA');
-            this.checked = {};
-            this.meals = {};
-            this.bios = {};
-            this.protocol = [];
+class CenturionApp{
+constructor(){
+console.log('🚀 v17.80 FINAL-PATCHED');
+try {
+    this.user = (localStorage.getItem('centurion_user') || 'jermaine').toLowerCase();
+    this.history=[];this.currentIndex=0;this.currentDateStr=new Date().toLocaleDateString('en-CA');
+    this.checked={};this.meals={};this.bios={};this.protocol=[];
 
-            // --- 1. SAFE RESET ON LOAD ---
-            this.resetUI();
+    // --- 1. HARD UI RESET ON LOAD ---
+    this.resetUI();
 
-            this.loadUserData();
-            this.setPlaceholderData();
-            this.render(); // Draw UI first
-            this.fetchOuraData(); // Then fetch data
-        } catch (e) {
-            alert("CRITICAL ERROR: " + e.message);
-        }
-    }
-
-    resetUI() {
-        // Force clean slate for buttons
-        document.querySelectorAll('.user-switch button').forEach(b => b.classList.remove('active'));
-        const btn = document.getElementById(`btn-${this.user}`);
-        if(btn) btn.classList.add('active');
-    }
-
-    loadUserData() {
-        try {
-            const c = localStorage.getItem(`c_checked_${this.user}`);
-            this.checked = c ? JSON.parse(c) : {};
-            const m = localStorage.getItem(`c_meals_${this.user}`);
-            this.meals = m ? JSON.parse(m) : {};
-            const b = localStorage.getItem(`c_bios_${this.user}`);
-            this.bios = b ? JSON.parse(b) : USERS[this.user].defaultBios;
-        } catch (e) {
-            this.checked = {}; this.meals = {};
-        }
-    }
-
-    saveUserData() {
-        localStorage.setItem(`c_checked_${this.user}`, JSON.stringify(this.checked));
-        localStorage.setItem(`c_meals_${this.user}`, JSON.stringify(this.meals));
-        localStorage.setItem(`c_bios_${this.user}`, JSON.stringify(this.bios));
-    }
-
-    setPlaceholderData() {
-        this.history = [{ date: this.currentDateStr, score: 0, totalSec: 0, deepSec: 0, remSec: 0, rhr: '-', cal: 0, high: 0, med: 0, workouts: [] }];
-        this.currentIndex = 0;
-    }
-
-    getLunchRecovery(d) {
-        if (this.user === 'jermaine' && (d === 1 || d === 3 || d === 5)) return { title: '🧘 Hip Flexor', desc: '5min stretch' };
-        if (this.user === 'jermaine' && (d === 2 || d === 4)) return { title: '🦾 Shoulder', desc: '5min mobility' };
-        return null;
-    }
-
-    getEveningRecovery(d, w, t) {
-        if (this.user === 'jermaine') {
-            if (d === 0) return { time: '14:00', title: '🏊 InShape', desc: 'Full ritual', type: 'inshape' };
-            if ((d === 2 || d === 4) && w) return { time: '19:30', title: '🥊 Post-Boxing', desc: 'Club Studio or Home', type: 'clubstudio' };
-            if (d === 2 || d === 4) return { time: '18:30', title: '🔵 Cupping', desc: 'Both 15min', type: 'cupping' };
-            if (d === 1 && w) return { time: '19:00', title: '💪 Post-Lift', desc: 'Club Studio', type: 'clubstudio' };
-            return { time: '18:30', title: '✨ Light Recovery', desc: 'Normatec', type: 'normatec' };
-        }
-        if (this.user === 'sophia') {
-            if (d === 0) return { time: '14:00', title: '🏊 InShape', desc: 'Together', type: 'inshape' };
-            if ((d === 3 || d === 5) && w) return { time: '19:00', title: '🏃 Post-Rebound', desc: 'Recovery', type: 'clubstudio' };
-            return { time: '18:30', title: '✨ Light Recovery', desc: 'Optional', type: 'normatec' };
-        }
-        return null;
-    }
-
-    getEndOfDayFacial(d, f) {
-        if (this.user === 'jermaine') {
-            if (d === 0) return { title: '📍 Sophia Needle', desc: '45min', type: 'microneedling' };
-            if (d === 1 || d === 3 || d === 5) return { title: '⚡ Sophia Micro', desc: 'Lift', type: 'microcurrent' };
-            return { title: '💆 Sophia Massage', desc: 'Hand', type: 'massage' };
-        }
-        if (this.user === 'sophia') {
-            if (d === 1 || d === 3 || d === 5) return { title: '⚡ Jermaine Micro', desc: 'Jaw', type: 'microcurrent' };
-            return { title: '💪 Jermaine Recovery', desc: 'Cold', type: 'massage' };
-        }
-        return null;
-    }
-
-    showProtocolDetails(t) {
-        const d = PROTOCOLS[t] || { title: "ROUTINE", steps: ["Follow standard."] };
-        let h = `<div style="text-align:center;margin:30px 0"><div style="font-size:1.8rem;font-weight:900;color:#fff;text-shadow:0 0 10px var(--cyan)">${d.title}</div></div><div style="background:#111;border-radius:12px;border:1px solid #333;overflow:hidden">${d.steps.map(s => `<div style="padding:18px 20px;border-bottom:1px solid #222;font-size:0.95rem;color:#ddd;line-height:1.6">${s}</div>`).join('')}</div>`;
-        this.setText('modalTitle', 'PROTOCOL');
-        document.getElementById('modalBody').innerHTML = h;
-        document.getElementById('mainModal').classList.add('show');
-    }
-
-    async fetchOuraData() {
-        this.setText('syncStatus', 'SYNCING...');
-        const token = TOKENS[this.user];
-        const end = new Date(); end.setDate(end.getDate() + 1);
-        const start = new Date(); start.setDate(start.getDate() - 14);
-        const startStr = start.toISOString().split('T')[0];
-        const endStr = end.toISOString().split('T')[0];
-
-        try {
-            const [s, w, a, r] = await Promise.all([
-                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${startStr}&end_date=${endStr}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/workout?start_date=${startStr}&end_date=${endStr}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${startStr}&end_date=${endStr}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${startStr}&end_date=${endStr}`)}`, { headers: { 'Authorization': `Bearer ${token}` } })
-            ]);
-
-            if (!s.ok) throw new Error('API_FAIL');
-            const [sD, wD, aD, rD] = await Promise.all([s.json(), w.json(), a.json(), r.json()]);
-            this.processData(sD.data || [], wD.data || [], aD.data || [], rD.data || []);
-            this.setText('syncStatus', 'SYNCED ✓');
-            this.render();
-        } catch (error) {
-            console.error(error);
-            this.setText('syncStatus', 'OFFLINE');
-            this.render();
-        }
-    }
-
-    processData(sleepData, workoutData, activityData, readinessData) {
-        const m = new Map();
-        const g = (d) => { if (!m.has(d)) m.set(d, { date: d, score: 0, totalSec: 0, deepSec: 0, remSec: 0, rhr: '-', cal: 0, high: 0, med: 0, workouts: [] }); return m.get(d) };
-        sleepData.forEach(s => {
-            const d = g(s.day);
-            d.totalSec += s.total_sleep_duration || 0;
-            d.deepSec += s.deep_sleep_duration || 0;
-            d.remSec += s.rem_sleep_duration || 0;
-            const sleepScore = s.score || (s.efficiency ? Math.round(s.efficiency) : 0);
-            if (sleepScore && sleepScore > d.score) d.score = sleepScore;
-        });
-        readinessData.forEach(r => { const d = g(r.day); if (r.contributors ?.resting_heart_rate) d.rhr = r.contributors.resting_heart_rate });
-        workoutData.forEach(w => {
-            const d = g(w.day); const dt = new Date(w.start_datetime);
-            const t = dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: false });
-            d.workouts.push({ type: w.activity || 'other', intensity: w.intensity || 'moderate', calories: w.calories || 300, time: t });
-        });
-        activityData.forEach(a => { const d = g(a.day); d.cal = a.active_calories || 0; });
-        
-        this.history = Array.from(m.values()).sort((a, b) => b.date.localeCompare(a.date));
-        this.currentIndex = this.history.findIndex(h => h.date === this.currentDateStr);
-        if (this.currentIndex === -1) { this.history.unshift({ date: this.currentDateStr, score: 0, totalSec: 0, deepSec: 0, remSec: 0, rhr: '-', cal: 0, high: 0, med: 0, workouts: [] }); this.currentIndex = 0; }
-    }
-
-    changeDate(dir) {
-        const n = this.currentIndex - dir;
-        if (n >= 0 && n < this.history.length) { this.currentIndex = n; this.currentDateStr = this.history[n].date; this.render(); }
-    }
-
-    switchUser(u) {
-        if (u === this.user) return;
-        this.user = u; localStorage.setItem('centurion_user', u);
-        this.resetUI();
-        this.history = [];
-        this.loadUserData();
-        this.setPlaceholderData();
-        this.render();
-        this.fetchOuraData();
-    }
-
-    toggleTask(id) {
-        const dk = this.history[this.currentIndex].date;
-        if (!this.checked[dk]) this.checked[dk] = [];
-        const i = this.checked[dk].indexOf(id);
-        if (i === -1) this.checked[dk].push(id); else this.checked[dk].splice(i, 1);
-        this.saveUserData(); this.render();
-    }
-
-    openMealPicker(slot) {
-        const mb = document.getElementById('modalBody');
-        this.setText('modalTitle', slot.toUpperCase());
-        const all = MEALS[slot] || [];
-        const currentSel = this.meals[this.history[this.currentIndex].date] ?.[slot];
-        let h = '';
-        all.forEach((m, i) => {
-            const isSelected = currentSel === i;
-            const selectedClass = isSelected ? 'style="background:#1a1a1a;border-color:var(--acid)"' : '';
-            const checkmark = isSelected ? '<span style="color:var(--acid);margin-right:8px;font-weight:900">✓</span>' : '';
-            h += `<div class="menu-item" ${selectedClass} onclick="app.selectMeal('${slot}',${i})"><div class="menu-left"><div class="menu-name">${checkmark}${m.title}</div><div class="menu-meta">P:${m.macros.p}g • Ω3:${m.macros.o}mg</div></div><div class="menu-arrow">›</div></div>`;
-        });
-        mb.innerHTML = h;
-        document.getElementById('mainModal').classList.add('show');
-    }
-
-    closeModal() { document.getElementById('mainModal').classList.remove('show') }
-
-    selectMeal(slot, idx) {
-        const d = this.history[this.currentIndex].date;
-        if (!this.meals[d]) this.meals[d] = {};
-        this.meals[d][slot] = idx;
-        this.saveUserData(); this.closeModal(); this.render();
-    }
-
-    openBio() {
-        const w = this.bios.weight; const bmr = this.bios.bmr;
-        const mb = document.getElementById('modalBody');
-        this.setText('modalTitle', 'BIOMETRICS');
-        mb.innerHTML = `<div style="padding:20px"><div style="background:#111;padding:15px;border-radius:10px;margin-bottom:20px;border:1px solid #333"><div style="color:#888;font-size:0.7rem;margin-bottom:5px">CURRENT WEIGHT</div><div style="font-size:2rem;font-weight:900">${w} lbs</div><div style="color:var(--acid);font-size:0.8rem">BMR: ${bmr}</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div><label style="font-size:0.6rem;color:#666">WEIGHT</label><input id="bio-weight" type="number" value="${w}" style="width:100%;padding:10px;background:#111;border:1px solid #333;color:#fff;border-radius:6px"></div><div><label style="font-size:0.6rem;color:#666">BMR</label><input id="bio-bmr" type="number" value="${bmr}" style="width:100%;padding:10px;background:#111;border:1px solid #333;color:#fff;border-radius:6px"></div></div><button onclick="app.saveBio()" style="width:100%;background:var(--acid);color:#000;padding:15px;margin-top:20px;border:none;border-radius:10px;font-weight:900">SAVE</button></div>`;
-        document.getElementById('mainModal').classList.add('show');
-    }
-
-    saveBio() {
-        const w = document.getElementById('bio-weight').value;
-        const b = document.getElementById('bio-bmr').value;
-        if (w) this.bios.weight = w; if (b) this.bios.bmr = b;
-        this.saveUserData(); this.closeModal(); this.render();
-    }
-
-    calculateMacros() {
-        const d = this.history[this.currentIndex].date;
-        const c = this.checked[d] || [];
-        let t = { protein: 0, omega3: 0, fiber: 0, calories: 0 };
-        this.protocol.forEach(tk => { if (c.includes(tk.id)) { t.protein += tk.macros.p || 0; t.omega3 += tk.macros.o || 0; t.fiber += tk.macros.f || 0; t.calories += tk.macros.cal || 0 } });
-        return t;
-    }
-
-    calculateRainbow() {
-        const d = this.history[this.currentIndex].date;
-        const c = this.checked[d] || [];
-        let s = new Set();
-        this.protocol.forEach(t => { if (c.includes(t.id) && t.colors) t.colors.forEach(col => s.add(col)) });
-        return s;
-    }
-
-    render() {
-        if (!this.history.length) return;
-        this.protocol = JSON.parse(JSON.stringify(BASE_PROTOCOL));
-        const day = this.history[this.currentIndex];
-        const date = day.date;
-        let sel = this.meals[date] || {};
-        const dow = new Date(date).getDay();
-        const isFS = new Date(date).getDate() <= 7;
-        const hadW = day.workouts && day.workouts.length > 0;
-        const wType = hadW ? day.workouts[0].type : null;
-
-        // Auto-Detect & Logic Injection
-        const lr = this.getLunchRecovery(dow);
-        if (lr) this.protocol.push({ id: 'lunch_recovery', time: '11:30', title: lr.title, desc: lr.desc, macros: { p: 0, o: 0, f: 0, cal: 0 }, colors: [], clickable: false });
-
-        day.workouts.forEach((w, i) => { this.protocol.push({ id: `workout_${i}`, time: w.time, title: `${w.type.toUpperCase()} Detected`, desc: `${w.calories} cal | ${w.intensity}`, macros: { p: 0, o: 0, f: 0, cal: 0 }, colors: [], clickable: false, autoDetected: true }) });
-
-        const er = this.getEveningRecovery(dow, hadW, wType);
-        if (er) this.protocol.push({ id: 'evening_recovery', time: er.time, title: er.title, desc: er.desc + ' - Tap for protocol', macros: { p: 0, o: 0, f: 0, cal: 0 }, colors: [], clickable: true, type: er.type, cssClass: 'recovery' });
-
-        const fac = this.getEndOfDayFacial(dow, isFS);
-        if (fac) this.protocol.push({ id: 'facial', time: '21:00', title: fac.title, desc: fac.desc + ' - Tap for protocol', macros: { p: 0, o: 0, f: 0, cal: 0 }, colors: [], clickable: true, type: fac.type, cssClass: 'facial' });
-
-        this.protocol.forEach(t => { if (t.mealSlot && sel[t.mealSlot] !== undefined) { const all = MEALS[t.mealSlot] || []; if (all[sel[t.mealSlot]]) { const m = all[sel[t.mealSlot]]; t.title = m.title; t.desc = `P:${m.macros.p} C:${m.macros.cal}`; t.macros = m.macros; t.colors = m.colors } } });
-
-        this.protocol.sort((a, b) => a.time.localeCompare(b.time));
-
-        this.setText('dateLabel', date);
-        const mac = this.calculateMacros();
-        const sc = Math.min(100, Math.round(((day.totalSec || 0) / 3600 / 8) * 100));
-        this.setText('dayGrade', sc >= 85 ? 'A' : sc >= 70 ? 'B' : 'C');
-
-        const last7 = this.history.slice(0, 7);
-        const avgScore = last7.length > 0 ? Math.round(last7.reduce((sum, d) => sum + (d.score || 0), 0) / last7.length) : 0;
-        this.setText('longevityScore', avgScore);
-
-        const updOrb = (id, val, max, col) => { const el = document.getElementById(id); if (el) { el.style.strokeDashoffset = 145 - (Math.min(val / max, 1) * 145); el.style.stroke = col } };
-        const sleepHours = (day.totalSec || 0) / 3600;
-        const deepMins = Math.round((day.deepSec || 0) / 60);
-        const remMins = Math.round((day.remSec || 0) / 60);
-
-        this.setText('sleepVal', `${sleepHours.toFixed(1)}h`);
-        this.setText('deepVal', `${deepMins}m`);
-        this.setText('remVal', `${remMins}m`);
-        updOrb('sleepOrb', sleepHours, 8, '#bf5af2');
-        updOrb('deepOrb', deepMins, 90, '#007aff');
-        updOrb('remOrb', remMins, 90, '#bf5af2');
-        
-        this.setText('proteinVal', mac.protein);
-        this.setText('omega3Val', mac.omega3);
-        this.setText('fiberVal', mac.fiber);
-        this.setText('calorieVal', mac.calories);
-        updOrb('proteinOrb', mac.protein, USERS[this.user].goals.protein, '#fff');
-        updOrb('omega3Orb', mac.omega3, 4000, '#00d4ff');
-        updOrb('fiberOrb', mac.fiber, 50, '#30d158');
-        updOrb('calorieOrb', mac.calories, 2500, '#FFD60A');
-
-        const cols = this.calculateRainbow();
-        this.setText('rainbowScore', Math.round((cols.size / 6) * 100) + '%');
-        let rh = '';
-        ['red', 'orange', 'yellow', 'green', 'purple', 'white'].forEach(c => { rh += `<div class="rainbow-seg" style="background:${cols.has(c) ? COLORS[c].hex : '#333'};width:${cols.has(c) ? 16.6 : 0}%"></div>` });
-        document.getElementById('rainbowTrack').innerHTML = rh;
-
-        const chk = this.checked[date] || [];
-        let th = '';
-        this.protocol.forEach(t => {
-            const isC = chk.includes(t.id);
-            let ca = ''; let cc = `task-card ${isC ? 'checked' : ''} ${t.autoDetected ? 'auto-detected' : ''} ${t.cssClass || ''}`;
-            if (t.clickable) { if (t.type && (t.type in PROTOCOLS)) ca = `onclick="app.showProtocolDetails('${t.type}')"`; else if (t.mealSlot) ca = `onclick="app.openMealPicker('${t.mealSlot}')"` }
-            th += `<div class="task"><div class="task-time">${t.time}</div><div class="${cc}" ${ca}><div class="task-info"><div class="task-title">${t.title}</div><div class="task-desc">${t.desc}</div></div>${t.clickable ? '<div class="chevron">›</div>' : ''}${!t.autoDetected && !t.type ? `<div class="check-btn" onclick="event.stopPropagation();app.toggleTask('${t.id}')"><div class="check-circle">${isC ? '✓' : ''}</div></div>` : ''}</div></div>`
-        });
-        document.getElementById('timeline').innerHTML = th
-    }
-
-    setText(id, txt) { const el = document.getElementById(id); if (el) el.innerText = txt }
-    sync() { this.fetchOuraData() }
+    this.loadUserData();this.setPlaceholderData();this.render();this.fetchOuraData();
+} catch (e) {
+    alert("CRITICAL ERROR: " + e.message);
+}
 }
 
+// --- NEW: FORCIBLE UI RESET ---
+resetUI() {
+    document.querySelectorAll('.user-switch button').forEach(b => b.classList.remove('active'));
+    const btn = document.getElementById(`btn-${this.user}`);
+    if(btn) btn.classList.add('active');
+}
+
+loadUserData(){
+try{
+const c=localStorage.getItem(`c_checked_${this.user}`);this.checked=c?JSON.parse(c):{};
+const m=localStorage.getItem(`c_meals_${this.user}`);this.meals=m?JSON.parse(m):{};
+const b=localStorage.getItem(`c_bios_${this.user}`);this.bios=b?JSON.parse(b):USERS[this.user].defaultBios;
+}catch(e){this.checked={};this.meals={}}}
+
+saveUserData(){
+localStorage.setItem(`c_checked_${this.user}`,JSON.stringify(this.checked));
+localStorage.setItem(`c_meals_${this.user}`,JSON.stringify(this.meals));
+localStorage.setItem(`c_bios_${this.user}`,JSON.stringify(this.bios))}
+
+setPlaceholderData(){this.history=[{date:this.currentDateStr,score:0,totalSec:0,deepSec:0,remSec:0,rhr:'-',cal:0,high:0,med:0,workouts:[]}];this.currentIndex=0}
+
+getLunchRecovery(d){
+if(this.user==='jermaine'&&(d===1||d===3||d===5))return{title:'🧘 Hip Flexor',desc:'5min stretch'};
+if(this.user==='jermaine'&&(d===2||d===4))return{title:'🦾 Shoulder',desc:'5min mobility'};
+return null}
+
+getEveningRecovery(d,w,t){
+if(this.user==='jermaine'){
+if(d===0)return{time:'14:00',title:'🏊 InShape',desc:'Full ritual',type:'inshape'};
+if((d===2||d===4)&&w)return{time:'19:30',title:'🥊 Post-Boxing',desc:'Club Studio: Cryo 3min + Sauna 20min OR Home: Theragun + Normatec',type:'clubstudio'};
+if(d===2||d===4)return{time:'18:30',title:'🔵 Cupping',desc:'Both 15min each + Hyperice after',type:'cupping'};
+if(d===1&&w)return{time:'19:00',title:'💪 Post-Lift',desc:'Club Studio: Cryo + Sauna OR Home: Full stack',type:'clubstudio'};
+if(d===3)return{time:'18:30',title:'🧘 Mid-Week Recovery',desc:'Club Studio: Sauna 20min + Local Cryo + Massage Bed OR Home: Normatec + Hyperice',type:'clubstudio'};
+return{time:'18:30',title:'✨ Light Recovery',desc:'Club Studio: Massage bed 20min OR Home: Normatec 30min',type:'clubstudio'}}
+if(this.user==='sophia'){
+if(d===0)return{time:'14:00',title:'🏊 InShape',desc:'Together',type:'inshape'};
+if((d===3||d===5)&&w)return{time:'19:00',title:'🏃 Post-Rebound',desc:'Club Studio: Cryo + Sauna OR Home: Theragun + Normatec',type:'clubstudio'};
+if(d===2||d===4)return{time:'18:30',title:'🔵 Cupping',desc:'Both 15min + Hyperice',type:'cupping'};
+if(d===1)return{time:'18:30',title:'💪 Recovery Day',desc:'Club Studio: Massage bed + Sauna OR Home: Normatec',type:'clubstudio'};
+return{time:'18:30',title:'✨ Light Recovery',desc:'Club Studio or Home - Optional',type:'clubstudio'}}
+return null}
+
+getEndOfDayFacial(d,f){
+if(this.user==='jermaine'){
+if(d===0&&f)return{title:'📍 Sophia Needle',desc:'45min - SPF 24hrs',type:'microneedling'};
+if(d===1||d===3||d===5||d===0)return{title:'⚡ Sophia Micro',desc:'Lift + Tone',type:'microcurrent'};
+if(d===2||d===4)return{title:'💆 Sophia Massage',desc:'Hand + Wands',type:'massage'};
+return{title:'✨ Sophia Maint',desc:'Optional',type:'massage'}}
+if(this.user==='sophia'){
+if(d===1||d===3||d===5||d===0)return{title:'⚡ Jermaine Micro',desc:'Jawline focus',type:'microcurrent'};
+if(d===2||d===4)return{title:'💪 Jermaine Recovery',desc:'Cold + Jaw massage',type:'massage'};
+return{title:'✨ Jermaine Maint',desc:'Optional',type:'massage'}}
+return null}
+
+showProtocolDetails(t){
+const d=PROTOCOLS[t]||{title:"ROUTINE",steps:["Follow standard."]};
+let h=`<div style="text-align:center;margin:30px 0"><div style="font-size:1.8rem;font-weight:900;color:#fff;text-shadow:0 0 10px var(--cyan)">${d.title}</div></div><div style="background:#111;border-radius:12px;border:1px solid #333;overflow:hidden">${d.steps.map(s=>`<div style="padding:18px 20px;border-bottom:1px solid #222;font-size:0.95rem;color:#ddd;line-height:1.6">${s}</div>`).join('')}</div>`;
+this.setText('modalTitle','PROTOCOL');
+document.getElementById('modalBody').innerHTML=h;
+document.getElementById('mainModal').classList.add('show')}
+
+async fetchOuraData(){
+this.setText('syncStatus','SYNCING...');
+try{
+const end=new Date();end.setDate(end.getDate()+1);
+const start=new Date();start.setDate(start.getDate()-14); // 14 Day Window
+const startStr=start.toISOString().split('T')[0];
+const endStr=end.toISOString().split('T')[0];
+const token=TOKENS[this.user];
+const sleepUrl=`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${startStr}&end_date=${endStr}`)}`;
+const workoutUrl=`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/workout?start_date=${startStr}&end_date=${endStr}`)}`;
+const activityUrl=`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${startStr}&end_date=${endStr}`)}`;
+const readinessUrl=`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${startStr}&end_date=${endStr}`)}`;
+const[sleepRes,workoutRes,activityRes,readinessRes]=await Promise.all([
+fetch(sleepUrl,{headers:{'Authorization':`Bearer ${token}`}}),
+fetch(workoutUrl,{headers:{'Authorization':`Bearer ${token}`}}),
+fetch(activityUrl,{headers:{'Authorization':`Bearer ${token}`}}),
+fetch(readinessUrl,{headers:{'Authorization':`Bearer ${token}`}})]);
+if(!sleepRes.ok||!workoutRes.ok)throw new Error('API failed');
+const sleepData=await sleepRes.json();
+const workoutData=await workoutRes.json();
+const activityData=await activityRes.json();
+const readinessData=await readinessRes.json();
+log('🔍 OURA DATA RECEIVED');
+this.processData(sleepData.data||[],workoutData.data||[],activityData.data||[],readinessData.data||[]);
+this.setText('syncStatus','SYNCED ✓');
+this.render()}
+catch(error){
+logerr('❌ Sync failed: '+error);
+this.setText('syncStatus','OFFLINE');
+this.render()}}
+
+processData(sleepData,workoutData,activityData,readinessData){
+const m=new Map();
+const g=(d)=>{if(!m.has(d))m.set(d,{date:d,score:0,totalSec:0,deepSec:0,remSec:0,rhr:'-',cal:0,high:0,med:0,workouts:[]});return m.get(d)};
+sleepData.forEach(s=>{
+const d=g(s.day);
+d.totalSec+=s.total_sleep_duration||0;
+d.deepSec+=s.deep_sleep_duration||0;
+d.remSec+=s.rem_sleep_duration||0;
+// Calculate sleep score from efficiency if not provided
+const sleepScore = s.score || (s.efficiency ? Math.round(s.efficiency) : 0);
+if(sleepScore && sleepScore>d.score)d.score=sleepScore;
+});
+readinessData.forEach(r=>{const d=g(r.day);if(r.contributors?.resting_heart_rate)d.rhr=r.contributors.resting_heart_rate});
+workoutData.forEach(w=>{const d=g(w.day);const dt=new Date(w.start_datetime);const t=dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:false});d.workouts.push({type:w.activity||'other',intensity:w.intensity||'moderate',calories:w.calories||300,time:t,start:w.start_datetime})});
+activityData.forEach(a=>{const d=g(a.day);d.cal=a.active_calories||0;d.high=(a.high_activity_time||0)/60;d.med=(a.medium_activity_time||0)/60});
+this.history=Array.from(m.values()).sort((a,b)=>b.date.localeCompare(a.date));
+this.currentIndex=this.history.findIndex(h=>h.date===this.currentDateStr);
+if(this.currentIndex===-1){this.history.unshift({date:this.currentDateStr,score:0,totalSec:0,deepSec:0,remSec:0,rhr:'-',cal:0,high:0,med:0,workouts:[]});this.currentIndex=0}}
+
+changeDate(dir){
+const n=this.currentIndex-dir;
+if(n>=0&&n<this.history.length){this.currentIndex=n;this.currentDateStr=this.history[n].date;this.render()}}
+
+switchUser(u){
+try{
+if(u===this.user){return;}
+this.setText('statusMsg','SWITCHING...');
+
+// HARD RESET UI
+this.user=u;localStorage.setItem('centurion_user',u);
+this.resetUI();
+
+this.history=[];
+this.loadUserData();
+this.setPlaceholderData();
+this.render();
+this.fetchOuraData();
+}catch(e){logerr(`❌ Switch user error: ${e.message}`)}}
+
+toggleTask(id){
+const dk=this.history[this.currentIndex].date;
+if(!this.checked[dk])this.checked[dk]=[];
+const i=this.checked[dk].indexOf(id);
+if(i===-1)this.checked[dk].push(id);else this.checked[dk].splice(i,1);
+this.saveUserData();this.render()}
+
+openBio(){
+const mb=document.getElementById('modalBody');
+this.setText('modalTitle','BIOMETRICS');
+const w=this.bios.weight;const bmr=this.bios.bmr;
+const h=USERS[this.user].goals.heightInches||70;
+const bmi=w&&h?((w/(h*h))*703).toFixed(1):'--';
+mb.innerHTML=`<div style="padding:20px"><div style="background:#111;padding:15px;border-radius:10px;margin-bottom:20px;border:1px solid #333"><div style="color:#888;font-size:0.7rem;margin-bottom:5px">CURRENT WEIGHT</div><div style="font-size:2rem;font-weight:900">${w} lbs</div><div style="color:var(--acid);font-size:0.8rem">BMI: ${bmi} | BMR: ${bmr}</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div><label style="font-size:0.6rem;color:#666">WEIGHT</label><input id="bio-weight" type="number" value="${w}" style="width:100%;padding:10px;background:#111;border:1px solid #333;color:#fff;border-radius:6px"></div><div><label style="font-size:0.6rem;color:#666">BMR</label><input id="bio-bmr" type="number" value="${bmr}" style="width:100%;padding:10px;background:#111;border:1px solid #333;color:#fff;border-radius:6px"></div></div><button onclick="app.saveBio()" style="width:100%;background:var(--acid);color:#000;padding:15px;margin-top:20px;border:none;border-radius:10px;font-weight:900">SAVE</button></div>`;
+document.getElementById('mainModal').classList.add('show')}
+
+saveBio(){
+const w=document.getElementById('bio-weight').value;
+const b=document.getElementById('bio-bmr').value;
+if(w)this.bios.weight=w;
+if(b)this.bios.bmr=b;
+this.saveUserData();this.closeModal();this.render()}
+
+openMealPicker(slot){
+const mb=document.getElementById('modalBody');
+this.setText('modalTitle',slot.toUpperCase());
+const all=MEALS[slot]||[];
+const currentSel=this.meals[this.history[this.currentIndex].date]?.[slot];
+let h='';
+all.forEach((m,i)=>{
+const isSelected=currentSel===i;
+const selectedClass=isSelected?'style="background:#1a1a1a;border-color:var(--acid)"':'';
+const checkmark=isSelected?'<span style="color:var(--acid);margin-right:8px;font-weight:900">✓</span>':'';
+h+=`<div class="menu-item" ${selectedClass} onclick="app.selectMeal('${slot}',${i})"><div class="menu-left"><div class="menu-name">${checkmark}${m.title}</div><div class="menu-meta">P:${m.macros.p}g • Ω3:${m.macros.o}mg • F:${m.macros.f}g • Cal:${m.macros.cal}</div></div><div class="menu-arrow">›</div></div>`;
+});
+mb.innerHTML=h;
+document.getElementById('mainModal').classList.add('show')}
+
+closeModal(){document.getElementById('mainModal').classList.remove('show')}
+
+selectMeal(slot,idx){
+const d=this.history[this.currentIndex].date;
+if(!this.meals[d])this.meals[d]={};
+this.meals[d][slot]=idx;
+this.saveUserData();this.closeModal();this.render()}
+
+calculateMacros(){
+const d=this.history[this.currentIndex].date;
+const c=this.checked[d]||[];
+let t={protein:0,omega3:0,fiber:0,calories:0};
+this.protocol.forEach(tk=>{if(c.includes(tk.id)){t.protein+=tk.macros.p||0;t.omega3+=tk.macros.o||0;t.fiber+=tk.macros.f||0;t.calories+=tk.macros.cal||0}});
+return t}
+
+calculateRainbow(){
+const d=this.history[this.currentIndex].date;
+const c=this.checked[d]||[];
+let s=new Set();
+this.protocol.forEach(t=>{if(c.includes(t.id)&&t.colors)t.colors.forEach(col=>s.add(col))});
+return s}
+
+render(){
+if(!this.history.length)return;
+this.protocol=JSON.parse(JSON.stringify(BASE_PROTOCOL));
+const day=this.history[this.currentIndex];
+const date=day.date;
+let sel=this.meals[date]||{};
+const dow=new Date(date).getDay();
+const isFS=new Date(date).getDate()<=7;
+const hadW=day.workouts&&day.workouts.length>0;
+const wType=hadW?day.workouts[0].type:null;
+
+// AUTO-RECOMMEND meals if not yet selected
+const goals=USERS[this.user].goals;
+['breakfast','lunch','dinner'].forEach(slot=>{
+if(sel[slot]===undefined){
+const mealList=MEALS[slot]||[];
+if(mealList.length>0){
+// Calculate current macro totals before this meal
+const currentMacros=this.calculateMacros();
+const proteinNeeded=goals.protein-currentMacros.protein;
+const omega3Needed=goals.omega3-currentMacros.omega3;
+// Score each meal
+let bestIdx=0;
+let bestScore=0;
+mealList.forEach((meal,idx)=>{
+let score=0;
+if(proteinNeeded>40&&meal.macros.p>50)score+=3;
+if(omega3Needed>2000&&meal.macros.o>2000)score+=2;
+if(score>bestScore){bestScore=score;bestIdx=idx}
+});
+sel[slot]=bestIdx;
+log(`🎯 Auto-recommended ${slot}: ${mealList[bestIdx].title} (P:${mealList[bestIdx].macros.p}g)`);
+}
+}
+});
+this.meals[date]=sel;
+this.saveUserData();
+
+const lr=this.getLunchRecovery(dow);
+if(lr)this.protocol.push({id:'lunch_recovery',time:'11:30',title:lr.title,desc:lr.desc,macros:{p:0,o:0,f:0,cal:0},colors:[],clickable:false});
+
+day.workouts.forEach((w,i)=>{this.protocol.push({id:`workout_${i}`,time:w.time,title:`${w.type.toUpperCase()} Detected`,desc:`${w.calories} cal | ${w.intensity}`,macros:{p:0,o:0,f:0,cal:0},colors:[],clickable:false,autoDetected:true})});
+
+const er=this.getEveningRecovery(dow,hadW,wType);
+if(er)this.protocol.push({id:'evening_recovery',time:er.time,title:er.title,desc:er.desc+' - Tap for protocol',macros:{p:0,o:0,f:0,cal:0},colors:[],clickable:true,type:er.type,cssClass:'recovery'});
+
+const fac=this.getEndOfDayFacial(dow,isFS);
+if(fac)this.protocol.push({id:'facial',time:'21:00',title:fac.title,desc:fac.desc+' - Tap for protocol',macros:{p:0,o:0,f:0,cal:0},colors:[],clickable:true,type:fac.type,cssClass:'facial'});
+
+this.protocol.forEach(t=>{if(t.mealSlot&&sel[t.mealSlot]!==undefined){const all=MEALS[t.mealSlot]||[];if(all[sel[t.mealSlot]]){const m=all[sel[t.mealSlot]];t.title=m.title;t.desc=`P:${m.macros.p} C:${m.macros.cal}`;t.macros=m.macros;t.colors=m.colors}}});
+
+this.protocol.sort((a,b)=>a.time.localeCompare(b.time));
+
+this.setText('dateLabel',date);
+const mac=this.calculateMacros();
+const sc=Math.min(100,Math.round(((day.totalSec||0)/3600/8)*100));
+this.setText('dayGrade',sc>=85?'A':sc>=70?'B':'C');
+
+// Calculate 7-day longevity score
+const last7=this.history.slice(0,7);
+const avgScore=last7.length>0?Math.round(last7.reduce((sum,d)=>sum+(d.score||0),0)/last7.length):0;
+this.setText('longevityScore',avgScore);
+// log(`💯 Longevity Score: ${avgScore} (7-day avg)`);
+
+const upd=(id,val,max,col)=>{const el=document.getElementById(id);if(el){el.style.strokeDashoffset=145-(Math.min(val/max,1)*145);el.style.stroke=col}const txt=document.getElementById(id.replace('Orb','Val'));if(txt)txt.innerText=Math.round(val)};
+const updOrb=(id,val,max,col)=>{const el=document.getElementById(id);if(el){el.style.strokeDashoffset=145-(Math.min(val/max,1)*145);el.style.stroke=col}};
+const sleepHours=(day.totalSec||0)/3600;
+const deepMins=Math.round((day.deepSec||0)/60);
+const remMins=Math.round((day.remSec||0)/60);
+// log(`📊 Rendering ${day.date}: Sleep=${sleepHours.toFixed(1)}h, Deep=${deepMins}m, REM=${remMins}m`);
+this.setText('sleepVal',`${sleepHours.toFixed(1)}h`);
+this.setText('deepVal',`${deepMins}m`);
+this.setText('remVal',`${remMins}m`);
+updOrb('sleepOrb',sleepHours,8,'#bf5af2');
+updOrb('deepOrb',deepMins,90,'#007aff');
+updOrb('remOrb',remMins,90,'#bf5af2');
+upd('proteinOrb',mac.protein,USERS[this.user].goals.protein,'#fff');
+upd('omega3Orb',mac.omega3,4000,'#00d4ff');
+upd('fiberOrb',mac.fiber,50,'#30d158');
+upd('calorieOrb',mac.calories,2500,'#FFD60A');
+
+const cols=this.calculateRainbow();
+this.setText('rainbowScore',Math.round((cols.size/6)*100)+'%');
+let rh='';
+['red','orange','yellow','green','purple','white'].forEach(c=>{rh+=`<div class="rainbow-seg" style="background:${cols.has(c)?COLORS[c].hex:'#333'};width:${cols.has(c)?16.6:0}%"></div>`});
+document.getElementById('rainbowTrack').innerHTML=rh;
+
+const chk=this.checked[date]||[];
+let th='';
+this.protocol.forEach(t=>{
+const isC=chk.includes(t.id);
+let ca='';let cc=`task-card ${isC?'checked':''} ${t.autoDetected?'auto-detected':''} ${t.cssClass||''}`;
+if(t.clickable){if(t.type&&(t.type in PROTOCOLS))ca=`onclick="app.showProtocolDetails('${t.type}')"`;else if(t.mealSlot)ca=`onclick="app.openMealPicker('${t.mealSlot}')"`}
+th+=`<div class="task"><div class="task-time">${t.time}</div><div class="${cc}" ${ca}><div class="task-info"><div class="task-title">${t.title}</div><div class="task-desc">${t.desc}</div></div>${t.clickable?'<div class="chevron">›</div>':''}${!t.autoDetected&&!t.type?`<div class="check-btn" onclick="event.stopPropagation();app.toggleTask('${t.id}')"><div class="check-circle">${isC?'✓':''}</div></div>`:''}</div></div>`});
+document.getElementById('timeline').innerHTML=th}
+
+setText(id,txt){const el=document.getElementById(id);if(el)el.innerText=txt}
+sync(){this.fetchOuraData()}}
+
 let app;
-window.onload = () => { app = new CenturionApp(); window.app = app; };
+window.onload=()=>{app=new CenturionApp();window.app=app};
 </script>
 
 </body>
