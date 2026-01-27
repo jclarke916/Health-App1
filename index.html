@@ -390,8 +390,14 @@ openMealPicker(slot){
 const mb=document.getElementById('modalBody');
 this.setText('modalTitle',slot.toUpperCase());
 const all=MEALS[slot]||[];
+const currentSel=this.meals[this.history[this.currentIndex].date]?.[slot];
 let h='';
-all.forEach((m,i)=>{h+=`<div class="menu-item" onclick="app.selectMeal('${slot}',${i})"><div class="menu-left"><div class="menu-name">${m.title}</div><div class="menu-meta">P:${m.macros.p}</div></div><div class="menu-arrow">›</div></div>`});
+all.forEach((m,i)=>{
+const isSelected=currentSel===i;
+const selectedClass=isSelected?'style="background:#1a1a1a;border-color:var(--acid)"':'';
+const checkmark=isSelected?'<span style="color:var(--acid);margin-right:8px;font-weight:900">✓</span>':'';
+h+=`<div class="menu-item" ${selectedClass} onclick="app.selectMeal('${slot}',${i})"><div class="menu-left"><div class="menu-name">${checkmark}${m.title}</div><div class="menu-meta">P:${m.macros.p}g • Ω3:${m.macros.o}mg • F:${m.macros.f}g • Cal:${m.macros.cal}</div></div><div class="menu-arrow">›</div></div>`;
+});
 mb.innerHTML=h;
 document.getElementById('mainModal').classList.add('show')}
 
@@ -422,11 +428,38 @@ if(!this.history.length)return;
 this.protocol=JSON.parse(JSON.stringify(BASE));
 const day=this.history[this.currentIndex];
 const date=day.date;
-const sel=this.meals[date]||{};
+let sel=this.meals[date]||{};
 const dow=new Date(date).getDay();
 const isFS=new Date(date).getDate()<=7;
 const hadW=day.workouts&&day.workouts.length>0;
 const wType=hadW?day.workouts[0].type:null;
+
+// AUTO-RECOMMEND meals if not yet selected
+const goals=USERS[this.user].goals;
+['breakfast','lunch','dinner'].forEach(slot=>{
+if(sel[slot]===undefined){
+const mealList=MEALS[slot]||[];
+if(mealList.length>0){
+// Calculate current macro totals before this meal
+const currentMacros=this.calculateMacros();
+const proteinNeeded=goals.protein-currentMacros.protein;
+const omega3Needed=goals.omega3-currentMacros.omega3;
+// Score each meal
+let bestIdx=0;
+let bestScore=0;
+mealList.forEach((meal,idx)=>{
+let score=0;
+if(proteinNeeded>40&&meal.macros.p>50)score+=3;
+if(omega3Needed>2000&&meal.macros.o>2000)score+=2;
+if(score>bestScore){bestScore=score;bestIdx=idx}
+});
+sel[slot]=bestIdx;
+log(`🎯 Auto-recommended ${slot}: ${mealList[bestIdx].title} (P:${mealList[bestIdx].macros.p}g)`);
+}
+}
+});
+this.meals[date]=sel;
+this.saveUserData();
 
 const lr=this.getLunchRecovery(dow);
 if(lr)this.protocol.push({id:'lunch_recovery',time:'11:30',title:lr.title,desc:lr.desc,macros:{p:0,o:0,f:0,cal:0},colors:[],clickable:false});
@@ -459,7 +492,7 @@ const sleepHours=(day.totalSec||0)/3600;
 const deepMins=Math.round((day.deepSec||0)/60);
 const remMins=Math.round((day.remSec||0)/60);
 log(`📊 Rendering ${day.date}: Sleep=${sleepHours.toFixed(1)}h, Deep=${deepMins}m, REM=${remMins}m`);
-this.setText('sleepVal',`${Math.floor(sleepHours)}h${Math.round((sleepHours%1)*60)}m`);
+this.setText('sleepVal',`${sleepHours.toFixed(1)}h`);
 this.setText('deepVal',`${deepMins}m`);
 this.setText('remVal',`${remMins}m`);
 upd('sleepOrb',sleepHours,8,'#bf5af2');
