@@ -83,7 +83,15 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .footer{position:fixed;bottom:0;left:0;width:100%;background:#000;padding:12px 15px;border-top:1px solid #333;display:flex;justify-content:space-between;align-items:center;z-index:90}
 .sync-status{font-size:0.6rem;color:#666;font-family:monospace}
 .sync-btn{background:var(--acid);color:#000;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-weight:900;font-size:0.7rem}
+
+.debug-console{position:fixed;bottom:60px;left:0;right:0;max-height:300px;background:rgba(0,0,0,0.98);border-top:2px solid var(–acid);z-index:199;overflow-y:auto;padding:10px;font-size:0.65rem;color:#0f0;font-family:monospace;display:none}
+.debug-console.show{display:block}
+.debug-btn{position:fixed;bottom:70px;right:10px;z-index:200;background:var(–acid);color:#000;border:none;padding:8px 12px;border-radius:6px;font-weight:900;cursor:pointer;font-size:0.7rem}
+.debug-log{margin-bottom:4px;border-bottom:1px solid #222;padding-bottom:4px}
+.debug-time{color:#666;margin-right:8px}
+.debug-type{color:var(–cyan);margin-right:8px;font-weight:900}
 </style>
+
 </head>
 <body>
 
@@ -174,7 +182,36 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
     <button class="sync-btn" onclick="if(window.app)app.sync()">🔄 SYNC</button>
 </div>
 
+<button class="debug-btn" onclick="toggleDebug()">🐛 DEBUG</button>
+
+<div class="debug-console" id="debugConsole"></div>
+
 <script>
+const debugLogs=[];
+function log(msg,type='LOG'){
+const t=new Date().toLocaleTimeString();
+debugLogs.push({t:t,type:type,msg:msg});
+if(debugLogs.length>50)debugLogs.shift();
+console.log(msg);
+renderDebug();
+}
+function logerr(msg){log(msg,'ERROR')}
+function renderDebug(){
+const el=document.getElementById('debugConsole');
+if(!el)return;
+let html='';
+debugLogs.forEach(l=>{
+const color=l.type==='ERROR'?'#ff453a':'#0f0';
+html+=`<div class="debug-log"><span class="debug-time">[${l.t}]</span><span class="debug-type" style="color:${color}">${l.type}</span><span style="color:#ccc">${l.msg}</span></div>`;
+});
+el.innerHTML=html;
+el.scrollTop=el.scrollHeight;
+}
+function toggleDebug(){
+const el=document.getElementById('debugConsole');
+if(el.classList.contains('show')){el.classList.remove('show')}else{el.classList.add('show')}
+}
+
 const USERS={jermaine:{name:"Jermaine",goals:{protein:175,omega3:4000,fiber:50,heightInches:76.5},defaultBios:{bmr:'2028',weight:'215.7'}},sophia:{name:"Sophia",goals:{protein:130,omega3:4000,fiber:35,heightInches:64},defaultBios:{bmr:'1450',weight:'148'}}};
 const MEALS={breakfast:[{title:"Omega Breakfast",macros:{p:58,o:3500,f:12,cal:680},colors:['orange','purple','green']}],lunch:[{title:"Salmon Bowl",macros:{p:48,o:3000,f:14,cal:780},colors:['orange','brown','green']}],dinner:[{title:"Grass-Fed Steak",macros:{p:60,o:1200,f:14,cal:720},colors:['red','green','orange']}]};
 const BASE=[{id:'breakfast',time:'07:30',title:'Breakfast',desc:'Tap to select',macros:{p:0,o:0,f:0,cal:0},colors:[],clickable:true,mealSlot:'breakfast'},{id:'lunch',time:'13:00',title:'Lunch',desc:'Tap to select',macros:{p:0,o:0,f:0,cal:0},colors:[],clickable:true,mealSlot:'lunch'},{id:'dinner',time:'18:30',title:'Dinner',desc:'Tap to select',macros:{p:0,o:0,f:0,cal:0},colors:[],clickable:true,mealSlot:'dinner'}];
@@ -276,34 +313,34 @@ const sleepData=await sleepRes.json();
 const workoutData=await workoutRes.json();
 const activityData=await activityRes.json();
 const readinessData=await readinessRes.json();
-console.log('🔍 OURA DATA RECEIVED:');
-console.log('Sleep records:', sleepData.data?.length || 0);
-console.log('Workout records:', workoutData.data?.length || 0);
-console.log('Activity records:', activityData.data?.length || 0);
-console.log('Readiness records:', readinessData.data?.length || 0);
-if(sleepData.data?.length > 0) console.log('Sample sleep:', sleepData.data[0]);
+log('🔍 OURA DATA RECEIVED:');
+log('Sleep records: '+(sleepData.data?.length || 0));
+log('Workout records: '+(workoutData.data?.length || 0));
+log('Activity records: '+(activityData.data?.length || 0));
+log('Readiness records: '+(readinessData.data?.length || 0));
+if(sleepData.data?.length > 0) log('Sample sleep: '+JSON.stringify(sleepData.data[0]));
 this.processData(sleepData.data||[],workoutData.data||[],activityData.data||[],readinessData.data||[]);
 this.setText('syncStatus','SYNCED ✓');
 this.render()}
 catch(error){
-console.warn('Sync failed:',error);
+logerr('❌ Sync failed: '+error);
 this.setText('syncStatus','OFFLINE');
 this.render()}}
 
 processData(sleepData,workoutData,activityData,readinessData){
-console.log('📊 PROCESSING DATA:');
-console.log('Sleep entries to process:', sleepData.length);
-console.log('Workout entries to process:', workoutData.length);
+log('📊 PROCESSING DATA:');
+log('Sleep entries to process: '+sleepData.length);
+log('Workout entries to process: '+workoutData.length);
 const m=new Map();
 const g=(d)=>{if(!m.has(d))m.set(d,{date:d,score:0,totalSec:0,deepSec:0,remSec:0,rhr:'-',cal:0,high:0,med:0,workouts:[]});return m.get(d)};
 sleepData.forEach(s=>{
-console.log(`Sleep for ${s.day}: total=${s.total_sleep_duration}s, deep=${s.deep_sleep_duration}s, rem=${s.rem_sleep_duration}s, score=${s.score}`);
+log(`Sleep for ${s.day}: total=${s.total_sleep_duration}s, deep=${s.deep_sleep_duration}s, rem=${s.rem_sleep_duration}s, score=${s.score}`);
 const d=g(s.day);d.totalSec+=s.total_sleep_duration||0;d.deepSec+=s.deep_sleep_duration||0;d.remSec+=s.rem_sleep_duration||0;if(s.score&&s.score>d.score)d.score=s.score});
 readinessData.forEach(r=>{const d=g(r.day);if(r.contributors?.resting_heart_rate)d.rhr=r.contributors.resting_heart_rate});
 workoutData.forEach(w=>{const d=g(w.day);const dt=new Date(w.start_datetime);const t=dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:false});d.workouts.push({type:w.activity||'other',intensity:w.intensity||'moderate',calories:w.calories||300,time:t,start:w.start_datetime})});
 activityData.forEach(a=>{const d=g(a.day);d.cal=a.active_calories||0;d.high=(a.high_activity_time||0)/60;d.med=(a.medium_activity_time||0)/60});
 this.history=Array.from(m.values()).sort((a,b)=>b.date.localeCompare(a.date));
-console.log('✅ Processed history:', this.history.length, 'days');
+log('✅ Processed history: '+this.history.length+' days');
 this.currentIndex=this.history.findIndex(h=>h.date===this.currentDateStr);
 if(this.currentIndex===-1){this.history.unshift({date:this.currentDateStr,score:0,totalSec:0,deepSec:0,remSec:0,rhr:'-',cal:0,high:0,med:0,workouts:[]});this.currentIndex=0}}
 
