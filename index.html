@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Centurion v17.62 TIMELINE-SYNC</title>
+<title>Centurion v17.63 INTERACTIVE</title>
 <style>
 /* --- CORE STYLES --- */
 :root { --bg:#050505; --panel:#121212; --border:#222; --acid:#ccff00; --cyan:#00f0ff; --purple:#bf5af2; --alert:#ff453a; --text:#fff; }
@@ -347,8 +347,8 @@ const WORKOUT_TYPES = { strength_training: 'Strength', cycling: 'Cycling', runni
 // --- APP CLASS ---
 class CenturionApp {
     constructor() {
-        console.log('🚀 Init v17.62 TIMELINE-SYNC');
-        const CURRENT_VER = '17.62.0';
+        console.log('🚀 Init v17.63 INTERACTIVE');
+        const CURRENT_VER = '17.63.0';
         const savedVer = localStorage.getItem('centurion_version');
         if(savedVer !== CURRENT_VER) { localStorage.clear(); localStorage.setItem('centurion_version', CURRENT_VER); }
 
@@ -393,24 +393,65 @@ class CenturionApp {
         this.currentIndex = 0;
     }
 
+    // --- HELPER METHODS FOR COUPLES LOGIC (MOVED TO TOP) ---
     getJermaineFacialProtocol(dayOfWeek, isFirstSunday) {
-        if (dayOfWeek === 0 && isFirstSunday) return ['📍 MICRONEEDLING', 'Protocol: Cleanse x2 > Microneedle > Cold Wand', 'Note: No sweat/makeup 24hrs'];
-        if (dayOfWeek === 1 || dayOfWeek === 3 || dayOfWeek === 5) return ['⚡ MICROCURRENT', 'Protocol: Gel > Lift > Heat > Cold', 'Focus: Jawline & Cheeks'];
-        if (dayOfWeek === 2 || dayOfWeek === 4) return ['💆 MASSAGE + SCULPT', 'Protocol: Hand Massage > Heat Wand > Cold Cube', 'Focus: Tension Release'];
-        return ['✨ OPTIONAL MAINTENANCE', 'Cold Therapy if puffy'];
+        if (dayOfWeek === 0 && isFirstSunday) return ['📍 MICRONEEDLING DAY', '⏰ 45min (Evening)', '1. Deep Cleanse x2', '2. Sanitize Device', '3. Microneedle Face', '4. Cold Wand (5min)', 'Note: No sweat/makeup 24hrs'];
+        if (dayOfWeek === 1 || dayOfWeek === 3 || dayOfWeek === 5) return ['⚡ MICROCURRENT DAY', '⏰ 25min', '1. Cleanse + Gel', '2. Microcurrent (15min)', '3. Heat Wand (5min)', '4. Cold Cube (3min)', 'Focus: Jaw & Cheeks'];
+        if (dayOfWeek === 2 || dayOfWeek === 4) return ['💆 MASSAGE + SCULPT', '⏰ 20min', '1. Facial Oil', '2. Hand Massage (10min)', '3. Heat Wand (5min)', '4. Cold Cube (3min)', 'Focus: Tension Release'];
+        return ['✨ OPTIONAL MAINTENANCE', '⏰ 10min', '1. Cold Therapy', '2. Light Massage'];
     }
 
     getSophiaFacialProtocol(dayOfWeek) {
-        if (dayOfWeek === 2 || dayOfWeek === 4 || dayOfWeek === 0) return ['💪 RECOVERY FACIAL', 'Protocol: Cold Cube (5min) > Massage', 'Focus: Jaw Tension from Training'];
-        if (dayOfWeek === 3) return ['🧼 DEEP CLEAN', 'Protocol: Double Cleanse > Heat Wand', 'Focus: Open Pores'];
-        return ['✨ QUICK MAINTENANCE', 'Cold Wand > Moisturizer'];
+        if (dayOfWeek === 2 || dayOfWeek === 4 || dayOfWeek === 0) return ['💪 RECOVERY FACIAL', '⏰ 15min', '1. Cold Cube (5min)', '2. Jaw Massage (5min)', '3. Cold Wand (3min)', 'Focus: Inflammation'];
+        if (dayOfWeek === 3) return ['🧼 DEEP CLEAN', '⏰ 20min', '1. Double Cleanse', '2. Heat Wand (Open Pores)', '3. Massage', '4. Cold (Close Pores)'];
+        return ['✨ QUICK MAINTENANCE', '⏰ 10min', '1. Cold Wand', '2. Moisturize'];
     }
 
     getCouplesRecoveryProtocol(dayOfWeek) {
-        if (dayOfWeek === 2 || dayOfWeek === 4) return ['🔵 BACK CUPPING', '15min each. Swap partners.', 'Finish with Hyperice Heat.'];
-        if (dayOfWeek === 1 || dayOfWeek === 5 || dayOfWeek === 0) return ['🦵 NORMATEC TIME', '30-45min together.', 'Relaxation mode.'];
-        if (dayOfWeek === 0) return ['🏊 SUNDAY RITUAL', 'InShape: Steam > Sauna > Pool > Aqua Massage'];
+        if (dayOfWeek === 2 || dayOfWeek === 4) return ['🔵 BACK CUPPING', '⏰ 20min each', '1. Upper Back (5min)', '2. Mid Back (5min)', '3. Lower Back (5min)', '4. Hyperice Heat (15min)'];
+        if (dayOfWeek === 1 || dayOfWeek === 5 || dayOfWeek === 0) return ['🦵 NORMATEC TIME', '⏰ 30-45min', 'Wear boots together', 'Relaxation mode'];
+        if (dayOfWeek === 0) return ['🏊 SUNDAY RITUAL', '⏰ 90min (InShape)', '1. Pool Stretch', '2. Steam Room', '3. Sauna', '4. Aqua Massage'];
         return ['✨ LIGHT RECOVERY', 'Hand massage or stretch together.'];
+    }
+
+    showProtocolDetails(type) {
+        const modalBody = document.getElementById('modalBody');
+        const day = this.history[this.currentIndex];
+        const dayOfWeek = new Date(day.date).getDay();
+        const isFirstSunday = new Date(day.date).getDate() <= 7;
+        
+        let steps = [];
+        let title = "";
+        
+        if (type === 'facial') {
+            steps = this.user === 'jermaine' ? this.getJermaineFacialProtocol(dayOfWeek, isFirstSunday) : this.getSophiaFacialProtocol(dayOfWeek);
+            title = "FACIAL ROUTINE";
+        } else {
+            steps = this.getCouplesRecoveryProtocol(dayOfWeek);
+            title = "RECOVERY ROUTINE";
+        }
+
+        const routineName = steps[0];
+        const duration = steps[1];
+        const listItems = steps.slice(2).map(s => `<div style="padding:10px; border-bottom:1px solid #222; font-size:0.9rem;">${s}</div>`).join('');
+
+        let html = `
+            <div style="text-align:center; margin-bottom:20px;">
+                <div style="font-size:1.5rem; font-weight:900; color:#fff;">${routineName}</div>
+                <div style="font-size:1rem; color:var(--acid); margin-top:5px; font-family:monospace;">${duration}</div>
+            </div>
+            <div style="background:#111; border-radius:12px; border:1px solid #333; overflow:hidden;">
+                ${listItems}
+            </div>
+            <div style="margin-top:20px; font-size:0.7rem; color:#888; text-align:center;">
+                Follow steps sequentially for best results.
+            </div>
+        `;
+        
+        this.setText('modalTitle', title);
+        modalBody.innerHTML = html;
+        document.getElementById('mainModal').classList.add('show');
+        document.getElementById('fixedFooter').classList.remove('show');
     }
 
     async fetchOuraData() {
@@ -632,20 +673,22 @@ class CenturionApp {
         const facial = this.user === 'jermaine' ? this.getJermaineFacialProtocol(dayOfWeek, isFirstSunday) : this.getSophiaFacialProtocol(dayOfWeek);
         const recovery = this.getCouplesRecoveryProtocol(dayOfWeek);
         
-        // 20:00 Recovery Routine
+        // Recovery Routine
         this.protocol.push({
             id: 'recovery_routine', time: dayOfWeek === 0 ? '11:00' : '20:00', 
             title: recovery[0].replace(/\*\*/g,''), 
-            desc: recovery.slice(1).join(' '), 
-            macros:{p:0,o:0,f:0,cal:0}, colors: ['blue'], clickable: false, autoDetected: true
+            desc: "Tap for full protocol details", 
+            macros:{p:0,o:0,f:0,cal:0}, colors: ['blue'], clickable: true, autoDetected: true,
+            type: 'recovery' // Tag for onclick handler
         });
 
-        // 21:15 Facial Routine
+        // Facial Routine
         this.protocol.push({
             id: 'facial_routine', time: '21:15', 
             title: facial[0].replace(/\*\*/g,''), 
-            desc: facial.slice(1).join(' '), 
-            macros:{p:0,o:0,f:0,cal:0}, colors: ['purple'], clickable: false, autoDetected: true
+            desc: "Tap for full protocol details", 
+            macros:{p:0,o:0,f:0,cal:0}, colors: ['purple'], clickable: true, autoDetected: true,
+            type: 'facial' // Tag for onclick handler
         });
 
         this.protocol.forEach(t => {
@@ -693,7 +736,17 @@ class CenturionApp {
         let th = '';
         this.protocol.forEach(t => {
             const isC = checked.includes(t.id);
-            th += `<div class="task"><div class="task-time">${t.time}</div><div class="task-card ${isC?'checked':''} ${t.autoDetected?'auto-detected':''}" ${t.clickable?`onclick="app.openMealPicker('${t.mealSlot}')"`:''}><div class="task-info"><div class="task-title">${t.title}</div><div class="task-desc">${t.desc}</div></div>${t.clickable?'<div class="chevron">›</div>':''}${!t.autoDetected?`<div class="check-btn" onclick="event.stopPropagation(); app.toggleTask('${t.id}')"><div class="check-circle">${isC?'✓':''}</div></div>`:''}</div></div>`;
+            // Handle special onclicks for protocol vs meals
+            let clickAttr = '';
+            if (t.clickable) {
+                if (t.type === 'facial' || t.type === 'recovery') {
+                    clickAttr = `onclick="app.showProtocolDetails('${t.type}')"`;
+                } else if (t.mealSlot) {
+                    clickAttr = `onclick="app.openMealPicker('${t.mealSlot}')"`;
+                }
+            }
+            
+            th += `<div class="task"><div class="task-time">${t.time}</div><div class="task-card ${isC?'checked':''} ${t.autoDetected?'auto-detected':''}" ${clickAttr}><div class="task-info"><div class="task-title">${t.title}</div><div class="task-desc">${t.desc}</div></div>${t.clickable?'<div class="chevron">›</div>':''}${!t.autoDetected?`<div class="check-btn" onclick="event.stopPropagation(); app.toggleTask('${t.id}')"><div class="check-circle">${isC?'✓':''}</div></div>`:''}</div></div>`;
         });
         document.getElementById('timeline').innerHTML = th;
     }
