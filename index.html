@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Centurion v17.92 - Z5 Recovery System</title>
+<title>Centurion v17.99 - Mobile Debug VO2</title>
 <style>
 :root{--bg:#050505;--panel:#121212;--border:#222;--acid:#ccff00;--cyan:#00f0ff;--purple:#bf5af2;--alert:#ff453a;--text:#fff}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -204,11 +204,12 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 <div class="debug-console" id="debugConsole"></div>
 
 <script>
+console.log('🚀🚀🚀 CENTURION v17.98 LOADED - TIMESTAMP: '+Date.now());
 const debugLogs=[];
 function log(msg,type='LOG'){
 const t=new Date().toLocaleTimeString();
 debugLogs.push({t:t,type:type,msg:msg});
-if(debugLogs.length>50)debugLogs.shift();
+if(debugLogs.length>100)debugLogs.shift(); // Increased from 50 to 100
 console.log(msg);
 renderDebug();
 }
@@ -353,8 +354,8 @@ clubstudio:{title:"🏢 CLUB STUDIO",steps:["OPTION A: Full Recovery (45min)","1
 
 class CenturionApp{
 constructor(){
-console.log('🚀 v17.97 CARDIO AGE NON-BLOCKING');
-const V='17.97.0';
+console.log('🚀 v17.99 MOBILE DEBUG - TS:'+Date.now());
+const V='17.99.0';
 if(localStorage.getItem('centurion_version')!==V){localStorage.clear();localStorage.setItem('centurion_version',V)}
 this.user=localStorage.getItem('centurion_user')||'jermaine';
 this.history=[];this.currentIndex=0;this.currentDateStr=new Date().toLocaleDateString('en-CA');
@@ -536,30 +537,34 @@ const readinessData=await readinessRes.json();
 
 // Try to fetch cardio age separately (might not be available)
 let cardioAgeData={data:[]};
+log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+log('🔍 OURA API SYNC STARTING...');
+log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 try{
 const cardioAgeUrl=`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_cardiovascular_age?start_date=${startStr}&end_date=${endStr}`)}`;
 const cardioAgeRes=await fetch(cardioAgeUrl,{headers:{'Authorization':`Bearer ${token}`}});
 if(cardioAgeRes.ok){
 cardioAgeData=await cardioAgeRes.json();
-log(`✅ Cardio Age endpoint accessible: ${cardioAgeData.data?.length || 0} records`);
+log(`✅ CARDIO AGE ENDPOINT: ${cardioAgeData.data?.length || 0} records found`);
+if(cardioAgeData.data&&cardioAgeData.data.length>0){
+log('📊 CARDIO AGE DATA SAMPLE:');
+log(JSON.stringify(cardioAgeData.data[0],null,2));
+}
 }else{
-log(`⚠️ Cardio Age endpoint returned ${cardioAgeRes.status}: ${cardioAgeRes.statusText}`);
+log(`❌ CARDIO AGE ENDPOINT: ${cardioAgeRes.status} ${cardioAgeRes.statusText}`);
+log('ℹ️  VO2 max may not be available via API');
 }
 }catch(e){
-log(`⚠️ Cardio Age fetch failed: ${e.message}`);
+log(`❌ CARDIO AGE FETCH ERROR: ${e.message}`);
+log('ℹ️  This endpoint might not exist or requires different permissions');
 }
 
-log('🔍 OURA DATA RECEIVED:');
 log('Sleep records: '+(sleepData.data?.length || 0));
 log('Workout records: '+(workoutData.data?.length || 0));
 log('Activity records: '+(activityData.data?.length || 0));
-if(activityData.data&&activityData.data.length>0){
-log('Sample activity (checking for VO2 max): '+JSON.stringify(activityData.data[0]));
-}
 log('Readiness records: '+(readinessData.data?.length || 0));
-if(cardioAgeData.data&&cardioAgeData.data.length>0){
-log('Sample cardio age data: '+JSON.stringify(cardioAgeData.data[0]));
-}
+log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+log('📊 PROCESSING DATA...');
 if(sleepData.data?.length > 0) log('Sample sleep: '+JSON.stringify(sleepData.data[0]));
 this.processData(sleepData.data||[],workoutData.data||[],activityData.data||[],readinessData.data||[],cardioAgeData.data||[]);
 this.setText('syncStatus','SYNCED ✓');
