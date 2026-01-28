@@ -531,72 +531,70 @@ document.getElementById('modalBody').innerHTML=h;
 document.getElementById('mainModal').classList.add('show')}
 
 async fetchOuraData(){
-this.setText('syncStatus','SYNCING...');
-try{
-const end=new Date();end.setDate(end.getDate()+1);
-const start=new Date();start.setDate(start.getDate()-10);
-const startStr=start.toISOString().split('T')[0];
-const endStr=end.toISOString().split('T')[0];
-const token=TOKENS[this.user];
+    this.setText('syncStatus','SYNCING...');
+    try{
+        const end=new Date();end.setDate(end.getDate()+1);
+        const start=new Date();start.setDate(start.getDate()-10);
+        const startStr=start.toISOString().split('T')[0];
+        const endStr=end.toISOString().split('T')[0];
+        const token=TOKENS[this.user];
+        
+        // --- PROXY RESTORED FOR BROWSER SUPPORT ---
+        const proxy = "https://corsproxy.io/?";
+        
+        // Try to fetch cardio age separately (non-blocking)
+        let cardioAgeData={data:[]};
+        log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        log('🔍 OURA API SYNC STARTING (VIA PROXY)...');
+        log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
-// Try to fetch cardio age separately (non-blocking)
-let cardioAgeData={data:[]};
-log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-log('🔍 OURA API SYNC STARTING...');
-log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        // Construct URLs with Proxy and Encoding
+        const sleepUrl = proxy + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${startStr}&end_date=${endStr}`);
+        const workoutUrl = proxy + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/workout?start_date=${startStr}&end_date=${endStr}`);
+        const activityUrl = proxy + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${startStr}&end_date=${endStr}`);
+        const readinessUrl = proxy + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${startStr}&end_date=${endStr}`);
 
-const sleepUrl=`https://api.ouraring.com/v2/usercollection/sleep?start_date=${startStr}&end_date=${endStr}`;
-const workoutUrl=`https://api.ouraring.com/v2/usercollection/workout?start_date=${startStr}&end_date=${endStr}`;
-const activityUrl=`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${startStr}&end_date=${endStr}`;
-const readinessUrl=`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${startStr}&end_date=${endStr}`;
+        const[sleepRes,workoutRes,activityRes,readinessRes]=await Promise.all([
+            fetch(sleepUrl,{headers:{'Authorization':`Bearer ${token}`}}),
+            fetch(workoutUrl,{headers:{'Authorization':`Bearer ${token}`}}),
+            fetch(activityUrl,{headers:{'Authorization':`Bearer ${token}`}}),
+            fetch(readinessUrl,{headers:{'Authorization':`Bearer ${token}`}})
+        ]);
 
-log('📡 Attempting direct API calls (no proxy)...');
+        if(!sleepRes.ok||!workoutRes.ok) throw new Error('API failed - Check connection');
+        
+        const sleepData=await sleepRes.json();
+        const workoutData=await workoutRes.json();
+        const activityData=await activityRes.json();
+        const readinessData=await readinessRes.json();
 
-// Fetch main data (back to Promise.all for parallel loading)
-const[sleepRes,workoutRes,activityRes,readinessRes]=await Promise.all([
-fetch(sleepUrl,{headers:{'Authorization':`Bearer ${token}`}}),
-fetch(workoutUrl,{headers:{'Authorization':`Bearer ${token}`}}),
-fetch(activityUrl,{headers:{'Authorization':`Bearer ${token}`}}),
-fetch(readinessUrl,{headers:{'Authorization':`Bearer ${token}`}})
-]);
+        try{
+            const cardioAgeUrl = proxy + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_cardiovascular_age?start_date=${startStr}&end_date=${endStr}`);
+            const cardioAgeRes=await fetch(cardioAgeUrl,{headers:{'Authorization':`Bearer ${token}`}});
+            if(cardioAgeRes.ok){
+                cardioAgeData=await cardioAgeRes.json();
+                log(`✅ CARDIO AGE: ${cardioAgeData.data?.length || 0} records found`);
+            }
+        }catch(e){
+            log(`⚠️ Cardio Age fetch skipped: ${e.message}`);
+        }
 
-if(!sleepRes.ok||!workoutRes.ok)throw new Error('API failed');
-const sleepData=await sleepRes.json();
-const workoutData=await workoutRes.json();
-const activityData=await activityRes.json();
-const readinessData=await readinessRes.json();
-
-try{
-const cardioAgeUrl=`https://api.ouraring.com/v2/usercollection/daily_cardiovascular_age?start_date=${startStr}&end_date=${endStr}`;
-const cardioAgeRes=await fetch(cardioAgeUrl,{headers:{'Authorization':`Bearer ${token}`}});
-if(cardioAgeRes.ok){
-cardioAgeData=await cardioAgeRes.json();
-log(`✅ CARDIO AGE ENDPOINT: ${cardioAgeData.data?.length || 0} records found`);
-if(cardioAgeData.data&&cardioAgeData.data.length>0){
-log('📊 CARDIO AGE DATA SAMPLE:');
-log(JSON.stringify(cardioAgeData.data[0],null,2));
+        log('Sleep records: '+(sleepData.data?.length || 0));
+        log('Workout records: '+(workoutData.data?.length || 0));
+        log('Activity records: '+(activityData.data?.length || 0));
+        
+        if(sleepData.data?.length > 0) log('Last sleep score: '+sleepData.data[0].score);
+        
+        this.processData(sleepData.data||[],workoutData.data||[],activityData.data||[],readinessData.data||[],cardioAgeData.data||[]);
+        this.setText('syncStatus','SYNCED ✓');
+        this.render();
+    }
+    catch(error){
+        logerr('❌ Sync failed: '+error);
+        this.setText('syncStatus','OFFLINE');
+        this.render();
+    }
 }
-}else{
-log(`❌ CARDIO AGE ENDPOINT: ${cardioAgeRes.status} ${cardioAgeRes.statusText}`);
-}
-}catch(e){
-log(`⚠️ Cardio Age fetch failed: ${e.message}`);
-}
-
-log('Sleep records: '+(sleepData.data?.length || 0));
-log('Workout records: '+(workoutData.data?.length || 0));
-log('Activity records: '+(activityData.data?.length || 0));
-log('Readiness records: '+(readinessData.data?.length || 0));
-log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-log('📊 PROCESSING DATA...');
-if(sleepData.data?.length > 0) log('Sample sleep: '+JSON.stringify(sleepData.data[0]));
-this.processData(sleepData.data||[],workoutData.data||[],activityData.data||[],readinessData.data||[],cardioAgeData.data||[]);
-this.setText('syncStatus','SYNCED ✓');
-this.render()}
-catch(error){
-logerr('❌ Sync failed: '+error);
-this.setText('syncStatus','OFFLINE');
-this.render()}}
 
 processData(sleepData,workoutData,activityData,readinessData,cardioAgeData){
 log('📊 PROCESSING DATA:');
