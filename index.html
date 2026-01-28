@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Centurion v17.95 BACK-TO-BASICS</title>
+<title>Centurion v18.0 STABLE-LEGACY</title>
 <style>
 /* --- CORE STYLES --- */
 :root { --bg:#050505; --panel:#121212; --border:#222; --acid:#ccff00; --cyan:#00f0ff; --purple:#bf5af2; --alert:#ff453a; --text:#fff; }
@@ -228,14 +228,14 @@ const USERS = {
     sophia: { name: "Sophia", dob: "1987-01-25", goals: { protein: 130, omega3: 4000, fiber: 35, water: 100, weightTarget: 140, heightInches: 64, z2: 30, z5: 15, calBurn: 350 }, defaultBios: { bmr: '1450', apob: '70', lpa: '20', weight: '148', hscrp: '0.5', hba1c: '5.2' } }
 };
 
-const MEALS = {
+const MEAL_DATABASE = {
     breakfast: [
         {title:"Super Berry Protein Smoothie",time:"5min",servings:1,macros:{p:52,o:1000,f:12,cal:540},ingredients:["1 cup Mixed Berries","1/2 cup Cherries","1/2 cup Vanilla Greek Yogurt","1 tbsp Chia Seeds","1 tbsp Hemp Seeds","1 scoop Pea Protein","1 scoop Peanut Protein"],steps:["Blend all ingredients until smooth","Add ice for texture"],why:"Double Protein stack + Anthocyanins for recovery.",colors:['purple','red','white']},
         {title:"Greek Yogurt & Berries",time:"5min",servings:1,macros:{p:20,o:0,f:4,cal:250},ingredients:["1 cup Greek Yogurt","1/2 cup Mixed Berries","1 tbsp Honey","1 tbsp Walnuts"],steps:["Scoop yogurt into bowl","Top with berries and walnuts","Drizzle with honey"],why:"Probiotics + Antioxidants.",colors:['white','purple','brown']}
     ],
     lunch: [
         {title:"Costco Cauliflower Pizza (1/2)",time:"15min",servings:1,macros:{p:24,o:0,f:20,cal:460},ingredients:["1/2 Kirkland Cauliflower Pizza","Optional: Extra Turkey Pepperoni"],steps:["Bake at 425F for 12-15 mins","Slice and serve"],why:"Gluten-free comfort food.",colors:['yellow','red']},
-        {title:"Salmon & Quinoa Power Bowl",time:"20min",servings:1,macros:{p:48,o:3000,f:14,cal:780},ingredients:["6-7oz Salmon Fillet","1 cup Brown Rice & Quinoa Mix","1/2 cup Black Beans","Brussels Sprouts","Red Peppers","Mushrooms"],steps:["Sear salmon fillet","Sauté brussels, peppers, mushrooms","Mix rice, quinoa, and beans","Assemble bowl"],why:"Brown Rice + Quinoa + Beans = The ultimate fiber triad.",colors:['orange','brown','green','red']}
+        {title:"Super Berry Protein Smoothie",time:"5min",servings:1,macros:{p:52,o:1000,f:12,cal:540},ingredients:["1 cup Mixed Berries","1/2 cup Cherries","1/2 cup Vanilla Greek Yogurt","1 tbsp Chia Seeds","1 tbsp Hemp Seeds","1 scoop Pea Protein","1 scoop Peanut Protein"],steps:["Blend all ingredients until smooth","Add ice for texture"],why:"Double Protein stack + Anthocyanins for recovery.",colors:['purple','red','white']}
     ],
     dinner: [
         {title:"Bison Bolognese & Protein Pasta",time:"25min",servings:1,macros:{p:52,o:600,f:12,cal:580},ingredients:["6oz Ground Bison","Chickpea/Lentil Pasta","Marinara Sauce (No Sugar)","Spinach/Mushrooms","Nutritional Yeast"],steps:["Boil pasta","Brown bison in pan","Add veggies and sauce to bison","Combine with pasta"],why:"High protein, lower inflammation than beef (Bison), high fiber (Pasta).",colors:['red','brown','yellow']},
@@ -339,8 +339,8 @@ const PROTOCOLS = {
 // --- APP CLASS ---
 class CenturionApp {
     constructor() {
-        console.log('🚀 Init v17.95 BACK-TO-BASICS');
-        const CURRENT_VER = '17.95.0';
+        console.log('🚀 Init v18.0 STABLE-LEGACY');
+        const CURRENT_VER = '18.0.0';
         const savedVer = localStorage.getItem('centurion_version');
         if(savedVer !== CURRENT_VER) { localStorage.clear(); localStorage.setItem('centurion_version', CURRENT_VER); }
 
@@ -351,6 +351,7 @@ class CenturionApp {
         this.checked = {};
         this.meals = {};
         this.bios = {};
+        this.customMeals = {};
         this.protocol = [];
         
         // --- 1. HARD UI RESET ON LOAD ---
@@ -377,6 +378,8 @@ class CenturionApp {
             this.meals = savedMeals ? JSON.parse(savedMeals) : {};
             const savedBios = localStorage.getItem(`c_bios_${this.user}`);
             this.bios = savedBios ? JSON.parse(savedBios) : USERS[this.user].defaultBios;
+            const savedCustom = localStorage.getItem(`c_custom_meals_${this.user}`);
+            this.customMeals = savedCustom ? JSON.parse(savedCustom) : {};
         } catch(e) { this.checked = {}; this.meals = {}; }
     }
 
@@ -384,6 +387,7 @@ class CenturionApp {
         localStorage.setItem(`c_checked_${this.user}`, JSON.stringify(this.checked));
         localStorage.setItem(`c_meals_${this.user}`, JSON.stringify(this.meals));
         localStorage.setItem(`c_bios_${this.user}`, JSON.stringify(this.bios));
+        localStorage.setItem(`c_custom_meals_${this.user}`, JSON.stringify(this.customMeals));
     }
 
     setPlaceholderData() {
@@ -439,18 +443,11 @@ class CenturionApp {
         const endStr = end.toISOString().split('T')[0];
 
         try {
-            // RESTORED PROXY FOR CORS SUPPORT
-            const proxy = "https://corsproxy.io/?";
-            const sleepUrl = proxy + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${startStr}&end_date=${endStr}`);
-            const workoutUrl = proxy + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/workout?start_date=${startStr}&end_date=${endStr}`);
-            const activityUrl = proxy + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${startStr}&end_date=${endStr}`);
-            const readinessUrl = proxy + encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${startStr}&end_date=${endStr}`);
-
             const [s, w, a, r] = await Promise.all([
-                fetch(sleepUrl, { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch(workoutUrl, { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch(activityUrl, { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch(readinessUrl, { headers: { 'Authorization': `Bearer ${token}` } })
+                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${startStr}&end_date=${endStr}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/workout?start_date=${startStr}&end_date=${endStr}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${startStr}&end_date=${endStr}`)}`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${startStr}&end_date=${endStr}`)}`, { headers: { 'Authorization': `Bearer ${token}` } })
             ]);
             
             if (!s.ok) throw new Error(`API_FAIL_${s.status}`);
@@ -574,22 +571,40 @@ class CenturionApp {
         this.render();
     }
 
+    openCustomBuilder(mealSlot) {
+        const modalBody = document.getElementById('modalBody');
+        this.setText('modalTitle', 'ADD CUSTOM');
+        modalBody.innerHTML = `<div class="builder-form"><input id="cust-name" class="form-input" placeholder="Name"><br><br><input id="cust-p" class="form-input" type="number" placeholder="Protein"><br><br><input id="cust-cal" class="form-input" type="number" placeholder="Calories"><br><br><button class="select-btn" onclick="app.saveCustomMeal('${mealSlot}')">SAVE</button></div>`;
+        document.getElementById('fixedFooter').classList.remove('show');
+    }
+
+    saveCustomMeal(mealSlot) {
+        const name = document.getElementById('cust-name').value;
+        const p = parseInt(document.getElementById('cust-p').value)||0;
+        const cal = parseInt(document.getElementById('cust-cal').value)||0;
+        if(!name) return;
+        if(!this.customMeals[mealSlot]) this.customMeals[mealSlot] = [];
+        this.customMeals[mealSlot].push({ title: name, macros: {p:p, o:0, f:0, cal:cal}, ingredients: ["Custom"], colors: ['white'], isCustom: true });
+        this.saveUserData();
+        this.selectMeal(mealSlot, (MEAL_DATABASE[mealSlot]||[]).length + this.customMeals[mealSlot].length - 1);
+    }
+
     openMealPicker(mealSlot) {
         const modalBody = document.getElementById('modalBody');
         modalBody.innerHTML = '';
         this.setText('modalTitle', mealSlot.toUpperCase());
         document.getElementById('fixedFooter').classList.remove('show');
-        const all = [...(MEALS[mealSlot]||[])];
-        let html = ``;
+        const all = [...(MEAL_DATABASE[mealSlot]||[]), ...(this.customMeals[mealSlot]||[])];
+        let html = `<div class="custom-btn-container"><button class="custom-btn" onclick="app.openCustomBuilder('${mealSlot}')">＋ CUSTOM</button></div>`;
         all.forEach((m, i) => {
-            html += `<div class="menu-item" onclick="app.showRecipe('${mealSlot}', ${i})"><div class="menu-left"><div class="menu-name">${m.title}</div><div class="menu-meta">P:${m.macros.p}</div></div><div class="menu-right">›</div></div>`;
+            html += `<div class="menu-item" onclick="${m.isCustom ? `app.selectMeal('${mealSlot}', ${i})` : `app.showRecipe('${mealSlot}', ${i})`}"><div class="menu-left"><div class="menu-name">${m.title}</div><div class="menu-meta">P:${m.macros.p}</div></div><div class="menu-right">›</div></div>`;
         });
         modalBody.innerHTML += html;
         document.getElementById('mainModal').classList.add('show');
     }
 
     showRecipe(mealSlot, index) {
-        const meal = MEALS[mealSlot][index];
+        const meal = MEAL_DATABASE[mealSlot][index];
         const modalBody = document.getElementById('modalBody');
         document.getElementById('logBtnAction').onclick = () => app.selectMeal(mealSlot, index);
         document.getElementById('fixedFooter').classList.add('show');
@@ -646,7 +661,7 @@ class CenturionApp {
         const goalP = USERS[this.user].goals.protein;
         const remainingP = goalP - currentMacros.protein;
         
-        const list = MEALS[slot];
+        const list = MEAL_DATABASE[slot];
         if(!list || list.length === 0) return 0;
 
         // Simple algorithm: Find the highest protein meal if we are behind on protein, else default to first
@@ -710,7 +725,7 @@ class CenturionApp {
             if (t.mealSlot) {
                 // If meal is selected, show it
                 if (selected[t.mealSlot] !== undefined) {
-                    const all = [...(MEALS[t.mealSlot]||[])];
+                    const all = [...(MEAL_DATABASE[t.mealSlot]||[]), ...(this.customMeals[t.mealSlot]||[])];
                     if(all[selected[t.mealSlot]]) {
                         const m = all[selected[t.mealSlot]];
                         t.title = m.title; t.desc = `P:${m.macros.p} C:${m.macros.cal}`; t.macros = m.macros; t.colors = m.colors;
@@ -718,7 +733,7 @@ class CenturionApp {
                 } else {
                     // --- NEW: INTELLIGENT SUGGESTION ---
                     const bestIdx = this.getBestMeal(t.mealSlot);
-                    const suggested = MEALS[t.mealSlot][bestIdx];
+                    const suggested = MEAL_DATABASE[t.mealSlot][bestIdx];
                     t.isSuggestion = true;
                     t.suggestedTitle = suggested.title;
                     t.suggestedIdx = bestIdx;
