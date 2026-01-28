@@ -380,6 +380,90 @@ if(this.user==='jermaine'&&(d===1||d===3||d===5))return{title:'🧘 Hip Flexor',
 if(this.user==='jermaine'&&(d===2||d===4))return{title:'🦾 Shoulder',desc:'5min mobility'};
 return null}
 
+// Workout Impact Database - maps workout types to body impact and recovery needs
+getWorkoutImpact(workoutType){
+const type=workoutType.toLowerCase();
+const database={
+// HIGH IMPACT - Full body, intense
+'boxing':{impact:'high',zones:['shoulders','core','cardio'],intensity:9,recovery:'cryo+sauna'},
+'hiit':{impact:'high',zones:['full-body','cardio'],intensity:9,recovery:'cryo+sauna'},
+'kickboxing':{impact:'high',zones:['legs','core','cardio'],intensity:9,recovery:'cryo+sauna'},
+'crossfit':{impact:'high',zones:['full-body'],intensity:9,recovery:'cryo+massage'},
+
+// MEDIUM-HIGH IMPACT - Strength focused
+'strength training':{impact:'medium-high',zones:['full-body','joints'],intensity:7,recovery:'massage+normatec'},
+'weight training':{impact:'medium-high',zones:['full-body','joints'],intensity:7,recovery:'massage+normatec'},
+'weightlifting':{impact:'medium-high',zones:['full-body','joints'],intensity:7,recovery:'massage+normatec'},
+'powerlifting':{impact:'medium-high',zones:['full-body','joints'],intensity:8,recovery:'cryo+massage'},
+
+// MEDIUM IMPACT - Cardio endurance
+'running':{impact:'medium',zones:['legs','joints','cardio'],intensity:7,recovery:'normatec+ice'},
+'cycling':{impact:'medium',zones:['legs','hip-flexors'],intensity:6,recovery:'normatec'},
+'rowing':{impact:'medium',zones:['back','core','legs'],intensity:7,recovery:'massage+stretch'},
+'spinning':{impact:'medium',zones:['legs','hip-flexors'],intensity:7,recovery:'normatec'},
+
+// MEDIUM IMPACT - Functional training
+'yoga sculpt':{impact:'medium',zones:['full-body','flexibility'],intensity:6,recovery:'stretch+massage'},
+'pilates':{impact:'medium',zones:['core','flexibility'],intensity:5,recovery:'stretch+massage'},
+'barre':{impact:'medium',zones:['legs','core'],intensity:6,recovery:'stretch+normatec'},
+'rebound':{impact:'medium',zones:['legs','cardio','lymphatic'],intensity:7,recovery:'normatec+hydration'},
+
+// LOW-MEDIUM IMPACT - Recovery/flexibility
+'yoga':{impact:'low-medium',zones:['flexibility','recovery'],intensity:4,recovery:'optional'},
+'stretching':{impact:'low',zones:['flexibility'],intensity:3,recovery:'optional'},
+'walking':{impact:'low',zones:['cardio'],intensity:3,recovery:'optional'},
+'swimming':{impact:'low',zones:['full-body','joints'],intensity:5,recovery:'sauna+hydration'},
+
+// DEFAULT
+'other':{impact:'medium',zones:['unknown'],intensity:5,recovery:'massage'}
+};
+return database[type]||database['other'];
+}
+
+// Intelligent recovery recommendation based on workout data
+getSmartRecovery(day){
+const workouts=day.workouts||[];
+if(workouts.length===0)return null;
+
+// Analyze all workouts for the day
+let maxImpact=0;
+let totalIntensity=0;
+let affectedZones=new Set();
+let recommendedRecovery=[];
+
+workouts.forEach(w=>{
+const impact=this.getWorkoutImpact(w.type);
+maxImpact=Math.max(maxImpact,impact.intensity);
+totalIntensity+=impact.intensity;
+impact.zones.forEach(z=>affectedZones.add(z));
+if(!recommendedRecovery.includes(impact.recovery))recommendedRecovery.push(impact.recovery);
+});
+
+// Determine recovery protocol based on cumulative impact
+let protocol={time:'6:30 PM',title:'',desc:'',type:'clubstudio'};
+
+if(maxImpact>=8){
+// HIGH INTENSITY - Full recovery stack
+protocol.title='🔥 HIGH IMPACT RECOVERY';
+protocol.desc='Club Studio: Cryo 3min + Sauna 20min + Massage OR Home: Full Stack (Theragun + Normatec + Ice)';
+}else if(maxImpact>=6){
+// MEDIUM INTENSITY - Targeted recovery
+const zones=Array.from(affectedZones).slice(0,2).join(' + ');
+protocol.title=`💪 TARGETED RECOVERY`;
+protocol.desc=`Focus: ${zones} | Club Studio: Sauna 15min + Massage OR Home: Normatec + Theragun`;
+}else if(maxImpact>=4){
+// LIGHT INTENSITY - Active recovery
+protocol.title='✨ ACTIVE RECOVERY';
+protocol.desc='Club Studio: Massage Bed 20min OR Home: Normatec 30min + Stretch';
+}else{
+// MINIMAL - Optional
+protocol.title='🌙 OPTIONAL RECOVERY';
+protocol.desc='Light stretch or rest day';
+}
+
+return protocol;
+}
+
 getEveningRecovery(d,w,t){
 if(this.user==='jermaine'){
 if(d===0)return{time:'2:00 PM',title:'🏊 InShape',desc:'Full ritual',type:'inshape'};
@@ -670,8 +754,15 @@ if(lr)this.protocol.push({id:'lunch_recovery',time:'11:30 AM',title:lr.title,des
 
 day.workouts.forEach((w,i)=>{this.protocol.push({id:`workout_${i}`,time:w.time,title:`${w.type.toUpperCase()} Detected`,desc:`${w.calories} cal | ${w.intensity}`,macros:{p:0,o:0,f:0,cal:0},colors:[],clickable:false,autoDetected:true})});
 
+// Smart AI-powered recovery recommendation based on workout data
+const smartRec=this.getSmartRecovery(day);
+if(smartRec){
+this.protocol.push({id:'smart_recovery',time:smartRec.time,title:smartRec.title,desc:smartRec.desc+' - Tap for protocol',macros:{p:0,o:0,f:0,cal:0},colors:[],clickable:true,type:smartRec.type,cssClass:'recovery'});
+}else{
+// Fallback to day-of-week recovery if no workout data
 const er=this.getEveningRecovery(dow,hadW,wType);
 if(er)this.protocol.push({id:'evening_recovery',time:er.time,title:er.title,desc:er.desc+' - Tap for protocol',macros:{p:0,o:0,f:0,cal:0},colors:[],clickable:true,type:er.type,cssClass:'recovery'});
+}
 
 const fac=this.getEndOfDayFacial(dow,isFS);
 if(fac)this.protocol.push({id:'facial',time:'9:00 PM',title:fac.title,desc:fac.desc+' - Tap for protocol',macros:{p:0,o:0,f:0,cal:0},colors:[],clickable:true,type:fac.type,cssClass:'facial'});
