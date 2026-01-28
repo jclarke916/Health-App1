@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Centurion v18.2 - Vascular Age Full Width</title>
+<title>Centurion v18.3 - API Error Debug</title>
 <style>
 :root{--bg:#050505;--panel:#121212;--border:#222;--acid:#ccff00;--cyan:#00f0ff;--purple:#bf5af2;--alert:#ff453a;--text:#fff}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -375,8 +375,8 @@ clubstudio:{title:"🏢 CLUB STUDIO",steps:["OPTION A: Full Recovery (45min)","1
 
 class CenturionApp{
 constructor(){
-console.log('🚀 v18.2 VASCULAR FIX - TS:'+Date.now());
-const V='18.2.0';
+console.log('🚀 v18.3 API DEBUG - TS:'+Date.now());
+const V='18.3.0';
 if(localStorage.getItem('centurion_version')!==V){localStorage.clear();localStorage.setItem('centurion_version',V)}
 this.user=localStorage.getItem('centurion_user')||'jermaine';
 this.history=[];this.currentIndex=0;this.currentDateStr=new Date().toLocaleDateString('en-CA');
@@ -543,12 +543,21 @@ const workoutUrl=`https://corsproxy.io/?${encodeURIComponent(`https://api.ourari
 const activityUrl=`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${startStr}&end_date=${endStr}`)}`;
 const readinessUrl=`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${startStr}&end_date=${endStr}`)}`;
 
-// Fetch main data
-const[sleepRes,workoutRes,activityRes,readinessRes]=await Promise.all([
-fetch(sleepUrl,{headers:{'Authorization':`Bearer ${token}`}}),
-fetch(workoutUrl,{headers:{'Authorization':`Bearer ${token}`}}),
-fetch(activityUrl,{headers:{'Authorization':`Bearer ${token}`}}),
-fetch(readinessUrl,{headers:{'Authorization':`Bearer ${token}`}})]);
+log('🔍 Fetching Sleep data...');
+const sleepRes=await fetch(sleepUrl,{headers:{'Authorization':`Bearer ${token}`}}).catch(e=>{throw new Error(`Sleep API failed: ${e.message}`)});
+log('✅ Sleep API responded');
+
+log('🔍 Fetching Workout data...');
+const workoutRes=await fetch(workoutUrl,{headers:{'Authorization':`Bearer ${token}`}}).catch(e=>{throw new Error(`Workout API failed: ${e.message}`)});
+log('✅ Workout API responded');
+
+log('🔍 Fetching Activity data...');
+const activityRes=await fetch(activityUrl,{headers:{'Authorization':`Bearer ${token}`}}).catch(e=>{throw new Error(`Activity API failed: ${e.message}`)});
+log('✅ Activity API responded');
+
+log('🔍 Fetching Readiness data...');
+const readinessRes=await fetch(readinessUrl,{headers:{'Authorization':`Bearer ${token}`}}).catch(e=>{throw new Error(`Readiness API failed: ${e.message}`)});
+log('✅ Readiness API responded');
 
 if(!sleepRes.ok||!workoutRes.ok)throw new Error('API failed');
 const sleepData=await sleepRes.json();
