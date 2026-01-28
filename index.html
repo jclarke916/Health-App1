@@ -673,6 +673,50 @@ const lpa=parseFloat(this.bios.lpa||0);
 const hscrp=parseFloat(this.bios.hscrp||0);
 const goals=USERS[this.user].goals;
 
+// Analyze workout type to determine optimal zone targets for the day
+const workouts=day.workouts||[];
+let optimalZ2=goals.z2; // Default targets
+let optimalZ5=goals.z5;
+let zoneContext='';
+
+if(workouts.length>0){
+const primaryWorkout=workouts[0]; // Use first/main workout
+const impact=this.getWorkoutImpact(primaryWorkout.type);
+
+if(impact.intensity>=9){
+// TIER 1: CS4, Box, H.E.A.T., Club Dance - already hits both zones
+optimalZ2=Math.max(0,goals.z2-(day.med||0)); // Only additional Z2 needed
+optimalZ5=0; // Z5 already hit in workout
+zoneContext=`${primaryWorkout.type.toUpperCase()} hit Z5 target`;
+}else if(impact.intensity===8){
+// TIER 2: Ride, Rebound, Yoga Sculpt, CS Strength - high cardio but may need Z5 boost
+if(primaryWorkout.type.toLowerCase()==='ride'||primaryWorkout.type.toLowerCase()==='rebound'){
+optimalZ2=0; // Ride/Rebound crush Z2
+optimalZ5=Math.max(0,Math.round(goals.z5*0.5-(day.high||0))); // May need 10min Z5 finisher
+zoneContext='High cardio class - minimal Z5 finisher if energy allows';
+}else{
+optimalZ2=Math.max(0,Math.round(goals.z2*0.5-(day.med||0))); // Light Z2 walk
+optimalZ5=0; // Skip Z5 on strength days
+zoneContext='Strength day - light Z2 walk for recovery';
+}
+}else if(impact.intensity>=6){
+// TIER 3: Reform, Barre, Hot Pilates - ACTIVE RECOVERY
+optimalZ2=Math.max(0,Math.round(goals.z2*0.67-(day.med||0))); // 30min Z2 walk
+optimalZ5=0; // NO Z5 on recovery days
+zoneContext='Recovery day - Z2 walk only, skip Z5';
+}else if(impact.intensity>=3){
+// TIER 4: Yoga Flow, Light activity
+optimalZ2=Math.max(0,Math.round(goals.z2*0.67-(day.med||0))); // 30min Z2
+optimalZ5=Math.max(0,Math.round(goals.z5*0.5-(day.high||0))); // Optional 10min Z5
+zoneContext='Light day - optional Z5 if feeling strong';
+}else{
+// TIER 5: Rest day (Restore, Cryo, or no workout)
+optimalZ2=Math.max(0,Math.round(goals.z2*0.44-(day.med||0))); // 20min recovery walk
+optimalZ5=0; // NO Z5 on rest days
+zoneContext='Rest day - light Z2 walk only';
+}
+}
+
 // Priority 1: Critical biomarker issues
 if(lpa>150&&mac.omega3<3000)return'LP(A) ELEVATED → WALNUTS + FLAX ESSENTIAL';
 if(apob>100&&mac.fiber<30)return'APOB HIGH → FIBER TARGET: +20G TODAY';
@@ -687,11 +731,10 @@ if(proteinGap>50)return`PROTEIN GAP: +${Math.round(proteinGap)}G NEEDED`;
 if(omega3Gap>2000)return`OMEGA-3 LOW → +${Math.round(omega3Gap/1000)}G FISH/FLAX`;
 if(fiberGap>20)return`FIBER DEFICIT: +${Math.round(fiberGap)}G BEANS/OATS`;
 
-// Priority 3: Activity targets
-const z2Gap=goals.z2-(day.med||0);
-const z5Gap=goals.z5-(day.high||0);
-if(z2Gap>20)return`ZONE 2: +${Math.round(z2Gap)}MIN CARDIO NEEDED`;
-if(z5Gap>10)return`ZONE 5: +${Math.round(z5Gap)}MIN HIIT PENDING`;
+// Priority 3: Smart zone targets (adjusted for workout type)
+if(optimalZ2>20)return`ZONE 2: +${Math.round(optimalZ2)}MIN WALK NEEDED | ${zoneContext}`;
+if(optimalZ5>10)return`ZONE 5: +${Math.round(optimalZ5)}MIN HIIT PENDING | ${zoneContext}`;
+if(zoneContext&&optimalZ2<=20&&optimalZ5<=10)return`ZONE TARGETS MET | ${zoneContext}`;
 
 // Priority 4: Sleep quality
 const sleepHours=(day.totalSec||0)/3600;
