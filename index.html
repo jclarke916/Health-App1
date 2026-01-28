@@ -353,8 +353,8 @@ clubstudio:{title:"🏢 CLUB STUDIO",steps:["OPTION A: Full Recovery (45min)","1
 
 class CenturionApp{
 constructor(){
-console.log('🚀 v17.94 VO2 MAX CHECK');
-const V='17.94.0';
+console.log('🚀 v17.95 VO2 MAX ENDPOINT ADDED');
+const V='17.95.0';
 if(localStorage.getItem('centurion_version')!==V){localStorage.clear();localStorage.setItem('centurion_version',V)}
 this.user=localStorage.getItem('centurion_user')||'jermaine';
 this.history=[];this.currentIndex=0;this.currentDateStr=new Date().toLocaleDateString('en-CA');
@@ -520,16 +520,19 @@ const sleepUrl=`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring
 const workoutUrl=`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/workout?start_date=${startStr}&end_date=${endStr}`)}`;
 const activityUrl=`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${startStr}&end_date=${endStr}`)}`;
 const readinessUrl=`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${startStr}&end_date=${endStr}`)}`;
-const[sleepRes,workoutRes,activityRes,readinessRes]=await Promise.all([
+const cardioAgeUrl=`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_cardiovascular_age?start_date=${startStr}&end_date=${endStr}`)}`;
+const[sleepRes,workoutRes,activityRes,readinessRes,cardioAgeRes]=await Promise.all([
 fetch(sleepUrl,{headers:{'Authorization':`Bearer ${token}`}}),
 fetch(workoutUrl,{headers:{'Authorization':`Bearer ${token}`}}),
 fetch(activityUrl,{headers:{'Authorization':`Bearer ${token}`}}),
-fetch(readinessUrl,{headers:{'Authorization':`Bearer ${token}`}})]);
+fetch(readinessUrl,{headers:{'Authorization':`Bearer ${token}`}}),
+fetch(cardioAgeUrl,{headers:{'Authorization':`Bearer ${token}`}})]);
 if(!sleepRes.ok||!workoutRes.ok)throw new Error('API failed');
 const sleepData=await sleepRes.json();
 const workoutData=await workoutRes.json();
 const activityData=await activityRes.json();
 const readinessData=await readinessRes.json();
+const cardioAgeData=await cardioAgeRes.json();
 log('🔍 OURA DATA RECEIVED:');
 log('Sleep records: '+(sleepData.data?.length || 0));
 log('Workout records: '+(workoutData.data?.length || 0));
@@ -538,8 +541,12 @@ if(activityData.data&&activityData.data.length>0){
 log('Sample activity (checking for VO2 max): '+JSON.stringify(activityData.data[0]));
 }
 log('Readiness records: '+(readinessData.data?.length || 0));
+log('🫀 Cardio Age records: '+(cardioAgeData.data?.length || 0));
+if(cardioAgeData.data&&cardioAgeData.data.length>0){
+log('Sample cardio age (VO2 max check): '+JSON.stringify(cardioAgeData.data[0]));
+}
 if(sleepData.data?.length > 0) log('Sample sleep: '+JSON.stringify(sleepData.data[0]));
-this.processData(sleepData.data||[],workoutData.data||[],activityData.data||[],readinessData.data||[]);
+this.processData(sleepData.data||[],workoutData.data||[],activityData.data||[],readinessData.data||[],cardioAgeData.data||[]);
 this.setText('syncStatus','SYNCED ✓');
 this.render()}
 catch(error){
@@ -547,7 +554,7 @@ logerr('❌ Sync failed: '+error);
 this.setText('syncStatus','OFFLINE');
 this.render()}}
 
-processData(sleepData,workoutData,activityData,readinessData){
+processData(sleepData,workoutData,activityData,readinessData,cardioAgeData){
 log('📊 PROCESSING DATA:');
 log('Sleep entries to process: '+sleepData.length);
 log('Workout entries to process: '+workoutData.length);
