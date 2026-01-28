@@ -868,9 +868,36 @@ this.setText('rhrVal',day.rhr!=='-'?day.rhr:'--');
 this.setText('z2Val',Math.round(day.med||0));
 this.setText('z5Val',Math.round(day.high||0));
 this.setText('calVal',Math.round(day.cal||0));
+
+// Smart Recovery System: Check if yesterday exceeded Zone 5
+const yesterdayIdx=this.currentIndex+1;
+const yesterday=this.history[yesterdayIdx];
+let z5Recovery=false;
+let adjustedZ2Target=45;
+
+if(yesterday&&yesterday.high>=20){
+// Yesterday exceeded Z5 goal (20min) - today is recovery day
+z5Recovery=true;
+adjustedZ2Target=30; // Lower Z2 target for recovery
+log(`🌟 Recovery day: Yesterday hit ${Math.round(yesterday.high)}min Z5, adjusting today's targets`);
+}
+
 const updHeart=(id,val,max)=>{const el=document.getElementById(id);if(el)el.style.strokeDashoffset=100-(Math.min(val/max,1)*100)};
-updHeart('z2Heart',day.med||0,45);
+updHeart('z2Heart',day.med||0,adjustedZ2Target);
+
+// Zone 5 heart: Show star if in recovery mode
+if(z5Recovery){
+const z5Heart=document.getElementById('z5Heart');
+if(z5Heart){
+z5Heart.style.strokeDashoffset=0; // Fill completely
+z5Heart.style.stroke='#ffd60a'; // Gold color for recovery star
+}
+const z5Label=document.querySelector('.orb-label[style*="ff453a"]');
+if(z5Label)z5Label.innerHTML='ZONE 5<br><span style="font-size:1.2rem">★</span>';
+}else{
 updHeart('z5Heart',day.high||0,20);
+}
+
 updHeart('calHeart',day.cal||0,500);
 
 upd('proteinOrb',mac.protein,USERS[this.user].goals.protein,'#fff');
