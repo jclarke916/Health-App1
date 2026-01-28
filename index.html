@@ -865,10 +865,6 @@ updOrb('remOrb',remMins,90,'#bf5af2');
 
 // RHR and Zones Display
 this.setText('rhrVal',day.rhr!=='-'?day.rhr:'--');
-this.setText('z2Val',Math.round(day.med||0));
-this.setText('z5Val',Math.round(day.high||0));
-this.setText('calVal',Math.round(day.cal||0));
-
 // Smart Recovery System: Check if yesterday exceeded Zone 5
 const yesterdayIdx=this.currentIndex+1;
 const yesterday=this.history[yesterdayIdx];
@@ -897,9 +893,22 @@ if(z5Val){
 z5Val.innerHTML='<span style="font-size:2rem">★</span>'; // Big star in the heart
 z5Val.style.color='#ffd60a'; // Gold color
 }
+// Add explanation to status message if no higher priority alerts
+const currentStatus=document.getElementById('statusMsg').innerText;
+if(currentStatus.includes('OPTIMAL')||currentStatus.includes('ZONE')){
+this.setText('statusMsg',`Z5 RECOVERY MODE → Z2 TARGET: ${adjustedZ2Target}MIN`);
+}
 }else{
 updHeart('z5Heart',day.high||0,20);
 }
+
+// Prevent heart value overflow - cap display at 999
+const z2Display=Math.min(Math.round(day.med||0),999);
+const z5Display=Math.min(Math.round(day.high||0),999);
+const calDisplay=Math.min(Math.round(day.cal||0),999);
+document.getElementById('z2Val').innerText=z2Display;
+if(!z5Recovery)document.getElementById('z5Val').innerText=z5Display;
+document.getElementById('calVal').innerText=calDisplay;
 
 updHeart('calHeart',day.cal||0,500);
 
