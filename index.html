@@ -655,7 +655,19 @@ if(fac)this.protocol.push({id:'facial',time:'9:00 PM',title:fac.title,desc:fac.d
 
 this.protocol.forEach(t=>{if(t.mealSlot&&sel[t.mealSlot]!==undefined){const all=MEALS[t.mealSlot]||[];if(all[sel[t.mealSlot]]){const m=all[sel[t.mealSlot]];t.title=m.title;t.desc=`P:${m.macros.p} C:${m.macros.cal}`;t.macros=m.macros;t.colors=m.colors}}});
 
-this.protocol.sort((a,b)=>a.time.localeCompare(b.time));
+this.protocol.sort((a,b)=>{
+const parseTime=(t)=>{
+const match=t.match(/(\d+):(\d+)\s*(AM|PM)/i);
+if(!match)return 0;
+let h=parseInt(match[1]);
+const m=parseInt(match[2]);
+const ap=match[3].toUpperCase();
+if(ap==='PM'&&h!==12)h+=12;
+if(ap==='AM'&&h===12)h=0;
+return h*60+m;
+};
+return parseTime(a.time)-parseTime(b.time);
+});
 
 this.setText('dateLabel',date);
 const mac=this.calculateMacros();
