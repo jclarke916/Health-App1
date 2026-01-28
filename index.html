@@ -466,7 +466,21 @@ const sleepScore = s.score || (s.efficiency ? Math.round(s.efficiency) : 0);
 if(sleepScore && sleepScore>d.score)d.score=sleepScore;
 log(`Sleep ${s.day}: ${(s.total_sleep_duration/3600).toFixed(1)}h - Score: ${sleepScore} (from ${s.score ? 'API' : 'efficiency '+s.efficiency})`);
 });
-readinessData.forEach(r=>{const d=g(r.day);if(r.contributors?.resting_heart_rate)d.rhr=r.contributors.resting_heart_rate});
+readinessData.forEach(r=>{
+const d=g(r.day);
+// Debug: log the entire readiness object structure for one day
+if(r.day===this.currentDateStr){
+log(`🔍 Full Readiness Object for ${r.day}:`,JSON.stringify(r,null,2));
+}
+// Try multiple possible fields where RHR might be stored
+const possibleRHR=r.heart_rate||r.resting_heart_rate||r.contributors?.resting_heart_rate;
+if(possibleRHR&&possibleRHR>=35&&possibleRHR<=100){
+d.rhr=Math.round(possibleRHR);
+log(`✅ RHR for ${r.day}: ${d.rhr} BPM`);
+}else if(possibleRHR){
+log(`⚠️ RHR value ${possibleRHR} on ${r.day} out of range (35-100 BPM)`)
+}
+});
 workoutData.forEach(w=>{const d=g(w.day);const dt=new Date(w.start_datetime);const t=dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});d.workouts.push({type:w.activity||'other',intensity:w.intensity||'moderate',calories:w.calories||300,time:t,start:w.start_datetime})});
 activityData.forEach(a=>{const d=g(a.day);d.cal=a.active_calories||0;d.high=(a.high_activity_time||0)/60;d.med=(a.medium_activity_time||0)/60});
 this.history=Array.from(m.values()).sort((a,b)=>b.date.localeCompare(a.date));
