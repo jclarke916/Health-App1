@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Centurion v18.1 - 60 Meals + Golden Milk Fix</title>
+<title>Centurion v18.2 - Vascular Age Full Width</title>
 <style>
 :root{--bg:#050505;--panel:#121212;--border:#222;--acid:#ccff00;--cyan:#00f0ff;--purple:#bf5af2;--alert:#ff453a;--text:#fff}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -178,16 +178,16 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 <div class="section-header">VASCULAR AGE 🫀</div>
 <div class="section" style="position:relative">
     <div style="position:absolute;top:10px;right:15px;font-size:0.6rem;color:#666;font-weight:600" id="vascularAgeTrend">TRACKING</div>
-    <div style="display:flex;gap:15px;align-items:center;justify-content:center;padding:15px;background:#0a0a0a;border-radius:10px;border:1px solid #222">
-        <div style="text-align:center">
+    <div style="display:flex;gap:0;align-items:center;padding:15px;background:#0a0a0a;border-radius:10px;border:1px solid #222">
+        <div style="flex:1;text-align:center;border-right:1px solid #222;padding:10px">
             <div style="font-size:0.7rem;color:#666;margin-bottom:5px">VASCULAR</div>
             <div style="font-size:2rem;font-weight:900;color:#00f0ff" id="vascularAgeVal">--</div>
         </div>
-        <div style="text-align:center">
+        <div style="flex:1;text-align:center;border-right:1px solid #222;padding:10px">
             <div style="font-size:0.7rem;color:#666;margin-bottom:5px">ACTUAL</div>
             <div style="font-size:2rem;font-weight:900;color:#666" id="chronologicalAge">42</div>
         </div>
-        <div style="text-align:center">
+        <div style="flex:1;text-align:center;padding:10px">
             <div style="font-size:0.7rem;color:#666;margin-bottom:5px">DELTA</div>
             <div style="font-size:2rem;font-weight:900" id="ageDelta">--</div>
         </div>
@@ -375,8 +375,8 @@ clubstudio:{title:"🏢 CLUB STUDIO",steps:["OPTION A: Full Recovery (45min)","1
 
 class CenturionApp{
 constructor(){
-console.log('🚀 v18.1 NEW MEALS + GOLDEN MILK - TS:'+Date.now());
-const V='18.1.0';
+console.log('🚀 v18.2 VASCULAR FIX - TS:'+Date.now());
+const V='18.2.0';
 if(localStorage.getItem('centurion_version')!==V){localStorage.clear();localStorage.setItem('centurion_version',V)}
 this.user=localStorage.getItem('centurion_user')||'jermaine';
 this.history=[];this.currentIndex=0;this.currentDateStr=new Date().toLocaleDateString('en-CA');
@@ -556,29 +556,30 @@ const workoutData=await workoutRes.json();
 const activityData=await activityRes.json();
 const readinessData=await readinessRes.json();
 
-// Try to fetch cardio age separately (might not be available)
+// Try to fetch cardio age separately (non-blocking)
 let cardioAgeData={data:[]};
 log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 log('🔍 OURA API SYNC STARTING...');
 log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+// Fetch cardio age async but don't wait for it
+setTimeout(async()=>{
 try{
 const cardioAgeUrl=`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_cardiovascular_age?start_date=${startStr}&end_date=${endStr}`)}`;
 const cardioAgeRes=await fetch(cardioAgeUrl,{headers:{'Authorization':`Bearer ${token}`}});
-if(cardioAgeRes.ok){
-cardioAgeData=await cardioAgeRes.json();
-log(`✅ CARDIO AGE ENDPOINT: ${cardioAgeData.data?.length || 0} records found`);
-if(cardioAgeData.data&&cardioAgeData.data.length>0){
-log('📊 CARDIO AGE DATA SAMPLE:');
-log(JSON.stringify(cardioAgeData.data[0],null,2));
+if(cardioAgeRes&&cardioAgeRes.ok){
+const data=await cardioAgeRes.json();
+log(`✅ CARDIO AGE: ${data.data?.length || 0} records`);
+if(data.data&&data.data.length>0){
+log('📊 Sample: '+JSON.stringify(data.data[0]));
+// Store for next render
+cardioAgeData=data;
 }
-}else{
-log(`❌ CARDIO AGE ENDPOINT: ${cardioAgeRes.status} ${cardioAgeRes.statusText}`);
-log('ℹ️  VO2 max may not be available via API');
 }
 }catch(e){
-log(`❌ CARDIO AGE FETCH ERROR: ${e.message}`);
-log('ℹ️  This endpoint might not exist or requires different permissions');
+log(`⚠️ Cardio Age skipped: ${e.message}`);
 }
+},100);
 
 log('Sleep records: '+(sleepData.data?.length || 0));
 log('Workout records: '+(workoutData.data?.length || 0));
