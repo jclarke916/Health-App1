@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Centurion v18.3 - API Error Debug</title>
+<title>Centurion v18.6 - Reverted to Working Proxy</title>
 <style>
 :root{--bg:#050505;--panel:#121212;--border:#222;--acid:#ccff00;--cyan:#00f0ff;--purple:#bf5af2;--alert:#ff453a;--text:#fff}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -185,7 +185,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
         </div>
         <div style="flex:1;text-align:center;border-right:1px solid #222;padding:10px">
             <div style="font-size:0.7rem;color:#666;margin-bottom:5px">ACTUAL</div>
-            <div style="font-size:2rem;font-weight:900;color:#666" id="chronologicalAge">42</div>
+            <div style="font-size:2rem;font-weight:900;color:#666" id="chronologicalAge">--</div>
         </div>
         <div style="flex:1;text-align:center;padding:10px">
             <div style="font-size:0.7rem;color:#666;margin-bottom:5px">DELTA</div>
@@ -375,8 +375,8 @@ clubstudio:{title:"🏢 CLUB STUDIO",steps:["OPTION A: Full Recovery (45min)","1
 
 class CenturionApp{
 constructor(){
-console.log('🚀 v18.3 API DEBUG - TS:'+Date.now());
-const V='18.3.0';
+console.log('🚀 v18.6 REVERTED - TS:'+Date.now());
+const V='18.6.0';
 if(localStorage.getItem('centurion_version')!==V){localStorage.clear();localStorage.setItem('centurion_version',V)}
 this.user=localStorage.getItem('centurion_user')||'jermaine';
 this.history=[];this.currentIndex=0;this.currentDateStr=new Date().toLocaleDateString('en-CA');
@@ -543,21 +543,13 @@ const workoutUrl=`https://corsproxy.io/?${encodeURIComponent(`https://api.ourari
 const activityUrl=`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${startStr}&end_date=${endStr}`)}`;
 const readinessUrl=`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${startStr}&end_date=${endStr}`)}`;
 
-log('🔍 Fetching Sleep data...');
-const sleepRes=await fetch(sleepUrl,{headers:{'Authorization':`Bearer ${token}`}}).catch(e=>{throw new Error(`Sleep API failed: ${e.message}`)});
-log('✅ Sleep API responded');
-
-log('🔍 Fetching Workout data...');
-const workoutRes=await fetch(workoutUrl,{headers:{'Authorization':`Bearer ${token}`}}).catch(e=>{throw new Error(`Workout API failed: ${e.message}`)});
-log('✅ Workout API responded');
-
-log('🔍 Fetching Activity data...');
-const activityRes=await fetch(activityUrl,{headers:{'Authorization':`Bearer ${token}`}}).catch(e=>{throw new Error(`Activity API failed: ${e.message}`)});
-log('✅ Activity API responded');
-
-log('🔍 Fetching Readiness data...');
-const readinessRes=await fetch(readinessUrl,{headers:{'Authorization':`Bearer ${token}`}}).catch(e=>{throw new Error(`Readiness API failed: ${e.message}`)});
-log('✅ Readiness API responded');
+// Fetch main data (back to Promise.all for parallel loading)
+const[sleepRes,workoutRes,activityRes,readinessRes]=await Promise.all([
+fetch(sleepUrl,{headers:{'Authorization':`Bearer ${token}`}}),
+fetch(workoutUrl,{headers:{'Authorization':`Bearer ${token}`}}),
+fetch(activityUrl,{headers:{'Authorization':`Bearer ${token}`}}),
+fetch(readinessUrl,{headers:{'Authorization':`Bearer ${token}`}})
+]);
 
 if(!sleepRes.ok||!workoutRes.ok)throw new Error('API failed');
 const sleepData=await sleepRes.json();
@@ -570,25 +562,22 @@ let cardioAgeData={data:[]};
 log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 log('🔍 OURA API SYNC STARTING...');
 log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-
-// Fetch cardio age async but don't wait for it
-setTimeout(async()=>{
 try{
 const cardioAgeUrl=`https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/daily_cardiovascular_age?start_date=${startStr}&end_date=${endStr}`)}`;
 const cardioAgeRes=await fetch(cardioAgeUrl,{headers:{'Authorization':`Bearer ${token}`}});
-if(cardioAgeRes&&cardioAgeRes.ok){
-const data=await cardioAgeRes.json();
-log(`✅ CARDIO AGE: ${data.data?.length || 0} records`);
-if(data.data&&data.data.length>0){
-log('📊 Sample: '+JSON.stringify(data.data[0]));
-// Store for next render
-cardioAgeData=data;
+if(cardioAgeRes.ok){
+cardioAgeData=await cardioAgeRes.json();
+log(`✅ CARDIO AGE ENDPOINT: ${cardioAgeData.data?.length || 0} records found`);
+if(cardioAgeData.data&&cardioAgeData.data.length>0){
+log('📊 CARDIO AGE DATA SAMPLE:');
+log(JSON.stringify(cardioAgeData.data[0],null,2));
 }
+}else{
+log(`❌ CARDIO AGE ENDPOINT: ${cardioAgeRes.status} ${cardioAgeRes.statusText}`);
 }
 }catch(e){
-log(`⚠️ Cardio Age skipped: ${e.message}`);
+log(`⚠️ Cardio Age fetch failed: ${e.message}`);
 }
-},100);
 
 log('Sleep records: '+(sleepData.data?.length || 0));
 log('Workout records: '+(workoutData.data?.length || 0));
@@ -938,7 +927,16 @@ updOrb('remOrb',remMins,90,'#bf5af2');
 this.setText('rhrVal',day.rhr!=='-'?day.rhr:'--');
 
 // Vascular Age Display
-const chronologicalAge=42; // Jermaine's actual age
+const calcAge=(dob)=>{
+const today=new Date();
+const birth=new Date(dob);
+let age=today.getFullYear()-birth.getFullYear();
+const m=today.getMonth()-birth.getMonth();
+if(m<0||(m===0&&today.getDate()<birth.getDate()))age--;
+return age;
+};
+const chronologicalAge=calcAge(USERS[this.user].dob);
+
 if(day.vascularAge){
 this.setText('vascularAgeVal',day.vascularAge);
 this.setText('chronologicalAge',chronologicalAge);
@@ -961,6 +959,7 @@ else trendEl.innerHTML='STABLE';
 }
 }else{
 this.setText('vascularAgeVal','--');
+this.setText('chronologicalAge',chronologicalAge);
 this.setText('ageDelta','--');
 }
 
