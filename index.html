@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Centurion v19.5 - RHR Heart Fixed</title>
+<title>Centurion v19.6 - Back Navigation Fix</title>
 <style>
 :root{--bg:#050505;--panel:#121212;--border:#222;--acid:#ccff00;--cyan:#00f0ff;--purple:#bf5af2;--alert:#ff453a;--text:#fff}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -377,8 +377,8 @@ clubstudio:{title:"🏢 CLUB STUDIO",steps:["OPTION A: Full Recovery (45min)","1
 
 class CenturionApp{
 constructor(){
-console.log('🚀 v19.5 RHR HEART FIX');
-const V='19.5.0';
+console.log('🚀 v19.6 BACK NAVIGATION');
+const V='19.6.0';
 if(localStorage.getItem('centurion_version')!==V){localStorage.clear();localStorage.setItem('centurion_version',V)}
 this.user=localStorage.getItem('centurion_user')||'jermaine';
 this.history=[];this.currentIndex=0;this.currentDateStr=new Date().toLocaleDateString('en-CA');
@@ -688,6 +688,7 @@ saveBio(){
 this.saveUserData();this.closeModal();this.render()}
 
 openMealPicker(slot){
+this.currentMealSlot=slot; // Track which meal category we're in
 const mb=document.getElementById('modalBody');
 this.setText('modalTitle',slot.toUpperCase());
 const all=MEALS[slot]||[];
@@ -703,6 +704,8 @@ mb.innerHTML=h;
 document.getElementById('mainModal').classList.add('show')}
 
 showRecipe(slot,idx){
+this.currentMealSlot=slot; // Track which meal category we're in
+this.inRecipeView=true; // Track that we're viewing a recipe
 const meal=MEALS[slot][idx];
 const mb=document.getElementById('modalBody');
 this.setText('modalTitle',meal.title.toUpperCase());
@@ -716,12 +719,24 @@ meal.steps.forEach((step,i)=>{html+=`<div class="step-item"><div style="font-wei
 html+=`</div><button onclick="app.selectMeal('${slot}',${idx});app.closeModal()" style="width:100%;background:var(--acid);color:#000;padding:18px;margin-top:25px;border:none;border-radius:12px;font-weight:900;font-size:1.1rem;cursor:pointer;text-transform:uppercase;box-shadow:0 0 20px rgba(204,255,0,0.3);letter-spacing:1px">ADD TO PROTOCOL</button>`;
 mb.innerHTML=html}
 
-closeModal(){document.getElementById('mainModal').classList.remove('show')}
+closeModal(){
+// If we're viewing a recipe, go back to meal picker instead of closing
+if(this.inRecipeView&&this.currentMealSlot){
+this.inRecipeView=false;
+this.openMealPicker(this.currentMealSlot);
+}else{
+// Otherwise close modal completely
+this.currentMealSlot=null;
+this.inRecipeView=false;
+document.getElementById('mainModal').classList.remove('show')}
+}
 
 selectMeal(slot,idx){
 const d=this.history[this.currentIndex].date;
 if(!this.meals[d])this.meals[d]={};
 this.meals[d][slot]=idx;
+this.currentMealSlot=null;
+this.inRecipeView=false;
 this.saveUserData();this.closeModal();this.render()}
 
 getDailyRecommendation(mac,day,avgScore){
