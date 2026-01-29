@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Centurion v20.6 - Stretch Click Fix</title>
+<title>Centurion v20.7 - Sync Fix</title>
 <style>
 :root{--bg:#050505;--panel:#121212;--border:#222;--acid:#ccff00;--cyan:#00f0ff;--purple:#bf5af2;--alert:#ff453a;--text:#fff}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -390,8 +390,8 @@ shoulder:{title:"🦾 SHOULDER MOBILITY",steps:["DURATION: 5 minutes total","","
 
 class CenturionApp{
 constructor(){
-console.log('🚀 v20.6 STRETCH FIX');
-const V='20.6.0';
+console.log('🚀 v20.7 SYNC FIX');
+const V='20.7.0';
 if(localStorage.getItem('centurion_version')!==V){localStorage.clear();localStorage.setItem('centurion_version',V)}
 this.user=localStorage.getItem('centurion_user')||'jermaine';
 this.history=[];this.currentIndex=0;this.currentDateStr=new Date().toLocaleDateString('en-CA');
@@ -546,13 +546,16 @@ document.getElementById('modalBody').innerHTML=h;
 document.getElementById('mainModal').classList.add('show')}
 
 async fetchOuraData(){
+log('🔄 SYNC STARTED');
 this.setText('syncStatus','SYNCING...');
 try{
 const end=new Date();end.setDate(end.getDate()+1);
 const start=new Date();start.setDate(start.getDate()-10);
 const startStr=start.toISOString().split('T')[0];
 const endStr=end.toISOString().split('T')[0];
+log(`📅 Date range: ${startStr} to ${endStr}`);
 const token=TOKENS[this.user];
+log(`🔑 Token length: ${token?.length || 0}`);
 const proxyUrl='https://oura-proxy.jclarke-9a0.workers.dev';
 const sleepUrl=`${proxyUrl}?url=${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${startStr}&end_date=${endStr}`)}`;
 log(`🔗 Sleep URL: ${sleepUrl.substring(0,120)}...`);
@@ -658,7 +661,14 @@ activityData.forEach(a=>{const d=g(a.day);d.cal=a.active_calories||0;d.high=(a.h
 this.history=Array.from(m.values()).sort((a,b)=>b.date.localeCompare(a.date));
 log('✅ Processed history: '+this.history.length+' days');
 this.currentIndex=this.history.findIndex(h=>h.date===this.currentDateStr);
-if(this.currentIndex===-1){this.history.unshift({date:this.currentDateStr,score:0,totalSec:0,deepSec:0,remSec:0,rhr:'-',cal:0,high:0,med:0,workouts:[]});this.currentIndex=0}}
+if(this.currentIndex===-1){this.history.unshift({date:this.currentDateStr,score:0,totalSec:0,deepSec:0,remSec:0,rhr:'-',cal:0,high:0,med:0,workouts:[]});this.currentIndex=0}
+this.setText('syncStatus','SYNCED ✓');
+this.render();
+}catch(e){
+logerr(`❌ Sync error: ${e.message}`);
+this.setText('syncStatus','SYNC FAILED');
+}
+}
 
 changeDate(dir){
 const n=this.currentIndex-dir;
