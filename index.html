@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Centurion v19.6 - Back Navigation Fix</title>
+<title>Centurion v19.7 - Weekly Summary</title>
 <style>
 :root{--bg:#050505;--panel:#121212;--border:#222;--acid:#ccff00;--cyan:#00f0ff;--purple:#bf5af2;--alert:#ff453a;--text:#fff}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -132,7 +132,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
             <div class="score-val" id="dayGrade">--</div>
             <div class="score-label">TODAY</div>
         </div>
-        <div class="score-box primary">
+        <div class="score-box primary" onclick="app.showWeeklySummary()" style="cursor:pointer">
             <div class="score-val longevity" id="longevityScore">85</div>
             <div class="score-label">LONGEVITY</div>
             <div class="score-avg-badge">7-DAY AVG</div>
@@ -377,8 +377,8 @@ clubstudio:{title:"🏢 CLUB STUDIO",steps:["OPTION A: Full Recovery (45min)","1
 
 class CenturionApp{
 constructor(){
-console.log('🚀 v19.6 BACK NAVIGATION');
-const V='19.6.0';
+console.log('🚀 v19.7 WEEKLY SUMMARY');
+const V='19.7.0';
 if(localStorage.getItem('centurion_version')!==V){localStorage.clear();localStorage.setItem('centurion_version',V)}
 this.user=localStorage.getItem('centurion_user')||'jermaine';
 this.history=[];this.currentIndex=0;this.currentDateStr=new Date().toLocaleDateString('en-CA');
@@ -739,6 +739,98 @@ this.currentMealSlot=null;
 this.inRecipeView=false;
 this.saveUserData();this.closeModal();this.render()}
 
+showWeeklySummary(){
+const last7=this.history.slice(0,7);
+const last30=this.history.slice(0,30);
+const has30Days=last30.length>=30;
+
+// Calculate 7-day stats
+const avgScore7=last7.length>0?Math.round(last7.reduce((sum,d)=>sum+(d.score||0),0)/last7.length):0;
+const avgSleep7=last7.length>0?(last7.reduce((sum,d)=>sum+d.totalSec,0)/last7.length/3600).toFixed(1):0;
+const avgRHR7=last7.filter(d=>d.rhr!=='-').length>0?Math.round(last7.filter(d=>d.rhr!=='-').reduce((sum,d)=>sum+parseInt(d.rhr),0)/last7.filter(d=>d.rhr!=='-').length):0;
+const totalCal7=last7.reduce((sum,d)=>sum+d.cal,0);
+const avgCal7=last7.length>0?Math.round(totalCal7/last7.length):0;
+const z5Days7=last7.filter(d=>d.high>=10).length;
+
+// Calculate 30-day stats if available
+let avgScore30=0,avgSleep30=0,avgRHR30=0,avgCal30=0,z5Days30=0;
+if(has30Days){
+avgScore30=Math.round(last30.reduce((sum,d)=>sum+(d.score||0),0)/last30.length);
+avgSleep30=(last30.reduce((sum,d)=>sum+d.totalSec,0)/last30.length/3600).toFixed(1);
+avgRHR30=Math.round(last30.filter(d=>d.rhr!=='-').reduce((sum,d)=>sum+parseInt(d.rhr),0)/last30.filter(d=>d.rhr!=='-').length);
+avgCal30=Math.round(last30.reduce((sum,d)=>sum+d.cal,0)/last30.length);
+z5Days30=last30.filter(d=>d.high>=10).length;
+}
+
+const mb=document.getElementById('modalBody');
+this.setText('modalTitle','PERFORMANCE SUMMARY');
+
+let html=`
+<div style="margin-bottom:30px">
+<div style="font-size:1.2rem;font-weight:900;color:var(--acid);margin-bottom:20px;text-transform:uppercase">📊 7-DAY SUMMARY</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:15px">
+<div style="background:#0a0a0a;padding:20px;border-radius:10px;border:1px solid #222">
+<div style="font-size:0.7rem;color:#666;margin-bottom:5px">LONGEVITY SCORE</div>
+<div style="font-size:2.5rem;font-weight:900;color:var(--acid)">${avgScore7}</div>
+</div>
+<div style="background:#0a0a0a;padding:20px;border-radius:10px;border:1px solid #222">
+<div style="font-size:0.7rem;color:#666;margin-bottom:5px">AVG SLEEP</div>
+<div style="font-size:2.5rem;font-weight:900;color:#00d4ff">${avgSleep7}<span style="font-size:1rem">h</span></div>
+</div>
+<div style="background:#0a0a0a;padding:20px;border-radius:10px;border:1px solid #222">
+<div style="font-size:0.7rem;color:#666;margin-bottom:5px">AVG RHR</div>
+<div style="font-size:2.5rem;font-weight:900;color:#ff453a">${avgRHR7||'--'}</div>
+</div>
+<div style="background:#0a0a0a;padding:20px;border-radius:10px;border:1px solid #222">
+<div style="font-size:0.7rem;color:#666;margin-bottom:5px">AVG BURN</div>
+<div style="font-size:2.5rem;font-weight:900;color:#FFD60A">${avgCal7}</div>
+</div>
+</div>
+<div style="background:#0a0a0a;padding:15px;border-radius:10px;border:1px solid #222;margin-bottom:10px">
+<div style="font-size:0.8rem;color:#666;margin-bottom:5px">ZONE 5 SESSIONS</div>
+<div style="font-size:1.5rem;font-weight:900;color:var(--cyan)">${z5Days7} days</div>
+</div>
+</div>`;
+
+if(has30Days){
+html+=`
+<div style="margin-bottom:20px">
+<div style="font-size:1.2rem;font-weight:900;color:var(--acid);margin-bottom:20px;text-transform:uppercase">📈 30-DAY SUMMARY</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:15px">
+<div style="background:#0a0a0a;padding:20px;border-radius:10px;border:1px solid #222">
+<div style="font-size:0.7rem;color:#666;margin-bottom:5px">LONGEVITY SCORE</div>
+<div style="font-size:2.5rem;font-weight:900;color:var(--acid)">${avgScore30}</div>
+<div style="font-size:0.7rem;color:${avgScore30>avgScore7?'#30d158':'#ff453a'};margin-top:5px">${avgScore30>avgScore7?'▲':'▼'} ${Math.abs(avgScore30-avgScore7)} vs 7-day</div>
+</div>
+<div style="background:#0a0a0a;padding:20px;border-radius:10px;border:1px solid #222">
+<div style="font-size:0.7rem;color:#666;margin-bottom:5px">AVG SLEEP</div>
+<div style="font-size:2.5rem;font-weight:900;color:#00d4ff">${avgSleep30}<span style="font-size:1rem">h</span></div>
+<div style="font-size:0.7rem;color:${avgSleep30>avgSleep7?'#30d158':'#ff453a'};margin-top:5px">${avgSleep30>avgSleep7?'▲':'▼'} ${Math.abs((avgSleep30-avgSleep7).toFixed(1))}h vs 7-day</div>
+</div>
+<div style="background:#0a0a0a;padding:20px;border-radius:10px;border:1px solid #222">
+<div style="font-size:0.7rem;color:#666;margin-bottom:5px">AVG RHR</div>
+<div style="font-size:2.5rem;font-weight:900;color:#ff453a">${avgRHR30||'--'}</div>
+<div style="font-size:0.7rem;color:${avgRHR30<avgRHR7?'#30d158':'#ff453a'};margin-top:5px">${avgRHR30<avgRHR7?'▼':'▲'} ${Math.abs(avgRHR30-avgRHR7)} vs 7-day</div>
+</div>
+<div style="background:#0a0a0a;padding:20px;border-radius:10px;border:1px solid #222">
+<div style="font-size:0.7rem;color:#666;margin-bottom:5px">AVG BURN</div>
+<div style="font-size:2.5rem;font-weight:900;color:#FFD60A">${avgCal30}</div>
+<div style="font-size:0.7rem;color:${avgCal30>avgCal7?'#30d158':'#ff453a'};margin-top:5px">${avgCal30>avgCal7?'▲':'▼'} ${Math.abs(avgCal30-avgCal7)} vs 7-day</div>
+</div>
+</div>
+<div style="background:#0a0a0a;padding:15px;border-radius:10px;border:1px solid #222">
+<div style="font-size:0.8rem;color:#666;margin-bottom:5px">ZONE 5 SESSIONS</div>
+<div style="font-size:1.5rem;font-weight:900;color:var(--cyan)">${z5Days30} days <span style="font-size:0.8rem;color:#666">(${Math.round(z5Days30/30*100)}% frequency)</span></div>
+</div>
+</div>`;
+}
+
+html+=`<button onclick="app.closeModal()" style="width:100%;background:var(--acid);color:#000;padding:18px;margin-top:20px;border:none;border-radius:12px;font-weight:900;font-size:1.1rem;cursor:pointer;text-transform:uppercase">CLOSE</button>`;
+
+mb.innerHTML=html;
+document.getElementById('mainModal').classList.add('show');
+}
+
 getDailyRecommendation(mac,day,avgScore){
 const apob=parseFloat(this.bios.apob||0);
 const lpa=parseFloat(this.bios.lpa||0);
@@ -958,22 +1050,29 @@ if(deltaEl){
 deltaEl.innerText=delta>0?`+${delta}`:delta.toString();
 deltaEl.style.color=delta>0?'#ff453a':(delta<0?'#30d158':'#666');
 }
-// Calculate 7-day trend
+// Calculate 7-day trend (less aggressive)
 const last7=this.history.slice(0,7).filter(h=>h.vascularAge).map(h=>h.vascularAge);
-if(last7.length>=2){
+if(last7.length>=3){ // Require at least 3 data points
 const trend=last7[0]-last7[last7.length-1];
 const trendEl=document.getElementById('vascularAgeTrend');
 if(trendEl){
-if(trend>0){
+if(trend>=2){ // Improved by 2+ years
 trendEl.innerHTML='IMPROVING';
 trendEl.style.color='#30d158'; // Green
-}else if(trend<0){
+}else if(trend<=-2){ // Aged by 2+ years
 trendEl.innerHTML='AGING';
 trendEl.style.color='#ff453a'; // Red
 }else{
 trendEl.innerHTML='STABLE';
 trendEl.style.color='#666'; // Gray
 }
+}
+}else{
+// Not enough data points
+const trendEl=document.getElementById('vascularAgeTrend');
+if(trendEl){
+trendEl.innerHTML='TRACKING';
+trendEl.style.color='#666';
 }
 }
 }else{
