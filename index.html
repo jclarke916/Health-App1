@@ -16,7 +16,9 @@ button{padding:15px 30px;font-size:16px;margin:10px;cursor:pointer}
 <h1>🔬 Minimal Fetch Test</h1>
 <p>Testing if corsproxy.io can reach Oura API</p>
 
-<button onclick="testFetch()">TEST FETCH</button>
+<button onclick="testFetch('corsproxy')">TEST CORSPROXY.IO</button>
+<button onclick="testFetch('allorigins')">TEST ALLORIGINS</button>
+<button onclick="testFetch('api1')">TEST API.CODETABS</button>
 <button onclick="clearLog()">CLEAR LOG</button>
 
 <div id="log"></div>
@@ -36,9 +38,9 @@ function clearLog() {
     document.getElementById('log').innerHTML = '';
 }
 
-async function testFetch() {
+async function testFetch(proxy = 'corsproxy') {
     log('━━━━━━━━━━━━━━━━━━━━━━━━━');
-    log('🧪 STARTING MINIMAL TEST');
+    log(`🧪 TESTING ${proxy.toUpperCase()}`);
     log('━━━━━━━━━━━━━━━━━━━━━━━━━');
     
     try {
@@ -46,7 +48,18 @@ async function testFetch() {
         const dateStr = today.toISOString().split('T')[0];
         log(`📅 Date: ${dateStr}`);
         
-        const url = `https://corsproxy.io/?${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${dateStr}&end_date=${dateStr}`)}`;
+        const ouraUrl = `https://api.ouraring.com/v2/usercollection/sleep?start_date=${dateStr}&end_date=${dateStr}`;
+        
+        let url;
+        if (proxy === 'corsproxy') {
+            url = `https://corsproxy.io/?${encodeURIComponent(ouraUrl)}`;
+        } else if (proxy === 'allorigins') {
+            url = `https://api.allorigins.win/raw?url=${encodeURIComponent(ouraUrl)}`;
+        } else if (proxy === 'api1') {
+            url = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(ouraUrl)}`;
+        }
+        
+        log(`🔗 Proxy: ${proxy}`);
         log(`🔗 URL: ${url.substring(0, 80)}...`);
         
         log('🌐 Calling fetch...');
@@ -65,26 +78,27 @@ async function testFetch() {
             if (data.data && data.data.length > 0) {
                 log(`📋 Sample: ${JSON.stringify(data.data[0]).substring(0, 100)}...`);
             }
+            log('━━━━━━━━━━━━━━━━━━━━━━━━━');
+            log(`✅ ${proxy.toUpperCase()} WORKS!`);
+            log('━━━━━━━━━━━━━━━━━━━━━━━━━');
         } else {
             const text = await response.text();
             log(`❌ Error response: ${text.substring(0, 200)}`);
+            log('━━━━━━━━━━━━━━━━━━━━━━━━━');
+            log(`❌ ${proxy.toUpperCase()} FAILED (${response.status})`);
+            log('━━━━━━━━━━━━━━━━━━━━━━━━━');
         }
-        
-        log('━━━━━━━━━━━━━━━━━━━━━━━━━');
-        log('✅ TEST COMPLETED');
-        log('━━━━━━━━━━━━━━━━━━━━━━━━━');
         
     } catch (error) {
         log(`❌ ERROR: ${error.name}`);
         log(`❌ Message: ${error.message}`);
-        log(`❌ Stack: ${error.stack}`);
         log('━━━━━━━━━━━━━━━━━━━━━━━━━');
-        log('❌ TEST FAILED');
+        log(`❌ ${proxy.toUpperCase()} FAILED`);
         log('━━━━━━━━━━━━━━━━━━━━━━━━━');
     }
 }
 
-log('✅ Test page loaded - Click TEST FETCH to start');
+log('✅ Test page loaded - Click buttons to test different proxies');
 </script>
 
 </body>
