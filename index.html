@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Centurion v18.10 - Corsproxy Restored</title>
+<title>Centurion v18.11 - FIXED Promise.all</title>
 <style>
 :root{--bg:#050505;--panel:#121212;--border:#222;--acid:#ccff00;--cyan:#00f0ff;--purple:#bf5af2;--alert:#ff453a;--text:#fff}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -375,8 +375,8 @@ clubstudio:{title:"🏢 CLUB STUDIO",steps:["OPTION A: Full Recovery (45min)","1
 
 class CenturionApp{
 constructor(){
-console.log('🚀 v18.10 CORSPROXY BACK - TS:'+Date.now());
-const V='18.10.0';
+console.log('🚀 v18.11 PROMISE FIX - TS:'+Date.now());
+const V='18.11.0';
 if(localStorage.getItem('centurion_version')!==V){localStorage.clear();localStorage.setItem('centurion_version',V)}
 this.user=localStorage.getItem('centurion_user')||'jermaine';
 this.history=[];this.currentIndex=0;this.currentDateStr=new Date().toLocaleDateString('en-CA');
@@ -556,21 +556,15 @@ const readinessUrl=`https://corsproxy.io/?${encodeURIComponent(`https://api.oura
 
 log('📡 Using corsproxy.io (confirmed online)...');
 
-// Fetch main data (back to Promise.all for parallel loading)
-let sleepRes, workoutRes, activityRes, readinessRes;
-try{
+// Fetch main data
 log('🌐 Starting fetch requests...');
-[sleepRes,workoutRes,activityRes,readinessRes]=await Promise.all([
+const[sleepRes,workoutRes,activityRes,readinessRes]=await Promise.all([
 fetch(sleepUrl,{headers:{'Authorization':`Bearer ${token}`}}),
 fetch(workoutUrl,{headers:{'Authorization':`Bearer ${token}`}}),
 fetch(activityUrl,{headers:{'Authorization':`Bearer ${token}`}}),
 fetch(readinessUrl,{headers:{'Authorization':`Bearer ${token}`}})
 ]);
 log('✅ Fetch requests completed');
-}catch(fetchError){
-log(`❌ Fetch error: ${fetchError.message}`);
-throw fetchError;
-}
 
 log(`📊 Response Status: Sleep=${sleepRes.status}, Workout=${workoutRes.status}, Activity=${activityRes.status}, Readiness=${readinessRes.status}`);
 
