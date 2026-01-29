@@ -557,15 +557,28 @@ const readinessUrl=`https://cors-anywhere.herokuapp.com/https://api.ouraring.com
 log('📡 Using cors-anywhere proxy...');
 
 // Fetch main data (back to Promise.all for parallel loading)
-const[sleepRes,workoutRes,activityRes,readinessRes]=await Promise.all([
+let sleepRes, workoutRes, activityRes, readinessRes;
+try{
+log('🌐 Starting fetch requests...');
+[sleepRes,workoutRes,activityRes,readinessRes]=await Promise.all([
 fetch(sleepUrl,{headers:{'Authorization':`Bearer ${token}`}}),
 fetch(workoutUrl,{headers:{'Authorization':`Bearer ${token}`}}),
 fetch(activityUrl,{headers:{'Authorization':`Bearer ${token}`}}),
 fetch(readinessUrl,{headers:{'Authorization':`Bearer ${token}`}})
 ]);
+log('✅ Fetch requests completed');
+}catch(fetchError){
+log(`❌ Fetch error: ${fetchError.message}`);
+throw fetchError;
+}
 
-if(!sleepRes.ok||!workoutRes.ok)throw new Error('API failed');
-log(`✅ Sleep: ${sleepRes.status}, Workout: ${workoutRes.status}, Activity: ${activityRes.status}, Readiness: ${readinessRes.status}`);
+log(`📊 Response Status: Sleep=${sleepRes.status}, Workout=${workoutRes.status}, Activity=${activityRes.status}, Readiness=${readinessRes.status}`);
+
+if(!sleepRes.ok||!workoutRes.ok){
+log(`❌ API returned error - Sleep OK: ${sleepRes.ok}, Workout OK: ${workoutRes.ok}`);
+throw new Error('API failed');
+}
+log(`✅ All APIs returned OK`);
 const sleepData=await sleepRes.json();
 const workoutData=await workoutRes.json();
 const activityData=await activityRes.json();
