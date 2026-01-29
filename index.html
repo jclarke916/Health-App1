@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Centurion v20.4 - Quote Fix</title>
+<title>Centurion v20.5 - Meal Selection Debug</title>
 <style>
 :root{--bg:#050505;--panel:#121212;--border:#222;--acid:#ccff00;--cyan:#00f0ff;--purple:#bf5af2;--alert:#ff453a;--text:#fff}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -390,8 +390,8 @@ shoulder:{title:"🦾 SHOULDER MOBILITY",steps:["DURATION: 5 minutes total","","
 
 class CenturionApp{
 constructor(){
-console.log('🚀 v20.4 QUOTE FIX');
-const V='20.4.0';
+console.log('🚀 v20.5 MEAL DEBUG');
+const V='20.5.0';
 if(localStorage.getItem('centurion_version')!==V){localStorage.clear();localStorage.setItem('centurion_version',V)}
 this.user=localStorage.getItem('centurion_user')||'jermaine';
 this.history=[];this.currentIndex=0;this.currentDateStr=new Date().toLocaleDateString('en-CA');
@@ -987,6 +987,7 @@ this.protocol=JSON.parse(JSON.stringify(BASE));
 const day=this.history[this.currentIndex];
 const date=day.date;
 let sel=this.meals[date]||{};
+log(`📅 Rendering ${date} - Meals selected: ${JSON.stringify(sel)}`);
 const dow=new Date(date).getDay();
 const isFS=new Date(date).getDate()<=7;
 const hadW=day.workouts&&day.workouts.length>0;
@@ -1037,7 +1038,8 @@ if(er)this.protocol.push({id:'evening_recovery',time:er.time,title:er.title,desc
 const fac=this.getEndOfDayFacial(dow,isFS);
 if(fac)this.protocol.push({id:'facial',time:'9:00 PM',title:fac.title,desc:fac.desc+' - Tap for protocol',macros:{p:0,o:0,f:0,cal:0},colors:[],clickable:true,type:fac.type,cssClass:'facial'});
 
-this.protocol.forEach(t=>{if(t.mealSlot&&sel[t.mealSlot]!==undefined){const all=MEALS[t.mealSlot]||[];if(all[sel[t.mealSlot]]){const m=all[sel[t.mealSlot]];t.title=m.title;t.desc=`P:${m.macros.p} C:${m.macros.cal}`;t.macros=m.macros;t.colors=m.colors}}});
+this.protocol.forEach(t=>{if(t.mealSlot&&sel[t.mealSlot]!==undefined){const all=MEALS[t.mealSlot]||[];if(all[sel[t.mealSlot]]){const m=all[sel[t.mealSlot]];t.title=m.title;t.desc=`P:${m.macros.p} C:${m.macros.cal}`;t.macros=m.macros;t.colors=m.colors;log(`✅ Applied ${t.mealSlot}: ${m.title}`)}}});
+log(`📋 Total protocol items: ${this.protocol.length}`);
 
 this.protocol.sort((a,b)=>{
 const parseTime=(t)=>{
