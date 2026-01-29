@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Centurion v20.0 - Smart Beverage Pairing</title>
+<title>Centurion v20.3 - Auto-Check Meals</title>
 <style>
 :root{--bg:#050505;--panel:#121212;--border:#222;--acid:#ccff00;--cyan:#00f0ff;--purple:#bf5af2;--alert:#ff453a;--text:#fff}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -383,13 +383,15 @@ massage:{title:"💆 MASSAGE",steps:["1. OIL: Apply facial oil","2. JAW: Chin to
 cupping:{title:"🔵 CUPPING",steps:["1. OIL back","2. STATIC 3-5min on knots","3. SLIDING along spine","4. AVOID direct spine","5. MARKS = stagnation","6. HEAT: Hyperice 15min after"]},
 normatec:{title:"🦵 NORMATEC",steps:["1. SETUP Legs/Hips","2. LEVEL 7 flush","3. TIME 30-45min","4. ZONE boost if sore","5. HYDRATE 16oz after","6. Can do 2x daily"]},
 inshape:{title:"🏊 INSHAPE",steps:["1. STEAM 15min","2. SAUNA 20min","3. POOL 20min light","4. AQUA BED 30min","5. SHOWER cold finish","6. NORMATEC 45min home"]},
-clubstudio:{title:"🏢 CLUB STUDIO",steps:["OPTION A: Full Recovery (45min)","1. CRYO Chamber 3min (full body cold)","2. WAIT 5min (let body warm)","3. SAUNA 20min (contrast therapy)","4. LOCAL CRYO areas as needed","5. MASSAGE BED 20min","6. HYPERICE suite if available","","OPTION B: Quick Session (20min)","1. CRYO 3min OR Sauna 20min","2. MASSAGE BED 15min","","OPTION C: Home Instead","Use Theragun + Normatec + Hyperice"]}
+clubstudio:{title:"🏢 CLUB STUDIO",steps:["OPTION A: Full Recovery (45min)","1. CRYO Chamber 3min (full body cold)","2. WAIT 5min (let body warm)","3. SAUNA 20min (contrast therapy)","4. LOCAL CRYO areas as needed","5. MASSAGE BED 20min","6. HYPERICE suite if available","","OPTION B: Quick Session (20min)","1. CRYO 3min OR Sauna 20min","2. MASSAGE BED 15min","","OPTION C: Home Instead","Use Theragun + Normatec + Hyperice"]},
+hipflexor:{title:"🧘 HIP FLEXOR STRETCH",steps:["DURATION: 5 minutes total (2.5 min each side)","","1. SETUP: Kneeling lunge position","   - Right knee on mat (use padding)","   - Left foot forward, knee at 90°","   - Keep torso upright","","2. POSITION: Engage core","   - Tuck pelvis under (posterior tilt)","   - Squeeze right glute","   - Feel stretch in right hip flexor","","3. DEEPEN: Shift weight forward","   - Keep left knee behind toes","   - Raise right arm overhead","   - Lean slightly left for deeper stretch","","4. HOLD: 2.5 minutes","   - Breathe deeply into stretch","   - Relax progressively","   - Don't bounce","","5. SWITCH: Repeat other side","   - Left knee down, right foot forward","   - Same sequence","","WHY: Desk work = tight hip flexors = lower back pain + poor posture. Daily stretching prevents anterior pelvic tilt."]},
+shoulder:{title:"🦾 SHOULDER MOBILITY",steps:["DURATION: 5 minutes total","","1. ARM CIRCLES (1 min)","   - 30 sec forward, 30 sec backward","   - Start small, gradually larger","   - Full range of motion","","2. DOORWAY PEC STRETCH (2 min)","   - Forearm on doorframe at 90°","   - Step through doorway","   - Feel stretch across chest","   - Hold 1 min each arm","","3. SLEEPER STRETCH (2 min)","   - Lie on right side","   - Right arm at 90° in front","   - Use left hand to push right hand down","   - Feel stretch in back of right shoulder","   - Hold 1 min each side","","WHY: Overhead work + typing = tight chest + weak rear delts = rounded shoulders. Mobility work opens thoracic spine and prevents impingement."]}
 };
 
 class CenturionApp{
 constructor(){
-console.log('🚀 v20.0 BEVERAGE PAIRING');
-const V='20.0.0';
+console.log('🚀 v20.3 AUTO-CHECK MEALS');
+const V='20.3.0';
 if(localStorage.getItem('centurion_version')!==V){localStorage.clear();localStorage.setItem('centurion_version',V)}
 this.user=localStorage.getItem('centurion_user')||'jermaine';
 this.history=[];this.currentIndex=0;this.currentDateStr=new Date().toLocaleDateString('en-CA');
@@ -414,8 +416,8 @@ localStorage.setItem(`c_bios_${this.user}`,JSON.stringify(this.bios))}
 setPlaceholderData(){this.history=[{date:this.currentDateStr,score:0,totalSec:0,deepSec:0,remSec:0,rhr:'-',cal:0,high:0,med:0,workouts:[]}];this.currentIndex=0}
 
 getLunchRecovery(d){
-if(this.user==='jermaine'&&(d===1||d===3||d===5))return{title:'🧘 Hip Flexor',desc:'5min stretch'};
-if(this.user==='jermaine'&&(d===2||d===4))return{title:'🦾 Shoulder',desc:'5min mobility'};
+if(this.user==='jermaine'&&(d===1||d===3||d===5))return{title:'🧘 Hip Flexor',desc:'5min stretch',type:'hipflexor',clickable:true};
+if(this.user==='jermaine'&&(d===2||d===4))return{title:'🦾 Shoulder',desc:'5min mobility',type:'shoulder',clickable:true};
 return null}
 
 // Workout Impact Database - Club Studio classes ranked by impact and intensity
@@ -712,7 +714,10 @@ const checkmark=isSelected?'<span style="color:var(--acid);margin-right:8px;font
 h+=`<div class="menu-item" ${selectedClass} onclick="app.showRecipe('${slot}',${i})"><div class="menu-left"><div class="menu-name">${checkmark}${m.title}</div><div class="menu-meta">P:${m.macros.p}g • Ω3:${m.macros.o}mg • F:${m.macros.f}g • Cal:${m.macros.cal}</div></div><div class="menu-arrow">›</div></div>`;
 });
 mb.innerHTML=h;
-document.getElementById('mainModal').classList.add('show')}
+document.getElementById('mainModal').classList.add('show');
+// Scroll modal to top
+document.getElementById('mainModal').scrollTop=0;
+}
 
 showRecipe(slot,idx){
 this.currentMealSlot=slot; // Track which meal category we're in
@@ -743,7 +748,10 @@ meal.ingredients.forEach(ing=>{html+=`<div class="ing-item">${ing}</div>`});
 html+=`</div><div><div style="font-size:0.8rem;font-weight:900;color:var(--acid);margin-bottom:10px;text-transform:uppercase">PREPARATION</div>`;
 meal.steps.forEach((step,i)=>{html+=`<div class="step-item"><div style="font-weight:900;color:var(--cyan);font-size:1.2rem;min-width:30px">${i+1}</div><div>${step}</div></div>`});
 html+=`</div><button onclick="app.selectMeal('${slot}',${idx});app.closeModal()" style="width:100%;background:var(--acid);color:#000;padding:18px;margin-top:25px;border:none;border-radius:12px;font-weight:900;font-size:1.1rem;cursor:pointer;text-transform:uppercase;box-shadow:0 0 20px rgba(204,255,0,0.3);letter-spacing:1px">ADD TO PROTOCOL</button>`;
-mb.innerHTML=html}
+mb.innerHTML=html;
+// Scroll modal to top
+document.getElementById('mainModal').scrollTop=0;
+}
 
 showBeverageRecipe(idx){
 const bev=MEALS.juices[idx];
@@ -757,7 +765,10 @@ bev.ingredients.forEach(ing=>{html+=`<div class="ing-item">${ing}</div>`});
 html+=`</div><div><div style="font-size:0.8rem;font-weight:900;color:var(--acid);margin-bottom:10px;text-transform:uppercase">PREPARATION</div>`;
 bev.steps.forEach((step,i)=>{html+=`<div class="step-item"><div style="font-weight:900;color:var(--cyan);font-size:1.2rem;min-width:30px">${i+1}</div><div>${step}</div></div>`});
 html+=`</div><button onclick="app.closeModal()" style="width:100%;background:#333;color:#fff;padding:18px;margin-top:25px;border:none;border-radius:12px;font-weight:900;font-size:1.1rem;cursor:pointer;text-transform:uppercase">CLOSE</button>`;
-mb.innerHTML=html}
+mb.innerHTML=html;
+// Scroll modal to top
+document.getElementById('mainModal').scrollTop=0;
+}
 
 closeModal(){
 // If we're viewing a recipe, go back to meal picker instead of closing
@@ -775,6 +786,9 @@ selectMeal(slot,idx){
 const d=this.history[this.currentIndex].date;
 if(!this.meals[d])this.meals[d]={};
 this.meals[d][slot]=idx;
+// Auto-check the meal item
+if(!this.checked[d])this.checked[d]={};
+this.checked[d][slot]=true;
 this.currentMealSlot=null;
 this.inRecipeView=false;
 this.saveUserData();this.closeModal();this.render()}
