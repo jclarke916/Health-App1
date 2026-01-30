@@ -412,7 +412,7 @@ const V='17.92-ORIGINAL';
 if(localStorage.getItem('centurion_version_original')!==V){localStorage.clear();localStorage.setItem('centurion_version_original',V)}
 this.user=localStorage.getItem('centurion_user_original')||'jermaine';
 this.history=[];this.currentIndex=0;this.currentDateStr=new Date().toLocaleDateString('en-CA');
-this.checked={};this.meals={};this.portions={};this.bios={};this.protocol=[];this.currentPortion=1;
+this.checked={};this.meals={};this.portions={};this.bios={};this.protocol=[];this.currentPortion=1;this.currentMealIdx=null;
 // Initialize UI button states
 document.querySelectorAll('.user-switch button').forEach(b=>b.classList.remove('active'));
 document.getElementById(`btn-${this.user}`)?.classList.add('active');
@@ -737,6 +737,7 @@ document.getElementById('mainModal').classList.add('show')}
 
 showRecipe(slot,idx){
 this.currentMealSlot=slot; // Track which meal category we're in
+this.currentMealIdx=idx; // Track which meal index
 this.inRecipeView=true; // Track that we're viewing a recipe
 const meal=MEALS[slot][idx];
 const mb=document.getElementById('modalBody');
@@ -744,15 +745,20 @@ this.setText('modalTitle',meal.title.toUpperCase());
 
 // Check if this is lunch or dinner (allow half portions)
 const allowHalfPortion=(slot==='lunch'||slot==='dinner');
-const currentPortion=this.portions?.[this.history[this.currentIndex].date]?.[slot]||1;
+// Initialize currentPortion from saved portion if not already set
+const savedPortion=this.portions?.[this.history[this.currentIndex].date]?.[slot]||1;
+if(this.currentPortion===1&&savedPortion!==1){
+this.currentPortion=savedPortion;
+}
+const currentPortion=this.currentPortion;
 
 let html=`<div class="recipe-hero"><div class="recipe-title">${meal.title}</div><div class="recipe-stats">${meal.time||'Quick'} • ${meal.servings||1} serving</div></div>`;
 
 // Add portion selector for lunch/dinner
 if(allowHalfPortion){
 html+=`<div style="display:flex;gap:10px;margin:15px 0;justify-content:center">
-<button id="portionHalf" onclick="app.setCurrentPortion(0.5)" style="flex:1;padding:12px;background:${currentPortion===0.5?'var(--acid)':'#222'};color:${currentPortion===0.5?'#000':'#fff'};border:1px solid ${currentPortion===0.5?'var(--acid)':'#444'};border-radius:8px;font-weight:900;cursor:pointer">HALF PORTION</button>
-<button id="portionFull" onclick="app.setCurrentPortion(1)" style="flex:1;padding:12px;background:${currentPortion===1?'var(--acid)':'#222'};color:${currentPortion===1?'#000':'#fff'};border:1px solid ${currentPortion===1?'var(--acid)':'#444'};border-radius:8px;font-weight:900;cursor:pointer">FULL PORTION</button>
+<button onclick="app.setCurrentPortion(0.5)" style="flex:1;padding:12px;background:${currentPortion===0.5?'var(--acid)':'#222'};color:${currentPortion===0.5?'#000':'#fff'};border:1px solid ${currentPortion===0.5?'var(--acid)':'#444'};border-radius:8px;font-weight:900;cursor:pointer">HALF PORTION</button>
+<button onclick="app.setCurrentPortion(1)" style="flex:1;padding:12px;background:${currentPortion===1?'var(--acid)':'#222'};color:${currentPortion===1?'#000':'#fff'};border:1px solid ${currentPortion===1?'var(--acid)':'#444'};border-radius:8px;font-weight:900;cursor:pointer">FULL PORTION</button>
 </div>`;
 }
 
@@ -820,13 +826,14 @@ if(!this.checked[d].includes(protocolItem.id))this.checked[d].push(protocolItem.
 }
 // Reset navigation flags and portion
 this.currentMealSlot=null;
+this.currentMealIdx=null;
 this.inRecipeView=false;
 this.currentPortion=1;
 this.saveUserData();this.closeModal();this.render()}
 
 setCurrentPortion(size){
 this.currentPortion=size;
-this.showRecipe(this.currentMealSlot,this.meals[this.history[this.currentIndex].date][this.currentMealSlot]);
+this.showRecipe(this.currentMealSlot,this.currentMealIdx);
 }
 
 showWeeklySummary(){
