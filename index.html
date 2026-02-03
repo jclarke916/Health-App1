@@ -1022,17 +1022,13 @@ let streak=0;
 for(let i=0;i<this.history.length;i++){
 const day=this.history[i];
 const chk=this.checked[day.date]||[];
-// Get all non-autoDetected items for this day
-const dayIndex=i;
-const oldIndex=this.currentIndex;
-this.currentIndex=dayIndex;
-this.protocol=JSON.parse(JSON.stringify(BASE));
+// Build a temporary protocol for this day to check completion
+const tempProtocol=JSON.parse(JSON.stringify(BASE));
 const sel=this.meals[day.date]||{};
-this.protocol.forEach(t=>{if(t.mealSlot&&sel[t.mealSlot]!==undefined){const all=MEALS[t.mealSlot]||[];if(all[sel[t.mealSlot]]){const m=all[sel[t.mealSlot]];const portion=(t.mealSlot==='lunch'||t.mealSlot==='dinner')?(this.portions[day.date]?.[t.mealSlot]||1):1;t.title=m.title+(portion===0.5?' (HALF)':'');t.desc=`P:${Math.round(m.macros.p*portion)} C:${Math.round(m.macros.cal*portion)}`;t.macros={p:m.macros.p*portion,o:m.macros.o*portion,f:m.macros.f*portion,cal:m.macros.cal*portion,poly:(m.macros.poly||0)*portion};t.colors=m.colors}}});
-// Add dynamic items (simplified - just check if they exist)
-const requiredItems=this.protocol.filter(t=>!t.autoDetected&&!t.cssClass?.includes('optional'));
+tempProtocol.forEach(t=>{if(t.mealSlot&&sel[t.mealSlot]!==undefined){const all=MEALS[t.mealSlot]||[];if(all[sel[t.mealSlot]]){const m=all[sel[t.mealSlot]];const portion=(t.mealSlot==='lunch'||t.mealSlot==='dinner')?(this.portions[day.date]?.[t.mealSlot]||1):1;t.title=m.title+(portion===0.5?' (HALF)':'');t.desc=`P:${Math.round(m.macros.p*portion)} C:${Math.round(m.macros.cal*portion)}`;t.macros={p:m.macros.p*portion,o:m.macros.o*portion,f:m.macros.f*portion,cal:m.macros.cal*portion,poly:(m.macros.poly||0)*portion};t.colors=m.colors}}});
+// Check if all required items are completed
+const requiredItems=tempProtocol.filter(t=>!t.autoDetected&&!t.cssClass?.includes('optional'));
 const allChecked=requiredItems.every(t=>chk.includes(t.id));
-this.currentIndex=oldIndex;
 if(allChecked&&requiredItems.length>0){
 streak++;
 }else{
