@@ -197,6 +197,18 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
     </div>
 </div>
 
+<div class="section-header">HYDRATION 💧</div>
+<div class="rainbow-container">
+    <div class="rainbow-header">
+        <div class="rainbow-title">WATER INTAKE</div>
+        <div class="rainbow-score" id="waterScore">0 / 0 oz</div>
+    </div>
+    <div class="rainbow-track" style="background:#0a0a0a;border:1px solid #1a1a1a;cursor:pointer" onclick="app.addWater()" id="waterTrack">
+        <div style="height:100%;background:linear-gradient(90deg,#00d4ff,#0088ff);border-radius:8px;transition:width 0.3s" id="waterFill"></div>
+    </div>
+    <div style="text-align:center;margin-top:8px;font-size:0.7rem;color:#666">Tap bar to add 8oz glass</div>
+</div>
+
 <div class="section-header">PHYTONUTRIENT DIVERSITY 🌈</div>
 <div class="rainbow-container">
     <div class="rainbow-header"><div class="rainbow-title">RAINBOW SCORE</div><div class="rainbow-score" id="rainbowScore">0%</div></div>
@@ -436,7 +448,7 @@ const V='17.92-ORIGINAL';
 if(localStorage.getItem('centurion_version_original')!==V){localStorage.clear();localStorage.setItem('centurion_version_original',V)}
 this.user=localStorage.getItem('centurion_user_original')||'jermaine';
 this.history=[];this.currentIndex=0;this.currentDateStr=new Date().toLocaleDateString('en-CA');
-this.checked={};this.meals={};this.portions={};this.bios={};this.protocol=[];this.currentPortion=1;this.currentMealIdx=null;this.streak=0;
+this.checked={};this.meals={};this.portions={};this.bios={};this.protocol=[];this.currentPortion=1;this.currentMealIdx=null;this.streak=0;this.water={};
 // Initialize UI button states
 document.querySelectorAll('.user-switch button').forEach(b=>b.classList.remove('active'));
 document.getElementById(`btn-${this.user}`)?.classList.add('active');
@@ -449,14 +461,16 @@ const m=localStorage.getItem(`c_meals_${this.user}`);this.meals=m?JSON.parse(m):
 const p=localStorage.getItem(`c_portions_${this.user}`);this.portions=p?JSON.parse(p):{};
 const b=localStorage.getItem(`c_bios_${this.user}`);this.bios=b?JSON.parse(b):USERS[this.user].defaultBios;
 const s=localStorage.getItem(`c_streak_${this.user}`);this.streak=s?parseInt(s):0;
-}catch(e){this.checked={};this.meals={};this.portions={};this.streak=0}}
+const w=localStorage.getItem(`c_water_${this.user}`);this.water=w?JSON.parse(w):{};
+}catch(e){this.checked={};this.meals={};this.portions={};this.streak=0;this.water={}}}
 
 saveUserData(){
 localStorage.setItem(`c_checked_${this.user}`,JSON.stringify(this.checked));
 localStorage.setItem(`c_meals_${this.user}`,JSON.stringify(this.meals));
 localStorage.setItem(`c_portions_${this.user}`,JSON.stringify(this.portions));
 localStorage.setItem(`c_bios_${this.user}`,JSON.stringify(this.bios));
-localStorage.setItem(`c_streak_${this.user}`,this.streak.toString())}
+localStorage.setItem(`c_streak_${this.user}`,this.streak.toString());
+localStorage.setItem(`c_water_${this.user}`,JSON.stringify(this.water))}
 
 setPlaceholderData(){this.history=[{date:this.currentDateStr,score:0,totalSec:0,deepSec:0,remSec:0,rhr:'-',cal:0,high:0,med:0,workouts:[]}];this.currentIndex=0}
 
@@ -1270,9 +1284,38 @@ const isC=chk.includes(t.id);
 let ca='';let cc=`task-card ${isC?'checked':''} ${t.autoDetected?'auto-detected':''} ${t.cssClass||''}`;
 if(t.clickable){if(t.type&&(t.type in PROTOCOLS))ca=`onclick="app.showProtocolDetails('${t.type}')"`;else if(t.mealSlot)ca=`onclick="app.openMealPicker('${t.mealSlot}')"`}
 th+=`<div class="task"><div class="task-time">${t.time}</div><div class="${cc}" ${ca}><div class="task-info"><div class="task-title">${t.title}</div><div class="task-desc">${t.desc}</div></div>${t.clickable?'<div class="chevron">›</div>':''}${!t.autoDetected?`<div class="check-btn" onclick="event.stopPropagation();app.toggleTask('${t.id}')"><div class="check-circle">${isC?'✓':''}</div></div>`:''}</div></div>`});
-document.getElementById('timeline').innerHTML=th}
+document.getElementById('timeline').innerHTML=th;
+this.updateWaterDisplay()}
 
 setText(id,txt){const el=document.getElementById(id);if(el)el.innerText=txt}
+
+calculateWaterTarget(){
+// Calculate based on weight (oz = weight in lbs * 0.67)
+// Jermaine: ~200lbs, Sophia: ~140lbs (estimates based on typical height/build)
+const weight=this.user==='jermaine'?200:140;
+return Math.round(weight*0.67); // Target water in oz
+}
+
+addWater(){
+const date=this.history[this.currentIndex].date;
+if(!this.water[date])this.water[date]=0;
+this.water[date]+=8; // Add 8oz glass
+const target=this.calculateWaterTarget();
+if(this.water[date]>target)this.water[date]=target; // Cap at target
+this.saveUserData();
+this.updateWaterDisplay();
+}
+
+updateWaterDisplay(){
+const date=this.history[this.currentIndex].date;
+const current=this.water[date]||0;
+const target=this.calculateWaterTarget();
+const percent=Math.min(100,(current/target)*100);
+this.setText('waterScore',`${current} / ${target} oz`);
+const fill=document.getElementById('waterFill');
+if(fill)fill.style.width=`${percent}%`;
+}
+
 sync(){this.fetchOuraData()}}
 
 let app;
