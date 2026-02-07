@@ -1098,14 +1098,24 @@ const hrvBaseline=USERS[this.user].hrvBaseline;
 const hrvLow=day.hrv&&day.hrv<hrvBaseline*0.85;
 this.setText('dateLabel',date);
 
-// Recovery Battery (v22)
-const batteryScore=day.readiness||Math.round((day.score||0)*0.8);
+// Recovery Battery — composite score (HRV 30%, Sleep 25%, Readiness 25%, Strain-inverse 20%)
+const hrvPct=day.hrv?Math.min((day.hrv/hrvBaseline)*100,120):50;
+const sleepPct=Math.min(((day.totalSec||0)/3600/goals.sleepHours)*100,120);
+const readyPct=Math.min(day.readiness||50,100);
+const strainRaw=(day.high||0)+(day.med||0)*0.5;
+const strainCap=goals.z5+goals.z2*0.5;
+const strainPct=strainCap>0?Math.min((strainRaw/strainCap)*100,150):50;
+// Strain is inverted for recovery: over-training lowers battery, under-training is neutral
+const strainRecovery=strainPct<=100?100:Math.max(0,200-strainPct);
+const batteryScore=Math.round(hrvPct*0.30+sleepPct*0.25+readyPct*0.25+strainRecovery*0.20);
 this.setText('batteryScore',batteryScore||'--');
-document.getElementById('batteryFill').style.width=`${batteryScore||0}%`;
+const bf=document.getElementById('batteryFill');
+bf.style.width=`${Math.min(batteryScore,100)}%`;
+bf.style.background=batteryScore>=80?'linear-gradient(90deg,#34d399,#00f2fe)':batteryScore>=60?'linear-gradient(90deg,#4facfe,#00f2fe)':batteryScore>=40?'linear-gradient(90deg,#ff9500,#ffcc00)':'linear-gradient(90deg,#ff4757,#ff6b81)';
 this.setText('bcHrv',day.hrv||'--');
 this.setText('bcSleep',`${((day.totalSec||0)/3600).toFixed(1)}h`);
 this.setText('bcReadiness',day.readiness||'--');
-this.setText('bcStrain',Math.round((day.high||0)+(day.med||0)*0.5)||'--');
+this.setText('bcStrain',Math.round(strainRaw)||'--');
 
 // Trends
 const last7=this.history.slice(0,7);
