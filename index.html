@@ -31,6 +31,10 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .bc-value{font-size:0.9rem;font-weight:700}
 .bc-label{font-size:0.5rem;color:var(--text-tertiary);text-transform:uppercase;margin-top:2px}
 .bc-trend{font-size:0.55rem;margin-top:2px}
+.battery-detail-row{display:flex;justify-content:space-between;padding:10px 4px 0;border-top:1px solid var(--border);margin-top:10px}
+.battery-detail{text-align:center;flex:1}
+.bd-label{display:block;font-size:0.45rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.5px}
+.bd-value{display:block;font-size:0.75rem;font-weight:700;margin-top:2px}
 .trend-up{color:var(--success)}
 .trend-down{color:var(--alert)}
 .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:0 20px;margin-bottom:20px}
@@ -47,21 +51,6 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .orb-val-box{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
 .orb-val{font-size:0.75rem;font-weight:800;line-height:1}
 .orb-label{font-size:0.5rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase}
-.hrv-card{background:linear-gradient(135deg,var(--panel) 0%,rgba(168,85,247,0.1) 100%);border-color:var(--purple)}
-.hrv-wave{width:100%;height:28px;margin-bottom:8px}
-.hrv-wave-path{fill:none;stroke:var(--purple);stroke-width:2;stroke-linecap:round;filter:drop-shadow(0 0 4px var(--purple))}
-.temp-indicator{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:8px;font-size:1.2rem}
-.temp-normal{background:rgba(52,211,153,0.15);border:2px solid var(--success)}
-.temp-elevated{background:rgba(255,149,0,0.15);border:2px solid var(--orange)}
-.temp-high{background:rgba(255,71,87,0.15);border:2px solid var(--alert)}
-.sleep-debt-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;margin:0 20px 20px;display:flex;align-items:center;gap:16px}
-.sleep-debt-visual{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.5rem}
-.debt-positive{background:rgba(255,71,87,0.15);border:2px solid var(--alert)}
-.debt-negative{background:rgba(52,211,153,0.15);border:2px solid var(--success)}
-.debt-neutral{background:var(--panel-elevated);border:2px solid var(--border)}
-.sleep-debt-info{flex:1}
-.sleep-debt-value{font-size:1.5rem;font-weight:800}
-.sleep-debt-label{font-size:0.7rem;color:var(--text-tertiary)}
 .score-row{display:flex;gap:12px;justify-content:center;padding:20px}
 .score-orb{flex:0 0 90px;height:90px;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer}
 .score-orb svg{position:absolute;width:100%;height:100%;transform:rotate(-90deg)}
@@ -176,10 +165,17 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 </div>
 <div class="battery-bar"><div class="battery-fill" id="batteryFill" style="width:0%"></div></div>
 <div class="battery-components">
-<div class="battery-component"><div class="bc-value" id="bcHrv">--</div><div class="bc-label">HRV</div><div class="bc-trend" id="bcHrvTrend"></div></div>
+<div class="battery-component" id="hrvCard"><div class="bc-value" id="bcHrv" style="color:var(--purple)">--</div><div class="bc-label">HRV (ms)</div><div class="bc-trend" id="bcHrvTrend"></div></div>
 <div class="battery-component"><div class="bc-value" id="bcSleep">--</div><div class="bc-label">SLEEP</div><div class="bc-trend" id="bcSleepTrend"></div></div>
 <div class="battery-component"><div class="bc-value" id="bcReadiness">--</div><div class="bc-label">READY</div><div class="bc-trend" id="bcReadinessTrend"></div></div>
 <div class="battery-component"><div class="bc-value" id="bcStrain">--</div><div class="bc-label">STRAIN</div><div class="bc-trend" id="bcStrainTrend"></div></div>
+</div>
+<div class="battery-detail-row">
+<div class="battery-detail"><span class="bd-label">DEEP</span><span class="bd-value" id="deepVal">--</span></div>
+<div class="battery-detail"><span class="bd-label">REM</span><span class="bd-value" id="remVal">--</span></div>
+<div class="battery-detail"><span class="bd-label">TEMP</span><span class="bd-value" id="tempVal">+0.0°</span></div>
+<div class="battery-detail"><span class="bd-label">RESP</span><span class="bd-value" id="respVal">--</span></div>
+<div class="battery-detail"><span class="bd-label">DEBT</span><span class="bd-value" id="sleepDebtValue">0h</span></div>
 </div>
 </div>
 
@@ -209,52 +205,6 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 
 <div id="insightContainer"></div>
 
-<!-- v22 RECOVERY METRICS -->
-
-<div class="section-header">RECOVERY METRICS</div>
-<div class="grid-4">
-<div class="orb-card hrv-card" id="hrvCard">
-<svg class="hrv-wave" viewBox="0 0 100 28"><path class="hrv-wave-path" d="M0,14 Q12,4 25,14 T50,14 T75,14 T100,14"/></svg>
-<div class="orb-val" id="hrvVal" style="font-size:1.1rem;color:var(--purple)">--</div>
-<div class="orb-label" style="color:var(--purple)">HRV (ms)</div>
-</div>
-<div class="orb-card" id="tempCard">
-<div class="temp-indicator temp-normal" id="tempIndicator">🌡️</div>
-<div class="orb-val" id="tempVal" style="font-size:0.9rem">+0.0°</div>
-<div class="orb-label">TEMP DEV</div>
-</div>
-<div class="orb-card">
-<svg class="hrv-wave" viewBox="0 0 100 28" style="opacity:0.6"><path style="fill:none;stroke:var(--cyan);stroke-width:2" d="M0,14 Q25,0 50,14 T100,14"/></svg>
-<div class="orb-val" id="respVal" style="font-size:1.1rem;color:var(--cyan)">--</div>
-<div class="orb-label" style="color:var(--cyan)">RESP/MIN</div>
-</div>
-<div class="orb-card">
-<div class="orb-container">
-<svg class="orb-svg" viewBox="0 0 50 50"><circle class="orb-bg" cx="25" cy="25" r="22"/><circle class="orb-fg" id="readinessOrb" cx="25" cy="25" r="22" style="stroke:var(--success)"/></svg>
-<div class="orb-val-box"><div class="orb-val" id="readinessVal">--</div></div>
-</div>
-<div class="orb-label" style="color:var(--success)">READINESS</div>
-</div>
-</div>
-
-<!-- v22 SLEEP DEBT -->
-
-<div class="section-header">SLEEP BANK</div>
-<div class="sleep-debt-card">
-<div class="sleep-debt-visual debt-neutral" id="sleepDebtVisual">💤</div>
-<div class="sleep-debt-info">
-<div class="sleep-debt-value" id="sleepDebtValue">0h</div>
-<div class="sleep-debt-label">7-DAY SLEEP BALANCE</div>
-</div>
-</div>
-
-<div class="section-header">SLEEP ARCHITECTURE</div>
-<div class="grid-3">
-<div class="orb-card"><div class="orb-container"><svg class="orb-svg" viewBox="0 0 50 50"><circle class="orb-bg" cx="25" cy="25" r="22"/><circle class="orb-fg" id="sleepOrb" cx="25" cy="25" r="22" style="stroke:var(--purple)"/></svg><div class="orb-val-box"><div class="orb-val" id="sleepVal">--</div></div></div><div class="orb-label" style="color:var(--purple)">TOTAL</div></div>
-<div class="orb-card"><div class="orb-container"><svg class="orb-svg" viewBox="0 0 50 50"><circle class="orb-bg" cx="25" cy="25" r="22"/><circle class="orb-fg" id="deepOrb" cx="25" cy="25" r="22" style="stroke:#667eea"/></svg><div class="orb-val-box"><div class="orb-val" id="deepVal">--</div></div></div><div class="orb-label" style="color:#667eea">DEEP</div></div>
-<div class="orb-card"><div class="orb-container"><svg class="orb-svg" viewBox="0 0 50 50"><circle class="orb-bg" cx="25" cy="25" r="22"/><circle class="orb-fg" id="remOrb" cx="25" cy="25" r="22" style="stroke:#f093fb"/></svg><div class="orb-val-box"><div class="orb-val" id="remVal">--</div></div></div><div class="orb-label" style="color:#f093fb">REM</div></div>
-</div>
-
 <div class="section-header">FUEL (NUTRITION)</div>
 <div class="grid-4">
 <div class="orb-card"><div class="orb-container"><svg class="orb-svg" viewBox="0 0 50 50"><circle class="orb-bg" cx="25" cy="25" r="22"/><circle class="orb-fg" id="proteinOrb" cx="25" cy="25" r="22" style="stroke:#fff"/></svg><div class="orb-val-box"><div class="orb-val" id="proteinVal">0</div></div></div><div class="orb-label">PROTEIN</div></div>
@@ -276,9 +226,8 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 <!-- v21 VASCULAR -->
 
 <div class="section-header">VASCULAR (AGING)</div>
-<div class="grid-4">
+<div class="grid-3">
 <div class="orb-card"><div style="text-align:center"><div style="font-size:0.5rem;color:var(--text-tertiary);margin-bottom:4px">VASCULAR</div><div style="font-size:1.4rem;font-weight:900;color:var(--alert)" id="vascularAge">--</div></div><div class="orb-label" style="color:var(--alert)">AGE</div></div>
-<div class="orb-card"><div style="text-align:center"><div style="font-size:0.5rem;color:var(--text-tertiary);margin-bottom:4px">ACTUAL</div><div style="font-size:1.4rem;font-weight:900;color:var(--cyan)" id="actualAge">43</div></div><div class="orb-label" style="color:var(--cyan)">AGE</div></div>
 <div class="orb-card"><div style="text-align:center"><div style="font-size:0.5rem;color:var(--text-tertiary);margin-bottom:4px">DIFFERENCE</div><div style="font-size:1.4rem;font-weight:900;color:var(--success)" id="ageDiff">--</div></div><div class="orb-label" style="color:var(--success)" id="ageDiffLabel">YOUNGER</div></div>
 <div class="orb-card"><div style="text-align:center"><div style="font-size:0.5rem;color:var(--text-tertiary);margin-bottom:4px">TREND</div><div style="font-size:1.4rem;font-weight:900;color:var(--orange)" id="vascularTrend">--</div></div><div class="orb-label" style="color:var(--orange)">7-DAY</div></div>
 </div>
@@ -557,8 +506,8 @@ this.processData(data);this.setText('syncStatus','SYNCED ✓');this.render();
 processData(data){
 const m=new Map();
 const g=d=>{if(!m.has(d))m.set(d,{date:d,score:0,totalSec:0,deepSec:0,remSec:0,rhr:'-',cal:0,high:0,med:0,workouts:[],hrv:null,tempDev:0,respRate:null,readiness:null,vascularAge:null});return m.get(d)};
-(data.sleep||[]).forEach(s=>{const d=g(s.day);d.totalSec+=s.total_sleep_duration||0;d.deepSec+=s.deep_sleep_duration||0;d.remSec+=s.rem_sleep_duration||0;if(s.lowest_heart_rate>=35&&s.lowest_heart_rate<=100)d.rhr=Math.round(s.lowest_heart_rate);if(s.average_breath)d.respRate=s.average_breath;const sc=s.score||(s.efficiency?Math.round(s.efficiency):0);if(sc>d.score)d.score=sc});
-(data.daily_hrv||[]).forEach(h=>{const d=g(h.day);if(h.contributors?.balance)d.hrv=Math.round(h.contributors.balance)});
+(data.sleep||[]).forEach(s=>{const d=g(s.day);d.totalSec+=s.total_sleep_duration||0;d.deepSec+=s.deep_sleep_duration||0;d.remSec+=s.rem_sleep_duration||0;if(s.lowest_heart_rate>=35&&s.lowest_heart_rate<=100)d.rhr=Math.round(s.lowest_heart_rate);if(s.average_breath)d.respRate=s.average_breath;if(s.average_hrv)d.hrv=Math.round(s.average_hrv);const sc=s.score||(s.efficiency?Math.round(s.efficiency):0);if(sc>d.score)d.score=sc});
+(data.daily_hrv||[]).forEach(h=>{const d=g(h.day);if(!d.hrv&&h.contributors?.balance){d.hrv=Math.round(h.contributors.balance)}});
 (data.daily_readiness||[]).forEach(r=>{const d=g(r.day);d.readiness=r.score||null;if(r.contributors?.body_temperature)d.tempDev=(r.contributors.body_temperature-50)/10});
 (data.daily_activity||[]).forEach(a=>{const d=g(a.day);d.cal=a.active_calories||0;d.high=(a.high_activity_time||0)/60;d.med=(a.medium_activity_time||0)/60});
 (data.workout||[]).forEach(w=>{const d=g(w.day);d.workouts.push({type:w.label||w.activity||'workout',calories:w.calories||300,time:new Date(w.start_datetime).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})})});
@@ -1178,34 +1127,19 @@ insights+=this.getThermalInsights(day,thermal);
 this.setText('statusMsg',status);
 document.getElementById('insightContainer').innerHTML=insights;
 
-// Recovery Metrics (v22)
-this.setText('hrvVal',day.hrv||'--');
-const hrvCard=document.getElementById('hrvCard');
-hrvCard.classList.remove('alert','warning','optimal');
-if(hrvLow)hrvCard.classList.add('warning');else if(day.hrv&&day.hrv>=hrvBaseline)hrvCard.classList.add('optimal');
-this.setText('tempVal',`${day.tempDev>0?'+':''}${(day.tempDev||0).toFixed(1)}°`);
-const tempInd=document.getElementById('tempIndicator');
-tempInd.className='temp-indicator '+(Math.abs(day.tempDev||0)>1?'temp-high':Math.abs(day.tempDev||0)>0.5?'temp-elevated':'temp-normal');
-this.setText('respVal',day.respRate?day.respRate.toFixed(1):'--');
-this.setText('readinessVal',day.readiness||'--');
+// Battery Detail Row (consolidated recovery + sleep + debt)
 const upd=(id,val,max)=>{const el=document.getElementById(id);if(el)el.style.strokeDashoffset=138-(Math.min(val/max,1)*138)};
-upd('readinessOrb',day.readiness||0,100);
-
-// Sleep Debt (v22)
+this.setText('deepVal',`${Math.round((day.deepSec||0)/60)}m`);
+this.setText('remVal',`${Math.round((day.remSec||0)/60)}m`);
+this.setText('tempVal',`${day.tempDev>0?'+':''}${(day.tempDev||0).toFixed(1)}°`);
+this.setText('respVal',day.respRate?day.respRate.toFixed(1):'--');
 const sleepTarget=goals.sleepHours*7;
 const sleepActual=last7.reduce((s,d)=>s+(d.totalSec||0)/3600,0);
 const sleepDebt=sleepActual-sleepTarget;
 this.setText('sleepDebtValue',`${sleepDebt>0?'+':''}${sleepDebt.toFixed(1)}h`);
-const debtVis=document.getElementById('sleepDebtVisual');
-debtVis.className='sleep-debt-visual '+(sleepDebt<-3?'debt-positive':sleepDebt>1?'debt-negative':'debt-neutral');
-
-// Sleep Architecture
-this.setText('sleepVal',`${((day.totalSec||0)/3600).toFixed(1)}h`);
-this.setText('deepVal',`${Math.round((day.deepSec||0)/60)}m`);
-this.setText('remVal',`${Math.round((day.remSec||0)/60)}m`);
-upd('sleepOrb',(day.totalSec||0)/3600,8);
-upd('deepOrb',(day.deepSec||0)/60,90);
-upd('remOrb',(day.remSec||0)/60,90);
+// HRV card color in battery
+const hrvComp=document.getElementById('hrvCard');
+if(hrvComp){hrvComp.style.background=hrvLow?'rgba(255,149,0,0.15)':(day.hrv&&day.hrv>=hrvBaseline)?'rgba(52,211,153,0.1)':''}
 
 // Nutrition
 const updMac=(id,val,max)=>{upd(id,val,max);const txt=document.getElementById(id.replace('Orb','Val'));if(txt)txt.innerText=Math.round(val)};
@@ -1228,7 +1162,6 @@ upd('balanceOrb',Math.abs(balance),500);
 
 // Vascular (v21)
 const actualAge=this.user==='jermaine'?43:39;
-this.setText('actualAge',actualAge);
 const vascLast7=this.history.slice(0,7).filter(d=>d.vascularAge);
 if(vascLast7.length>0){
 const avgVAge=Math.round(vascLast7.reduce((sum,d)=>sum+d.vascularAge,0)/vascLast7.length);
