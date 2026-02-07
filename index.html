@@ -83,30 +83,6 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .insight-title{font-size:0.8rem;font-weight:700}
 .insight-body{font-size:0.75rem;color:var(--text-secondary);line-height:1.5}
 .insight-action{margin-top:10px;padding:10px;background:rgba(200,255,0,0.1);border-radius:8px;font-size:0.7rem;color:var(--acid);font-weight:600}
-.rec-panel{background:var(--panel);border:1px solid var(--border);border-radius:16px;margin:0 20px 16px;overflow:hidden}
-.rec-panel-header{padding:14px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)}
-.rec-panel-title{font-size:0.7rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase}
-.rec-panel-subtitle{font-size:0.55rem;color:var(--text-tertiary);font-weight:600}
-.rec-workout{padding:16px;display:flex;gap:14px;align-items:center;cursor:pointer;transition:background 0.2s}
-.rec-workout:active{background:var(--panel-elevated)}
-.rec-workout-icon{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0}
-.rec-workout-info{flex:1}
-.rec-workout-name{font-size:0.95rem;font-weight:800;margin-bottom:3px}
-.rec-workout-detail{font-size:0.7rem;color:var(--text-secondary);line-height:1.4}
-.rec-workout-why{font-size:0.65rem;color:var(--acid);font-weight:700;margin-top:4px}
-.rec-meal{padding:12px 16px;display:flex;gap:12px;align-items:center;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.2s}
-.rec-meal:last-child{border-bottom:none}
-.rec-meal:active{background:var(--panel-elevated)}
-.rec-meal.selected{background:rgba(200,255,0,0.05);border-left:3px solid var(--acid)}
-.rec-meal-slot{font-size:0.5rem;font-weight:800;color:var(--text-tertiary);text-transform:uppercase;width:55px;flex-shrink:0;text-align:center}
-.rec-meal-info{flex:1;min-width:0}
-.rec-meal-name{font-size:0.85rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rec-meal-macros{font-size:0.6rem;color:var(--text-secondary);margin-top:2px}
-.rec-meal-why{font-size:0.55rem;color:var(--cyan);font-weight:700;margin-top:2px}
-.rec-meal-action{font-size:0.6rem;color:var(--acid);font-weight:800;flex-shrink:0}
-.rec-accept-all{padding:12px 16px;background:rgba(200,255,0,0.08);text-align:center;cursor:pointer;transition:background 0.2s}
-.rec-accept-all:active{background:rgba(200,255,0,0.15)}
-.rec-accept-all-text{font-size:0.7rem;font-weight:800;color:var(--acid)}
 .heart-container{width:52px;height:52px;position:relative;margin-bottom:8px}
 .heart-svg{width:100%;height:100%}
 .heart-bg{fill:none;stroke:var(--panel-elevated);stroke-width:2}
@@ -132,6 +108,8 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .task-card.hrv-adjusted{border-color:var(--orange);background:rgba(255,149,0,0.05)}
 .task-card.recovery{border-color:var(--purple);background:rgba(168,85,247,0.05)}
 .task-card.facial{border-color:var(--cyan);background:rgba(0,212,255,0.08)}
+.task-card.workout-rec{border-color:var(--orange);background:rgba(255,149,0,0.06);border-style:dashed}
+.task-card.ai-filled .task-title::after{content:' ✨';font-size:0.65rem}
 .task-card.optional{border-style:dashed;border-color:#444;opacity:0.7}
 .task-info{flex:1}
 .task-title{font-weight:700;font-size:0.85rem;margin-bottom:4px}
@@ -230,11 +208,6 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 </div>
 
 <div id="insightContainer"></div>
-
-<!-- AI RECOMMENDATIONS -->
-
-<div id="workoutRecContainer"></div>
-<div id="mealRecContainer"></div>
 
 <!-- v22 RECOVERY METRICS -->
 
@@ -1047,28 +1020,6 @@ selectedTitle:alreadySelected?pool[sel[slot]]?.title:null
 return recommendations;
 }
 
-acceptAllRecommendations(recs){
-const d=this.currentDateStr;
-if(!this.meals[d])this.meals[d]={};
-recs.forEach(r=>{
-if(!r.selected){
-this.meals[d][r.slot]=r.mealIdx;
-const protocolItem=this.protocol.find(p=>p.mealSlot===r.slot);
-if(protocolItem){if(!this.checked[d])this.checked[d]=[];if(!this.checked[d].includes(protocolItem.id))this.checked[d].push(protocolItem.id)}
-}
-});
-this.save();this.render();
-}
-
-acceptMealRec(slot,idx){
-const d=this.currentDateStr;
-if(!this.meals[d])this.meals[d]={};
-this.meals[d][slot]=idx;
-const protocolItem=this.protocol.find(p=>p.mealSlot===slot);
-if(protocolItem){if(!this.checked[d])this.checked[d]=[];if(!this.checked[d].includes(protocolItem.id))this.checked[d].push(protocolItem.id)}
-this.save();this.render();
-}
-
 // ============================================================================
 // v21 AI DAILY RECOMMENDATION (biomarker-aware)
 // ============================================================================
@@ -1213,38 +1164,9 @@ insights+=this.getThermalInsights(day,thermal);
 this.setText('statusMsg',status);
 document.getElementById('insightContainer').innerHTML=insights;
 
-// AI Workout Recommendation
-const workoutRec=this.getRecommendedWorkout(day,new Date(date+'T12:00:00').getDay(),hrvLow,thermal);
-document.getElementById('workoutRecContainer').innerHTML=`
-<div class="rec-panel" style="border-color:${workoutRec.border}">
-<div class="rec-panel-header"><div class="rec-panel-title" style="color:${workoutRec.border}">🏋️ TODAY'S WORKOUT</div><div class="rec-panel-subtitle">AI RECOMMENDED</div></div>
-<div class="rec-workout">
-<div class="rec-workout-icon" style="background:${workoutRec.bg};border:1px solid ${workoutRec.border}">${workoutRec.icon}</div>
-<div class="rec-workout-info"><div class="rec-workout-name">${workoutRec.title}</div><div class="rec-workout-detail">${workoutRec.detail}</div><div class="rec-workout-why">${workoutRec.why}</div></div>
-</div></div>`;
+// AI Workout Recommendation → injected into protocol below
 
-// AI Meal Recommendations
-const mealRecs=this.getRecommendedMeals(day,mac,hrvLow);
-if(mealRecs.length>0){
-const unselectedCount=mealRecs.filter(r=>!r.selected).length;
-// Store recs for accept-all
-this._lastMealRecs=mealRecs;
-let mealHtml=`<div class="rec-panel"><div class="rec-panel-header"><div class="rec-panel-title" style="color:var(--cyan)">🍽️ RECOMMENDED MEALS</div><div class="rec-panel-subtitle">BASED ON YOUR BIOMARKERS</div></div>`;
-mealRecs.forEach(r=>{
-if(r.selected){
-mealHtml+=`<div class="rec-meal selected"><div class="rec-meal-slot">${r.slotLabel}</div><div class="rec-meal-info"><div class="rec-meal-name">✓ ${r.selectedTitle}</div><div class="rec-meal-macros">P:${MEALS[r.slot][r.selectedIdx]?.macros?.p||0}g Ω3:${MEALS[r.slot][r.selectedIdx]?.macros?.o||0}mg Cal:${MEALS[r.slot][r.selectedIdx]?.macros?.cal||0}</div></div><div class="rec-meal-action" onclick="event.stopPropagation();app.openMealPicker('${r.slot}')" style="color:var(--text-tertiary)">CHANGE</div></div>`;
-}else{
-mealHtml+=`<div class="rec-meal" onclick="app.acceptMealRec('${r.slot}',${r.mealIdx})"><div class="rec-meal-slot">${r.slotLabel}</div><div class="rec-meal-info"><div class="rec-meal-name">${r.title}</div><div class="rec-meal-macros">P:${r.macros?.p||0}g Ω3:${r.macros?.o||0}mg F:${r.macros?.f||0}g Cal:${r.macros?.cal||0}</div><div class="rec-meal-why">${r.why}</div></div><div class="rec-meal-action">+ ADD</div></div>`;
-}
-});
-if(unselectedCount>1){
-mealHtml+=`<div class="rec-accept-all" onclick="app.acceptAllRecommendations(app._lastMealRecs)"><div class="rec-accept-all-text">⚡ ACCEPT ALL ${unselectedCount} RECOMMENDATIONS</div></div>`;
-}
-mealHtml+=`</div>`;
-document.getElementById('mealRecContainer').innerHTML=mealHtml;
-}else{
-document.getElementById('mealRecContainer').innerHTML='';
-}
+// AI Meal Recommendations → auto-fill into protocol slots below
 
 // Recovery Metrics (v22)
 this.setText('hrvVal',day.hrv||'--');
@@ -1337,6 +1259,23 @@ const impact=this.getWorkoutImpact(w.type);
 this.protocol.push({id:`workout_${i}`,time:w.time,title:`${w.type.toUpperCase()} Detected`,desc:`${w.calories} cal | Impact: ${impact.impact.toUpperCase()} (${impact.intensity}/10)`,autoDetected:true});
 });
 
+// AI Workout Recommendation → inject into protocol
+const workoutRec=this.getRecommendedWorkout(day,dow,hrvLow,thermal);
+if(!hadWorkout){
+this.protocol.push({id:'ai_workout',time:workoutRec.time||'6:00 AM',title:`${workoutRec.icon} ${workoutRec.title}`,desc:`${workoutRec.detail} — ${workoutRec.why}`,cssClass:'recovery',clickable:false});
+}
+
+// AI Auto-fill meals: pre-select best meal for any empty slot
+const mealSlots=['breakfast','snack1','lunch','snack2','dinner'];
+const mealRecs=this.getRecommendedMeals(day,mac,hrvLow);
+mealRecs.forEach(r=>{
+if(!r.selected&&sel[r.slot]===undefined){
+sel[r.slot]=r.mealIdx;
+if(!this.meals[date])this.meals[date]={};
+this.meals[date][r.slot]=r.mealIdx;
+}
+});
+
 // Lunch recovery stretching (v21)
 const lunchRec=this.getLunchRecovery(dow);
 if(lunchRec)this.protocol.push({id:'lunch_recovery',time:'12:30 PM',title:lunchRec.title,desc:lunchRec.desc,clickable:lunchRec.clickable,type:lunchRec.type,cssClass:'recovery'});
@@ -1389,13 +1328,15 @@ const trend=recent-older;
 this.setText('vascularTrend',`${trend>0?'+':''}${trend.toFixed(1)}`);
 }else{this.setText('vascularTrend','--')}
 
-// Apply meal selections
-this.protocol.forEach(t=>{if(t.mealSlot&&sel[t.mealSlot]!==undefined){const m=MEALS[t.mealSlot]?.[sel[t.mealSlot]];if(m){const portion=this.portions[date]?.[t.mealSlot]||1;t.title=m.title+(portion===0.5?' (HALF)':'');t.desc=`P:${Math.round((m.macros.p||0)*portion)}g Cal:${Math.round((m.macros.cal||0)*portion)}`;t.macros={p:(m.macros.p||0)*portion,o:(m.macros.o||0)*portion,f:(m.macros.f||0)*portion,cal:(m.macros.cal||0)*portion,poly:(m.macros.poly||0)*portion};t.colors=m.colors}}});
+// Apply meal selections (mark AI-filled ones)
+const userPickedSlots=this.meals[date]?Object.keys(this.meals[date]).filter(s=>chk.includes(this.protocol.find(p=>p.mealSlot===s)?.id)):[];
+this.protocol.forEach(t=>{if(t.mealSlot&&sel[t.mealSlot]!==undefined){const m=MEALS[t.mealSlot]?.[sel[t.mealSlot]];if(m){const portion=this.portions[date]?.[t.mealSlot]||1;t.title=m.title+(portion===0.5?' (HALF)':'');t.desc=`P:${Math.round((m.macros.p||0)*portion)}g Ω3:${Math.round((m.macros.o||0)*portion)}mg Cal:${Math.round((m.macros.cal||0)*portion)}`;t.macros={p:(m.macros.p||0)*portion,o:(m.macros.o||0)*portion,f:(m.macros.f||0)*portion,cal:(m.macros.cal||0)*portion,poly:(m.macros.poly||0)*portion};t.colors=m.colors;t.aiFilled=!chk.includes(t.id)}}});
 
 // Render timeline
 document.getElementById('timeline').innerHTML=this.protocol.map(t=>{
 const isC=chk.includes(t.id);
-const cc=`task-card ${isC?'checked':''} ${t.autoDetected?'auto-detected':''} ${t.hrvAdjusted?'hrv-adjusted':''} ${t.cssClass||''}`;
+const isAiFilled=t.mealSlot&&t.aiFilled&&!isC;
+const cc=`task-card ${isC?'checked':''} ${t.autoDetected?'auto-detected':''} ${t.hrvAdjusted?'hrv-adjusted':''} ${isAiFilled?'ai-filled':''} ${t.cssClass||''}`;
 let ca='';
 if(t.clickable&&t.type&&PROTOCOLS[t.type])ca=`onclick="app.showProtocolDetails('${t.type}')"`;
 else if(t.mealSlot)ca=`onclick="app.openMealPicker('${t.mealSlot}')"`;
