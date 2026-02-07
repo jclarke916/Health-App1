@@ -524,9 +524,9 @@ toggleTask(id){const dk=this.currentDateStr;if(!this.checked[dk])this.checked[dk
 
 setText(id,txt){const el=document.getElementById(id);if(el)el.innerText=txt}
 
-calcMacros(){const sel=this.meals[this.currentDateStr]||{};const portions=this.portions[this.currentDateStr]||{};let t={protein:0,omega3:0,fiber:0,calories:0,polyphenol:0};Object.keys(sel).forEach(slot=>{const idx=sel[slot];const m=MEALS[slot]?.[idx];if(m){const p=portions[slot]||1;const removed=this.getRemovedSet(slot,idx);const adj=this.getAdjustedMacros(m,p,removed);t.protein+=adj.p;t.omega3+=adj.o;t.fiber+=adj.f;t.calories+=adj.cal;t.polyphenol+=adj.poly}});return t}
+calcMacros(){const sel=this.meals[this.currentDateStr]||{};const portions=this.portions[this.currentDateStr]||{};const chk=this.checked[this.currentDateStr]||[];const slotToId={};BASE.forEach(b=>{if(b.mealSlot)slotToId[b.mealSlot]=b.id});let t={protein:0,omega3:0,fiber:0,calories:0,polyphenol:0};Object.keys(sel).forEach(slot=>{const pid=slotToId[slot]||slot;if(!chk.includes(pid))return;const idx=sel[slot];const m=MEALS[slot]?.[idx];if(m){const p=portions[slot]||1;const removed=this.getRemovedSet(slot,idx);const adj=this.getAdjustedMacros(m,p,removed);t.protein+=adj.p;t.omega3+=adj.o;t.fiber+=adj.f;t.calories+=adj.cal;t.polyphenol+=adj.poly}});return t}
 
-calcRainbow(){const sel=this.meals[this.currentDateStr]||{};let s=new Set();Object.keys(sel).forEach(slot=>{const m=MEALS[slot]?.[sel[slot]];if(m?.colors)m.colors.forEach(c=>s.add(c))});return s}
+calcRainbow(){const sel=this.meals[this.currentDateStr]||{};const chk=this.checked[this.currentDateStr]||[];const slotToId={};BASE.forEach(b=>{if(b.mealSlot)slotToId[b.mealSlot]=b.id});let s=new Set();Object.keys(sel).forEach(slot=>{const pid=slotToId[slot]||slot;if(!chk.includes(pid))return;const m=MEALS[slot]?.[sel[slot]];if(m?.colors)m.colors.forEach(c=>s.add(c))});return s}
 
 addWater(){const d=this.currentDateStr;if(!this.water[d])this.water[d]=0;this.water[d]+=8;const target=USERS[this.user].goals.water;if(this.water[d]>target)this.water[d]=target;this.save();this.updateWater()}
 
