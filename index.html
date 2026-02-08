@@ -17,8 +17,14 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .nav-btn{background:transparent;border:none;color:var(--cyan);padding:8px 16px;font-size:1.1rem;cursor:pointer}
 #dateLabel{flex:1;text-align:center;font-weight:600;font-size:0.85rem}
 .bio-btn{background:linear-gradient(135deg,#c8ff00,#00d4ff);color:#000;border:none;padding:10px 16px;border-radius:10px;font-size:0.65rem;font-weight:800;cursor:pointer}
-.section-header{padding:20px 20px 12px;font-size:0.65rem;font-weight:700;color:var(--text-tertiary);letter-spacing:2px;text-transform:uppercase;display:flex;align-items:center;gap:12px}
+.section-header{padding:20px 20px 12px;font-size:0.65rem;font-weight:700;color:var(--text-tertiary);letter-spacing:2px;text-transform:uppercase;display:flex;align-items:center;gap:12px;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none}
 .section-header::after{content:'';height:1px;background:var(--border);flex:1}
+.section-chevron{font-size:0.7rem;color:var(--text-tertiary);transition:transform 0.3s ease;margin-left:auto;flex-shrink:0}
+.section-header.collapsed .section-chevron{transform:rotate(-90deg)}
+.section-body{overflow:hidden;transition:max-height 0.4s ease,opacity 0.3s ease;opacity:1;max-height:2000px}
+.section-body.collapsed{max-height:0!important;opacity:0;margin:0;padding-top:0;padding-bottom:0}
+.section-summary{display:none;font-size:0.65rem;color:var(--text-secondary);margin-left:4px;font-weight:600}
+.section-header.collapsed .section-summary{display:inline}
 .recovery-battery{background:var(--panel);border:1px solid var(--border);border-radius:20px;padding:20px;margin:20px;position:relative;overflow:hidden}
 .recovery-battery::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#4facfe,#00f2fe)}
 .battery-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
@@ -205,56 +211,70 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 
 <div id="insightContainer"></div>
 
-<div class="section-header">FUEL (NUTRITION)</div>
+<div class="section-header" onclick="app.toggleSection(this)">FUEL (NUTRITION)<span class="section-summary" id="fuelSummary"></span><span class="section-chevron">▼</span></div>
+<div class="section-body" id="fuelBody">
 <div class="grid-4">
 <div class="orb-card"><div class="orb-container"><svg class="orb-svg" viewBox="0 0 50 50"><circle class="orb-bg" cx="25" cy="25" r="22"/><circle class="orb-fg" id="proteinOrb" cx="25" cy="25" r="22" style="stroke:#fff"/></svg><div class="orb-val-box"><div class="orb-val" id="proteinVal">0</div></div></div><div class="orb-label">PROTEIN</div></div>
 <div class="orb-card"><div class="orb-container"><svg class="orb-svg" viewBox="0 0 50 50"><circle class="orb-bg" cx="25" cy="25" r="22"/><circle class="orb-fg" id="omega3Orb" cx="25" cy="25" r="22" style="stroke:var(--cyan)"/></svg><div class="orb-val-box"><div class="orb-val" id="omega3Val">0</div></div></div><div class="orb-label" style="color:var(--cyan)">OMEGA-3</div></div>
 <div class="orb-card"><div class="orb-container"><svg class="orb-svg" viewBox="0 0 50 50"><circle class="orb-bg" cx="25" cy="25" r="22"/><circle class="orb-fg" id="fiberOrb" cx="25" cy="25" r="22" style="stroke:var(--success)"/></svg><div class="orb-val-box"><div class="orb-val" id="fiberVal">0</div></div></div><div class="orb-label" style="color:var(--success)">FIBER</div></div>
 <div class="orb-card"><div class="orb-container"><svg class="orb-svg" viewBox="0 0 50 50"><circle class="orb-bg" cx="25" cy="25" r="22"/><circle class="orb-fg" id="polyphenolOrb" cx="25" cy="25" r="22" style="stroke:var(--purple)"/></svg><div class="orb-val-box"><div class="orb-val" id="polyphenolVal">0</div></div></div><div class="orb-label" style="color:var(--purple)">POLYPHENOL</div></div>
 </div>
+</div>
 
 <!-- v21 METABOLISM -->
 
-<div class="section-header">METABOLISM (BALANCE)</div>
+<div class="section-header" onclick="app.toggleSection(this)">METABOLISM (BALANCE)<span class="section-summary" id="metabSummary"></span><span class="section-chevron">▼</span></div>
+<div class="section-body" id="metabBody">
 <div class="grid-4">
 <div class="orb-card"><div class="orb-container"><svg class="orb-svg" viewBox="0 0 50 50"><circle class="orb-bg" cx="25" cy="25" r="22"/><circle class="orb-fg" id="balanceOrb" cx="25" cy="25" r="22" style="stroke:var(--success)"/></svg><div class="orb-val-box"><div class="orb-val" id="balanceVal">--</div></div></div><div class="orb-label" style="color:var(--success)" id="balanceLabel">BALANCE</div></div>
 <div class="orb-card"><div style="text-align:center"><div style="font-size:0.5rem;color:var(--text-tertiary);margin-bottom:4px">EATEN</div><div style="font-size:1.2rem;font-weight:900;color:var(--success)" id="eatenVal">0</div></div><div class="orb-label" style="color:var(--success)">CALORIES</div></div>
 <div class="orb-card"><div style="text-align:center"><div style="font-size:0.5rem;color:var(--text-tertiary);margin-bottom:4px">BURNED</div><div style="font-size:1.2rem;font-weight:900;color:var(--alert)" id="burnedVal">0</div></div><div class="orb-label" style="color:var(--alert)">TOTAL</div></div>
 <div class="orb-card"><div style="text-align:center"><div style="font-size:0.5rem;color:var(--text-tertiary);margin-bottom:4px">BMR</div><div style="font-size:1.2rem;font-weight:900;color:var(--orange)" id="bmrVal">2000</div></div><div class="orb-label" style="color:var(--orange)">BASE</div></div>
 </div>
+</div>
 
 <!-- v21 VASCULAR -->
 
-<div class="section-header">VASCULAR (AGING)</div>
+<div class="section-header" onclick="app.toggleSection(this)">VASCULAR (AGING)<span class="section-summary" id="vascSummary"></span><span class="section-chevron">▼</span></div>
+<div class="section-body" id="vascBody">
 <div class="grid-3">
 <div class="orb-card"><div style="text-align:center"><div style="font-size:0.5rem;color:var(--text-tertiary);margin-bottom:4px">VASCULAR</div><div style="font-size:1.4rem;font-weight:900;color:var(--alert)" id="vascularAge">--</div></div><div class="orb-label" style="color:var(--alert)">AGE</div></div>
 <div class="orb-card"><div style="text-align:center"><div style="font-size:0.5rem;color:var(--text-tertiary);margin-bottom:4px">DIFFERENCE</div><div style="font-size:1.4rem;font-weight:900;color:var(--success)" id="ageDiff">--</div></div><div class="orb-label" style="color:var(--success)" id="ageDiffLabel">YOUNGER</div></div>
 <div class="orb-card"><div style="text-align:center"><div style="font-size:0.5rem;color:var(--text-tertiary);margin-bottom:4px">TREND</div><div style="font-size:1.4rem;font-weight:900;color:var(--orange)" id="vascularTrend">--</div></div><div class="orb-label" style="color:var(--orange)">7-DAY</div></div>
 </div>
+</div>
 
-<div class="section-header">ENGINE (CARDIO)</div>
+<div class="section-header" onclick="app.toggleSection(this)">ENGINE (CARDIO)<span class="section-summary" id="cardioSummary"></span><span class="section-chevron">▼</span></div>
+<div class="section-body" id="cardioBody">
 <div class="grid-4">
 <div class="orb-card"><div class="heart-container"><svg class="heart-svg beating" viewBox="0 0 24 24"><path class="heart-bg" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/><path class="heart-fg" style="stroke:var(--alert);stroke-dasharray:none;stroke-dashoffset:0" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg><div class="orb-val-box"><div class="orb-val" id="rhrVal" style="color:var(--alert)">--</div></div></div><div class="orb-label" style="color:var(--alert)">RHR</div></div>
 <div class="orb-card"><div class="heart-container"><svg class="heart-svg" viewBox="0 0 24 24"><path class="heart-bg" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/><path class="heart-fg" id="z2Heart" pathLength="100" style="stroke:var(--cyan)" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg><div class="orb-val-box"><div class="orb-val" id="z2Val" style="color:var(--cyan)">0</div></div></div><div class="orb-label" style="color:var(--cyan)">ZONE 2</div></div>
 <div class="orb-card" id="z5Card"><div class="heart-container"><svg class="heart-svg" viewBox="0 0 24 24"><path class="heart-bg" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/><path class="heart-fg" id="z5Heart" pathLength="100" style="stroke:var(--alert)" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg><div class="orb-val-box"><div class="orb-val" id="z5Val" style="color:var(--alert)">0</div></div></div><div class="orb-label" style="color:var(--alert)" id="z5Label">ZONE 5</div></div>
 <div class="orb-card"><div class="heart-container"><svg class="heart-svg" viewBox="0 0 24 24"><path class="heart-bg" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/><path class="heart-fg" id="calHeart" pathLength="100" style="stroke:var(--orange)" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg><div class="orb-val-box"><div class="orb-val" id="calVal" style="color:var(--orange)">0</div></div></div><div class="orb-label" style="color:var(--orange)">BURN</div></div>
 </div>
+</div>
 
-<div class="section-header">HYDRATION 💧</div>
+<div class="section-header" onclick="app.toggleSection(this)">HYDRATION 💧<span class="section-summary" id="hydroSummary"></span><span class="section-chevron">▼</span></div>
+<div class="section-body" id="hydroBody">
 <div class="water-container">
 <div class="water-header"><div class="water-title">WATER INTAKE</div><div class="water-score" id="waterScore">0 / 140 oz</div></div>
 <div class="water-track" onclick="app.addWater()"><div class="water-fill" id="waterFill"></div></div>
 <div style="text-align:center;margin-top:8px;font-size:0.65rem;color:var(--text-tertiary)">Tap bar to add 8oz glass</div>
 </div>
+</div>
 
-<div class="section-header">PHYTONUTRIENT 🌈</div>
+<div class="section-header" onclick="app.toggleSection(this)">PHYTONUTRIENT 🌈<span class="section-summary" id="rainbowSummaryText"></span><span class="section-chevron">▼</span></div>
+<div class="section-body" id="rainbowBody">
 <div class="rainbow-container">
 <div class="rainbow-header"><div class="rainbow-title">RAINBOW SCORE</div><div class="rainbow-score" id="rainbowScore">0%</div></div>
 <div class="rainbow-track" id="rainbowTrack"></div>
 </div>
+</div>
 
-<div class="section-header">SYNERGY PROTOCOL</div>
+<div class="section-header" onclick="app.toggleSection(this)">SYNERGY PROTOCOL<span class="section-chevron">▼</span></div>
+<div class="section-body" id="protocolBody">
 <div class="timeline" id="timeline"></div>
+</div>
 
 <div class="modal-overlay" id="mainModal">
 <div class="modal-content">
@@ -480,7 +500,7 @@ this.protocol=[];this.currentPortion=1;this.currentMealSlot=null;this.inRecipeVi
 this.removedIngredients=JSON.parse(localStorage.getItem(`c_remIng_${this.user}`)||'{}');
 document.querySelectorAll('.user-switch button').forEach(b=>b.classList.remove('active'));
 document.getElementById(`btn-${this.user}`)?.classList.add('active');
-this.setPlaceholder();this.render();this.fetchOura();
+this.setPlaceholder();this.restoreSectionStates();this.render();this.fetchOura();
 }
 
 save(){
@@ -538,6 +558,63 @@ calcMacros(){const sel=this.meals[this.currentDateStr]||{};const portions=this.p
 calcRainbow(){const sel=this.meals[this.currentDateStr]||{};const chk=this.checked[this.currentDateStr]||[];const slotToId={};BASE.forEach(b=>{if(b.mealSlot)slotToId[b.mealSlot]=b.id});let s=new Set();Object.keys(sel).forEach(slot=>{const pid=slotToId[slot]||slot;if(!chk.includes(pid))return;const m=MEALS[slot]?.[sel[slot]];if(m?.colors)m.colors.forEach(c=>s.add(c))});return s}
 
 addWater(){const d=this.currentDateStr;if(!this.water[d])this.water[d]=0;this.water[d]+=8;const target=USERS[this.user].goals.water;if(this.water[d]>target)this.water[d]=target;this.save();this.updateWater()}
+
+toggleSection(header){
+const body=header.nextElementSibling;
+if(!body||!body.classList.contains('section-body'))return;
+const isCollapsed=header.classList.toggle('collapsed');
+if(isCollapsed){
+body.style.maxHeight=body.scrollHeight+'px';
+requestAnimationFrame(()=>{body.style.maxHeight='0px';body.style.opacity='0'});
+}else{
+body.style.maxHeight=body.scrollHeight+'px';body.style.opacity='1';
+setTimeout(()=>{body.style.maxHeight='none'},400);
+}
+// Save state
+const sectionId=body.id;
+const states=JSON.parse(localStorage.getItem('c_sections')||'{}');
+states[sectionId]=isCollapsed;
+localStorage.setItem('c_sections',JSON.stringify(states));
+}
+
+restoreSectionStates(){
+const states=JSON.parse(localStorage.getItem('c_sections')||'{}');
+Object.keys(states).forEach(id=>{
+if(states[id]){
+const body=document.getElementById(id);
+if(body){
+const header=body.previousElementSibling;
+if(header){header.classList.add('collapsed')}
+body.style.maxHeight='0px';body.style.opacity='0';
+}
+}
+});
+}
+
+updateSectionSummaries(){
+const goals=USERS[this.user].goals;
+const mac=this.calcMacros();
+// Fuel summary
+const fs=document.getElementById('fuelSummary');
+if(fs)fs.textContent=`P:${Math.round(mac.protein)}g Ω3:${Math.round(mac.omega3/1000)}k F:${Math.round(mac.fiber)}g`;
+// Metabolism summary
+const ms=document.getElementById('metabSummary');
+if(ms){const bal=Math.round(mac.calories-(parseFloat(this.bios.bmr||2000)+(this.ouraCalBurn||0)));ms.textContent=`${bal>=0?'+':''}${bal} cal`}
+// Vascular summary
+const vs=document.getElementById('vascSummary');
+if(vs)vs.textContent=`Age: ${this.bios.vascAge||'--'}`;
+// Cardio summary
+const cs=document.getElementById('cardioSummary');
+const day=this.history[this.currentIndex]||{};
+if(cs)cs.textContent=`RHR:${day.rhr||'--'} Z2:${day.med||0}m`;
+// Hydration summary
+const hs=document.getElementById('hydroSummary');
+const waterOz=this.water[this.currentDateStr]||0;
+if(hs)hs.textContent=`${waterOz}/${goals.water}oz`;
+// Rainbow summary
+const rs=document.getElementById('rainbowSummaryText');
+if(rs){const colors=this.calcRainbow();rs.textContent=`${colors.size}/7 colors`}
+}
 
 updateWater(){const cur=this.water[this.currentDateStr]||0;const target=USERS[this.user].goals.water;this.setText('waterScore',`${cur} / ${target} oz`);document.getElementById('waterFill').style.width=`${Math.min(100,cur/target*100)}%`}
 
@@ -1334,6 +1411,10 @@ const thermalType=isThermal?t.id.replace('thermal_',''):'';
 const checkAction=isThermal?`app.logThermal('${thermalType}')`:`app.toggleTask('${t.id}')`;
 return `<div class="task"><div class="task-time">${t.time}</div><div class="${cc}" ${ca}><div class="task-info"><div class="task-title">${t.title}</div><div class="task-desc">${t.desc||'Tap to select'}</div></div>${(t.mealSlot||t.clickable)?'<div class="chevron">›</div>':''}${!t.autoDetected&&!t.hrvAdjusted?`<div class="check-btn" onclick="event.stopPropagation();${checkAction}"><div class="check-circle">${isC?'✓':''}</div></div>`:''}</div></div>`;
 }).join('');
+// Update collapsed section summaries
+this.updateSectionSummaries();
+}
+
 }
 
 sync(){this.fetchOura()}
