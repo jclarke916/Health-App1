@@ -1299,15 +1299,41 @@ this.setText('burnedVal',Math.round(totalBurn));
 this.setText('bmrVal',Math.round(bmr));
 upd('balanceOrb',Math.abs(balance),500);
 
-// Vascular (v21)
+// Vascular Age (calculated from biomarkers)
 const actualAge=this.user==='jermaine'?43:39;
-const vascLast7=this.history.slice(0,7).filter(d=>d.vascularAge);
-if(vascLast7.length>0){
-const avgVAge=Math.round(vascLast7.reduce((sum,d)=>sum+d.vascularAge,0)/vascLast7.length);
-const diff=actualAge-avgVAge;
-this.setText('vascularAge',avgVAge);
+const calcVascularAge=()=>{
+const apob=parseFloat(this.bios.apob||0);
+const lpa=parseFloat(this.bios.lpa||0);
+const hscrp=parseFloat(this.bios.hscrp||0);
+const hba1c=parseFloat(this.bios.hba1c||0);
+if(!apob&&!lpa)return null;
+// Base = actual age, adjust by biomarker risk
+let vAge=actualAge;
+// ApoB: optimal <80, each 10 over adds ~1 year
+if(apob>80)vAge+=(apob-80)/10;
+// Lp(a): optimal <75, each 25 over adds ~1.5 years
+if(lpa>75)vAge+=(lpa-75)/25*1.5;
+// hsCRP: optimal <1.0, each 0.5 over adds ~0.5 year
+if(hscrp>1.0)vAge+=(hscrp-1.0)/0.5*0.5;
+// HbA1c: optimal <5.4, each 0.2 over adds ~1 year
+if(hba1c>5.4)vAge+=(hba1c-5.4)/0.2;
+// Fitness discount: good RHR (<60) subtracts up to 2 years
+const rhr=day.rhr!=='-'?parseFloat(day.rhr):0;
+if(rhr>0&&rhr<60)vAge-=(60-rhr)/10;
+// HRV bonus: above baseline subtracts up to 1 year
+const currentHrv=day.hrv||0;
+const baseline=USERS[this.user].hrvBaseline;
+if(currentHrv>baseline)vAge-=Math.min((currentHrv-baseline)/baseline,1);
+return Math.round(vAge);
+};
+const vascAge=calcVascularAge();
+if(vascAge!==null){
+const diff=actualAge-vascAge;
+this.setText('vascularAge',vascAge);
 this.setText('ageDiff',Math.abs(diff));
-this.setText('ageDiffLabel',diff>0?'YOUNGER':'OLDER');
+document.getElementById('ageDiff').style.color=diff>=0?'var(--success)':'var(--alert)';
+document.getElementById('ageDiffLabel').style.color=diff>=0?'var(--success)':'var(--alert)';
+this.setText('ageDiffLabel',diff>=0?'YOUNGER':'OLDER');
 }else{this.setText('vascularAge','--');this.setText('ageDiff','--');this.setText('vascularTrend','--')}
 
 // Cardio
@@ -1390,13 +1416,12 @@ this.setText('streakCount',this.streak);
 const streakPct=Math.min(this.streak/7,1);
 document.getElementById('streakOrb').style.strokeDashoffset=251-(streakPct*251);
 
-// Vascular trend (v21)
-const vascLast14=this.history.slice(0,14).filter(d=>d.vascularAge);
-if(vascLast14.length>=2){
-const recent=vascLast14.slice(0,3).reduce((s,d)=>s+d.vascularAge,0)/Math.min(3,vascLast14.length);
-const older=vascLast14.slice(-3).reduce((s,d)=>s+d.vascularAge,0)/Math.min(3,vascLast14.slice(-3).length);
-const trend=recent-older;
-this.setText('vascularTrend',`${trend>0?'+':''}${trend.toFixed(1)}`);
+// Vascular trend (based on biomarker targets)
+if(vascAge!==null){
+const diff=actualAge-vascAge;
+if(diff>=3)this.setText('vascularTrend','🟢 GREAT');
+else if(diff>=0)this.setText('vascularTrend','🟡 OK');
+else this.setText('vascularTrend','🔴 HIGH');
 }else{this.setText('vascularTrend','--')}
 
 // Apply meal selections (mark AI-filled ones)
