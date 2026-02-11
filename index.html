@@ -728,11 +728,130 @@ saveBio(){['weight','bmr','apob','lpa','hscrp','hba1c','bodyfat','muscle'].forEa
 
 showWeeklySummary(){
 const last7=this.history.slice(0,7);
-const avgScore=last7.length?Math.round(last7.reduce((s,d)=>s+(d.score||0),0)/last7.length):0;
-const avgSleep=last7.length?(last7.reduce((s,d)=>s+d.totalSec,0)/last7.length/3600).toFixed(1):0;
-const avgRHR=last7.filter(d=>d.rhr!=='-').length?Math.round(last7.filter(d=>d.rhr!=='-').reduce((s,d)=>s+parseInt(d.rhr),0)/last7.filter(d=>d.rhr!=='-').length):0;
-this.setText('modalTitle','7-DAY SUMMARY');
-document.getElementById('modalBody').innerHTML=`<div style="padding:20px;text-align:center"><div style="font-size:3rem;font-weight:800;background:linear-gradient(135deg,#c8ff00,#00d4ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:10px">${avgScore}</div><div style="font-size:0.8rem;color:var(--text-tertiary);margin-bottom:30px">LONGEVITY SCORE</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:15px"><div style="background:var(--panel);padding:20px;border-radius:12px;border:1px solid var(--border)"><div style="font-size:2rem;font-weight:800;color:var(--cyan)">${avgSleep}h</div><div style="font-size:0.7rem;color:var(--text-tertiary)">AVG SLEEP</div></div><div style="background:var(--panel);padding:20px;border-radius:12px;border:1px solid var(--border)"><div style="font-size:2rem;font-weight:800;color:var(--alert)">${avgRHR||'--'}</div><div style="font-size:0.7rem;color:var(--text-tertiary)">AVG RHR</div></div></div><button onclick="app.closeModal()" style="width:100%;background:linear-gradient(135deg,#c8ff00,#00d4ff);color:#000;padding:18px;border:none;border-radius:12px;font-weight:800;margin-top:30px">CLOSE</button></div>`;
+const goals=USERS[this.user].goals;
+const daysWithData=last7.filter(d=>d.score>0);
+const n=daysWithData.length||1;
+
+// AVERAGES
+const avgScore=Math.round(daysWithData.reduce((s,d)=>s+(d.score||0),0)/n);
+const avgSleep=(daysWithData.reduce((s,d)=>s+d.totalSec,0)/n/3600).toFixed(1);
+const avgDeep=(daysWithData.reduce((s,d)=>s+d.deepSec,0)/n/3600).toFixed(1);
+const avgRem=(daysWithData.reduce((s,d)=>s+d.remSec,0)/n/3600).toFixed(1);
+const rhrDays=daysWithData.filter(d=>d.rhr!=='-'&&d.rhr>0);
+const avgRHR=rhrDays.length?Math.round(rhrDays.reduce((s,d)=>s+parseInt(d.rhr),0)/rhrDays.length):'--';
+const hrvDays=daysWithData.filter(d=>d.hrv>0);
+const avgHRV=hrvDays.length?Math.round(hrvDays.reduce((s,d)=>s+d.hrv,0)/hrvDays.length):'--';
+const readyDays=daysWithData.filter(d=>d.readiness>0);
+const avgReady=readyDays.length?Math.round(readyDays.reduce((s,d)=>s+d.readiness,0)/readyDays.length):'--';
+
+// TOTALS
+const totalZ2=Math.round(daysWithData.reduce((s,d)=>s+(d.med||0),0));
+const totalZ5=Math.round(daysWithData.reduce((s,d)=>s+(d.high||0),0));
+const totalCalBurn=Math.round(daysWithData.reduce((s,d)=>s+(d.cal||0),0));
+const totalWorkouts=daysWithData.reduce((s,d)=>s+d.workouts.length,0);
+
+// NUTRITION TOTALS (from checked meals across 7 days)
+let totalProtein=0,totalOmega3=0,totalFiber=0,totalCal=0,totalPoly=0;
+last7.forEach(d=>{
+const date=d.date;
+const chk=JSON.parse(localStorage.getItem(`c_chk_${this.user}`)||'{}')[date]||[];
+const sel=JSON.parse(localStorage.getItem(`c_meals_${this.user}`)||'{}')[date]||{};
+const portions=JSON.parse(localStorage.getItem(`c_portions_${this.user}`)||'{}')[date]||{};
+Object.keys(sel).forEach(slot=>{
+const mealIdx=sel[slot];
+const arr=MEALS[slot];
+if(!arr||mealIdx==null)return;
+const meal=arr[mealIdx];
+if(!meal)return;
+const proto=this.protocol||BASE;
+const slotId=proto.find(p=>p.mealSlot===slot)?.id;
+if(!slotId||!chk.includes(slotId))return;
+const portion=portions[slot]||1;
+const m=meal.macros||{};
+totalProtein+=(m.p||0)*portion;
+totalOmega3+=(m.o||0)*portion;
+totalFiber+=(m.f||0)*portion;
+totalCal+=(m.cal||0)*portion;
+totalPoly+=(m.poly||0)*portion;
+});
+});
+
+// WATER TOTAL
+let totalWater=0;
+last7.forEach(d=>{totalWater+=(this.water[d.date]||0)});
+
+// STREAK
+const streak=this.streak||0;
+
+// DAILY BREAKDOWN SPARKLINE
+const dayLabels=['S','M','T','W','T','F','S'];
+const sparkData=last7.map(d=>{
+const dow=new Date(d.date+'T12:00:00').getDay();
+return{label:dayLabels[dow],score:d.score||0,sleep:(d.totalSec/3600).toFixed(1),z2:d.med||0,rhr:d.rhr!=='-'?d.rhr:'--',hrv:d.hrv||'--'};
+}).reverse();
+
+const scoreColor=s=>s>=85?'var(--success)':s>=70?'var(--cyan)':s>=50?'var(--orange)':'var(--alert)';
+const pctBar=(val,max,color)=>`<div style="height:4px;background:var(--panel-elevated);border-radius:2px;margin-top:4px"><div style="height:100%;width:${Math.min(100,val/max*100)}%;background:${color};border-radius:2px"></div></div>`;
+
+const stat=(label,val,unit,color)=>`<div style="background:var(--panel);padding:14px 10px;border-radius:12px;border:1px solid var(--border);text-align:center"><div style="font-size:1.4rem;font-weight:800;color:${color}">${val}<span style="font-size:0.6rem;font-weight:600">${unit}</span></div><div style="font-size:0.55rem;color:var(--text-tertiary);margin-top:4px;text-transform:uppercase">${label}</div></div>`;
+
+const totalStat=(label,val,unit,color,target)=>{
+const pct=target?Math.min(100,val/target*100):100;
+return`<div style="background:var(--panel);padding:12px 10px;border-radius:10px;border:1px solid var(--border)"><div style="display:flex;justify-content:space-between;align-items:baseline"><div style="font-size:0.55rem;color:var(--text-tertiary);text-transform:uppercase">${label}</div><div style="font-size:0.9rem;font-weight:800;color:${color}">${val}<span style="font-size:0.5rem;font-weight:600">${unit}</span></div></div>${target?`<div style="height:3px;background:var(--panel-elevated);border-radius:2px;margin-top:6px"><div style="height:100%;width:${pct}%;background:${color};border-radius:2px"></div></div><div style="font-size:0.45rem;color:var(--text-tertiary);margin-top:3px;text-align:right">target: ${target}${unit}/wk</div>`:''}</div>`;
+};
+
+this.setText('modalTitle','7-DAY COMMAND CENTER');
+document.getElementById('modalBody').innerHTML=`<div style="padding:10px">
+
+<div style="text-align:center;margin-bottom:20px">
+<div style="font-size:3rem;font-weight:800;background:linear-gradient(135deg,#c8ff00,#00d4ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent">${avgScore}</div>
+<div style="font-size:0.7rem;color:var(--text-tertiary)">AVG LONGEVITY SCORE</div>
+<div style="font-size:0.6rem;color:var(--text-secondary);margin-top:4px">${n} days tracked · ${streak} day streak</div>
+</div>
+
+<div style="font-size:0.6rem;font-weight:700;color:var(--text-tertiary);letter-spacing:1.5px;margin:16px 0 8px">RECOVERY AVERAGES</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+${stat('Avg Sleep',avgSleep,'h','var(--cyan)')}
+${stat('Avg RHR',avgRHR,'','var(--alert)')}
+${stat('Avg HRV',avgHRV,'ms','var(--success)')}
+</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px">
+${stat('Deep Sleep',avgDeep,'h','var(--purple)')}
+${stat('REM Sleep',avgRem,'h','var(--cyan)')}
+${stat('Readiness',avgReady,'','var(--success)')}
+</div>
+
+<div style="font-size:0.6rem;font-weight:700;color:var(--text-tertiary);letter-spacing:1.5px;margin:20px 0 8px">TRAINING TOTALS</div>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+${stat('Workouts',totalWorkouts,'','var(--acid)')}
+${stat('Zone 2',totalZ2,'m','var(--cyan)')}
+${stat('Zone 5',totalZ5,'m','var(--alert)')}
+${stat('Cal Burn',totalCalBurn,'','var(--orange)')}
+</div>
+
+<div style="font-size:0.6rem;font-weight:700;color:var(--text-tertiary);letter-spacing:1.5px;margin:20px 0 8px">NUTRITION TOTALS</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+${totalStat('Protein',Math.round(totalProtein),'g','#fff',goals.protein*7)}
+${totalStat('Omega-3',Math.round(totalOmega3/1000),'k mg','var(--cyan)',goals.omega3*7/1000)}
+${totalStat('Fiber',Math.round(totalFiber),'g','var(--success)',goals.fiber*7)}
+${totalStat('Polyphenols',Math.round(totalPoly),'mg','var(--purple)',0)}
+${totalStat('Calories',Math.round(totalCal),'','var(--orange)',0)}
+${totalStat('Water',totalWater,'oz','var(--cyan)',goals.water*7)}
+</div>
+
+<div style="font-size:0.6rem;font-weight:700;color:var(--text-tertiary);letter-spacing:1.5px;margin:20px 0 8px">DAILY BREAKDOWN</div>
+<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">
+${sparkData.map(d=>`<div style="text-align:center;background:var(--panel);padding:8px 2px;border-radius:8px;border:1px solid var(--border)">
+<div style="font-size:0.5rem;color:var(--text-tertiary);font-weight:700">${d.label}</div>
+<div style="font-size:0.85rem;font-weight:800;color:${scoreColor(d.score)};margin:4px 0">${d.score||'—'}</div>
+<div style="font-size:0.45rem;color:var(--text-tertiary)">${d.sleep}h</div>
+<div style="font-size:0.45rem;color:var(--cyan)">${d.z2}m Z2</div>
+<div style="font-size:0.45rem;color:var(--alert)">♡${d.rhr}</div>
+</div>`).join('')}
+</div>
+
+<button onclick="app.closeModal()" style="width:100%;background:linear-gradient(135deg,#c8ff00,#00d4ff);color:#000;padding:16px;border:none;border-radius:12px;font-weight:800;margin-top:20px;font-size:0.8rem">CLOSE</button>
+</div>`;
 document.getElementById('mainModal').classList.add('show');
 }
 
