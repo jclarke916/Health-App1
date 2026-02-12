@@ -1284,11 +1284,13 @@ const hrvBaseline=USERS[this.user].hrvBaseline;
 // HRV-aware recommendations (v22 integration)
 if(day.hrv&&day.hrv<hrvBaseline*0.85)return`⚠️ LOW HRV (${day.hrv}ms) → RECOVERY MODE: Z2 only, skip HIIT, sleep +1hr`;
 // Biomarker priorities
-if(ana==='positive'&&mac.omega3<3000)return'ANA+ → OMEGA-3 CRITICAL: SALMON/SARDINES + TURMERIC STACK';
+if(ana==='positive'&&mac.omega3<3000)return'🦋 ANA 1:320 → Ω3 AT '+Math.round(mac.omega3)+'mg — NEED 4000mg+ TO SUPPRESS TNF-α & IL-6';
 if(lpa>150&&mac.omega3<3000)return'LP(A) ELEVATED → WALNUTS + FLAX ESSENTIAL';
 if(apob>80&&mac.fiber<30)return'APOB '+apob+' → DRIVE IT DOWN: OATS + FLAX + BEANS + OMEGA-3. FIBER TARGET: '+Math.round(goals.fiber)+'G';
 if(hscrp>1.0)return'INFLAMMATION DETECTED → TURMERIC STACK';
-if(ana==='positive')return'ANA+ → ANTI-INFLAMMATORY PROTOCOL: AVOID PROCESSED, PRIORITIZE Ω3 + TURMERIC';
+if(ana==='positive'&&mac.polyphenol<200)return'🦋 ANA+ → POLYPHENOL SHIELD LOW: ADD TURMERIC TEA, BERRIES, DARK CHOCOLATE';
+if(ana==='positive'&&mac.fiber<goals.fiber*0.6)return'🦋 ANA+ → FIBER AT '+Math.round(mac.fiber)+'g — GUT HEALTH = IMMUNE REGULATION';
+if(ana==='positive')return'🦋 ANA+ PROTOCOL ACTIVE → Ω3: '+Math.round(mac.omega3)+'mg · POLY: '+Math.round(mac.polyphenol)+'mg';
 // Macro gaps
 const proteinGap=goals.protein-mac.protein;
 const omega3Gap=goals.omega3-mac.omega3;
@@ -1439,6 +1441,48 @@ insights+=`<div class="insight-card warning"><div class="insight-header"><span c
 }
 // Thermal-aware insights (replaces simple temp check)
 insights+=this.getThermalInsights(day,thermal);
+
+// ANA+ Autoimmune Protocol Insights (Sophia-specific)
+if(this.bios.ana==='positive'){
+const omega3So=mac.omega3||0;
+const polySo=mac.polyphenol||0;
+const fiberSo=mac.fiber||0;
+const bodyfatSo=parseFloat(this.bios.bodyfat||0);
+const ferritinSo=parseFloat(this.bios.ferritin||0);
+
+// Always show ANA status reminder
+insights+=`<div class="insight-card" style="border-left:3px solid #a855f7"><div class="insight-header"><span class="insight-icon">🦋</span><span class="insight-title">ANA 1:320 — Autoimmune Protocol Active</span></div><div class="insight-body">Speckled nuclear pattern detected. Anti-inflammatory nutrition prioritized. Rheumatology referral in progress.</div><div class="insight-action">→ Ω3 target: 4000mg+ · Turmeric daily · Minimize processed foods & refined sugar</div></div>`;
+
+// Omega-3 critical for ANA
+if(omega3So<2000){
+insights+=`<div class="insight-card warning"><div class="insight-header"><span class="insight-icon">🐟</span><span class="insight-title">Omega-3 Critical for ANA+</span></div><div class="insight-body">Only ${Math.round(omega3So)}mg Ω3 today. EPA/DHA directly suppresses pro-inflammatory cytokines (TNF-α, IL-6) elevated in autoimmune conditions. You need 4000mg+.</div><div class="insight-action">→ Add salmon, sardines, or flax-heavy meals. Consider fish oil supplement.</div></div>`;
+}
+
+// Polyphenol check
+if(polySo<200){
+insights+=`<div class="insight-card" style="border-left:3px solid var(--orange)"><div class="insight-header"><span class="insight-icon">🫐</span><span class="insight-title">Polyphenols Low — Inflammation Shield Down</span></div><div class="insight-body">Only ${Math.round(polySo)}mg polyphenols. Curcumin, quercetin, and anthocyanins modulate NF-κB pathway — the same pathway ANA antibodies over-activate.</div><div class="insight-action">→ Add turmeric tea, berries, dark chocolate, or The ANA Soother juice</div></div>`;
+}
+
+// Body comp insight (her biggest modifiable factor)
+if(bodyfatSo>28){
+insights+=`<div class="insight-card" style="border-left:3px solid var(--cyan)"><div class="insight-header"><span class="insight-icon">⚖️</span><span class="insight-title">Body Recomp — ANA Connection</span></div><div class="insight-body">Body fat at ${bodyfatSo}% amplifies systemic inflammation. Adipose tissue produces IL-6 and TNF-α — the same inflammatory cytokines worsened by autoimmune activity. Losing 17 lbs fat mass would significantly reduce baseline inflammation.</div><div class="insight-action">→ Calorie deficit of 300-400/day + progressive resistance training to preserve muscle</div></div>`;
+}
+
+// Ferritin insight (she's doing well here)
+if(ferritinSo>=50&&ferritinSo<=100){
+insights+=`<div class="insight-card" style="border-left:3px solid var(--success)"><div class="insight-header"><span class="insight-icon">✅</span><span class="insight-title">Ferritin Optimal for ANA+</span></div><div class="insight-body">Ferritin at ${ferritinSo} ng/mL — excellent. Iron stores matter more with autoimmune conditions because chronic inflammation can block iron absorption. You're in the sweet spot.</div></div>`;
+}
+
+// Sleep quality matters more with autoimmune
+if(day.totalSec>0&&day.totalSec/3600<7){
+insights+=`<div class="insight-card warning"><div class="insight-header"><span class="insight-icon">😴</span><span class="insight-title">Sleep Critical for ANA+</span></div><div class="insight-body">Only ${(day.totalSec/3600).toFixed(1)}h sleep. Sleep deprivation increases CRP and IL-6 — directly worsening autoimmune flare risk. ANA+ bodies need 8+ hours for immune regulation.</div><div class="insight-action">→ Chamomile tea, magnesium glycinate, screens off by 9pm</div></div>`;
+}
+
+// Temp elevation is more significant with ANA+
+if(day.tempDev>0.3&&!thermal.sauna){
+insights+=`<div class="insight-card warning"><div class="insight-header"><span class="insight-icon">🌡️</span><span class="insight-title">Temp Elevation + ANA = Monitor Closely</span></div><div class="insight-body">Temp +${(day.tempDev).toFixed(1)}° with ANA 1:320 could indicate autoimmune flare activity. Track for patterns: joint pain, fatigue, rash, or swelling.</div><div class="insight-action">→ Log symptoms, increase Ω3+turmeric, rest if needed. Report to rheumatologist if persistent.</div></div>`;
+}
+}
 this.setText('statusMsg',status);
 document.getElementById('insightContainer').innerHTML=insights;
 
