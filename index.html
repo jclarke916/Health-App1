@@ -663,7 +663,7 @@ document.getElementById('mainModal').classList.add('show');
 showRecipe(slot,idx){
 this.currentMealSlot=slot;this.currentMealIdx=idx;this.inRecipeView=true;
 const meal=MEALS[slot][idx];
-const allowHalf=['breakfast','lunch','dinner','snack1','snack2'].includes(slot);
+const allowHalf=['breakfast','lunch','dinner','snack1','snack2','snack3'].includes(slot);
 const savedPortion=this.portions[this.currentDateStr]?.[slot]||1;
 if(this.currentPortion===1&&savedPortion!==1)this.currentPortion=savedPortion;
 const p=this.currentPortion;
@@ -709,9 +709,11 @@ return new Set(this.removedIngredients[key]||[]);
 }
 
 getAdjustedMacros(meal,portion,removed){
-if(!meal.ingredients||!meal.ingredientMacros||removed.size===0){
+if(!meal.ingredients||removed.size===0){
 return{p:(meal.macros.p||0)*portion,o:(meal.macros.o||0)*portion,f:(meal.macros.f||0)*portion,cal:(meal.macros.cal||0)*portion,poly:(meal.macros.poly||0)*portion};
 }
+// If per-ingredient macros exist, use exact subtraction
+if(meal.ingredientMacros){
 let adj={p:(meal.macros.p||0),o:(meal.macros.o||0),f:(meal.macros.f||0),cal:(meal.macros.cal||0),poly:(meal.macros.poly||0)};
 removed.forEach(idx=>{
 const im=meal.ingredientMacros?.[idx];
@@ -720,6 +722,12 @@ if(im){adj.p-=(im.p||0);adj.o-=(im.o||0);adj.f-=(im.f||0);adj.cal-=(im.cal||0);a
 adj.p=Math.max(0,adj.p)*portion;adj.o=Math.max(0,adj.o)*portion;adj.f=Math.max(0,adj.f)*portion;adj.cal=Math.max(0,adj.cal)*portion;adj.poly=Math.max(0,adj.poly)*portion;
 return adj;
 }
+// Otherwise estimate: distribute macros proportionally across ingredients
+const total=meal.ingredients.length;
+const kept=total-removed.size;
+const ratio=kept/total;
+return{p:Math.round((meal.macros.p||0)*ratio*portion),o:Math.round((meal.macros.o||0)*ratio*portion),f:Math.round((meal.macros.f||0)*ratio*portion),cal:Math.round((meal.macros.cal||0)*ratio*portion),poly:Math.round((meal.macros.poly||0)*ratio*portion)};
+}
 
 setCurrentPortion(size){this.currentPortion=size;this.showRecipe(this.currentMealSlot,this.currentMealIdx)}
 
@@ -727,7 +735,7 @@ selectMeal(slot,idx){
 const d=this.currentDateStr;
 if(!this.meals[d])this.meals[d]={};
 this.meals[d][slot]=idx;
-if(['breakfast','lunch','dinner','snack1','snack2'].includes(slot)){if(!this.portions[d])this.portions[d]={};this.portions[d][slot]=this.currentPortion}
+if(['breakfast','lunch','dinner','snack1','snack2','snack3'].includes(slot)){if(!this.portions[d])this.portions[d]={};this.portions[d][slot]=this.currentPortion}
 const protocolItem=this.protocol.find(p=>p.mealSlot===slot);
 if(protocolItem){if(!this.checked[d])this.checked[d]=[];if(!this.checked[d].includes(protocolItem.id))this.checked[d].push(protocolItem.id)}
 this.currentMealSlot=null;this.inRecipeView=false;this.currentPortion=1;
@@ -1251,7 +1259,7 @@ const alreadySelected=sel[slot]!==undefined;
 let ranked=pool.map((meal,idx)=>({meal,idx,score:scoreMeal(meal,idx,slot),why:whyMeal(meal)})).sort((a,b)=>b.score-a.score);
 
 // Prevent snack/beverage doubling: if same underlying pool, skip already-picked indices
-const poolKey=(slot==='snack1'||slot==='snack2')?'snack':(slot==='juice2'||slot==='juice3')?'juice':slot;
+const poolKey=(slot==='snack1'||slot==='snack2'||slot==='snack3')?'snack':(slot==='juice2'||slot==='juice3')?'juice':slot;
 if(!pickedFromPool[poolKey])pickedFromPool[poolKey]=new Set();
 ranked=ranked.filter(r=>!pickedFromPool[poolKey].has(r.idx));
 
@@ -1343,7 +1351,7 @@ Object.keys(sel).forEach(slot=>{
 const idx=sel[slot];
 const meal=MEALS[slot]?.[idx];
 if(meal){
-const portion=['breakfast','lunch','dinner','snack1','snack2'].includes(slot)?(portions[slot]||1):1;
+const portion=['breakfast','lunch','dinner','snack1','snack2','snack3'].includes(slot)?(portions[slot]||1):1;
 const key=`${date}:${slot}:${idx}`;
 const removed=new Set(this.removedIngredients[key]||[]);
 const adj=this.getAdjustedMacros(meal,portion,removed);
