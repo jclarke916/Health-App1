@@ -546,6 +546,10 @@ this.protocol=[];this.currentPortion=1;this.currentMealSlot=null;this.inRecipeVi
 this.removedIngredients=JSON.parse(localStorage.getItem(`c_remIng_${this.user}`)||'{}');
 document.querySelectorAll('.user-switch button').forEach(b=>b.classList.remove('active'));
 document.getElementById(`btn-${this.user}`)?.classList.add('active');
+// Seed manual sleep for 2026-02-16 (Oura died, Apple Health backup)
+if(!localStorage.getItem('c_manualSleep_jermaine')){
+localStorage.setItem('c_manualSleep_jermaine',JSON.stringify({'2026-02-16':{totalSec:18420,deepSec:4200,remSec:4500,rhr:59,score:55}}));
+}
 this.setPlaceholder();this.restoreSectionStates();this.render();this.fetchOura();
 }
 
@@ -589,6 +593,17 @@ const g=d=>{if(!m.has(d))m.set(d,{date:d,score:0,totalSec:0,deepSec:0,remSec:0,r
 this.history=Array.from(m.values()).sort((a,b)=>b.date.localeCompare(a.date));
 this.currentIndex=this.history.findIndex(h=>h.date===this.currentDateStr);
 if(this.currentIndex===-1){this.history.unshift({date:this.currentDateStr,score:0,totalSec:0,deepSec:0,remSec:0,rhr:'-',cal:0,high:0,med:0,workouts:[],hrv:null,tempDev:0,respRate:null,readiness:null,vascularAge:null});this.currentIndex=0}
+// Manual sleep overrides (Apple Health backup when Oura dies)
+const manualSleep=JSON.parse(localStorage.getItem(`c_manualSleep_${this.user}`)||'{}');
+Object.keys(manualSleep).forEach(date=>{
+const entry=this.history.find(h=>h.date===date);
+if(entry){const ms=manualSleep[date];
+if(entry.totalSec===0&&ms.totalSec)entry.totalSec=ms.totalSec;
+if(entry.deepSec===0&&ms.deepSec)entry.deepSec=ms.deepSec;
+if(entry.remSec===0&&ms.remSec)entry.remSec=ms.remSec;
+if(entry.rhr==='-'&&ms.rhr)entry.rhr=ms.rhr;
+if(!entry.score&&ms.score)entry.score=ms.score;
+}});
 }
 
 changeDate(dir){const n=this.currentIndex-dir;if(n>=0&&n<this.history.length){this.currentIndex=n;this.currentDateStr=this.history[n].date;this.render()}}
