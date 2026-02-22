@@ -1440,7 +1440,9 @@ this.setText('dateLabel',date);
 const hrvPct=day.hrv?Math.min((day.hrv/hrvBaseline)*100,120):50;
 const sleepPct=Math.min(((day.totalSec||0)/3600/goals.sleepHours)*100,120);
 const readyPct=Math.min(day.readiness||50,100);
-const strainRaw=(day.high||0)+(day.med||0)*0.5;
+const strainFromZones=(day.high||0)+(day.med||0)*0.5;
+const strainFromWorkouts=day.workouts.reduce((s,w)=>s+(w.calories||0),0)/50;
+const strainRaw=Math.max(strainFromZones,strainFromWorkouts);
 const strainCap=goals.z5+goals.z2*0.5;
 const strainPct=strainCap>0?Math.min((strainRaw/strainCap)*100,150):50;
 // Strain is inverted for recovery: over-training lowers battery, under-training is neutral
@@ -1458,7 +1460,7 @@ document.getElementById('bcHrvTrend').innerHTML=`<span style="font-size:0.55rem;
 }
 this.setText('bcSleep',`${((day.totalSec||0)/3600).toFixed(1)}h`);
 this.setText('bcReadiness',day.readiness||'--');
-this.setText('bcStrain',Math.round(strainRaw)||'--');
+this.setText('bcStrain',strainRaw>0?Math.round(strainRaw):'0');
 
 // Trends
 const last7=this.history.slice(0,7);
