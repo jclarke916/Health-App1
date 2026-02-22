@@ -608,6 +608,13 @@ if(entry.remSec===0&&ms.remSec)entry.remSec=ms.remSec;
 if(entry.rhr==='-'&&ms.rhr)entry.rhr=ms.rhr;
 if(!entry.score&&ms.score)entry.score=ms.score;
 }});
+// Calculate rolling HRV baseline from last 30 days of actual data
+const hrvDays=this.history.filter(h=>h.hrv&&h.hrv>0).slice(0,30);
+if(hrvDays.length>=7){
+this.calculatedHrvBaseline=Math.round(hrvDays.reduce((s,h)=>s+h.hrv,0)/hrvDays.length);
+}else{
+this.calculatedHrvBaseline=null; // not enough data, fall back to hardcoded
+}
 }
 
 changeDate(dir){const n=this.currentIndex-dir;if(n>=0&&n<this.history.length){this.currentIndex=n;this.currentDateStr=this.history[n].date;this.render()}}
@@ -1109,7 +1116,7 @@ getRecommendedWorkout(day,dow,hrvLow,thermal){
 const goals=USERS[this.user].goals;
 const readiness=day.readiness||70;
 const sleepHrs=(day.totalSec||0)/3600;
-const hrvBaseline=USERS[this.user].hrvBaseline;
+const hrvBaseline=this.calculatedHrvBaseline||USERS[this.user].hrvBaseline;
 const hrvPct=day.hrv?(day.hrv/hrvBaseline*100):100;
 const hadWorkout=day.workouts.length>0;
 const z2Done=day.med||0;
@@ -1325,7 +1332,7 @@ const lpa=parseFloat(this.bios.lpa||0);
 const hscrp=parseFloat(this.bios.hscrp||0);
 const ana=this.bios.ana||'';
 const goals=USERS[this.user].goals;
-const hrvBaseline=USERS[this.user].hrvBaseline;
+const hrvBaseline=this.calculatedHrvBaseline||USERS[this.user].hrvBaseline;
 // HRV-aware recommendations (v22 integration)
 if(day.hrv&&day.hrv<hrvBaseline*0.85)return`⚠️ LOW HRV (${day.hrv}ms) → RECOVERY MODE: Z2 only, skip HIIT, sleep +1hr`;
 // Biomarker priorities
@@ -1425,7 +1432,7 @@ const date=day.date;
 const sel=this.meals[date]||{};
 const chk=this.checked[date]||[];
 const goals=USERS[this.user].goals;
-const hrvBaseline=USERS[this.user].hrvBaseline;
+const hrvBaseline=this.calculatedHrvBaseline||USERS[this.user].hrvBaseline;
 const hrvLow=day.hrv&&day.hrv<hrvBaseline*0.85;
 this.setText('dateLabel',date);
 
@@ -1443,7 +1450,12 @@ this.setText('batteryScore',batteryScore||'--');
 const bf=document.getElementById('batteryFill');
 bf.style.width=`${Math.min(batteryScore,100)}%`;
 bf.style.background=batteryScore>=80?'linear-gradient(90deg,#34d399,#00f2fe)':batteryScore>=60?'linear-gradient(90deg,#4facfe,#00f2fe)':batteryScore>=40?'linear-gradient(90deg,#ff9500,#ffcc00)':'linear-gradient(90deg,#ff4757,#ff6b81)';
-this.setText('bcHrv',day.hrv||'--');
+this.setText('bcHrv',day.hrv?`${day.hrv}`:'--');
+if(day.hrv&&document.getElementById('bcHrvTrend')){
+const bl=this.calculatedHrvBaseline||USERS[this.user].hrvBaseline;
+const pct=Math.round(day.hrv/bl*100);
+document.getElementById('bcHrvTrend').innerHTML=`<span style="font-size:0.55rem;color:${pct>=85?'var(--success)':'var(--orange)'}"> ${pct}% of ${bl}ms avg</span>`;
+}
 this.setText('bcSleep',`${((day.totalSec||0)/3600).toFixed(1)}h`);
 this.setText('bcReadiness',day.readiness||'--');
 this.setText('bcStrain',Math.round(strainRaw)||'--');
@@ -1451,7 +1463,7 @@ this.setText('bcStrain',Math.round(strainRaw)||'--');
 // Trends
 const last7=this.history.slice(0,7);
 const calcTrend=(cur,key)=>{if(!cur)return'';const prev=last7.slice(1,4).filter(d=>d[key]).map(d=>d[key]);if(!prev.length)return'';const avg=prev.reduce((a,b)=>a+b,0)/prev.length;const diff=cur-avg;if(Math.abs(diff)<2)return'';return diff>0?'<span class="trend-up">↑</span>':'<span class="trend-down">↓</span>'};
-document.getElementById('bcHrvTrend').innerHTML=calcTrend(day.hrv,'hrv');
+// HRV trend now shows baseline context inline above
 document.getElementById('bcSleepTrend').innerHTML=calcTrend(day.totalSec/3600,'totalSec');
 
 // Scores
