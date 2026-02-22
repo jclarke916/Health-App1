@@ -547,6 +547,7 @@ this.water=JSON.parse(localStorage.getItem(`c_water_${this.user}`)||'{}');
 this.bios=JSON.parse(localStorage.getItem(`c_bios_${this.user}`)||'null')||USERS[this.user].defaultBios;
 this.protocol=[];this.currentPortion=1;this.currentMealSlot=null;this.inRecipeView=false;this.streak=0;
 this.removedIngredients=JSON.parse(localStorage.getItem(`c_remIng_${this.user}`)||'{}');
+this.sideItems=JSON.parse(localStorage.getItem(`c_sides_${this.user}`)||'{}');
 document.querySelectorAll('.user-switch button').forEach(b=>b.classList.remove('active'));
 document.getElementById(`btn-${this.user}`)?.classList.add('active');
 // Seed manual sleep for 2026-02-16 (Oura died, Apple Health backup)
@@ -563,6 +564,7 @@ localStorage.setItem(`c_portions_${this.user}`,JSON.stringify(this.portions));
 localStorage.setItem(`c_water_${this.user}`,JSON.stringify(this.water));
 localStorage.setItem(`c_bios_${this.user}`,JSON.stringify(this.bios));
 localStorage.setItem(`c_remIng_${this.user}`,JSON.stringify(this.removedIngredients));
+localStorage.setItem(`c_sides_${this.user}`,JSON.stringify(this.sideItems));
 }
 
 setPlaceholder(){this.history=[{date:this.currentDateStr,score:0,totalSec:0,deepSec:0,remSec:0,rhr:'-',cal:0,high:0,med:0,workouts:[],hrv:null,tempDev:0,respRate:null,readiness:null,vascularAge:null}];this.currentIndex=0}
@@ -619,13 +621,15 @@ this.calculatedHrvBaseline=null; // not enough data, fall back to hardcoded
 
 changeDate(dir){const n=this.currentIndex-dir;if(n>=0&&n<this.history.length){this.currentIndex=n;this.currentDateStr=this.history[n].date;this.render()}}
 
-switchUser(u){if(u===this.user)return;this.user=u;localStorage.setItem('c_user',u);document.querySelectorAll('.user-switch button').forEach(b=>b.classList.remove('active'));document.getElementById(`btn-${u}`).classList.add('active');this.checked=JSON.parse(localStorage.getItem(`c_chk_${u}`)||'{}');this.meals=JSON.parse(localStorage.getItem(`c_meals_${u}`)||'{}');this.portions=JSON.parse(localStorage.getItem(`c_portions_${u}`)||'{}');this.water=JSON.parse(localStorage.getItem(`c_water_${u}`)||'{}');this.bios=JSON.parse(localStorage.getItem(`c_bios_${u}`)||'null')||USERS[u].defaultBios;this.removedIngredients=JSON.parse(localStorage.getItem(`c_remIng_${u}`)||'{}');this.history=[];this.setPlaceholder();this.render();this.fetchOura()}
+switchUser(u){if(u===this.user)return;this.user=u;localStorage.setItem('c_user',u);document.querySelectorAll('.user-switch button').forEach(b=>b.classList.remove('active'));document.getElementById(`btn-${u}`).classList.add('active');this.checked=JSON.parse(localStorage.getItem(`c_chk_${u}`)||'{}');this.meals=JSON.parse(localStorage.getItem(`c_meals_${u}`)||'{}');this.portions=JSON.parse(localStorage.getItem(`c_portions_${u}`)||'{}');this.water=JSON.parse(localStorage.getItem(`c_water_${u}`)||'{}');this.bios=JSON.parse(localStorage.getItem(`c_bios_${u}`)||'null')||USERS[u].defaultBios;this.removedIngredients=JSON.parse(localStorage.getItem(`c_remIng_${u}`)||'{}');this.sideItems=JSON.parse(localStorage.getItem(`c_sides_${u}`)||'{}');this.history=[];this.setPlaceholder();this.render();this.fetchOura()}
 
 toggleTask(id){const dk=this.currentDateStr;if(!this.checked[dk])this.checked[dk]=[];const i=this.checked[dk].indexOf(id);if(i===-1)this.checked[dk].push(id);else this.checked[dk].splice(i,1);this.save();this.render()}
 
 setText(id,txt){const el=document.getElementById(id);if(el)el.innerText=txt}
 
-calcMacros(){const sel=this.meals[this.currentDateStr]||{};const portions=this.portions[this.currentDateStr]||{};const chk=this.checked[this.currentDateStr]||[];const slotToId={};BASE.forEach(b=>{if(b.mealSlot)slotToId[b.mealSlot]=b.id});let t={protein:0,omega3:0,fiber:0,calories:0,polyphenol:0};Object.keys(sel).forEach(slot=>{const pid=slotToId[slot]||slot;if(!chk.includes(pid))return;const idx=sel[slot];const m=MEALS[slot]?.[idx];if(m){const p=portions[slot]||1;const removed=this.getRemovedSet(slot,idx);const adj=this.getAdjustedMacros(m,p,removed);t.protein+=adj.p;t.omega3+=adj.o;t.fiber+=adj.f;t.calories+=adj.cal;t.polyphenol+=adj.poly}});return t}
+calcMacros(){const sel=this.meals[this.currentDateStr]||{};const portions=this.portions[this.currentDateStr]||{};const chk=this.checked[this.currentDateStr]||[];const slotToId={};BASE.forEach(b=>{if(b.mealSlot)slotToId[b.mealSlot]=b.id});let t={protein:0,omega3:0,fiber:0,calories:0,polyphenol:0};Object.keys(sel).forEach(slot=>{const pid=slotToId[slot]||slot;if(!chk.includes(pid))return;const idx=sel[slot];const m=MEALS[slot]?.[idx];if(m){const p=portions[slot]||1;const removed=this.getRemovedSet(slot,idx);const adj=this.getAdjustedMacros(m,p,removed);t.protein+=adj.p;t.omega3+=adj.o;t.fiber+=adj.f;t.calories+=adj.cal;t.polyphenol+=adj.poly;
+const sides=this.sideItems[`${this.currentDateStr}:${slot}`]||[];
+sides.forEach(s=>{t.protein+=(s.macros.p||0);t.omega3+=(s.macros.o||0);t.fiber+=(s.macros.f||0);t.calories+=(s.macros.cal||0);t.polyphenol+=(s.macros.poly||0)})}});return t}
 
 calcRainbow(){const sel=this.meals[this.currentDateStr]||{};const chk=this.checked[this.currentDateStr]||[];const slotToId={};BASE.forEach(b=>{if(b.mealSlot)slotToId[b.mealSlot]=b.id});let s=new Set();Object.keys(sel).forEach(slot=>{const pid=slotToId[slot]||slot;if(!chk.includes(pid))return;const m=MEALS[slot]?.[sel[slot]];if(m?.colors)m.colors.forEach(c=>s.add(c))});return s}
 
@@ -695,8 +699,31 @@ this.currentMealSlot=slot;this.inRecipeView=false;
 this.setText('modalTitle',slot.toUpperCase());
 const all=MEALS[slot]||[];const sel=this.meals[this.currentDateStr]?.[slot];
 if(all.length===0){document.getElementById('modalBody').innerHTML='<div style="text-align:center;padding:40px;color:var(--text-tertiary)">No meals in database yet.<br>Add meals to MEALS.'+slot+' array.</div>';document.getElementById('mainModal').classList.add('show');return}
-document.getElementById('modalBody').innerHTML=all.map((m,i)=>`<div class="menu-item" ${sel===i?'style="border-color:var(--acid)"':''} onclick="app.showRecipe('${slot}',${i})"><div><div class="menu-name">${sel===i?'✓ ':''}${m.title}</div><div class="menu-meta">P:${m.macros.p}g F:${m.macros.f}g Ω3:${m.macros.o}mg Cal:${m.macros.cal}</div></div><div class="menu-arrow">›</div></div>`).join('');
+this.renderMealList(slot,all,sel,'');
 document.getElementById('mainModal').classList.add('show');
+}
+
+renderMealList(slot,all,sel,query){
+const q=query.toLowerCase().trim();
+const filtered=q?all.map((m,i)=>({m,i})).filter(({m})=>{
+const searchStr=(m.title+' '+(m.ingredients||[]).join(' ')+' '+(m.why||'')).toLowerCase();
+return q.split(/\s+/).every(word=>searchStr.includes(word));
+}):all.map((m,i)=>({m,i}));
+let html=`<div style="position:sticky;top:0;z-index:10;background:var(--bg);padding:8px 0 12px">
+<input type="text" id="mealSearch" placeholder="Search meals, ingredients..." value="${query.replace(/"/g,'&quot;')}" oninput="app.filterMeals('${slot}')" style="width:100%;padding:12px 16px;background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:10px;font-size:0.95rem;outline:none;box-sizing:border-box">
+<div style="font-size:0.6rem;color:var(--text-tertiary);margin-top:6px;text-align:center">${filtered.length} of ${all.length} items</div></div>`;
+html+=filtered.map(({m,i})=>`<div class="menu-item" ${sel===i?'style="border-color:var(--acid)"':''} onclick="app.showRecipe('${slot}',${i})"><div><div class="menu-name">${sel===i?'✓ ':''}${m.title}</div><div class="menu-meta">P:${m.macros.p}g F:${m.macros.f}g Ω3:${m.macros.o}mg Cal:${m.macros.cal}</div></div><div class="menu-arrow">›</div></div>`).join('');
+if(filtered.length===0)html+=`<div style="text-align:center;padding:30px;color:var(--text-tertiary)">No matches for "${q}"</div>`;
+document.getElementById('modalBody').innerHTML=html;
+// Restore focus to search input
+setTimeout(()=>{const inp=document.getElementById('mealSearch');if(inp){inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length)}},50);
+}
+
+filterMeals(slot){
+const q=document.getElementById('mealSearch')?.value||'';
+const all=MEALS[slot]||[];
+const sel=this.meals[this.currentDateStr]?.[slot];
+this.renderMealList(slot,all,sel,q);
 }
 
 showRecipe(slot,idx){
@@ -708,13 +735,17 @@ if(this.currentPortion===1&&savedPortion!==1)this.currentPortion=savedPortion;
 const p=this.currentPortion;
 const removed=this.getRemovedSet(slot,idx);
 const adj=this.getAdjustedMacros(meal,p,removed);
-let html=`<div class="recipe-hero"><div class="recipe-title">${meal.title}</div><div class="recipe-stats">${meal.time||'Quick'} • ${meal.servings||1} serving</div></div>`;
+// Add side item macros to display totals
+const sides=this.getSides(slot);
+const totalAdj={p:adj.p,o:adj.o,f:adj.f,cal:adj.cal,poly:adj.poly};
+sides.forEach(s=>{totalAdj.p+=(s.macros.p||0);totalAdj.o+=(s.macros.o||0);totalAdj.f+=(s.macros.f||0);totalAdj.cal+=(s.macros.cal||0);totalAdj.poly+=(s.macros.poly||0)});
+let html=`<div class="recipe-hero"><div class="recipe-title">${meal.title}${sides.length?` + ${sides.length} side${sides.length>1?'s':''}`:''}</div><div class="recipe-stats">${meal.time||'Quick'} • ${meal.servings||1} serving</div></div>`;
 if(allowHalf){
 html+=`<div style="display:flex;gap:10px;margin:15px 0;justify-content:center">
 <button onclick="app.setCurrentPortion(0.5)" style="flex:1;padding:12px;background:${p===0.5?'var(--acid)':'var(--panel)'};color:${p===0.5?'#000':'var(--text)'};border:1px solid ${p===0.5?'var(--acid)':'var(--border)'};border-radius:8px;font-weight:700;cursor:pointer">HALF</button>
 <button onclick="app.setCurrentPortion(1)" style="flex:1;padding:12px;background:${p===1?'var(--acid)':'var(--panel)'};color:${p===1?'#000':'var(--text)'};border:1px solid ${p===1?'var(--acid)':'var(--border)'};border-radius:8px;font-weight:700;cursor:pointer">FULL</button>
 </div>`}
-html+=`<div class="macro-grid" id="recipeMacros"><div class="macro-stat"><div class="m-val">${Math.round(adj.p)}g</div><div class="m-lbl">PROTEIN</div></div><div class="macro-stat"><div class="m-val">${Math.round(adj.o)}mg</div><div class="m-lbl">OMEGA-3</div></div><div class="macro-stat"><div class="m-val">${Math.round(adj.f)}g</div><div class="m-lbl">FIBER</div></div><div class="macro-stat"><div class="m-val">${Math.round(adj.cal)}</div><div class="m-lbl">CALORIES</div></div></div>`;
+html+=`<div class="macro-grid" id="recipeMacros"><div class="macro-stat"><div class="m-val">${Math.round(totalAdj.p)}g</div><div class="m-lbl">PROTEIN</div></div><div class="macro-stat"><div class="m-val">${Math.round(totalAdj.o)}mg</div><div class="m-lbl">OMEGA-3</div></div><div class="macro-stat"><div class="m-val">${Math.round(totalAdj.f)}g</div><div class="m-lbl">FIBER</div></div><div class="macro-stat"><div class="m-val">${Math.round(totalAdj.cal)}</div><div class="m-lbl">CALORIES</div></div></div>`;
 if(removed.size>0)html+=`<div style="text-align:center;margin:-15px 0 15px;font-size:0.6rem;color:var(--orange);font-weight:700">${removed.size} INGREDIENT${removed.size>1?'S':''} REMOVED — MACROS ADJUSTED</div>`;
 if(meal.why)html+=`<div class="synergy-box"><div class="syn-title">🧬 BIO HACK</div><div class="syn-text">${meal.why}</div></div>`;
 if(meal.ingredients){html+=`<div style="margin-bottom:20px"><div style="font-size:0.8rem;font-weight:900;color:var(--acid);margin-bottom:4px">INGREDIENTS</div><div class="ing-hint">Tap to remove ingredients you don't have</div>`;meal.ingredients.forEach((ing,i)=>{const isRemoved=removed.has(i);html+=`<div class="ing-item ${isRemoved?'removed':''}" onclick="app.toggleIngredient('${slot}',${idx},${i})">${ing}</div>`});html+=`</div>`}
@@ -725,7 +756,18 @@ const bevIdx=MEALS.juices.findIndex(b=>b.title===meal.suggestedBeverage);
 if(bevIdx!==-1){const bev=MEALS.juices[bevIdx];
 html+=`<div onclick="app.showBeverageRecipe(${bevIdx})" style="background:var(--panel-elevated);border:1px solid var(--cyan);border-radius:10px;padding:15px;margin:20px 0;cursor:pointer"><div style="font-size:0.7rem;color:var(--cyan);font-weight:900;margin-bottom:5px">🍹 PAIRS WELL WITH</div><div style="font-size:1rem;font-weight:900;color:#fff;margin-bottom:3px">${bev.title}</div><div style="font-size:0.75rem;color:var(--text-secondary)">${bev.why||''}</div></div>`;
 }}
-html+=`<button onclick="app.selectMeal('${slot}',${idx});app.closeModal()" style="width:100%;background:linear-gradient(135deg,#c8ff00,#00d4ff);color:#000;padding:18px;margin-top:25px;border:none;border-radius:12px;font-weight:900;font-size:1.1rem;cursor:pointer">ADD TO PROTOCOL</button>`;
+// Side items display
+if(sides.length>0){
+html+=`<div style="margin:20px 0"><div style="font-size:0.8rem;font-weight:900;color:var(--cyan);margin-bottom:10px">SIDE ITEMS</div>`;
+sides.forEach((s,si)=>{
+html+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--panel);border:1px solid var(--border);border-radius:8px;margin-bottom:6px">
+<div><div style="font-weight:700;font-size:0.85rem;color:#fff">${s.title}</div><div style="font-size:0.7rem;color:var(--text-secondary)">P:${s.macros.p}g F:${s.macros.f}g Ω3:${s.macros.o}mg Cal:${s.macros.cal}</div></div>
+<div onclick="app.removeSide('${slot}',${si})" style="color:var(--alert);cursor:pointer;font-weight:900;font-size:1.2rem;padding:0 8px">✕</div></div>`;
+});
+html+=`</div>`;
+}
+html+=`<button onclick="app.addSide('${slot}')" style="width:100%;background:var(--panel);color:var(--cyan);padding:14px;margin-top:10px;border:1px solid var(--cyan);border-radius:10px;font-weight:800;font-size:0.9rem;cursor:pointer">+ ADD SIDE ITEM</button>`;
+html+=`<button onclick="app.selectMeal('${slot}',${idx});app.closeModal()" style="width:100%;background:linear-gradient(135deg,#c8ff00,#00d4ff);color:#000;padding:18px;margin-top:12px;border:none;border-radius:12px;font-weight:900;font-size:1.1rem;cursor:pointer">ADD TO PROTOCOL</button>`;
 document.getElementById('modalBody').innerHTML=html;
 this.setText('modalTitle',meal.title.toUpperCase());
 document.getElementById('mainModal').scrollTop=0;
@@ -769,6 +811,66 @@ return{p:Math.round((meal.macros.p||0)*ratio*portion),o:Math.round((meal.macros.
 }
 
 setCurrentPortion(size){this.currentPortion=size;this.showRecipe(this.currentMealSlot,this.currentMealIdx)}
+
+// Side Items System
+getSideKey(slot){return `${this.currentDateStr}:${slot}`}
+getSides(slot){return this.sideItems[this.getSideKey(slot)]||[]}
+
+addSide(slot){
+// Show a searchable picker of ALL meals/snacks as potential sides
+this.sidePickerSlot=slot;
+const pools=[
+...MEALS.breakfast.map((m,i)=>({m,pool:'breakfast',i})),
+...MEALS.lunch.map((m,i)=>({m,pool:'lunch',i})),
+...MEALS.dinner.map((m,i)=>({m,pool:'dinner',i})),
+...(MEALS.snack||[]).map((m,i)=>({m,pool:'snack',i})),
+...(MEALS.juices||[]).map((m,i)=>({m,pool:'juices',i}))
+];
+// Deduplicate by title
+const seen=new Set();
+this.sidePool=pools.filter(({m})=>{if(seen.has(m.title))return false;seen.add(m.title);return true});
+this.renderSidePicker('');
+}
+
+renderSidePicker(query){
+const q=query.toLowerCase().trim();
+const filtered=q?this.sidePool.filter(({m})=>{
+const s=(m.title+' '+(m.ingredients||[]).join(' ')).toLowerCase();
+return q.split(/\s+/).every(w=>s.includes(w));
+}):this.sidePool;
+let html=`<div style="position:sticky;top:0;z-index:10;background:var(--bg);padding:8px 0 12px">
+<div style="font-size:0.8rem;font-weight:900;color:var(--cyan);margin-bottom:8px">ADD SIDE ITEM</div>
+<input type="text" id="sideSearch" placeholder="Search all foods..." value="${query.replace(/"/g,'&quot;')}" oninput="app.filterSides()" style="width:100%;padding:12px 16px;background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:10px;font-size:0.95rem;outline:none;box-sizing:border-box">
+<div style="font-size:0.6rem;color:var(--text-tertiary);margin-top:6px;text-align:center">${filtered.length} items</div></div>`;
+html+=filtered.slice(0,30).map(({m,pool,i})=>`<div class="menu-item" onclick="app.selectSide('${pool}',${i})"><div><div class="menu-name">${m.title}</div><div class="menu-meta">P:${m.macros.p}g F:${m.macros.f}g Ω3:${m.macros.o}mg Cal:${m.macros.cal}</div></div><div class="menu-arrow">+</div></div>`).join('');
+if(filtered.length>30)html+=`<div style="text-align:center;padding:15px;color:var(--text-tertiary);font-size:0.75rem">Showing first 30 — type to narrow results</div>`;
+html+=`<button onclick="app.showRecipe(app.currentMealSlot,app.currentMealIdx)" style="width:100%;background:var(--panel);color:var(--text);padding:15px;margin-top:15px;border:1px solid var(--border);border-radius:10px;font-weight:700;cursor:pointer">← BACK TO MEAL</button>`;
+document.getElementById('modalBody').innerHTML=html;
+this.setText('modalTitle','ADD SIDE');
+setTimeout(()=>{const inp=document.getElementById('sideSearch');if(inp){inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length)}},50);
+}
+
+filterSides(){
+const q=document.getElementById('sideSearch')?.value||'';
+this.renderSidePicker(q);
+}
+
+selectSide(pool,idx){
+const slot=this.sidePickerSlot;
+const key=this.getSideKey(slot);
+if(!this.sideItems[key])this.sideItems[key]=[];
+const meal=MEALS[pool][idx];
+this.sideItems[key].push({pool,idx,title:meal.title,macros:{...meal.macros}});
+this.save();
+this.showRecipe(this.currentMealSlot,this.currentMealIdx);
+}
+
+removeSide(slot,sideIdx){
+const key=this.getSideKey(slot);
+if(this.sideItems[key]){this.sideItems[key].splice(sideIdx,1);if(this.sideItems[key].length===0)delete this.sideItems[key]}
+this.save();
+this.showRecipe(this.currentMealSlot,this.currentMealIdx);
+}
 
 selectMeal(slot,idx){
 const d=this.currentDateStr;
@@ -1395,6 +1497,8 @@ const key=`${date}:${slot}:${idx}`;
 const removed=new Set(this.removedIngredients[key]||[]);
 const adj=this.getAdjustedMacros(meal,portion,removed);
 t.protein+=adj.p;t.omega3+=adj.o;t.fiber+=adj.f;t.calories+=adj.cal;t.polyphenol+=adj.poly;
+const sides=this.sideItems[`${date}:${slot}`]||[];
+sides.forEach(s=>{t.protein+=(s.macros.p||0);t.omega3+=(s.macros.o||0);t.fiber+=(s.macros.f||0);t.calories+=(s.macros.cal||0);t.polyphenol+=(s.macros.poly||0)});
 }
 });
 return t}
@@ -1717,7 +1821,7 @@ else this.setText('vascularTrend','🔴 HIGH');
 
 // Apply meal selections (mark AI-filled ones)
 const userPickedSlots=this.meals[date]?Object.keys(this.meals[date]).filter(s=>chk.includes(this.protocol.find(p=>p.mealSlot===s)?.id)):[];
-this.protocol.forEach(t=>{if(t.mealSlot&&sel[t.mealSlot]!==undefined){const m=MEALS[t.mealSlot]?.[sel[t.mealSlot]];if(m){const portion=this.portions[date]?.[t.mealSlot]||1;t.title=m.title+(portion===0.5?' (HALF)':'');t.desc=`P:${Math.round((m.macros.p||0)*portion)}g F:${Math.round((m.macros.f||0)*portion)}g Ω3:${Math.round((m.macros.o||0)*portion)}mg Cal:${Math.round((m.macros.cal||0)*portion)}`;t.macros={p:(m.macros.p||0)*portion,o:(m.macros.o||0)*portion,f:(m.macros.f||0)*portion,cal:(m.macros.cal||0)*portion,poly:(m.macros.poly||0)*portion};t.colors=m.colors;t.aiFilled=!chk.includes(t.id)}}});
+this.protocol.forEach(t=>{if(t.mealSlot&&sel[t.mealSlot]!==undefined){const m=MEALS[t.mealSlot]?.[sel[t.mealSlot]];if(m){const portion=this.portions[date]?.[t.mealSlot]||1;const sides=this.sideItems[`${date}:${t.mealSlot}`]||[];const sideP=sides.reduce((s,x)=>s+(x.macros.p||0),0);const sideO=sides.reduce((s,x)=>s+(x.macros.o||0),0);const sideF=sides.reduce((s,x)=>s+(x.macros.f||0),0);const sideCal=sides.reduce((s,x)=>s+(x.macros.cal||0),0);t.title=m.title+(sides.length?` + ${sides.length}`:'')+(portion===0.5?' (HALF)':'');t.desc=`P:${Math.round((m.macros.p||0)*portion+sideP)}g F:${Math.round((m.macros.f||0)*portion+sideF)}g Ω3:${Math.round((m.macros.o||0)*portion+sideO)}mg Cal:${Math.round((m.macros.cal||0)*portion+sideCal)}`;t.macros={p:(m.macros.p||0)*portion+sideP,o:(m.macros.o||0)*portion+sideO,f:(m.macros.f||0)*portion+sideF,cal:(m.macros.cal||0)*portion+sideCal,poly:(m.macros.poly||0)*portion};t.colors=m.colors;t.aiFilled=!chk.includes(t.id)}}});
 
 // Render timeline
 document.getElementById('timeline').innerHTML=this.protocol.map(t=>{
