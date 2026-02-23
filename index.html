@@ -495,8 +495,8 @@ MEALS.snack3=MEALS.snack1;
 // USER CONFIG & TOKENS
 // ============================================================================
 const USERS={
-jermaine:{name:"Jermaine",dob:"1983-01-13",goals:{protein:175,omega3:4000,fiber:50,water:140,weightTarget:210,heightInches:76.5,z2:45,z5:20,calBurn:500,sleepHours:8},defaultBios:{bmr:'2028',apob:'114',lpa:'178',weight:'215.7',hscrp:'0.4',hba1c:'5.4',bodyfat:'21.6',muscle:'97.0'},hrvBaseline:45},
-sophia:{name:"Sophia",dob:"1987-01-25",goals:{protein:130,omega3:4000,fiber:35,water:100,weightTarget:118,heightInches:62,z2:30,z5:15,calBurn:350,sleepHours:8},defaultBios:{bmr:'1264',apob:'70',lpa:'20',weight:'136',hscrp:'0.5',hba1c:'5.0',bodyfat:'33.0',muscle:'50.0',ana:'positive',glucose:'84',creatinine:'0.82',egfr:'94',ferritin:'75',tsh:'1.35',ast:'23',alt:'27',calcium:'9',albumin:'4.7'},hrvBaseline:55}
+jermaine:{name:"Jermaine",dob:"1983-01-13",goals:{protein:175,omega3:4000,fiber:50,water:140,poly:600,weightTarget:210,heightInches:76.5,z2:45,z5:20,calBurn:500,sleepHours:8},defaultBios:{bmr:'2028',apob:'114',lpa:'178',weight:'215.7',hscrp:'0.4',hba1c:'5.4',bodyfat:'21.6',muscle:'97.0'},hrvBaseline:45},
+sophia:{name:"Sophia",dob:"1987-01-25",goals:{protein:130,omega3:4000,fiber:35,water:100,poly:500,weightTarget:118,heightInches:62,z2:30,z5:15,calBurn:350,sleepHours:8},defaultBios:{bmr:'1264',apob:'70',lpa:'20',weight:'136',hscrp:'0.5',hba1c:'5.0',bodyfat:'33.0',muscle:'50.0',ana:'positive',glucose:'84',creatinine:'0.82',egfr:'94',ferritin:'75',tsh:'1.35',ast:'23',alt:'27',calcium:'9',albumin:'4.7'},hrvBaseline:55}
 };
 const TOKENS={jermaine:'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y',sophia:'4QSDWYJJUZFHRWRH727NCK7WH4COQJF4'};
 const COLORS={red:'#ff4757',orange:'#ff9500',yellow:'#ffd60a',green:'#34d399',purple:'#a855f7',white:'#fff',brown:'#A0522D',pink:'#f093fb',black:'#333',silver:'#ccc'};
@@ -636,7 +636,7 @@ sides.forEach(s=>{t.protein+=(s.macros.p||0);t.omega3+=(s.macros.o||0);t.fiber+=
 
 calcRainbow(){const sel=this.meals[this.currentDateStr]||{};const chk=this.checked[this.currentDateStr]||[];const slotToId={};BASE.forEach(b=>{if(b.mealSlot)slotToId[b.mealSlot]=b.id});let s=new Set();Object.keys(sel).forEach(slot=>{const pid=slotToId[slot]||slot;if(!chk.includes(pid))return;const m=MEALS[slot]?.[sel[slot]];if(m?.colors)m.colors.forEach(c=>s.add(c))});return s}
 
-addWater(){const d=this.currentDateStr;if(!this.water[d])this.water[d]=0;this.water[d]+=8;const target=USERS[this.user].goals.water;if(this.water[d]>target)this.water[d]=target;this.save();this.updateWater()}
+addWater(){const d=this.currentDateStr;if(!this.water[d])this.water[d]=0;this.water[d]+=17;const target=USERS[this.user].goals.water;if(this.water[d]>target)this.water[d]=target;this.save();this.updateWater()}
 
 toggleSection(header){
 const body=header.nextElementSibling;
@@ -1159,30 +1159,15 @@ const totalCalBurn=Math.round(last7.reduce((s,d)=>s+(d.cal||0),0));
 const realWorkoutTypes=['cs4','box','boxing','heat','h.e.a.t.','club dance','dance','ride','rebound','yoga sculpt','cs strength','strength','reform','hot pilates','pilates','barre','yoga flow','flow','hiit','running','cycling','swimming','weight training','walking'];
 const totalWorkouts=last7.reduce((s,d)=>s+d.workouts.filter(w=>{const t=(w.type||'').toLowerCase();return realWorkoutTypes.includes(t)||w.calories>150}).length,0);
 
-// NUTRITION TOTALS (from checked meals across 7 days)
+// NUTRITION TOTALS (from checked meals across 7 days — uses calculateMacrosForDate for accuracy)
 let totalProtein=0,totalOmega3=0,totalFiber=0,totalCal=0,totalPoly=0;
 last7.forEach(d=>{
-const date=d.date;
-const chk=JSON.parse(localStorage.getItem(`c_chk_${this.user}`)||'{}')[date]||[];
-const sel=JSON.parse(localStorage.getItem(`c_meals_${this.user}`)||'{}')[date]||{};
-const portions=JSON.parse(localStorage.getItem(`c_portions_${this.user}`)||'{}')[date]||{};
-Object.keys(sel).forEach(slot=>{
-const mealIdx=sel[slot];
-const arr=MEALS[slot];
-if(!arr||mealIdx==null)return;
-const meal=arr[mealIdx];
-if(!meal)return;
-const proto=this.protocol||BASE;
-const slotId=proto.find(p=>p.mealSlot===slot)?.id;
-if(!slotId||!chk.includes(slotId))return;
-const portion=portions[slot]||1;
-const m=meal.macros||{};
-totalProtein+=(m.p||0)*portion;
-totalOmega3+=(m.o||0)*portion;
-totalFiber+=(m.f||0)*portion;
-totalCal+=(m.cal||0)*portion;
-totalPoly+=(m.poly||0)*portion;
-});
+const mac=this.calculateMacrosForDate(d.date);
+totalProtein+=mac.protein;
+totalOmega3+=mac.omega3;
+totalFiber+=mac.fiber;
+totalCal+=mac.calories;
+totalPoly+=mac.polyphenol;
 });
 
 // WATER TOTAL
@@ -1243,7 +1228,7 @@ ${stat('Cal Burn',totalCalBurn,'','var(--orange)')}
 ${totalStat('Protein',Math.round(totalProtein),'g','#fff',goals.protein*7)}
 ${totalStat('Omega-3',Math.round(totalOmega3/1000),'k mg','var(--cyan)',goals.omega3*7/1000)}
 ${totalStat('Fiber',Math.round(totalFiber),'g','var(--success)',goals.fiber*7)}
-${totalStat('Polyphenols',Math.round(totalPoly),'mg','var(--purple)',0)}
+${totalStat('Polyphenols',Math.round(totalPoly),'mg','var(--purple)',goals.poly*7)}
 </div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
 ${totalStat('Water',totalWater,'oz','var(--cyan)',goals.water*7)}
@@ -1725,8 +1710,12 @@ this.streak=streak;
 calculateMacrosForDate(date){
 const sel=this.meals[date]||{};
 const portions=this.portions[date]||{};
+const chk=this.checked[date]||[];
+const slotToId={};(this.protocol||BASE).forEach(b=>{if(b.mealSlot)slotToId[b.mealSlot]=b.id});
 let t={protein:0,omega3:0,fiber:0,calories:0,polyphenol:0};
 Object.keys(sel).forEach(slot=>{
+const pid=slotToId[slot]||slot;
+if(!chk.includes(pid))return;
 const idx=sel[slot];
 const meal=MEALS[slot]?.[idx];
 if(meal){
