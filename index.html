@@ -174,6 +174,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 <div class="battery-components">
 <div class="battery-component" id="hrvCard"><div class="bc-value" id="bcHrv" style="color:var(--purple)">--</div><div class="bc-label">HRV (ms)</div><div class="bc-trend" id="bcHrvTrend"></div></div>
 <div class="battery-component"><div class="bc-value" id="bcSleep">--</div><div class="bc-label">SLEEP</div><div class="bc-trend" id="bcSleepTrend"></div></div>
+<div class="battery-component"><div class="bc-value" id="bcBedtime" style="font-size:0.85rem">--</div><div class="bc-label">BED → WAKE</div><div class="bc-trend" id="bcBedtimeTrend"></div></div>
 <div class="battery-component"><div class="bc-value" id="bcReadiness">--</div><div class="bc-label">READY</div><div class="bc-trend" id="bcReadinessTrend"></div></div>
 <div class="battery-component"><div class="bc-value" id="bcStrain">--</div><div class="bc-label">STRAIN</div><div class="bc-trend" id="bcStrainTrend"></div></div>
 </div>
@@ -570,7 +571,7 @@ localStorage.setItem(`c_remIng_${this.user}`,JSON.stringify(this.removedIngredie
 localStorage.setItem(`c_sides_${this.user}`,JSON.stringify(this.sideItems));
 }
 
-setPlaceholder(){this.history=[{date:this.currentDateStr,score:0,totalSec:0,deepSec:0,remSec:0,rhr:'-',cal:0,high:0,med:0,workouts:[],hrv:null,tempDev:0,respRate:null,readiness:null,vascularAge:null}];this.currentIndex=0}
+setPlaceholder(){this.history=[{date:this.currentDateStr,score:0,totalSec:0,deepSec:0,remSec:0,rhr:'-',cal:0,high:0,med:0,workouts:[],hrv:null,tempDev:0,respRate:null,readiness:null,vascularAge:null,bedtime:null,waketime:null}];this.currentIndex=0}
 
 async fetchOura(){
 this.setText('syncStatus','SYNCING...');
@@ -592,8 +593,8 @@ this.processData(data);this.setText('syncStatus','SYNCED ✓');this.render();
 
 processData(data){
 const m=new Map();
-const g=d=>{if(!m.has(d))m.set(d,{date:d,score:0,totalSec:0,deepSec:0,remSec:0,rhr:'-',cal:0,high:0,med:0,workouts:[],hrv:null,tempDev:0,respRate:null,readiness:null,vascularAge:null});return m.get(d)};
-(data.sleep||[]).forEach(s=>{const d=g(s.day);d.totalSec+=s.total_sleep_duration||0;d.deepSec+=s.deep_sleep_duration||0;d.remSec+=s.rem_sleep_duration||0;if(s.lowest_heart_rate>=35&&s.lowest_heart_rate<=100)d.rhr=Math.round(s.lowest_heart_rate);if(s.average_breath)d.respRate=s.average_breath;if(s.average_hrv)d.hrv=Math.round(s.average_hrv);const sc=s.score||(s.efficiency?Math.round(s.efficiency):0);if(sc>d.score)d.score=sc});
+const g=d=>{if(!m.has(d))m.set(d,{date:d,score:0,totalSec:0,deepSec:0,remSec:0,rhr:'-',cal:0,high:0,med:0,workouts:[],hrv:null,tempDev:0,respRate:null,readiness:null,vascularAge:null,bedtime:null,waketime:null});return m.get(d)};
+(data.sleep||[]).forEach(s=>{const d=g(s.day);d.totalSec+=s.total_sleep_duration||0;d.deepSec+=s.deep_sleep_duration||0;d.remSec+=s.rem_sleep_duration||0;if(s.lowest_heart_rate>=35&&s.lowest_heart_rate<=100)d.rhr=Math.round(s.lowest_heart_rate);if(s.average_breath)d.respRate=s.average_breath;if(s.average_hrv)d.hrv=Math.round(s.average_hrv);if(s.bedtime_start)d.bedtime=s.bedtime_start;if(s.bedtime_end)d.waketime=s.bedtime_end;const sc=s.score||(s.efficiency?Math.round(s.efficiency):0);if(sc>d.score)d.score=sc});
 // daily_hrv endpoint only has contributor scores (0-100), NOT actual HRV in ms
 // Actual HRV comes from sleep endpoint's average_hrv field — do not use daily_hrv as fallback
 (data.daily_readiness||[]).forEach(r=>{const d=g(r.day);d.readiness=r.score||null;if(r.contributors?.body_temperature!=null){const btScore=r.contributors.body_temperature;d.tempDev=btScore>=95?0:btScore>=85?0.1:btScore>=75?0.3:btScore>=60?0.5:btScore>=40?0.8:1.2;if(r.temperature_deviation!=null)d.tempDev=r.temperature_deviation}});
@@ -601,7 +602,7 @@ const g=d=>{if(!m.has(d))m.set(d,{date:d,score:0,totalSec:0,deepSec:0,remSec:0,r
 (data.workout||[]).forEach(w=>{const d=g(w.day);d.workouts.push({type:w.label||w.activity||'workout',calories:w.calories||300,time:new Date(w.start_datetime).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})})});
 this.history=Array.from(m.values()).sort((a,b)=>b.date.localeCompare(a.date));
 this.currentIndex=this.history.findIndex(h=>h.date===this.currentDateStr);
-if(this.currentIndex===-1){this.history.unshift({date:this.currentDateStr,score:0,totalSec:0,deepSec:0,remSec:0,rhr:'-',cal:0,high:0,med:0,workouts:[],hrv:null,tempDev:0,respRate:null,readiness:null,vascularAge:null});this.currentIndex=0}
+if(this.currentIndex===-1){this.history.unshift({date:this.currentDateStr,score:0,totalSec:0,deepSec:0,remSec:0,rhr:'-',cal:0,high:0,med:0,workouts:[],hrv:null,tempDev:0,respRate:null,readiness:null,vascularAge:null,bedtime:null,waketime:null});this.currentIndex=0}
 // Manual sleep overrides (Apple Health backup when Oura dies)
 const manualSleep=JSON.parse(localStorage.getItem(`c_manualSleep_${this.user}`)||'{}');
 Object.keys(manualSleep).forEach(date=>{
@@ -940,6 +941,27 @@ const avgSleepByDay=sleepByDay.map((s,i)=>sleepCountByDay[i]>0?(s/sleepCountByDa
 const bestSleepDay=avgSleepByDay.reduce((best,v,i)=>(v!=='--'&&(best.v==='--'||parseFloat(v)>parseFloat(best.v)))?{i,v}:best,{i:0,v:'--'});
 const worstSleepDay=avgSleepByDay.reduce((worst,v,i)=>(v!=='--'&&(worst.v==='--'||parseFloat(v)<parseFloat(worst.v)))?{i,v}:worst,{i:0,v:'99'});
 
+// Bedtime averages by day of week
+const bedByDay=[[],[],[],[],[],[],[]];
+last14.forEach(d=>{
+if(d.bedtime){
+const dow=new Date(d.date+'T12:00:00').getDay();
+const bt=new Date(d.bedtime);
+let bedHr=bt.getHours()+bt.getMinutes()/60;
+if(bedHr<12)bedHr+=24; // after midnight = next day
+bedByDay[dow].push(bedHr);
+}
+});
+const avgBedByDay=bedByDay.map(arr=>{
+if(!arr.length)return null;
+const avg=arr.reduce((s,v)=>s+v,0)/arr.length;
+const h=Math.floor(avg%24);const m=Math.round((avg%1)*60);
+const hr=h%12||12;const ap=h>=12&&h<24?'p':'a';
+return{str:`${hr}:${m.toString().padStart(2,'0')}${ap}`,hr:avg};
+});
+const earliestBed=avgBedByDay.reduce((best,v,i)=>v&&(!best.v||v.hr<best.v.hr)?{i,v}:best,{i:0,v:null});
+const latestBed=avgBedByDay.reduce((worst,v,i)=>v&&(!worst.v||v.hr>worst.v.hr)?{i,v}:worst,{i:0,v:null});
+
 // ========== FIBER COMPLIANCE ==========
 let fiberHitDays=0,fiberMissDays=0,fiberByDay=[0,0,0,0,0,0,0],fiberDayCount=[0,0,0,0,0,0,0];
 last14.forEach(d=>{
@@ -1023,6 +1045,21 @@ return`<div style="text-align:center;background:${bg};padding:8px 2px;border-rad
 <div style="font-size:0.85rem;font-weight:800;color:${parseFloat(avgWeekend)>=7?'var(--success)':'var(--orange)'}">${avgWeekend}h</div>
 </div>
 </div>
+${earliestBed.v?`<div style="display:flex;gap:8px;margin-top:8px">
+<div style="flex:1;background:var(--panel);padding:10px;border-radius:8px;border:1px solid var(--border)">
+<div style="font-size:0.5rem;color:var(--text-tertiary)">EARLIEST BEDTIME</div>
+<div style="font-size:0.85rem;font-weight:800;color:var(--success)">${dayNames[earliestBed.i]} → ${earliestBed.v.str}</div>
+</div>
+<div style="flex:1;background:var(--panel);padding:10px;border-radius:8px;border:1px solid var(--border)">
+<div style="font-size:0.5rem;color:var(--text-tertiary)">LATEST BEDTIME</div>
+<div style="font-size:0.85rem;font-weight:800;color:var(--alert)">${latestBed.v?`${dayNames[latestBed.i]} → ${latestBed.v.str}`:'--'}</div>
+</div>
+</div>
+<div style="font-size:0.55rem;color:var(--text-secondary);background:var(--panel);padding:10px;border-radius:8px;border:1px solid var(--border);margin-top:8px">
+${latestBed.v&&earliestBed.v&&(latestBed.v.hr-earliestBed.v.hr)>1.5?
+'⚠️ Bedtime varies by '+(latestBed.v.hr-earliestBed.v.hr).toFixed(1)+'hrs across the week. Inconsistent sleep timing disrupts circadian rhythm more than short sleep does. Aim for same bedtime ±30min every night.':
+'✓ Bedtime consistency is good — keep the rhythm steady.'}
+</div>`:``}
 </div>`;
 
 // FIBER COMPLIANCE
@@ -1181,7 +1218,9 @@ const streak=this.streak||0;
 const dayLabels=['S','M','T','W','T','F','S'];
 const sparkData=last7.map(d=>{
 const dow=new Date(d.date+'T12:00:00').getDay();
-return{label:dayLabels[dow],score:d.score||0,sleep:(d.totalSec/3600).toFixed(1),z2:d.med||0,rhr:d.rhr!=='-'?d.rhr:'--',hrv:d.hrv||'--'};
+let bedStr='--';
+if(d.bedtime){const bt=new Date(d.bedtime);let h=bt.getHours();const m=bt.getMinutes().toString().padStart(2,'0');const ap=h>=12?'p':'a';h=h%12||12;bedStr=`${h}:${m}${ap}`}
+return{label:dayLabels[dow],score:d.score||0,sleep:(d.totalSec/3600).toFixed(1),z2:d.med||0,rhr:d.rhr!=='-'?d.rhr:'--',hrv:d.hrv||'--',bed:bedStr};
 }).reverse();
 
 const scoreColor=s=>s>=85?'var(--success)':s>=70?'var(--cyan)':s>=50?'var(--orange)':'var(--alert)';
@@ -1250,6 +1289,7 @@ ${sparkData.map(d=>`<div style="text-align:center;background:var(--panel);paddin
 <div style="font-size:0.5rem;color:var(--text-tertiary);font-weight:700">${d.label}</div>
 <div style="font-size:0.85rem;font-weight:800;color:${scoreColor(d.score)};margin:4px 0">${d.score||'—'}</div>
 <div style="font-size:0.45rem;color:var(--text-tertiary)">${d.sleep}h</div>
+<div style="font-size:0.45rem;color:var(--purple)">${d.bed}</div>
 <div style="font-size:0.45rem;color:var(--cyan)">${d.z2}m Z2</div>
 <div style="font-size:0.45rem;color:var(--alert)">♡${d.rhr}</div>
 </div>`).join('')}
@@ -1790,6 +1830,21 @@ const pct=Math.round(day.hrv/bl*100);
 document.getElementById('bcHrvTrend').innerHTML=`<span style="font-size:0.55rem;color:${pct>=85?'var(--success)':'var(--orange)'}"> ${pct}% of ${bl}ms avg</span>`;
 }
 this.setText('bcSleep',`${((day.totalSec||0)/3600).toFixed(1)}h`);
+// Bedtime display
+if(day.bedtime&&day.waketime){
+const bt=new Date(day.bedtime);
+const wt=new Date(day.waketime);
+const fmt=d=>{let h=d.getHours();const m=d.getMinutes().toString().padStart(2,'0');const ap=h>=12?'p':'a';h=h%12||12;return`${h}:${m}${ap}`};
+this.setText('bcBedtime',`${fmt(bt)}→${fmt(wt)}`);
+const bedHour=bt.getHours()+(bt.getMinutes()/60);
+const trendEl=document.getElementById('bcBedtimeTrend');
+if(trendEl){
+const color=bedHour<=22.5?'var(--success)':bedHour<=23.5?'var(--cyan)':bedHour<=24.5?'var(--orange)':'var(--alert)';
+trendEl.innerHTML=`<span style="font-size:0.5rem;color:${color}">${bedHour<=22.5?'✓ ON TARGET':bedHour<=23.5?'CLOSE':'⚠️ LATE'}</span>`;
+}
+}else{
+this.setText('bcBedtime','--');
+}
 this.setText('bcReadiness',day.readiness||'--');
 this.setText('bcStrain',strainRaw>0?Math.round(strainRaw):'0');
 
