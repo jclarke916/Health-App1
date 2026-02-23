@@ -173,8 +173,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 <div class="battery-bar"><div class="battery-fill" id="batteryFill" style="width:0%"></div></div>
 <div class="battery-components">
 <div class="battery-component" id="hrvCard"><div class="bc-value" id="bcHrv" style="color:var(--purple)">--</div><div class="bc-label">HRV (ms)</div><div class="bc-trend" id="bcHrvTrend"></div></div>
-<div class="battery-component"><div class="bc-value" id="bcSleep">--</div><div class="bc-label">SLEEP</div><div class="bc-trend" id="bcSleepTrend"></div></div>
-<div class="battery-component"><div class="bc-value" id="bcBedtime" style="font-size:0.85rem">--</div><div class="bc-label">BED → WAKE</div><div class="bc-trend" id="bcBedtimeTrend"></div></div>
+<div class="battery-component"><div class="bc-value" id="bcSleep">--</div><div class="bc-label" id="bcBedLabel">SLEEP</div><div class="bc-trend" id="bcSleepTrend"></div></div>
 <div class="battery-component"><div class="bc-value" id="bcReadiness">--</div><div class="bc-label">READY</div><div class="bc-trend" id="bcReadinessTrend"></div></div>
 <div class="battery-component"><div class="bc-value" id="bcStrain">--</div><div class="bc-label">STRAIN</div><div class="bc-trend" id="bcStrainTrend"></div></div>
 </div>
@@ -317,6 +316,7 @@ breakfast:[
 {title:"Spinach Tofu Scramble",time:"12min",servings:1,macros:{p:22,o:800,f:9,cal:300,poly:140},ingredients:["8oz Firm Tofu","2 cups Spinach","1/2 cup Diced Bell Peppers","1/2 Onion","Turmeric","Nutritional Yeast","Garlic","Olive Oil"],steps:["Crumble tofu into chunks","Saut\u00e9 onion, garlic, and bell peppers","Add crumbled tofu with turmeric","Fold in fresh spinach","Season with nutritional yeast"],why:"Complete plant protein from tofu. Turmeric = anti-inflammatory. Bell peppers = vitamin C. Nutritional yeast = B vitamins. Spinach = iron + folate.",colors:['yellow','green','red']},
 {title:"Chicken & Veggie Breakfast Bowl",time:"15min",servings:1,macros:{p:54,o:600,f:16,cal:520,poly:110},ingredients:["6oz Grilled Chicken Breast","1/2 cup Black Beans","1 cup Broccoli","1 cup Bell Peppers","2 Eggs","Sweet Potato","Avocado"],steps:["Dice and roast sweet potato","Steam broccoli and peppers","Warm black beans","Slice pre-cooked chicken","Scramble eggs","Combine all in bowl","Top with sliced avocado"],why:"Savory breakfast with complete protein. Black beans add 8g fiber + resistant starch. Sweet potato = complex carbs for sustained energy. Veggies = fiber + phytonutrients.",colors:['brown','green','orange','yellow','black']},
 {title:"The ApoB Destroyer",time:"10min",servings:1,macros:{p:38,o:5200,f:24,cal:520,poly:180},ingredients:["1/2 cup Steel Cut Oats","1 tbsp Psyllium Husk","2 tbsp Ground Flaxseed","1 scoop Pea Protein","1 tbsp Chia Seeds","1/2 cup Blueberries","1 tbsp Almond Butter","Cinnamon"],steps:["Cook steel cut oats","Stir in psyllium husk while hot (thickens fast)","Mix in flax and chia seeds","Stir in pea protein","Top with blueberries and almond butter","Dust with cinnamon"],why:"Triple soluble fiber stack: Psyllium (4g soluble fiber binds bile acids forcing liver to pull LDL from blood), oat beta-glucan (3g = clinically proven -5-10% LDL), flax lignans. This single meal delivers ~12g soluble fiber — the #1 dietary tool for ApoB reduction.",colors:['brown','purple','white']},
+{title:"Egg Whites & Kodiak Pancakes w/ Berries",time:"15min",servings:1,macros:{p:36,o:100,f:7,cal:550,poly:200},ingredients:["6 Egg Whites","2 Kodiak Protein Pancakes","1 cup Mixed Berries (blueberries, strawberries, raspberries)","1 tbsp Maple Syrup","Cinnamon"],steps:["Scramble egg whites with cinnamon","Prepare Kodiak pancakes per package directions","Top pancakes with mixed berries and light maple syrup","Serve egg whites on the side"],why:"36g protein from egg whites + Kodiak's protein-packed batter. 7g fiber from berries and whole grain. Anthocyanins in berries reduce oxidized LDL and lower CRP. Use side items to add spinach or flax for extra omega-3.",colors:['white','brown','purple','red']},
 {title:"Huevos Rancheros",time:"15min",servings:1,macros:{p:42,o:2400,f:18,cal:520,poly:200},ingredients:["1 cup Egg Whites","1 cup Black Beans","1 cup Zucchini (diced)","1 cup Yellow Squash (diced)","1/2 block Firm Tofu (crumbled)","2 cups Spinach","2 tbsp Ground Flaxseed","2 tbsp Hemp Hearts","1/2 cup Red Salsa","1 tsp Turmeric","1/2 tsp Black Pepper","1 tbsp EVOO"],steps:["Heat EVOO in large skillet","Sauté zucchini and squash until tender","Add crumbled tofu and spinach, cook until wilted","Add turmeric and black pepper, stir through","Push veggies aside, scramble egg whites","Warm black beans with salsa in separate pan","Plate beans and salsa, top with egg white and veggie scramble","Sprinkle flaxseed and hemp hearts on top"],why:"Loaded anti-inflammatory breakfast. Turmeric + black pepper = 2000% curcumin absorption. Black beans = 15g soluble fiber binding bile acids for ApoB. Flax lignans + hemp hearts add omega-3 ALA + complete plant protein. Tofu isoflavones lower LDL. Zucchini and squash add bulk with minimal calories.",colors:['yellow','green','black','red']}
 ],
 lunch:[
@@ -1830,20 +1830,18 @@ const pct=Math.round(day.hrv/bl*100);
 document.getElementById('bcHrvTrend').innerHTML=`<span style="font-size:0.55rem;color:${pct>=85?'var(--success)':'var(--orange)'}"> ${pct}% of ${bl}ms avg</span>`;
 }
 this.setText('bcSleep',`${((day.totalSec||0)/3600).toFixed(1)}h`);
-// Bedtime display
+// Show bedtime in sleep card label
 if(day.bedtime&&day.waketime){
 const bt=new Date(day.bedtime);
 const wt=new Date(day.waketime);
 const fmt=d=>{let h=d.getHours();const m=d.getMinutes().toString().padStart(2,'0');const ap=h>=12?'p':'a';h=h%12||12;return`${h}:${m}${ap}`};
-this.setText('bcBedtime',`${fmt(bt)}→${fmt(wt)}`);
 const bedHour=bt.getHours()+(bt.getMinutes()/60);
-const trendEl=document.getElementById('bcBedtimeTrend');
-if(trendEl){
-const color=bedHour<=22.5?'var(--success)':bedHour<=23.5?'var(--cyan)':bedHour<=24.5?'var(--orange)':'var(--alert)';
-trendEl.innerHTML=`<span style="font-size:0.5rem;color:${color}">${bedHour<=22.5?'✓ ON TARGET':bedHour<=23.5?'CLOSE':'⚠️ LATE'}</span>`;
-}
+const color=bedHour<=22.5?'var(--success)':bedHour<=23.5?'var(--cyan)':bedHour<=24.5||bedHour<4?'var(--orange)':'var(--alert)';
+const label=document.getElementById('bcBedLabel');
+if(label)label.innerHTML=`<span style="color:${color}">${fmt(bt)} → ${fmt(wt)}</span>`;
 }else{
-this.setText('bcBedtime','--');
+const label=document.getElementById('bcBedLabel');
+if(label)label.textContent='SLEEP';
 }
 this.setText('bcReadiness',day.readiness||'--');
 this.setText('bcStrain',strainRaw>0?Math.round(strainRaw):'0');
