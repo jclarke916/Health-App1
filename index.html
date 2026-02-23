@@ -712,14 +712,20 @@ const filtered=q?all.map((m,i)=>({m,i})).filter(({m})=>{
 const searchStr=(m.title+' '+(m.ingredients||[]).join(' ')+' '+(m.why||'')).toLowerCase();
 return q.split(/\s+/).every(word=>searchStr.includes(word));
 }):all.map((m,i)=>({m,i}));
+// On first render, build the full structure with search bar + results container
+if(!document.getElementById('mealResults')){
 let html=`<div style="position:sticky;top:0;z-index:10;background:var(--bg);padding:8px 0 12px">
 <input type="text" id="mealSearch" placeholder="Search meals, ingredients..." value="${query.replace(/"/g,'&quot;')}" oninput="app.filterMeals('${slot}')" style="width:100%;padding:12px 16px;background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:10px;font-size:0.95rem;outline:none;box-sizing:border-box">
-<div style="font-size:0.6rem;color:var(--text-tertiary);margin-top:6px;text-align:center">${filtered.length} of ${all.length} items</div></div>`;
-html+=filtered.map(({m,i})=>`<div class="menu-item" ${sel===i?'style="border-color:var(--acid)"':''} onclick="app.showRecipe('${slot}',${i})"><div><div class="menu-name">${sel===i?'✓ ':''}${m.title}</div><div class="menu-meta">P:${m.macros.p}g F:${m.macros.f}g Ω3:${m.macros.o}mg Cal:${m.macros.cal}</div></div><div class="menu-arrow">›</div></div>`).join('');
-if(filtered.length===0)html+=`<div style="text-align:center;padding:30px;color:var(--text-tertiary)">No matches for "${q}"</div>`;
+<div style="font-size:0.6rem;color:var(--text-tertiary);margin-top:6px;text-align:center" id="mealCount">${filtered.length} of ${all.length} items</div></div><div id="mealResults"></div>`;
 document.getElementById('modalBody').innerHTML=html;
-// Restore focus to search input
-setTimeout(()=>{const inp=document.getElementById('mealSearch');if(inp){inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length)}},50);
+}else{
+const countEl=document.getElementById('mealCount');
+if(countEl)countEl.textContent=`${filtered.length} of ${all.length} items`;
+}
+// Only update results div, not the search input
+let items=filtered.map(({m,i})=>`<div class="menu-item" ${sel===i?'style="border-color:var(--acid)"':''} onclick="app.showRecipe('${slot}',${i})"><div><div class="menu-name">${sel===i?'✓ ':''}${m.title}</div><div class="menu-meta">P:${m.macros.p}g F:${m.macros.f}g Ω3:${m.macros.o}mg Cal:${m.macros.cal}</div></div><div class="menu-arrow">›</div></div>`).join('');
+if(filtered.length===0)items=`<div style="text-align:center;padding:30px;color:var(--text-tertiary)">No matches for "${q}"</div>`;
+document.getElementById('mealResults').innerHTML=items;
 }
 
 filterMeals(slot){
@@ -841,16 +847,21 @@ const filtered=q?this.sidePool.filter(({m})=>{
 const s=(m.title+' '+(m.ingredients||[]).join(' ')).toLowerCase();
 return q.split(/\s+/).every(w=>s.includes(w));
 }):this.sidePool;
+if(!document.getElementById('sideResults')){
 let html=`<div style="position:sticky;top:0;z-index:10;background:var(--bg);padding:8px 0 12px">
 <div style="font-size:0.8rem;font-weight:900;color:var(--cyan);margin-bottom:8px">ADD SIDE ITEM</div>
 <input type="text" id="sideSearch" placeholder="Search all foods..." value="${query.replace(/"/g,'&quot;')}" oninput="app.filterSides()" style="width:100%;padding:12px 16px;background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:10px;font-size:0.95rem;outline:none;box-sizing:border-box">
-<div style="font-size:0.6rem;color:var(--text-tertiary);margin-top:6px;text-align:center">${filtered.length} items</div></div>`;
-html+=filtered.slice(0,30).map(({m,pool,i})=>`<div class="menu-item" onclick="app.selectSide('${pool}',${i})"><div><div class="menu-name">${m.title}</div><div class="menu-meta">P:${m.macros.p}g F:${m.macros.f}g Ω3:${m.macros.o}mg Cal:${m.macros.cal}</div></div><div class="menu-arrow">+</div></div>`).join('');
-if(filtered.length>30)html+=`<div style="text-align:center;padding:15px;color:var(--text-tertiary);font-size:0.75rem">Showing first 30 — type to narrow results</div>`;
-html+=`<button onclick="app.showRecipe(app.currentMealSlot,app.currentMealIdx)" style="width:100%;background:var(--panel);color:var(--text);padding:15px;margin-top:15px;border:1px solid var(--border);border-radius:10px;font-weight:700;cursor:pointer">← BACK TO MEAL</button>`;
+<div style="font-size:0.6rem;color:var(--text-tertiary);margin-top:6px;text-align:center" id="sideCount">${filtered.length} items</div></div><div id="sideResults"></div>`;
 document.getElementById('modalBody').innerHTML=html;
 this.setText('modalTitle','ADD SIDE');
-setTimeout(()=>{const inp=document.getElementById('sideSearch');if(inp){inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length)}},50);
+}else{
+const countEl=document.getElementById('sideCount');
+if(countEl)countEl.textContent=`${filtered.length} items`;
+}
+let items=filtered.slice(0,30).map(({m,pool,i})=>`<div class="menu-item" onclick="app.selectSide('${pool}',${i})"><div><div class="menu-name">${m.title}</div><div class="menu-meta">P:${m.macros.p}g F:${m.macros.f}g Ω3:${m.macros.o}mg Cal:${m.macros.cal}</div></div><div class="menu-arrow">+</div></div>`).join('');
+if(filtered.length>30)items+=`<div style="text-align:center;padding:15px;color:var(--text-tertiary);font-size:0.75rem">Showing first 30 — type to narrow results</div>`;
+items+=`<button onclick="app.showRecipe(app.currentMealSlot,app.currentMealIdx)" style="width:100%;background:var(--panel);color:var(--text);padding:15px;margin-top:15px;border:1px solid var(--border);border-radius:10px;font-weight:700;cursor:pointer">← BACK TO MEAL</button>`;
+document.getElementById('sideResults').innerHTML=items;
 }
 
 filterSides(){
@@ -949,9 +960,9 @@ const myW=d.workouts.length>0;
 const otherDate=d.date;
 // Check if other user has workouts on same date (via Oura cache or localStorage)
 const otherKey=`c_oura_${otherUser}`;
-// We check by day-of-week pattern: Tue/Thu = together (UFC), Wed/Fri = Sophia Rebound
+// We check by day-of-week pattern: Mon/Wed = together (Club Studio), Wed/Fri = Sophia Rebound
 const dow=new Date(d.date+'T12:00:00').getDay();
-const bothActive=(dow===2||dow===4); // Tue/Thu UFC together
+const bothActive=(dow===1||dow===3||dow===5); // Mon/Wed/Fri Club Studio together
 if(myW){
 if(bothActive){togetherWorkouts++;workoutDays.push({date:d.date,type:'together',dow})}
 else{soloWorkouts++;workoutDays.push({date:d.date,type:'solo',dow})}
@@ -1041,7 +1052,7 @@ html+=`<div style="margin-bottom:25px">
 <div style="flex:1;background:rgba(168,85,247,0.1);padding:14px;border-radius:10px;border:1px solid rgba(168,85,247,0.3);text-align:center">
 <div style="font-size:1.8rem;font-weight:900;color:var(--purple)">${togetherWorkouts}</div>
 <div style="font-size:0.55rem;color:var(--text-tertiary)">TOGETHER</div>
-<div style="font-size:0.45rem;color:var(--purple)">Tue/Thu UFC</div>
+<div style="font-size:0.45rem;color:var(--purple)">Mon/Wed/Fri Studio</div>
 </div>
 <div style="flex:1;background:rgba(0,212,255,0.1);padding:14px;border-radius:10px;border:1px solid rgba(0,212,255,0.3);text-align:center">
 <div style="font-size:1.8rem;font-weight:900;color:var(--cyan)">${soloWorkouts}</div>
@@ -1053,7 +1064,7 @@ html+=`<div style="margin-bottom:25px">
 ${togetherWorkouts>soloWorkouts?
 '💪 Strong couples training sync. Joint sessions outpace solo — accountability is working.':
 togetherWorkouts>0?
-'⚠️ More solo than couples sessions. Try to protect Tue/Thu UFC together.':
+'⚠️ More solo than couples sessions. Try to protect Mon/Wed/Fri Club Studio together.':
 '❌ No joint training detected. Schedule at least 2 sessions together this week.'}
 </div>
 </div>`;
@@ -1484,7 +1495,7 @@ if(readiness>=80&&z5Need>5)return{icon:'🔥',title:'H.E.A.T. / Club Dance',deta
 return{icon:'🚴',title:'Ride / Rebound',detail:`Z2 focus: ${Math.round(z2Need)}min remaining | Readiness ${readiness}`,why:'Steady cardio, protect recovery for tomorrow',bg:'rgba(0,212,255,0.12)',border:'var(--cyan)'};
 }
 if(dow===5){
-if(readiness>=70)return{icon:'🥊',title:'UFC / Marcus Session',detail:`Friday push | Readiness ${readiness} | HRV ${Math.round(hrvPct)}%`,why:'End-of-week intensity with Marcus',bg:'rgba(255,71,87,0.12)',border:'var(--alert)'};
+if(readiness>=70)return{icon:'🥊',title:'Boxing / CS4 (High Intensity)',detail:`Friday push | Readiness ${readiness} | HRV ${Math.round(hrvPct)}%`,why:'End-of-week intensity at Club Studio',bg:'rgba(255,71,87,0.12)',border:'var(--alert)'};
 return{icon:'🧘',title:'Yoga Sculpt / Hot Pilates',detail:`Readiness ${readiness} — save energy for weekend`,why:'Heat-based flexibility + core',bg:'rgba(168,85,247,0.12)',border:'var(--purple)'};
 }
 if(dow===6){
