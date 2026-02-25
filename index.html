@@ -1944,7 +1944,7 @@ if(lpa>150)needs.push('omega3');
 if(apob>80)needs.push('apob_attack');
 if(apob>100)needs.push('fiber');
 if(hscrp>1.0)needs.push('polyphenol');
-if(ana==='positive'){needs.push('omega3');needs.push('anti-inflammatory');needs.push('polyphenol')}
+if(ana&&ana!=='0'&&ana!=='negative'){needs.push('omega3');needs.push('anti-inflammatory');needs.push('polyphenol')}
 if(goals.protein-proteinSoFar>30)needs.push('protein');
 if(goals.omega3-omega3SoFar>1000)needs.push('omega3');
 if(goals.fiber-fiberSoFar>10)needs.push('fiber');
@@ -1954,37 +1954,88 @@ const scoreMeal=(meal,idx,slot)=>{
 let score=0;
 const m=meal.macros||{};
 const isBeverage=slot.startsWith('juice');
+const ing=(meal.ingredients||[]).join(' ').toLowerCase();
+const why=(meal.why||'').toLowerCase();
+
+// Base macro scoring from needs
 if(needs.includes('protein'))score+=(m.p||0)*2;
 if(needs.includes('omega3'))score+=(m.o||0)/100;
 if(needs.includes('fiber'))score+=(m.f||0)*3;
 if(needs.includes('polyphenol'))score+=(m.poly||0)/10;
 if(needs.includes('anti-inflammatory')){score+=(m.o||0)/200;score+=(m.poly||0)/20;if(meal.colors?.includes('green'))score+=10}
-// ApoB Attack: heavy fiber weighting + omega-3 + ingredient bonus for bile-acid binders
+// ApoB Attack
 if(needs.includes('apob_attack')){
-score+=(m.f||0)*4;
-score+=(m.o||0)/150;
-const ing=(meal.ingredients||[]).join(' ').toLowerCase();
-if(ing.includes('oat'))score+=15;
-if(ing.includes('psyllium'))score+=20;
-if(ing.includes('barley'))score+=15;
-if(ing.includes('flax'))score+=12;
-if(ing.includes('bean')||ing.includes('lentil')||ing.includes('chickpea'))score+=12;
-if(ing.includes('edamame')||ing.includes('soy'))score+=12;
-if(ing.includes('almond')||ing.includes('walnut'))score+=10;
-if(ing.includes('avocado'))score+=8;
-if(ing.includes('olive oil'))score+=8;
-if(ing.includes('chia'))score+=10;
-if(ing.includes('apple'))score+=8;
-if(ing.includes('salmon')||ing.includes('sardine'))score+=12;
-if(ing.includes('quinoa'))score+=6;
-if(ing.includes('kale')||ing.includes('spinach'))score+=6;
+score+=(m.f||0)*4;score+=(m.o||0)/150;
+if(ing.includes('oat'))score+=15;if(ing.includes('psyllium'))score+=20;if(ing.includes('barley'))score+=15;
+if(ing.includes('flax'))score+=12;if(ing.includes('bean')||ing.includes('lentil')||ing.includes('chickpea'))score+=12;
+if(ing.includes('edamame')||ing.includes('soy'))score+=12;if(ing.includes('almond')||ing.includes('walnut'))score+=10;
+if(ing.includes('avocado'))score+=8;if(ing.includes('olive oil'))score+=8;if(ing.includes('chia'))score+=10;
+if(ing.includes('apple'))score+=8;if(ing.includes('salmon')||ing.includes('sardine'))score+=12;
+if(ing.includes('quinoa'))score+=6;if(ing.includes('kale')||ing.includes('spinach'))score+=6;
 }
-// Beverages: weight polyphenols much higher, and prefer low-cal options
-if(isBeverage){score+=(m.poly||0)/5;if((m.cal||0)<80)score+=10}
-// Bonus for rainbow colors not yet hit
+
+// === USER-SPECIFIC SCORING ===
+
+// Jermaine priorities: Lp(a) 178, ApoB 114, eGFR 69, insulin 10.5, BF 19.6%
+if(isJermaine){
+if(lpa>150&&(m.o||0)>=1000)score+=25;  // Heavy omega-3 bias for Lp(a)
+if(ing.includes('pomegranate'))score+=20; // Clinically proven for Lp(a)
+if(ing.includes('beet'))score+=15; // NO for vasodilation
+if(egfr<75&&ing.includes('dandelion'))score+=15; // Kidney support
+if(egfr<75&&(m.p||0)>60)score-=10; // Penalize very high protein single meals (kidney load)
+if(insulin>8&&(m.cal||0)<400)score+=10; // Prefer lower cal to improve insulin sensitivity
+if(bodyfat>18&&slot==='dinner'&&(m.cal||0)>700)score-=15; // Lighter dinners for recomp
+if(ing.includes('flax')||ing.includes('chia'))score+=10; // Soluble fiber for ApoB
+}
+
+// Sophia priorities: ANA 1:320, BF 33.1%, BMR 1308, muscle building
+if(isSophia){
+if(ana&&(ing.includes('turmeric')||ing.includes('ginger')))score+=25; // Anti-inflammatory for ANA
+if(ana&&(m.poly||0)>=200)score+=15; // Polyphenols for autoimmune
+if(bodyfat>30&&(m.cal||0)<500)score+=10; // Calorie conscious
+if(bodyfat>30&&(m.p||0)>=20)score+=15; // Protein to protect muscle during cut
+if(ing.includes('sea moss'))score+=10; // Thyroid support
+if(ing.includes('collagen'))score+=10; // Joint support
+if((m.cal||0)>600)score-=20; // Penalize high-cal meals (smaller TDEE margin)
+}
+
+// === BEVERAGE TIME-OF-DAY OPTIMIZATION ===
+if(isBeverage){
+score+=(m.poly||0)/5;
+if((m.cal||0)<80)score+=10;
+const bevPref=bevTimePref[slot];
+if(bevPref?.morning){
+// Morning: energy, digestion, NO boost
+if(ing.includes('lemon')&&ing.includes('ginger'))score+=15; // digestive primer
+if(ing.includes('matcha')||ing.includes('green tea'))score+=15; // calm energy
+if(ing.includes('beet'))score+=12; // pre-workout NO
+if(why.includes('morning')||why.includes('empty stomach')||why.includes('fasted'))score+=20;
+if(why.includes('before bed')||why.includes('evening')||why.includes('sleep'))score-=25;
+}
+if(bevPref?.afternoon){
+// Afternoon: anti-inflammatory, recovery, no caffeine
+if(ing.includes('turmeric'))score+=15;
+if(ing.includes('cherry'))score+=12; // post-workout recovery
+if(ing.includes('kombucha'))score+=10;
+if(why.includes('afternoon')||why.includes('post-workout')||why.includes('recovery'))score+=20;
+if(why.includes('caffeine')||why.includes('before bed'))score-=15;
+}
+if(bevPref?.evening){
+// Evening: sleep, calming, low caffeine
+if(ing.includes('chamomile'))score+=25; // GABA for sleep
+if(ing.includes('magnesium'))score+=20; // muscle relaxation
+if(why.includes('before bed')||why.includes('sleep')||why.includes('evening'))score+=25;
+if(why.includes('golden milk'))score+=15;
+if(why.includes('caffeine')||why.includes('pre-workout')||why.includes('morning'))score-=30;
+if(ing.includes('matcha')||ing.includes('green tea')||ing.includes('coffee'))score-=30;
+}
+}
+
+// Rainbow bonus
 const existingColors=this.calcRainbow();
 (meal.colors||[]).forEach(c=>{if(!existingColors.has(c))score+=8});
-// Variety penalty: reduce score for recently eaten meals
+
+// Variety penalty
 const recent=recentMeals[slot]||[];
 recent.forEach(r=>{if(r.idx===idx){
 const penalty=r.daysAgo===1?40:r.daysAgo===2?25:r.daysAgo<=4?12:6;
@@ -1993,26 +2044,49 @@ score-=penalty;
 return score;
 };
 
-const whyMeal=(meal)=>{
+const whyMeal=(meal,slot)=>{
 const reasons=[];
 const m=meal.macros||{};
+const ing=(meal.ingredients||[]).join(' ').toLowerCase();
 if(needs.includes('protein')&&m.p>=20)reasons.push(`P:${m.p}g`);
 if(needs.includes('omega3')&&m.o>=500)reasons.push(`Ω3:${m.o}mg`);
 if(needs.includes('fiber')&&m.f>=5)reasons.push(`Fiber:${m.f}g`);
 if(needs.includes('polyphenol')&&m.poly>=50)reasons.push('Polyphenols');
 if(needs.includes('apob_attack')&&(m.f>=8||m.o>=1000))reasons.push('ApoB↓');
 if(hrvLow&&m.o>=500)reasons.push('Anti-inflammatory');
+// User-specific tags
+if(isJermaine&&lpa>150&&ing.includes('pomegranate'))reasons.push('Lp(a)↓');
+if(isJermaine&&egfr<75&&ing.includes('dandelion'))reasons.push('eGFR↑');
+if(isSophia&&ana&&(ing.includes('turmeric')||ing.includes('ginger')))reasons.push('ANA↓');
+if(isSophia&&(m.p||0)>=20&&bodyfat>30)reasons.push('Lean Mass↑');
+// Time-specific
+if(slot==='juice4'&&(ing.includes('chamomile')||ing.includes('magnesium')))reasons.push('Sleep↑');
+if(slot==='juice2'&&ing.includes('beet'))reasons.push('Pre-workout NO');
 const existingColors=this.calcRainbow();
 const newColors=(meal.colors||[]).filter(c=>!existingColors.has(c));
 if(newColors.length)reasons.push(`+${newColors.length} rainbow`);
 return reasons.length?reasons.join(' • '):'Balanced nutrition';
 };
 
-const slots=['breakfast','juice2','snack1','lunch','snack2','juice3','snack3','dinner'];
+const slots=['breakfast','juice2','snack1','lunch','snack2','juice3','snack3','dinner','juice4'];
 const slotLabels={breakfast:'Breakfast',juice2:'Morning Beverage',snack1:'AM Snack',lunch:'Lunch',snack2:'PM Snack',juice3:'Afternoon Beverage',snack3:'Evening Snack',dinner:'Dinner',juice4:'Evening Beverage'};
 
 // Track picks from shared pools to prevent doubling
 const pickedFromPool={};
+
+// User-specific boosts
+const isJermaine=this.user==='jermaine';
+const isSophia=this.user==='sophia';
+const bodyfat=parseFloat(this.bios.bodyfat||25);
+const egfr=parseFloat(this.bios.egfr||90);
+const insulin=parseFloat(this.bios.insulin||5);
+
+// Time-of-day beverage optimization
+const bevTimePref={
+juice2:{morning:true},  // AM: energy, digestion primers
+juice3:{afternoon:true}, // PM: anti-inflammatory, recovery
+juice4:{evening:true}    // EVE: sleep, calming
+};
 
 slots.forEach(slot=>{
 const pool=MEALS[slot]||[];
@@ -2020,10 +2094,10 @@ if(pool.length===0)return;
 const alreadySelected=sel[slot]!==undefined;
 
 // Score and rank all meals in this slot
-let ranked=pool.map((meal,idx)=>({meal,idx,score:scoreMeal(meal,idx,slot),why:whyMeal(meal)})).sort((a,b)=>b.score-a.score);
+let ranked=pool.map((meal,idx)=>({meal,idx,score:scoreMeal(meal,idx,slot),why:whyMeal(meal,slot)})).sort((a,b)=>b.score-a.score);
 
 // Prevent snack/beverage doubling: if same underlying pool, skip already-picked indices
-const poolKey=(slot==='snack1'||slot==='snack2'||slot==='snack3')?'snack':(slot==='juice2'||slot==='juice3')?'juice':slot;
+const poolKey=(slot==='snack1'||slot==='snack2'||slot==='snack3')?'snack':(slot==='juice2'||slot==='juice3'||slot==='juice4')?'juice':slot;
 if(!pickedFromPool[poolKey])pickedFromPool[poolKey]=new Set();
 ranked=ranked.filter(r=>!pickedFromPool[poolKey].has(r.idx));
 
