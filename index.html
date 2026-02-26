@@ -614,20 +614,12 @@ const end=new Date();end.setDate(end.getDate()+1);const start=new Date();start.s
 const startStr=start.toISOString().split('T')[0],endStr=end.toISOString().split('T')[0];
 const token=TOKENS[this.user],proxy='https://oura-proxy.jclarke-9a0.workers.dev?url=';
 const eps=['sleep','workout','daily_activity','daily_readiness','daily_hrv'];
-const fetchEp=async(ep)=>{
-const proxyUrl=`${proxy}${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/${ep}?start_date=${startStr}&end_date=${endStr}`)}`;
-const directUrl=`https://api.ouraring.com/v2/usercollection/${ep}?start_date=${startStr}&end_date=${endStr}`;
-try{
-const res=await fetch(proxyUrl,{headers:{'Authorization':`Bearer ${token}`}});
-if(!res.ok)throw new Error('proxy failed');
+const results=await Promise.allSettled(eps.map(async ep=>{
+const url=`${proxy}${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/${ep}?start_date=${startStr}&end_date=${endStr}`)}`;
+const res=await fetch(url,{headers:{'Authorization':`Bearer ${token}`}});
+if(!res.ok)throw new Error(ep);
 return{name:ep,data:(await res.json()).data||[]};
-}catch(e){
-const res2=await fetch(directUrl,{headers:{'Authorization':`Bearer ${token}`}});
-if(!res2.ok)throw new Error(ep);
-return{name:ep,data:(await res2.json()).data||[]};
-}
-};
-const results=await Promise.allSettled(eps.map(fetchEp));
+}));
 const data={};results.forEach(r=>{if(r.status==='fulfilled')data[r.value.name]=r.value.data});
 this.processData(data);this.setText('syncStatus','SYNCED ✓');this.render();
 }catch(e){console.error(e);this.setText('syncStatus','OFFLINE');this.render()}
