@@ -614,12 +614,20 @@ const end=new Date();end.setDate(end.getDate()+1);const start=new Date();start.s
 const startStr=start.toISOString().split('T')[0],endStr=end.toISOString().split('T')[0];
 const token=TOKENS[this.user],proxy='https://oura-proxy.jclarke-9a0.workers.dev?url=';
 const eps=['sleep','workout','daily_activity','daily_readiness','daily_hrv'];
-const results=await Promise.allSettled(eps.map(async ep=>{
-const url=`${proxy}${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/${ep}?start_date=${startStr}&end_date=${endStr}`)}`;
-const res=await fetch(url,{headers:{'Authorization':`Bearer ${token}`}});
-if(!res.ok)throw new Error(ep);
+const fetchEp=async(ep)=>{
+const proxyUrl=`${proxy}${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/${ep}?start_date=${startStr}&end_date=${endStr}`)}`;
+const directUrl=`https://api.ouraring.com/v2/usercollection/${ep}?start_date=${startStr}&end_date=${endStr}`;
+try{
+const res=await fetch(proxyUrl,{headers:{'Authorization':`Bearer ${token}`}});
+if(!res.ok)throw new Error('proxy failed');
 return{name:ep,data:(await res.json()).data||[]};
-}));
+}catch(e){
+const res2=await fetch(directUrl,{headers:{'Authorization':`Bearer ${token}`}});
+if(!res2.ok)throw new Error(ep);
+return{name:ep,data:(await res2.json()).data||[]};
+}
+};
+const results=await Promise.allSettled(eps.map(fetchEp));
 const data={};results.forEach(r=>{if(r.status==='fulfilled')data[r.value.name]=r.value.data});
 this.processData(data);this.setText('syncStatus','SYNCED ✓');this.render();
 }catch(e){console.error(e);this.setText('syncStatus','OFFLINE');this.render()}
@@ -1767,8 +1775,8 @@ return null}
 // v21 LUNCH RECOVERY (stretching)
 // ============================================================================
 getLunchRecovery(dow){
-if(this.user==='jermaine'&&(dow===1||dow===3||dow===4||dow===5))return{title:'🧘 Hip Flexor',desc:'5min stretch',type:'hipflexor',clickable:true};
-if(this.user==='jermaine'&&(dow===2||dow===6))return{title:'🦾 Shoulder',desc:'5min mobility',type:'shoulder',clickable:true};
+if(this.user==='jermaine'&&(dow===1||dow===3||dow===5))return{title:'🧘 Hip Flexor',desc:'5min stretch',type:'hipflexor',clickable:true};
+if(this.user==='jermaine'&&(dow===2||dow===4||dow===6))return{title:'🦾 Shoulder',desc:'5min mobility',type:'shoulder',clickable:true};
 return null}
 
 // ============================================================================
@@ -1870,41 +1878,41 @@ return{icon:'😴',title:'Low Intensity - Sleep Deficit',detail:`Only ${sleepHrs
 
 // User-specific day-of-week + readiness-aware
 if(this.user==='jermaine'){
-if(dow===0)return{icon:'🏊',title:'InShape + Recovery',detail:'Pool → Sauna → Cryo → Massage Bed',why:`Readiness ${readiness} — full recovery ritual`,bg:'rgba(0,212,255,0.12)',border:'var(--cyan)'};
-if(dow===1||dow===4){
-if(readiness>=70)return{icon:'💪',title:'Weight Training',detail:`Readiness ${readiness} ✓ | Strength day${dow===1?' (Monday)':' (Thursday)'}`,why:'Compound lifts: squat, deadlift, bench, rows. Progressive overload.',bg:'rgba(255,149,0,0.12)',border:'var(--orange)'};
-return{icon:'💪',title:'Light Weight Training',detail:`Readiness ${readiness} — reduce volume, keep form`,why:'Lower weight, higher reps. Protect recovery.',bg:'rgba(255,149,0,0.12)',border:'var(--orange)'};
+if(dow===0)return{icon:'🏊',title:'InShape + Recovery',detail:'Pool → Sauna 20min → Cryo 3min → Massage Bed',why:`Readiness ${readiness} — full recovery ritual. Sunday thermal resets HRV for Monday lift.`,bg:'rgba(0,212,255,0.12)',border:'var(--cyan)'};
+if(dow===1){
+if(readiness>=70)return{icon:'💪',title:'Weight Training + Sauna',detail:`Readiness ${readiness} ✓ | Compound lifts → Sauna 20min (skip cryo — protect gains)`,why:'Monday is your only lift day. Go heavy: squat, deadlift, bench, rows. Sauna after for recovery. No cryo — cold blunts muscle protein synthesis.',bg:'rgba(255,149,0,0.12)',border:'var(--orange)'};
+return{icon:'💪',title:'Light Weight Training + Sauna',detail:`Readiness ${readiness} — reduce volume, keep form → Sauna 20min`,why:'Lower weight, higher reps. Still hit sauna for recovery.',bg:'rgba(255,149,0,0.12)',border:'var(--orange)'};
 }
-if(dow===2||dow===6){
-if(readiness>=75)return{icon:'🧘',title:'Reform / Yoga Sculpt (Open Day)',detail:`Readiness ${readiness} | Mobility + core between lift days`,why:'Reform builds stabilizers. Yoga Sculpt adds controlled resistance + flexibility. Or take full rest.',bg:'rgba(168,85,247,0.12)',border:'var(--purple)'};
+if(dow===2||dow===4||dow===6){
+if(readiness>=75)return{icon:'🧘',title:'Reform / Yoga Sculpt (Open Day)',detail:`Readiness ${readiness} | Mobility + core${dow===2?' — recover from Monday lift':dow===4?' — prep for Friday Rebound':' — weekend reset'}`,why:'Reform builds stabilizers. Yoga Sculpt adds controlled resistance + flexibility. Or take full rest.',bg:'rgba(168,85,247,0.12)',border:'var(--purple)'};
 return{icon:'🚶',title:'Active Recovery / Rest',detail:`Readiness ${readiness} — walk or rest`,why:'Z2 walk 30min or full rest. Listen to your body.',bg:'rgba(52,211,153,0.12)',border:'var(--success)'};
 }
 if(dow===3){
-if(readiness>=70)return{icon:'🔥',title:'Rebound (Club Studio)',detail:`Readiness ${readiness} ✓ | HRV ${Math.round(hrvPct)}% | Target: Z5 ${goals.z5}min`,why:'Wednesday Rebound — trampoline HIIT. Zone 4-5 cardio.',bg:'rgba(255,71,87,0.12)',border:'var(--alert)'};
+if(readiness>=70)return{icon:'🔥',title:'Rebound → Sauna → Cryo',detail:`Readiness ${readiness} ✓ | HRV ${Math.round(hrvPct)}% | Target: Z5 ${goals.z5}min`,why:'Wednesday Rebound — trampoline HIIT. Sauna 20min + Cryo 3min after (cardio days = cryo safe).',bg:'rgba(255,71,87,0.12)',border:'var(--alert)'};
 return{icon:'🧘',title:'Reform / Yoga Flow',detail:`Readiness ${readiness} — save intensity for Friday Rebound`,why:'Low cortisol movement. Protect Friday push.',bg:'rgba(168,85,247,0.12)',border:'var(--purple)'};
 }
 if(dow===5){
-if(readiness>=70)return{icon:'🔥',title:'Rebound (Club Studio)',detail:`Friday push | Readiness ${readiness} | HRV ${Math.round(hrvPct)}%`,why:'Friday Rebound — end-of-week cardio burst. Zone 4-5.',bg:'rgba(255,71,87,0.12)',border:'var(--alert)'};
+if(readiness>=70)return{icon:'🔥',title:'Rebound → Sauna → Cryo',detail:`Friday push | Readiness ${readiness} | HRV ${Math.round(hrvPct)}%`,why:'Friday Rebound — end-of-week cardio burst. Sauna 20min + Cryo 3min after.',bg:'rgba(255,71,87,0.12)',border:'var(--alert)'};
 return{icon:'🧘',title:'Yoga Sculpt / Hot Pilates',detail:`Readiness ${readiness} — save energy for weekend`,why:'Heat-based flexibility + core',bg:'rgba(168,85,247,0.12)',border:'var(--purple)'};
 }
 }
 
 if(this.user==='sophia'){
-if(dow===0)return{icon:'🏊',title:'InShape Together',detail:'Pool → Sauna → Cryo',why:`Recovery day with Jermaine`,bg:'rgba(0,212,255,0.12)',border:'var(--cyan)'};
-if(dow===1||dow===4){
-if(readiness>=70)return{icon:'💪',title:'Weight Training (with Jermaine)',detail:`Readiness ${readiness} | Compound lifts — controlled tempo`,why:'Strength preserves muscle during recomp. Keep loads moderate for ANA.',bg:'rgba(255,149,0,0.12)',border:'var(--orange)'};
+if(dow===0)return{icon:'🏊',title:'InShape Together',detail:'Pool → Sauna 20min → Cryo 3min',why:`Recovery day with Jermaine. Sunday thermal resets HRV.`,bg:'rgba(0,212,255,0.12)',border:'var(--cyan)'};
+if(dow===1){
+if(readiness>=70)return{icon:'💪',title:'Weight Training (with Jermaine) + Sauna',detail:`Readiness ${readiness} | Compound lifts — controlled tempo → Sauna 20min`,why:'Strength preserves muscle during recomp. Keep loads moderate for ANA. Sauna after, skip cryo to protect gains.',bg:'rgba(255,149,0,0.12)',border:'var(--orange)'};
 return{icon:'💪',title:'Light Weights + Machines',detail:`Readiness ${readiness} — reduce load, focus form`,why:'Joint-friendly strength. Protect recovery.',bg:'rgba(255,149,0,0.12)',border:'var(--orange)'};
 }
-if(dow===2||dow===6){
+if(dow===2||dow===4||dow===6){
 if(readiness>=75)return{icon:'🧘',title:'Reform / Yoga Sculpt (Open Day)',detail:`Readiness ${readiness} | Mobility + core`,why:'Reform builds stabilizers without cortisol spike. Ideal for ANA management. Or take full rest.',bg:'rgba(168,85,247,0.12)',border:'var(--purple)'};
 return{icon:'🚶',title:'Active Recovery / Rest',detail:`Readiness ${readiness} — walk or rest`,why:'Z2 walk 20min or full rest. Anti-inflammatory recovery.',bg:'rgba(52,211,153,0.12)',border:'var(--success)'};
 }
 if(dow===3){
-if(readiness>=70)return{icon:'🔥',title:'Rebound (Club Studio)',detail:`Readiness ${readiness} ✓ | Cardio + explosive power`,why:'Wednesday Rebound with Jermaine — trampoline HIIT',bg:'rgba(255,71,87,0.12)',border:'var(--alert)'};
+if(readiness>=70)return{icon:'🔥',title:'Rebound → Sauna → Cryo',detail:`Readiness ${readiness} ✓ | Cardio + explosive power`,why:'Wednesday Rebound with Jermaine. Sauna 20min + Cryo 3min after.',bg:'rgba(255,71,87,0.12)',border:'var(--alert)'};
 return{icon:'🧘',title:'Barre / Reform',detail:`Readiness ${readiness} — moderate intensity`,why:'Core + glutes, save energy for Friday Rebound',bg:'rgba(168,85,247,0.12)',border:'var(--purple)'};
 }
 if(dow===5){
-if(readiness>=70)return{icon:'🔥',title:'Rebound (Club Studio)',detail:`Friday energy | Readiness ${readiness}`,why:'Friday Rebound with Jermaine — end-of-week cardio burst',bg:'rgba(255,71,87,0.12)',border:'var(--alert)'};
+if(readiness>=70)return{icon:'🔥',title:'Rebound → Sauna → Cryo',detail:`Friday energy | Readiness ${readiness}`,why:'Friday Rebound with Jermaine. Sauna 20min + Cryo 3min after.',bg:'rgba(255,71,87,0.12)',border:'var(--alert)'};
 return{icon:'🚶',title:'Walking + Stretch',detail:'Low key Friday',why:'Save energy for the weekend',bg:'rgba(52,211,153,0.12)',border:'var(--success)'};
 }
 }
