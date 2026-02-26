@@ -293,8 +293,10 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 </div>
 
 <div class="footer">
-<span class="sync-status" id="syncStatus">INIT</span>
+<span class="sync-status" id="syncStatus" onclick="document.getElementById('debugPanel').style.display=document.getElementById('debugPanel').style.display==='none'?'block':'none'">INIT</span>
 <button class="sync-btn" onclick="app.sync()">🔄 SYNC</button>
+</div>
+<div id="debugPanel" style="display:none;background:#111;border:1px solid var(--orange);border-radius:8px;margin:10px 20px;padding:10px;max-height:300px;overflow-y:auto;font-family:monospace;font-size:0.55rem;color:var(--cyan);line-height:1.6;word-break:break-all"></div>
 </div>
 
 <script>
@@ -563,6 +565,7 @@ const BASE=[
 // MAIN APPLICATION - MERGED v21 Logic + v22 Oura Features
 // ============================================================================
 class CenturionApp{
+dbg(msg){const p=document.getElementById('debugPanel');if(p)p.innerHTML+=msg+'<br>';console.log(msg)}
 constructor(){
 console.log('🚀 Centurion v23.1 SKELETON');
 this.user=localStorage.getItem('c_user')||'jermaine';
@@ -631,15 +634,15 @@ this.processData(data);this.setText('syncStatus','SYNCED ✓');this.render();
 processData(data){
 const m=new Map();
 const g=d=>{if(!m.has(d))m.set(d,{date:d,score:0,totalSec:0,deepSec:0,remSec:0,rhr:'-',cal:0,high:0,med:0,workouts:[],hrv:null,tempDev:0,respRate:null,readiness:null,vascularAge:null,bedtime:null,waketime:null});return m.get(d)};
-(data.sleep||[]).forEach(s=>{const d=g(s.day);d.totalSec+=s.total_sleep_duration||0;d.deepSec+=s.deep_sleep_duration||0;d.remSec+=s.rem_sleep_duration||0;if(s.lowest_heart_rate>=35&&s.lowest_heart_rate<=100){const hr=Math.round(s.lowest_heart_rate);console.log('Sleep RHR:',s.day,'lowest_heart_rate:',s.lowest_heart_rate,'rounded:',hr,'current d.rhr:',d.rhr,'keeping:',d.rhr==='-'||hr<d.rhr?hr:d.rhr);if(d.rhr==='-'||hr<d.rhr)d.rhr=hr}if(s.average_breath)d.respRate=s.average_breath;if(s.average_hrv)d.hrv=Math.round(s.average_hrv);if(s.bedtime_start)d.bedtime=s.bedtime_start;if(s.bedtime_end)d.waketime=s.bedtime_end;const sc=s.score||(s.efficiency?Math.round(s.efficiency):0);if(sc>d.score)d.score=sc});
+(data.sleep||[]).forEach(s=>{const d=g(s.day);d.totalSec+=s.total_sleep_duration||0;d.deepSec+=s.deep_sleep_duration||0;d.remSec+=s.rem_sleep_duration||0;if(s.lowest_heart_rate>=35&&s.lowest_heart_rate<=100){const hr=Math.round(s.lowest_heart_rate);this.dbg(`🫀 Sleep ${s.day} | type:${s.type||'?'} | lowest_hr:${s.lowest_heart_rate} → ${hr} | cur_rhr:${d.rhr} | keep:${d.rhr==='-'||hr<d.rhr?hr:d.rhr}`);if(d.rhr==='-'||hr<d.rhr)d.rhr=hr}if(s.average_breath)d.respRate=s.average_breath;if(s.average_hrv)d.hrv=Math.round(s.average_hrv);if(s.bedtime_start)d.bedtime=s.bedtime_start;if(s.bedtime_end)d.waketime=s.bedtime_end;const sc=s.score||(s.efficiency?Math.round(s.efficiency):0);if(sc>d.score)d.score=sc});
 // daily_hrv endpoint only has contributor scores (0-100), NOT actual HRV in ms
 // Actual HRV comes from sleep endpoint's average_hrv field — do not use daily_hrv as fallback
-(data.daily_readiness||[]).forEach(r=>{const d=g(r.day);d.readiness=r.score||null;if(r.contributors?.body_temperature!=null){const btScore=r.contributors.body_temperature;d.tempDev=btScore>=95?0:btScore>=85?0.1:btScore>=75?0.3:btScore>=60?0.5:btScore>=40?0.8:1.2;if(r.temperature_deviation!=null)d.tempDev=r.temperature_deviation}console.log('Readiness raw:',r.day,JSON.stringify(r).slice(0,400))});
-// daily_sleep has the official resting_heart_rate Oura shows in-app
-(data.daily_sleep||[]).forEach(ds=>{const d=g(ds.day);console.log('DailySleep:',ds.day,'resting_heart_rate:',ds.contributors?.resting_heart_rate,'raw:',JSON.stringify(ds).slice(0,500))});
-(data.daily_activity||[]).forEach(a=>{const d=g(a.day);d.cal=a.active_calories||0;d.high=(a.high_activity_time||0)/60;d.med=(a.medium_activity_time||0)/60;d.met=a.met?.average||a.equivalent_walking_distance||0;console.log('Activity:',a.day,'high:',a.high_activity_time,'med:',a.medium_activity_time,'cal:',a.active_calories)});
-(data.workout||[]).forEach(w=>{console.log('Workout raw:',JSON.stringify(w).slice(0,300));const d=g(w.day);const cal=w.calories||w.active_calories||0;const dur=w.duration?Math.round(w.duration/60):0;d.workouts.push({type:w.label||w.activity||w.sport||'workout',calories:cal||dur*8||300,duration:dur,time:w.start_datetime?new Date(w.start_datetime).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):''})});
+(data.daily_readiness||[]).forEach(r=>{const d=g(r.day);d.readiness=r.score||null;if(r.contributors?.body_temperature!=null){const btScore=r.contributors.body_temperature;d.tempDev=btScore>=95?0:btScore>=85?0.1:btScore>=75?0.3:btScore>=60?0.5:btScore>=40?0.8:1.2;if(r.temperature_deviation!=null)d.tempDev=r.temperature_deviation}this.dbg(`📊 Readiness ${r.day} | score:${r.score} | rhr_contributor:${r.contributors?.resting_heart_rate}`)});
+(data.daily_sleep||[]).forEach(ds=>{const d=g(ds.day);this.dbg(`😴 DailySleep ${ds.day} | score:${ds.score} | rhr_contributor:${ds.contributors?.resting_heart_rate} | keys:${Object.keys(ds).join(',')}`)});
+(data.daily_activity||[]).forEach(a=>{const d=g(a.day);d.cal=a.active_calories||0;d.high=(a.high_activity_time||0)/60;d.med=(a.medium_activity_time||0)/60;d.met=a.met?.average||a.equivalent_walking_distance||0;this.dbg(`🏃 Activity ${a.day} | high:${a.high_activity_time} med:${a.medium_activity_time} cal:${a.active_calories} keys:${Object.keys(a).join(',')}`)});
+(data.workout||[]).forEach(w=>{this.dbg(`💪 Workout ${w.day} | ${JSON.stringify(w).slice(0,250)}`);const d=g(w.day);const cal=w.calories||w.active_calories||0;const dur=w.duration?Math.round(w.duration/60):0;d.workouts.push({type:w.label||w.activity||w.sport||'workout',calories:cal||dur*8||300,duration:dur,time:w.start_datetime?new Date(w.start_datetime).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):''})});
 this.history=Array.from(m.values()).sort((a,b)=>b.date.localeCompare(a.date));
+const today=this.history[0];if(today)this.dbg(`<br>⚡ TODAY ${today.date} FINAL → RHR:${today.rhr} | high:${today.high} med:${today.med} | workouts:${today.workouts.length} (${today.workouts.map(w=>w.type+':'+w.calories+'cal').join(', ')}) | sleep_sessions:${(data.sleep||[]).filter(s=>s.day===today.date).length}`);
 this.currentIndex=this.history.findIndex(h=>h.date===this.currentDateStr);
 if(this.currentIndex===-1){this.history.unshift({date:this.currentDateStr,score:0,totalSec:0,deepSec:0,remSec:0,rhr:'-',cal:0,high:0,med:0,workouts:[],hrv:null,tempDev:0,respRate:null,readiness:null,vascularAge:null,bedtime:null,waketime:null});this.currentIndex=0}
 // Manual sleep overrides (Apple Health backup when Oura dies)
