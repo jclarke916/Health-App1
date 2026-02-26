@@ -629,11 +629,11 @@ this.processData(data);this.setText('syncStatus','SYNCED ✓');this.render();
 processData(data){
 const m=new Map();
 const g=d=>{if(!m.has(d))m.set(d,{date:d,score:0,totalSec:0,deepSec:0,remSec:0,rhr:'-',cal:0,high:0,med:0,workouts:[],hrv:null,tempDev:0,respRate:null,readiness:null,vascularAge:null,bedtime:null,waketime:null});return m.get(d)};
-(data.sleep||[]).forEach(s=>{const d=g(s.day);d.totalSec+=s.total_sleep_duration||0;d.deepSec+=s.deep_sleep_duration||0;d.remSec+=s.rem_sleep_duration||0;if(s.lowest_heart_rate>=35&&s.lowest_heart_rate<=100)d.rhr=Math.round(s.lowest_heart_rate);if(s.average_breath)d.respRate=s.average_breath;if(s.average_hrv)d.hrv=Math.round(s.average_hrv);if(s.bedtime_start)d.bedtime=s.bedtime_start;if(s.bedtime_end)d.waketime=s.bedtime_end;const sc=s.score||(s.efficiency?Math.round(s.efficiency):0);if(sc>d.score)d.score=sc});
+(data.sleep||[]).forEach(s=>{const d=g(s.day);d.totalSec+=s.total_sleep_duration||0;d.deepSec+=s.deep_sleep_duration||0;d.remSec+=s.rem_sleep_duration||0;if(s.lowest_heart_rate>=35&&s.lowest_heart_rate<=100){const hr=Math.round(s.lowest_heart_rate);if(d.rhr==='-'||hr<d.rhr)d.rhr=hr}if(s.average_breath)d.respRate=s.average_breath;if(s.average_hrv)d.hrv=Math.round(s.average_hrv);if(s.bedtime_start)d.bedtime=s.bedtime_start;if(s.bedtime_end)d.waketime=s.bedtime_end;const sc=s.score||(s.efficiency?Math.round(s.efficiency):0);if(sc>d.score)d.score=sc});
 // daily_hrv endpoint only has contributor scores (0-100), NOT actual HRV in ms
 // Actual HRV comes from sleep endpoint's average_hrv field — do not use daily_hrv as fallback
 (data.daily_readiness||[]).forEach(r=>{const d=g(r.day);d.readiness=r.score||null;if(r.contributors?.body_temperature!=null){const btScore=r.contributors.body_temperature;d.tempDev=btScore>=95?0:btScore>=85?0.1:btScore>=75?0.3:btScore>=60?0.5:btScore>=40?0.8:1.2;if(r.temperature_deviation!=null)d.tempDev=r.temperature_deviation}});
-(data.daily_activity||[]).forEach(a=>{const d=g(a.day);d.cal=a.active_calories||0;d.high=(a.high_activity_time||0)/60;d.med=(a.medium_activity_time||0)/60});
+(data.daily_activity||[]).forEach(a=>{const d=g(a.day);d.cal=a.active_calories||0;d.high=(a.high_activity_time||0)/60;d.med=(a.medium_activity_time||0)/60;d.met=a.met?.average||a.equivalent_walking_distance||0});
 (data.workout||[]).forEach(w=>{const d=g(w.day);d.workouts.push({type:w.label||w.activity||'workout',calories:w.calories||300,time:new Date(w.start_datetime).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})})});
 this.history=Array.from(m.values()).sort((a,b)=>b.date.localeCompare(a.date));
 this.currentIndex=this.history.findIndex(h=>h.date===this.currentDateStr);
@@ -786,8 +786,10 @@ const allowHalf=['breakfast','lunch','dinner','snack1','snack2','snack3','juice2
 // Suggested portions based on user caloric needs
 const portionGuide=meal.portions||null;
 const userPortion=portionGuide?portionGuide[this.user]:null;
-const savedPortion=this.portions[this.currentDateStr]?.[slot]||1;
-if(this.currentPortion===1&&savedPortion!==1)this.currentPortion=savedPortion;
+const savedPortion=this.portions[this.currentDateStr]?.[slot]||null;
+if(savedPortion)this.currentPortion=savedPortion;
+else if(userPortion)this.currentPortion=userPortion;
+else this.currentPortion=1;
 const p=this.currentPortion;
 const removed=this.getRemovedSet(slot,idx);
 const adj=this.getAdjustedMacros(meal,p,removed);
@@ -843,7 +845,10 @@ const i=arr.indexOf(ingIdx);
 if(i===-1)arr.push(ingIdx);else arr.splice(i,1);
 if(arr.length===0)delete this.removedIngredients[key];
 this.save();
+const modal=document.getElementById('mainModal');
+const scrollPos=modal?modal.scrollTop:0;
 this.showRecipe(slot,mealIdx);
+if(modal)modal.scrollTop=scrollPos;
 }
 
 swapIngredient(slot,mealIdx,ingIdx,newVal){
@@ -2256,7 +2261,8 @@ const sleepPct=Math.min(((day.totalSec||0)/3600/goals.sleepHours)*100,120);
 const readyPct=Math.min(day.readiness||50,100);
 const strainFromZones=(day.high||0)+(day.med||0)*0.5;
 const strainFromWorkouts=day.workouts.reduce((s,w)=>s+(w.calories||0),0)/50;
-const strainRaw=Math.max(strainFromZones,strainFromWorkouts);
+const strainFromCount=day.workouts.length*10;
+const strainRaw=Math.max(strainFromZones,strainFromWorkouts,strainFromCount);
 const strainCap=goals.z5+goals.z2*0.5;
 const strainPct=strainCap>0?Math.min((strainRaw/strainCap)*100,150):50;
 // Strain is inverted for recovery: over-training lowers battery, under-training is neutral
