@@ -50,7 +50,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .score-orb-fg{fill:none;stroke-width:6;stroke-linecap:round;stroke-dasharray:283;stroke-dashoffset:283;transition:stroke-dashoffset 1.5s cubic-bezier(0.4,0,0.2,1)}
 .score-orb-value{font-size:1.4rem;font-weight:800;position:relative;z-index:1}
 .score-orb-label{font-size:0.5rem;font-weight:700;color:var(–text-tertiary);letter-spacing:1px;position:relative;z-index:1}
-.score-orb-badge{font-size:0.45rem;color:var(–text-tertiary);position:relative;margin-top:2px;letter-spacing:0.5px;z-index:1}
+.score-orb-badge{font-size:0.45rem;color:var(–text-tertiary);text-align:center;letter-spacing:0.5px;margin-top:4px}
 .score-orb.primary{max-width:120px}
 .score-orb.primary .score-orb-value{font-size:1.8rem;color:var(–acid);font-weight:900}
 
@@ -100,6 +100,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .task-card.checked{border-color:var(–acid);background:var(–acid-dim)}
 .task-card.checked .task-title,.task-card.checked .task-desc{color:var(–acid)}
 .task-card.auto-detected{border-color:var(–purple);background:var(–purple-dim)}
+.task-card.auto-detected .task-title,.task-card.auto-detected .task-desc{color:var(–purple)}
 .task-card.hrv-adjusted{border-color:var(–orange);background:var(–orange-dim)}
 .task-card.task-card.recovery-task{border-color:var(–success);background:var(–success-dim)}
 .task-card.facial-task{border-color:var(–purple);background:var(–purple-dim)}
@@ -267,10 +268,12 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 <div class="score-orb-value" id="dayGrade">--</div>
 <div class="score-orb-label">TODAY</div>
 </div>
+<div style="display:flex;flex-direction:column;align-items:center;flex:1;max-width:120px">
 <div class="score-orb primary" onclick="app.showWeeklySummary()">
 <svg viewBox="0 0 100 100"><circle class="score-orb-bg" cx="50" cy="50" r="45"/><circle class="score-orb-fg" id="longevityOrb" cx="50" cy="50" r="45" style="stroke:var(--acid)"/></svg>
 <div class="score-orb-value" id="longevityScore">--</div>
 <div class="score-orb-label">LONGEVITY</div>
+</div>
 <div class="score-orb-badge">7-DAY AVG</div>
 </div>
 <div class="score-orb">
@@ -554,7 +557,7 @@ const BASE=[
 {id:'wake',time:'6:00',title:'☀️ Wake + Hydrate',desc:'16 oz water + lemon + Celtic salt'},
 {id:'juice2',time:'7:15',title:'Morning Beverage',desc:'Tap to select',mealSlot:'juice2',optional:true},
 {id:'breakfast',time:'7:30',title:'🍳 BREAKFAST',desc:'Tap to select',mealSlot:'breakfast'},
-{id:'supplement_am',time:'9:00',title:'💊 AM Supplements',desc:'Omega-3 4g, Vitamin D 5000IU, Magnesium'},
+
 {id:'snack1',time:'10:00',title:'🥜 Morning Snack',desc:'Tap to select',mealSlot:'snack1'},
 {id:'lunch',time:'1:00 PM',title:'🥗 LUNCH',desc:'Tap to select',mealSlot:'lunch'},
 {id:'snack2',time:'3:00 PM',title:'🍎 Afternoon Snack',desc:'Tap to select',mealSlot:'snack2'},
@@ -937,7 +940,7 @@ const el=document.getElementById('insightCards');
 if(!el)return;
 let html='';
 const recs=this.getSmartRecovery(day);
-recs.forEach(r=>{
+recs.slice(1).forEach(r=>{
 const cls=r.type==='warning'?'warning':r.type==='good'?'recovery':'info';
 html+=`<div class="insight-card ${cls}">${r.icon} ${r.msg}</div>`;
 });
@@ -1035,7 +1038,8 @@ t.desc=`P:${Math.round(m.macros.p*portion)}g Cal:${Math.round(m.macros.cal*porti
 }
 }
 const isC=chk.includes(t.id);
-const cc=`task-card ${isC?'checked':''} ${t.autoDetected?'auto-detected':''} ${t.hrvAdjusted?'hrv-adjusted':''} ${t.optional?'optional':''} ${t.cssClass||''}`;
+const hasMeal=t.mealSlot&&sel[t.mealSlot]!==undefined;
+const cc=`task-card ${isC||hasMeal?'checked':''} ${t.autoDetected?'auto-detected':''} ${t.hrvAdjusted?'hrv-adjusted':''} ${t.optional?'optional':''} ${t.cssClass||''}`;
 let ca='';
 if(t.clickable&&t.type&&PROTOCOLS[t.type])ca=`onclick="app.showProtocolDetails('${t.type}')"`;
 else if(t.mealSlot)ca=`onclick="app.openMealPicker('${t.mealSlot}')"`;
