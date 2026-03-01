@@ -108,8 +108,8 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .task-title{font-size:0.8rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .task-desc{font-size:0.65rem;color:var(–text-tertiary);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chevron{color:var(–text-tertiary);font-size:1.2rem}
-.check-btn{padding:4px}
-.check-circle{width:28px;height:28px;border:2px solid var(–border-strong);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.8rem;color:var(–acid);transition:all 0.2s}
+.check-btn{padding:4px;flex-shrink:0}
+.check-circle{width:28px;height:28px;min-width:28px;min-height:28px;flex-shrink:0;border:2px solid var(–border-strong);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.8rem;color:var(–acid);transition:all 0.2s}
 .task-card.checked .check-circle{border-color:var(–acid) !important;background:var(–acid-dim) !important}
 
 /* MODALS */
@@ -660,7 +660,7 @@ const RAINBOW_NAMES=['Red','Orange','Yellow','Green','Blue','Indigo','Violet'];
 class CenturionApp{
 constructor(){
 log('🚀 Centurion v23 - Oura Synergy');
-const V='23.3-CSS';
+const V='23.5-INLINE';
 if(localStorage.getItem('centurion_version')!==V){localStorage.clear();localStorage.setItem('centurion_version',V)}
 this.user=localStorage.getItem('centurion_user')||'jermaine';
 this.history=[];this.currentIndex=0;this.currentDateStr=new Date().toLocaleDateString('en-CA');
@@ -1039,11 +1039,21 @@ t.desc=`P:${Math.round(m.macros.p*portion)}g Cal:${Math.round(m.macros.cal*porti
 }
 const isC=chk.includes(t.id);
 const hasMeal=t.mealSlot&&sel[t.mealSlot]!==undefined;
-const cc=`task-card ${isC||hasMeal?'checked':''} ${t.autoDetected?'auto-detected':''} ${t.hrvAdjusted?'hrv-adjusted':''} ${t.optional?'optional':''} ${t.cssClass||''}`;
+const isChecked=isC||hasMeal;
+const isAuto=t.autoDetected;
+const isHrv=t.hrvAdjusted;
+const isRecovery=t.cssClass==='recovery-task';
+const isFacial=t.cssClass==='facial-task';
+let cardStyle='',titleStyle='',circleStyle='';
+if(isAuto){cardStyle='border-color:#a855f7;background:rgba(168,85,247,0.15)';titleStyle='color:#a855f7'}
+else if(isHrv){cardStyle='border-color:#ff9500;background:rgba(255,149,0,0.15)';titleStyle='color:#ff9500'}
+else if(isRecovery){cardStyle='border-color:#34d399;background:rgba(52,211,153,0.15)';titleStyle='color:#34d399'}
+else if(isFacial){cardStyle='border-color:#a855f7;background:rgba(168,85,247,0.15)';titleStyle='color:#a855f7'}
+else if(isChecked){cardStyle='border-color:#c8ff00;background:rgba(200,255,0,0.15)';titleStyle='color:#c8ff00';circleStyle='border-color:#c8ff00;background:rgba(200,255,0,0.15)'}
 let ca='';
 if(t.clickable&&t.type&&PROTOCOLS[t.type])ca=`onclick="app.showProtocolDetails('${t.type}')"`;
 else if(t.mealSlot)ca=`onclick="app.openMealPicker('${t.mealSlot}')"`;
-return `<div class="task"><div class="task-time">${t.time}</div><div class="${cc}" ${ca}><div class="task-info"><div class="task-title">${t.title}</div><div class="task-desc">${t.desc||'Tap to select'}</div></div>${(t.mealSlot||t.clickable)?'<div class="chevron">›</div>':''}${!t.autoDetected&&!t.hrvAdjusted?`<div class="check-btn" onclick="event.stopPropagation();app.toggleTask('${t.id}')"><div class="check-circle">${isC?'✓':''}</div></div>`:''}</div></div>`;
+return `<div class="task"><div class="task-time">${t.time}</div><div class="task-card ${t.optional?'optional':''}" style="${cardStyle}" ${ca}><div class="task-info"><div class="task-title" style="${titleStyle}">${t.title}</div><div class="task-desc" style="${titleStyle}">${t.desc||'Tap to select'}</div></div>${(t.mealSlot||t.clickable)?'<div class="chevron">›</div>':''}${!isAuto&&!isHrv?`<div class="check-btn" onclick="event.stopPropagation();app.toggleTask('${t.id}')"><div class="check-circle" style="${circleStyle}">${isC?'✓':''}</div></div>`:''}</div></div>`;
 }).join('');
 }
 
