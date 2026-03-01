@@ -50,7 +50,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .score-orb-fg{fill:none;stroke-width:6;stroke-linecap:round;stroke-dasharray:283;stroke-dashoffset:283;transition:stroke-dashoffset 1.5s cubic-bezier(0.4,0,0.2,1)}
 .score-orb-value{font-size:1.4rem;font-weight:800;position:relative;z-index:1}
 .score-orb-label{font-size:0.5rem;font-weight:700;color:var(–text-tertiary);letter-spacing:1px;position:relative;z-index:1}
-.score-orb-badge{font-size:0.45rem;color:var(–text-tertiary);position:absolute;bottom:2px;letter-spacing:0.5px}
+.score-orb-badge{font-size:0.45rem;color:var(–text-tertiary);position:relative;margin-top:2px;letter-spacing:0.5px;z-index:1}
 .score-orb.primary{max-width:120px}
 .score-orb.primary .score-orb-value{font-size:1.8rem;color:var(–acid);font-weight:900}
 
@@ -98,6 +98,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .task-card{flex:1;display:flex;align-items:center;padding:12px 14px;background:var(–panel);border:1px solid var(–border);border-radius:14px;cursor:pointer;transition:all 0.2s;gap:10px}
 .task-card:active{transform:scale(0.98)}
 .task-card.checked{border-color:var(–acid);background:var(–acid-dim)}
+.task-card.checked .task-title,.task-card.checked .task-desc{color:var(–acid)}
 .task-card.auto-detected{border-color:var(–purple);background:var(–purple-dim)}
 .task-card.hrv-adjusted{border-color:var(–orange);background:var(–orange-dim)}
 .task-card.task-card.recovery-task{border-color:var(–success);background:var(–success-dim)}
@@ -575,12 +576,18 @@ if(ouraData&&ouraData.hrv&&ouraData.hrv<30){
 workoutDesc='⚠️ LOW HRV — Zone 2 only, skip HIIT';
 hrvAdjusted=true;
 }
-const workoutItem={id:'workout',time:'9:30',title:'🏋️ WORKOUT',desc:workoutDesc,hrvAdjusted};
 if(ouraData&&ouraData.workouts&&ouraData.workouts.length>0){
-workoutItem.autoDetected=true;
-workoutItem.desc=ouraData.workouts.map(w=>w.type||'workout').join(', ')+' (detected)';
+ouraData.workouts.forEach((w,i)=>{
+let wTime='9:30';
+if(w.startTime){
+const dt=new Date(w.startTime);
+const h=dt.getHours();const m=dt.getMinutes();
+wTime=h>12?(h-12)+':'+String(m).padStart(2,'0')+' PM':h+':'+String(m).padStart(2,'0');
 }
-p.splice(3,0,workoutItem);
+const wItem={id:'workout_'+i,time:wTime,title:'🏋️ '+(w.type||'WORKOUT').toUpperCase(),desc:(w.calories?w.calories+' cal burned — ':'')+'(auto-detected)',autoDetected:true};
+p.splice(3+i,0,wItem);
+});
+}
 // Lunch recovery (hip flexor M/W/F, shoulder T/Th)
 const lunchRec=_tempGetLunchRecovery(user,dayNum);
 if(lunchRec){
@@ -778,7 +785,7 @@ d.med=(a.medium_activity_time||0)/60;
 
 (raw.workout||[]).forEach(w=>{
 const day=w.day||(w.start_datetime?w.start_datetime.split('T')[0]:null);
-if(day){const d=g(day);d.workouts.push({type:w.label||w.activity||'workout',calories:w.calories||0})}
+if(day){const d=g(day);d.workouts.push({type:w.label||w.activity||'workout',calories:w.calories||0,startTime:w.start_datetime||null})}
 });
 
 (raw.daily_readiness||[]).forEach(r=>{
@@ -1668,11 +1675,22 @@ const theirTasks=(otherChecked[date]||[]).length;
 const jLabel=this.user==='jermaine'?'YOU':'J';
 const sLabel=this.user==='sophia'?'YOU':'S';
 
+const jCal=this.user==='jermaine'?(day.cal||0):0;
+const sCal=this.user==='sophia'?(day.cal||0):0;
+const jWork=this.user==='jermaine'?(day.workouts?.length||0):0;
+const sWork=this.user==='sophia'?(day.workouts?.length||0):0;
+const jSleep=this.user==='jermaine'?(day.score||0):0;
+const sSleep=this.user==='sophia'?(day.score||0):0;
+const jReady=this.user==='jermaine'?(day.readiness||0):0;
+const sReady=this.user==='sophia'?(day.readiness||0):0;
+const lead=(a,b)=>a>b?'color:var(--acid)':'';
+const leadB=(a,b)=>b>a?'color:var(--acid)':'';
+
 el.innerHTML=`
-<div class="synergy-row"><span class="synergy-name">💧 Water</span><div class="synergy-vals"><span class="synergy-j">${jLabel}: ${this.user==='jermaine'?Math.round(myWater):Math.round(theirWater)}oz</span><span class="synergy-s">${sLabel}: ${this.user==='sophia'?Math.round(myWater):Math.round(theirWater)}oz</span></div></div>
-<div class="synergy-row"><span class="synergy-name">🍽️ Meals Logged</span><div class="synergy-vals"><span class="synergy-j">${jLabel}: ${this.user==='jermaine'?myMeals:theirMeals}</span><span class="synergy-s">${sLabel}: ${this.user==='sophia'?myMeals:theirMeals}</span></div></div>
-<div class="synergy-row"><span class="synergy-name">✅ Tasks Done</span><div class="synergy-vals"><span class="synergy-j">${jLabel}: ${this.user==='jermaine'?myTasks:theirTasks}</span><span class="synergy-s">${sLabel}: ${this.user==='sophia'?myTasks:theirTasks}</span></div></div>
-<div class="synergy-row"><span class="synergy-name">😴 Sleep Score</span><div class="synergy-vals"><span class="synergy-j">${jLabel}: ${day.score||'--'}</span><span class="synergy-s">${sLabel}: --</span></div></div>
+<div class="synergy-row"><span class="synergy-name">🔥 Calories Burned</span><div class="synergy-vals"><span class="synergy-j" style="${lead(jCal,sCal)}">${jLabel}: ${jCal}</span><span class="synergy-s" style="${leadB(jCal,sCal)}">${sLabel}: ${sCal}</span></div></div>
+<div class="synergy-row"><span class="synergy-name">🏋️ Workouts</span><div class="synergy-vals"><span class="synergy-j" style="${lead(jWork,sWork)}">${jLabel}: ${jWork}</span><span class="synergy-s" style="${leadB(jWork,sWork)}">${sLabel}: ${sWork}</span></div></div>
+<div class="synergy-row"><span class="synergy-name">😴 Sleep Score</span><div class="synergy-vals"><span class="synergy-j" style="${lead(jSleep,sSleep)}">${jLabel}: ${jSleep||'--'}</span><span class="synergy-s" style="${leadB(jSleep,sSleep)}">${sLabel}: ${sSleep||'--'}</span></div></div>
+<div class="synergy-row"><span class="synergy-name">⚡ Readiness</span><div class="synergy-vals"><span class="synergy-j" style="${lead(jReady,sReady)}">${jLabel}: ${jReady||'--'}</span><span class="synergy-s" style="${leadB(jReady,sReady)}">${sLabel}: ${sReady||'--'}</span></div></div>
 `;
 }
 
