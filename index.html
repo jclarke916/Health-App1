@@ -710,7 +710,7 @@ if(!token||token.includes('YOUR_')){this.setText('syncStatus','NO TOKEN');log('�
 log('🔑 Token found: '+token.substring(0,6)+'...');
 
 const proxy='https://oura-proxy.jclarke-9a0.workers.dev?url=';
-const eps=['sleep','workout','daily_activity','daily_readiness','daily_hrv','daily_cardiovascular_age'];
+const eps=['sleep','daily_sleep','workout','daily_activity','daily_readiness','daily_hrv','daily_cardiovascular_age'];
 const results=await Promise.allSettled(eps.map(async ep=>{
 const url=`${proxy}${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/${ep}?start_date=${startStr}&end_date=${endStr}`)}`;
 log('📡 Fetching: '+ep);
@@ -726,7 +726,7 @@ results.forEach(r=>{
 if(r.status==='fulfilled')data[r.value.name]=r.value.data;
 else{failCount++;log('⚠️ Failed: '+r.reason);}
 });
-log('📊 Sleep:'+(data.sleep?.length||0)+' Workout:'+(data.workout?.length||0)+' HRV:'+(data.daily_hrv?.length||0)+' Readiness:'+(data.daily_readiness?.length||0)+' Failed:'+failCount);
+log('📊 Sleep:'+(data.sleep?.length||0)+' DailySleep:'+(data.daily_sleep?.length||0)+' Workout:'+(data.workout?.length||0)+' HRV:'+(data.daily_hrv?.length||0)+' Readiness:'+(data.daily_readiness?.length||0)+' Failed:'+failCount);
 if(data.sleep?.length>0){log('🔍 Sample sleep day: '+JSON.stringify(data.sleep[0]).substring(0,200));}
 if(data.daily_hrv?.length>0){log('🔍 Sample HRV day: '+JSON.stringify(data.daily_hrv[0]).substring(0,200));}
 this.processOuraData(data);
@@ -754,8 +754,15 @@ d.deepSec+=s.deep_sleep_duration||0;
 d.remSec+=s.rem_sleep_duration||0;
 if(s.lowest_heart_rate>=35&&s.lowest_heart_rate<=100)d.rhr=Math.round(s.lowest_heart_rate);
 if(s.average_breath)d.respRate=s.average_breath;
+if(s.average_hrv&&s.average_hrv>0)d.hrv=Math.round(s.average_hrv);
+if(s.temperature_deviation!==undefined&&s.temperature_deviation!==null)d.tempDev=Math.round(s.temperature_deviation*10)/10;
 const sc=s.score||(s.efficiency?Math.round(s.efficiency):0);
 if(sc>d.score)d.score=sc;
+});
+
+(raw.daily_sleep||[]).forEach(ds=>{
+const d=g(ds.day);
+if(ds.score)d.score=ds.score;
 });
 
 (raw.daily_activity||[]).forEach(a=>{
@@ -773,12 +780,12 @@ if(day){const d=g(day);d.workouts.push({type:w.label||w.activity||'workout',calo
 (raw.daily_readiness||[]).forEach(r=>{
 const d=g(r.day);
 d.readiness=r.score||null;
-if(r.contributors?.body_temperature)d.tempDev=(r.contributors.body_temperature-50)/10;
+if(r.temperature_trend_deviation!==undefined&&r.temperature_trend_deviation!==null)d.tempDev=Math.round(r.temperature_trend_deviation*10)/10;
 });
 
 (raw.daily_hrv||[]).forEach(h=>{
 const d=g(h.day);
-if(h.contributors?.balance){d.hrv=Math.round(h.contributors.balance)}
+if(!d.hrv&&h.contributors?.balance){d.hrv=Math.round(h.contributors.balance)}
 });
 
 (raw.daily_cardiovascular_age||[]).forEach(c=>{
@@ -815,9 +822,14 @@ this.setText('dateLabel',isToday?`TODAY — ${dayName}, ${dateStr}`:`${dayName},
 
 // Longevity score
 const sleepPct=(day.score||0)/100;
-const hrvPct=day.hrv?Math.min(day.hrv/80,1):0;
+const hrvPct=day.hrv?Math.min(day.hrv/50,1):0;
 const readyPct=(day.readiness||0)/100;
-const longevity=Math.round((sleepPct*0.3+hrvPct*0.3+readyPct*0.2+0.2)*100);
+const components=[];
+if(day.score)components.push({w:0.35,v:sleepPct});
+if(day.hrv)components.push({w:0.35,v:hrvPct});
+if(day.readiness)components.push({w:0.30,v:readyPct});
+const totalW=components.reduce((a,c)=>a+c.w,0)||1;
+const longevity=components.length?Math.round(components.reduce((a,c)=>a+(c.v*(c.w/totalW)),0)*100):0;
 
 // Score orbs
 this.setText('dayGrade',day.score||'--');
