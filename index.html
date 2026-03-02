@@ -1,3 +1,673 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>Centurion v23 - Complete Oura Synergy</title>
+<style>
+:root{--bg:#0a0a0c;--panel:#141418;--panel-elevated:#1a1a20;--border:rgba(255,255,255,0.08);--acid:#c8ff00;--cyan:#00d4ff;--purple:#a855f7;--alert:#ff4757;--orange:#ff9500;--success:#34d399;--text:#fff;--text-secondary:rgba(255,255,255,0.6);--text-tertiary:rgba(255,255,255,0.4)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,sans-serif;padding-bottom:140px;min-height:100vh;-webkit-tap-highlight-color:transparent;background-image:radial-gradient(ellipse at 20% 0%,rgba(200,255,0,0.03) 0%,transparent 50%),radial-gradient(ellipse at 80% 100%,rgba(0,212,255,0.03) 0%,transparent 50%)}
+.header{background:rgba(10,10,12,0.95);padding:16px 20px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;backdrop-filter:blur(20px)}
+.user-switch{display:flex;gap:8px;background:var(--panel);padding:4px;border-radius:16px;margin-bottom:12px;border:1px solid var(--border)}
+.user-switch button{flex:1;padding:10px;border:none;background:transparent;color:var(--text-tertiary);border-radius:12px;cursor:pointer;font-weight:700;font-size:0.7rem;letter-spacing:1px;transition:all 0.3s}
+.user-switch button.active{background:linear-gradient(135deg,#c8ff00,#00d4ff);color:#000;box-shadow:0 4px 20px rgba(200,255,0,0.3)}
+.date-nav{display:flex;justify-content:space-between;align-items:center;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:8px 12px}
+.nav-btn{background:transparent;border:none;color:var(--cyan);padding:8px 16px;font-size:1.1rem;cursor:pointer}
+#dateLabel{flex:1;text-align:center;font-weight:600;font-size:0.85rem;white-space:pre-line;line-height:1.3}
+.bio-btn{background:linear-gradient(135deg,#c8ff00,#00d4ff);color:#000;border:none;padding:10px 16px;border-radius:10px;font-size:0.65rem;font-weight:800;cursor:pointer}
+.section-header{padding:20px 20px 12px;font-size:0.65rem;font-weight:700;color:var(--text-tertiary);letter-spacing:2px;text-transform:uppercase;display:flex;align-items:center;gap:12px;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none}
+.section-header::after{content:'';height:1px;background:var(--border);flex:1}
+.section-chevron{font-size:0.7rem;color:var(--text-tertiary);transition:transform 0.3s ease;margin-left:auto;flex-shrink:0}
+.section-header.collapsed .section-chevron{transform:rotate(-90deg)}
+.section-body{overflow:hidden;transition:max-height 0.4s ease,opacity 0.3s ease;opacity:1;max-height:2000px}
+.section-body.collapsed{max-height:0!important;opacity:0;margin:0;padding-top:0;padding-bottom:0}
+.section-summary{display:none;font-size:0.65rem;color:var(--text-secondary);margin-left:4px;font-weight:600}
+.section-header.collapsed .section-summary{display:inline}
+.recovery-battery{background:var(--panel);border:1px solid var(--border);border-radius:20px;padding:20px;margin:20px;position:relative;overflow:hidden}
+.recovery-battery::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#4facfe,#00f2fe)}
+.battery-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.battery-title{font-size:0.7rem;font-weight:700;color:var(--text-secondary);letter-spacing:1.5px}
+.battery-score{font-size:2.5rem;font-weight:800;background:linear-gradient(135deg,#4facfe,#00f2fe);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.battery-bar{height:12px;background:var(--panel-elevated);border-radius:6px;overflow:hidden;margin-bottom:12px}
+.battery-fill{height:100%;background:linear-gradient(90deg,#4facfe,#00f2fe);border-radius:6px;transition:width 1s;box-shadow:0 0 20px rgba(79,172,254,0.4)}
+.battery-components{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.battery-component{text-align:center;padding:8px;background:var(--panel-elevated);border-radius:8px}
+.bc-value{font-size:0.9rem;font-weight:700}
+.bc-label{font-size:0.5rem;color:var(--text-tertiary);text-transform:uppercase;margin-top:2px}
+.bc-trend{font-size:0.55rem;margin-top:2px}
+.battery-detail-row{display:flex;justify-content:space-between;padding:10px 4px 0;border-top:1px solid var(--border);margin-top:10px}
+.battery-detail{text-align:center;flex:1}
+.bd-label{display:block;font-size:0.45rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.5px}
+.bd-value{display:block;font-size:0.75rem;font-weight:700;margin-top:2px}
+.trend-up{color:var(--success)}
+.trend-down{color:var(--alert)}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:0 20px;margin-bottom:20px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:0 20px;margin-bottom:20px}
+.orb-card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:16px 8px 12px;display:flex;flex-direction:column;align-items:center;transition:transform 0.2s}
+.orb-card:active{transform:scale(0.97)}
+.orb-card.alert{border-color:var(--alert);background:rgba(255,71,87,0.1)}
+.orb-card.warning{border-color:var(--orange);background:rgba(255,149,0,0.1)}
+.orb-card.optimal{border-color:var(--success);background:rgba(52,211,153,0.1)}
+.orb-container{width:52px;height:52px;position:relative;margin-bottom:8px}
+.orb-svg{transform:rotate(-90deg);width:100%;height:100%;position:absolute}
+.orb-bg{fill:none;stroke:var(--panel-elevated);stroke-width:5}
+.orb-fg{fill:none;stroke-width:5;stroke-dasharray:138;stroke-dashoffset:138;transition:stroke-dashoffset 1s;stroke-linecap:round;filter:drop-shadow(0 0 6px currentColor)}
+.orb-val-box{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+.orb-val{font-size:0.75rem;font-weight:800;line-height:1}
+.orb-label{font-size:0.5rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase}
+.score-row{display:flex;gap:12px;justify-content:center;padding:20px}
+.score-orb{flex:0 0 90px;height:90px;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer}
+.score-orb svg{position:absolute;width:100%;height:100%;transform:rotate(-90deg)}
+.score-orb-bg{fill:none;stroke:var(--panel-elevated);stroke-width:6}
+.score-orb-fg{fill:none;stroke-width:6;stroke-linecap:round;stroke-dasharray:251;stroke-dashoffset:251;transition:stroke-dashoffset 1.5s;filter:drop-shadow(0 0 8px currentColor)}
+.score-orb-value{font-size:1.6rem;font-weight:800;z-index:1}
+.score-orb-label{font-size:0.45rem;color:var(--text-tertiary);text-transform:uppercase;z-index:1}
+.score-orb.primary{flex:0 0 110px;height:110px}
+.score-orb.primary .score-orb-value{font-size:2.2rem;background:linear-gradient(135deg,#c8ff00,#00d4ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.score-orb-badge{position:absolute;bottom:-6px;background:var(--panel);border:1px solid var(--border);padding:2px 6px;border-radius:8px;font-size:0.4rem;color:var(--cyan);font-weight:700}
+.status-container{margin:0 20px 20px;padding:16px;background:var(--panel);border:1px solid var(--border);border-radius:14px;border-left:3px solid var(--acid)}
+.status-label{font-size:0.6rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.status-msg{font-size:0.85rem;font-weight:600;line-height:1.4}
+.insight-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;margin:0 20px 16px}
+.insight-card.warning{border-left:3px solid var(--orange)}
+.insight-card.alert{border-left:3px solid var(--alert)}
+.insight-header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.insight-icon{font-size:1.2rem}
+.insight-title{font-size:0.8rem;font-weight:700}
+.insight-body{font-size:0.75rem;color:var(--text-secondary);line-height:1.5}
+.insight-action{margin-top:10px;padding:10px;background:rgba(200,255,0,0.1);border-radius:8px;font-size:0.7rem;color:var(--acid);font-weight:600}
+.heart-container{width:52px;height:52px;position:relative;margin-bottom:8px}
+.heart-svg{width:100%;height:100%}
+.heart-bg{fill:none;stroke:var(--panel-elevated);stroke-width:2}
+.heart-fg{fill:none;stroke-width:2.5;stroke-dasharray:100;stroke-dashoffset:100;transition:stroke-dashoffset 1s;filter:drop-shadow(0 0 4px currentColor)}
+.beating{animation:heartbeat 1.5s infinite}
+@keyframes heartbeat{0%,100%{transform:scale(1)}15%{transform:scale(1.08)}30%{transform:scale(1)}45%{transform:scale(1.08)}}
+.water-container,.rainbow-container{padding:0 20px;margin-bottom:20px}
+.water-header,.rainbow-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.water-title,.rainbow-title{font-size:0.7rem;font-weight:700;color:var(--text-secondary)}
+.water-score{font-size:1rem;font-weight:800;color:var(--cyan)}
+.rainbow-score{font-size:1rem;font-weight:800;color:var(--acid)}
+.water-track{height:12px;background:var(--panel);border-radius:6px;overflow:hidden;border:1px solid var(--border);cursor:pointer}
+.water-fill{height:100%;background:linear-gradient(90deg,#00d4ff,#0088ff);border-radius:6px;transition:width 0.3s}
+.rainbow-track{height:12px;background:var(--panel);border-radius:6px;display:flex;overflow:hidden;border:1px solid var(--border)}
+.rainbow-seg{height:100%;transition:width 0.5s}
+.timeline{padding:0 20px 40px}
+.task{display:flex;gap:12px;margin-bottom:14px}
+.task-time{width:50px;color:var(--text-tertiary);font-size:0.7rem;padding-top:16px;text-align:right;font-weight:600}
+.task-card{flex:1;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;display:flex;justify-content:space-between;align-items:center;transition:all 0.2s}
+.task-card:active{transform:scale(0.98)}
+.task-card.checked{border-color:var(--acid);background:rgba(200,255,0,0.05)}
+.task-card.auto-detected{border-color:var(--cyan);background:rgba(0,212,255,0.05)}
+.task-card.hrv-adjusted{border-color:var(--orange);background:rgba(255,149,0,0.05)}
+.task-card.recovery{border-color:var(--purple);background:rgba(168,85,247,0.05)}
+.task-card.facial{border-color:var(--cyan);background:rgba(0,212,255,0.08)}
+.task-card.workout-rec{border-color:var(--orange);background:rgba(255,149,0,0.06);border-style:dashed}
+.task-card.ai-filled .task-title::after{content:' ✨';font-size:0.65rem}
+.task-card.optional{border-style:dashed;border-color:#444;opacity:0.7}
+.task-info{flex:1}
+.task-title{font-weight:700;font-size:0.85rem;margin-bottom:4px}
+.task-desc{font-size:0.7rem;color:var(--text-secondary)}
+.chevron{font-size:1.3rem;color:var(--text-tertiary);margin-left:12px}
+.check-btn{width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.check-circle{width:28px;height:28px;border:2px solid var(--border);border-radius:50%;background:var(--panel-elevated);display:flex;align-items:center;justify-content:center;font-weight:800;color:transparent;transition:all 0.2s}
+.task-card.checked .check-circle{background:var(--acid);border-color:var(--acid);color:#000;box-shadow:0 0 15px var(--acid)}
+.modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);z-index:500;display:none;overflow-y:auto;backdrop-filter:blur(10px)}
+.modal-overlay.show{display:block}
+.modal-content{width:100%;min-height:100vh;background:var(--bg);padding-bottom:100px}
+.modal-header{padding:20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:rgba(10,10,12,0.95);backdrop-filter:blur(20px);z-index:10}
+.modal-title{font-size:1rem;font-weight:800;color:var(--acid);text-transform:uppercase;letter-spacing:1px}
+.modal-close{background:transparent;border:none;color:var(--text);font-size:2rem;cursor:pointer;padding:8px}
+.modal-body{padding:20px}
+.menu-item{padding:18px;background:var(--panel);border:1px solid var(--border);border-radius:12px;margin-bottom:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.menu-item:active{background:var(--panel-elevated)}
+.menu-name{font-size:0.95rem;font-weight:700;margin-bottom:4px}
+.menu-meta{font-size:0.7rem;color:var(--text-secondary)}
+.menu-arrow{color:var(--text-tertiary);font-size:1.3rem}
+.recipe-hero{margin-bottom:25px;text-align:center}
+.recipe-title{font-size:1.6rem;font-weight:900;line-height:1.2;margin-bottom:8px}
+.recipe-stats{font-size:0.85rem;color:var(--text-secondary);font-weight:700}
+.macro-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:25px}
+.macro-stat{background:var(--panel);border:1px solid var(--border);padding:12px 5px;border-radius:10px;text-align:center}
+.m-val{font-size:1.1rem;font-weight:900;line-height:1}
+.m-lbl{font-size:0.5rem;color:var(--acid);text-transform:uppercase;margin-top:6px;font-weight:900}
+.synergy-box{background:linear-gradient(135deg,rgba(0,212,255,0.08) 0%,rgba(0,0,0,0) 100%);border:1px solid rgba(0,212,255,0.3);padding:20px;border-radius:12px;margin-bottom:25px}
+.syn-title{color:var(--cyan);font-weight:900;font-size:0.75rem;text-transform:uppercase;margin-bottom:10px}
+.syn-text{color:#ccc;font-size:0.95rem;font-style:italic;line-height:1.6}
+.ing-item{color:#ccc;font-size:0.9rem;border-bottom:1px solid var(--border);padding:12px 0;display:flex;align-items:center;cursor:pointer;transition:all 0.2s;-webkit-tap-highlight-color:transparent}
+.ing-item:active{background:rgba(255,255,255,0.03)}
+.ing-item::before{content:'•';color:var(--acid);font-weight:bold;margin-right:12px;font-size:1.3rem}
+.ing-item.removed{opacity:0.35;text-decoration:line-through;color:#666}
+.ing-item.removed::before{content:'✕';color:var(--alert)}
+.ing-hint{text-align:center;font-size:0.6rem;color:var(--text-tertiary);margin-top:6px;margin-bottom:12px}
+.step-item{display:flex;gap:15px;font-size:0.9rem;color:#ddd;line-height:1.6;margin-bottom:15px;background:var(--panel);padding:15px;border-radius:10px;border:1px solid var(--border)}
+.footer{position:fixed;bottom:0;left:0;width:100%;background:rgba(10,10,12,0.95);backdrop-filter:blur(20px);padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;z-index:90}
+.sync-status{font-size:0.65rem;color:var(--text-tertiary)}
+.sync-btn{background:linear-gradient(135deg,#c8ff00,#00d4ff);color:#000;border:none;padding:10px 20px;border-radius:10px;font-weight:700;font-size:0.75rem;cursor:pointer}
+</style>
+</head>
+<body>
+
+<div class="header">
+<div class="user-switch">
+<button id="btn-jermaine" onclick="app.switchUser('jermaine')">JERMAINE</button>
+<button id="btn-sophia" onclick="app.switchUser('sophia')">SOPHIA</button>
+</div>
+<div class="date-nav">
+<button class="nav-btn" onclick="app.changeDate(-1)">◀</button>
+<span id="dateLabel">LOADING...</span>
+<button class="nav-btn" onclick="app.changeDate(1)">▶</button>
+<button class="bio-btn" onclick="app.openBio()">BIO</button>
+<button class="bio-btn" onclick="app.showSynergyDashboard()" style="background:var(--purple);margin-left:6px">💑</button>
+</div>
+</div>
+
+<div class="recovery-battery">
+<div class="battery-header">
+<div class="battery-title">⚡ RECOVERY BATTERY</div>
+<div class="battery-score" id="batteryScore">--</div>
+</div>
+<div class="battery-bar"><div class="battery-fill" id="batteryFill" style="width:0%"></div></div>
+<div class="battery-components">
+<div class="battery-component" id="hrvCard"><div class="bc-value" id="bcHrv" style="color:var(--purple)">--</div><div class="bc-label">HRV (ms)</div><div class="bc-trend" id="bcHrvTrend"></div></div>
+<div class="battery-component"><div class="bc-value" id="bcSleep">--</div><div class="bc-label" id="bcBedLabel">SLEEP</div><div class="bc-trend" id="bcSleepTrend"></div></div>
+<div class="battery-component"><div class="bc-value" id="bcReadiness">--</div><div class="bc-label">READY</div><div class="bc-trend" id="bcReadinessTrend"></div></div>
+<div class="battery-component"><div class="bc-value" id="bcStrain">--</div><div class="bc-label">STRAIN</div><div class="bc-trend" id="bcStrainTrend"></div></div>
+</div>
+<div class="battery-detail-row">
+<div class="battery-detail"><span class="bd-label">DEEP</span><span class="bd-value" id="deepVal">--</span></div>
+<div class="battery-detail"><span class="bd-label">REM</span><span class="bd-value" id="remVal">--</span></div>
+<div class="battery-detail"><span class="bd-label">TEMP</span><span class="bd-value" id="tempVal">+0.0°</span></div>
+<div class="battery-detail"><span class="bd-label">RESP</span><span class="bd-value" id="respVal">--</span></div>
+<div class="battery-detail"><span class="bd-label">DEBT</span><span class="bd-value" id="sleepDebtValue">0h</span></div>
+</div>
+</div>
+
+<div class="score-row">
+<div class="score-orb" onclick="app.showWeeklySummary()">
+<svg viewBox="0 0 100 100"><circle class="score-orb-bg" cx="50" cy="50" r="40"/><circle class="score-orb-fg" id="dayScoreOrb" cx="50" cy="50" r="40" style="stroke:var(--cyan)"/></svg>
+<div class="score-orb-value" id="dayGrade">--</div>
+<div class="score-orb-label">TODAY</div>
+</div>
+<div class="score-orb primary" onclick="app.showWeeklySummary()">
+<svg viewBox="0 0 100 100"><circle class="score-orb-bg" cx="50" cy="50" r="40"/><circle class="score-orb-fg" id="longevityOrb" cx="50" cy="50" r="40" style="stroke:var(--acid)"/></svg>
+<div class="score-orb-value" id="longevityScore">--</div>
+<div class="score-orb-label">LONGEVITY</div>
+<div class="score-orb-badge">7-DAY AVG</div>
+</div>
+<div class="score-orb">
+<svg viewBox="0 0 100 100"><circle class="score-orb-bg" cx="50" cy="50" r="40"/><circle class="score-orb-fg" id="streakOrb" cx="50" cy="50" r="40" style="stroke:var(--acid)"/></svg>
+<div class="score-orb-value" id="streakCount" style="color:var(--acid)">0</div>
+<div class="score-orb-label">STREAK</div>
+</div>
+</div>
+
+<div class="status-container">
+<div class="status-label">🧠 AI PROTOCOL ADVISOR</div>
+<div class="status-msg" id="statusMsg">ANALYZING...</div>
+</div>
+
+<div id="insightContainer"></div>
+
+<div id="partnerStatus" style="background:var(--panel);border:1px solid var(--purple)30;border-radius:12px;padding:12px 16px;margin:0 20px 15px;cursor:pointer" onclick="app.showPartnerLog()">
+<div style="display:flex;justify-content:space-between;align-items:center">
+<div style="font-size:0.65rem;font-weight:800;color:var(--purple)">💑 <span id="partnerLabel">PARTNER'S FOOD LOG</span></div>
+<div style="font-size:0.5rem;color:var(--text-tertiary)">tap to view →</div>
+</div>
+<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap" id="partnerQuickStats"></div>
+</div>
+
+<div class="section-header" onclick="app.toggleSection(this)">FUEL (NUTRITION)<span class="section-summary" id="fuelSummary"></span><span class="section-chevron">▼</span></div>
+<div class="section-body" id="fuelBody">
+<div class="grid-4">
+<div class="orb-card"><div class="orb-container"><svg class="orb-svg" viewBox="0 0 50 50"><circle class="orb-bg" cx="25" cy="25" r="22"/><circle class="orb-fg" id="proteinOrb" cx="25" cy="25" r="22" style="stroke:#fff"/></svg><div class="orb-val-box"><div class="orb-val" id="proteinVal">0</div></div></div><div class="orb-label">PROTEIN</div></div>
+<div class="orb-card"><div class="orb-container"><svg class="orb-svg" viewBox="0 0 50 50"><circle class="orb-bg" cx="25" cy="25" r="22"/><circle class="orb-fg" id="omega3Orb" cx="25" cy="25" r="22" style="stroke:var(--cyan)"/></svg><div class="orb-val-box"><div class="orb-val" id="omega3Val">0</div></div></div><div class="orb-label" style="color:var(--cyan)">OMEGA-3</div></div>
+<div class="orb-card"><div class="orb-container"><svg class="orb-svg" viewBox="0 0 50 50"><circle class="orb-bg" cx="25" cy="25" r="22"/><circle class="orb-fg" id="fiberOrb" cx="25" cy="25" r="22" style="stroke:var(--success)"/></svg><div class="orb-val-box"><div class="orb-val" id="fiberVal">0</div></div></div><div class="orb-label" style="color:var(--success)">FIBER</div></div>
+<div class="orb-card"><div class="orb-container"><svg class="orb-svg" viewBox="0 0 50 50"><circle class="orb-bg" cx="25" cy="25" r="22"/><circle class="orb-fg" id="polyphenolOrb" cx="25" cy="25" r="22" style="stroke:var(--purple)"/></svg><div class="orb-val-box"><div class="orb-val" id="polyphenolVal">0</div></div></div><div class="orb-label" style="color:var(--purple)">POLYPHENOL</div></div>
+</div>
+</div>
+
+<div class="section-header" onclick="app.toggleSection(this)">METABOLISM (BALANCE)<span class="section-summary" id="metabSummary"></span><span class="section-chevron">▼</span></div>
+<div class="section-body" id="metabBody">
+<div class="grid-4">
+<div class="orb-card"><div class="orb-container"><svg class="orb-svg" viewBox="0 0 50 50"><circle class="orb-bg" cx="25" cy="25" r="22"/><circle class="orb-fg" id="balanceOrb" cx="25" cy="25" r="22" style="stroke:var(--success)"/></svg><div class="orb-val-box"><div class="orb-val" id="balanceVal">--</div></div></div><div class="orb-label" style="color:var(--success)" id="balanceLabel">BALANCE</div></div>
+<div class="orb-card"><div style="text-align:center"><div style="font-size:0.5rem;color:var(--text-tertiary);margin-bottom:4px">EATEN</div><div style="font-size:1.2rem;font-weight:900;color:var(--success)" id="eatenVal">0</div></div><div class="orb-label" style="color:var(--success)">CALORIES</div></div>
+<div class="orb-card"><div style="text-align:center"><div style="font-size:0.5rem;color:var(--text-tertiary);margin-bottom:4px">BURNED</div><div style="font-size:1.2rem;font-weight:900;color:var(--alert)" id="burnedVal">0</div></div><div class="orb-label" style="color:var(--alert)">TOTAL</div></div>
+<div class="orb-card"><div style="text-align:center"><div style="font-size:0.5rem;color:var(--text-tertiary);margin-bottom:4px">BMR</div><div style="font-size:1.2rem;font-weight:900;color:var(--orange)" id="bmrVal">2000</div></div><div class="orb-label" style="color:var(--orange)">BASE</div></div>
+</div>
+</div>
+
+<div class="section-header" onclick="app.toggleSection(this)">VASCULAR (AGING)<span class="section-summary" id="vascSummary"></span><span class="section-chevron">▼</span></div>
+<div class="section-body" id="vascBody">
+<div class="grid-3">
+<div class="orb-card"><div style="text-align:center"><div style="font-size:0.5rem;color:var(--text-tertiary);margin-bottom:4px">VASCULAR</div><div style="font-size:1.4rem;font-weight:900;color:var(--alert)" id="vascularAge">--</div></div><div class="orb-label" style="color:var(--alert)">AGE</div></div>
+<div class="orb-card"><div style="text-align:center"><div style="font-size:0.5rem;color:var(--text-tertiary);margin-bottom:4px">DIFFERENCE</div><div style="font-size:1.4rem;font-weight:900;color:var(--success)" id="ageDiff">--</div></div><div class="orb-label" style="color:var(--success)" id="ageDiffLabel">YOUNGER</div></div>
+<div class="orb-card"><div style="text-align:center"><div style="font-size:0.5rem;color:var(--text-tertiary);margin-bottom:4px">TREND</div><div style="font-size:1.4rem;font-weight:900;color:var(--orange)" id="vascularTrend">--</div></div><div class="orb-label" style="color:var(--orange)">7-DAY</div></div>
+</div>
+</div>
+
+<div class="section-header" onclick="app.toggleSection(this)">ENGINE (CARDIO)<span class="section-summary" id="cardioSummary"></span><span class="section-chevron">▼</span></div>
+<div class="section-body" id="cardioBody">
+<div class="grid-4">
+<div class="orb-card"><div class="heart-container"><svg class="heart-svg beating" viewBox="0 0 24 24"><path class="heart-bg" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/><path class="heart-fg" style="stroke:var(--alert);stroke-dasharray:none;stroke-dashoffset:0" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg><div class="orb-val-box"><div class="orb-val" id="rhrVal" style="color:var(--alert)">--</div></div></div><div class="orb-label" style="color:var(--alert)">RHR</div></div>
+<div class="orb-card"><div class="heart-container"><svg class="heart-svg" viewBox="0 0 24 24"><path class="heart-bg" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/><path class="heart-fg" id="z2Heart" pathLength="100" style="stroke:var(--cyan)" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg><div class="orb-val-box"><div class="orb-val" id="z2Val" style="color:var(--cyan)">0</div></div></div><div class="orb-label" style="color:var(--cyan)">ZONE 2</div></div>
+<div class="orb-card" id="z5Card"><div class="heart-container"><svg class="heart-svg" viewBox="0 0 24 24"><path class="heart-bg" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/><path class="heart-fg" id="z5Heart" pathLength="100" style="stroke:var(--alert)" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg><div class="orb-val-box"><div class="orb-val" id="z5Val" style="color:var(--alert)">0</div></div></div><div class="orb-label" style="color:var(--alert)" id="z5Label">ZONE 5</div></div>
+<div class="orb-card"><div class="heart-container"><svg class="heart-svg" viewBox="0 0 24 24"><path class="heart-bg" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/><path class="heart-fg" id="calHeart" pathLength="100" style="stroke:var(--orange)" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg><div class="orb-val-box"><div class="orb-val" id="calVal" style="color:var(--orange)">0</div></div></div><div class="orb-label" style="color:var(--orange)">BURN</div></div>
+</div>
+</div>
+
+<div class="section-header" onclick="app.toggleSection(this)">HYDRATION 💧<span class="section-summary" id="hydroSummary"></span><span class="section-chevron">▼</span></div>
+<div class="section-body" id="hydroBody">
+<div class="water-container">
+<div class="water-header"><div class="water-title">WATER INTAKE</div><div class="water-score" id="waterScore">0 / 140 oz</div></div>
+<div class="water-track" onclick="app.addWater()"><div class="water-fill" id="waterFill"></div></div>
+<div style="text-align:center;margin-top:8px;font-size:0.65rem;color:var(--text-tertiary)">Tap bar to add 8oz glass</div>
+</div>
+</div>
+
+<div class="section-header" onclick="app.toggleSection(this)">PHYTONUTRIENT 🌈<span class="section-summary" id="rainbowSummaryText"></span><span class="section-chevron">▼</span></div>
+<div class="section-body" id="rainbowBody">
+<div class="rainbow-container">
+<div class="rainbow-header"><div class="rainbow-title">RAINBOW SCORE</div><div class="rainbow-score" id="rainbowScore">0%</div></div>
+<div class="rainbow-track" id="rainbowTrack"></div>
+</div>
+</div>
+
+<div class="section-header" onclick="app.toggleSection(this)">SYNERGY PROTOCOL<span class="section-chevron">▼</span></div>
+<div class="section-body" id="protocolBody">
+<div class="timeline" id="timeline"></div>
+</div>
+
+<div class="modal-overlay" id="mainModal">
+<div class="modal-content">
+<div class="modal-header"><div class="modal-title" id="modalTitle">MENU</div><button class="modal-close" onclick="app.closeModal()">×</button></div>
+<div class="modal-body" id="modalBody"></div>
+</div>
+</div>
+
+<div class="footer">
+<span class="sync-status" id="syncStatus" onclick="document.getElementById('debugPanel').style.display=document.getElementById('debugPanel').style.display==='none'?'block':'none'">INIT</span>
+<button class="sync-btn" onclick="app.sync()">🔄 SYNC</button>
+</div>
+<div id="debugPanel" style="display:none;background:#111;border:1px solid var(--orange);border-radius:8px;margin:10px 20px;padding:10px;max-height:300px;overflow-y:auto;font-family:monospace;font-size:0.55rem;color:var(--cyan);line-height:1.6;word-break:break-all"></div>
+</div>
+
+<script>
+// ============================================================================
+
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>Centurion v23 - Complete Oura Synergy</title>
+<style>
+:root{--bg:#0a0a0c;--panel:#141418;--panel-elevated:#1a1a20;--border:rgba(255,255,255,0.08);--acid:#c8ff00;--cyan:#00d4ff;--purple:#a855f7;--alert:#ff4757;--orange:#ff9500;--success:#34d399;--text:#fff;--text-secondary:rgba(255,255,255,0.6);--text-tertiary:rgba(255,255,255,0.4)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,sans-serif;padding-bottom:140px;min-height:100vh;-webkit-tap-highlight-color:transparent;background-image:radial-gradient(ellipse at 20% 0%,rgba(200,255,0,0.03) 0%,transparent 50%),radial-gradient(ellipse at 80% 100%,rgba(0,212,255,0.03) 0%,transparent 50%)}
+.header{background:rgba(10,10,12,0.95);padding:16px 20px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;backdrop-filter:blur(20px)}
+.user-switch{display:flex;gap:8px;background:var(--panel);padding:4px;border-radius:16px;margin-bottom:12px;border:1px solid var(--border)}
+.user-switch button{flex:1;padding:10px;border:none;background:transparent;color:var(--text-tertiary);border-radius:12px;cursor:pointer;font-weight:700;font-size:0.7rem;letter-spacing:1px;transition:all 0.3s}
+.user-switch button.active{background:linear-gradient(135deg,#c8ff00,#00d4ff);color:#000;box-shadow:0 4px 20px rgba(200,255,0,0.3)}
+.date-nav{display:flex;justify-content:space-between;align-items:center;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:8px 12px}
+.nav-btn{background:transparent;border:none;color:var(--cyan);padding:8px 16px;font-size:1.1rem;cursor:pointer}
+#dateLabel{flex:1;text-align:center;font-weight:600;font-size:0.85rem;white-space:pre-line;line-height:1.3}
+.bio-btn{background:linear-gradient(135deg,#c8ff00,#00d4ff);color:#000;border:none;padding:10px 16px;border-radius:10px;font-size:0.65rem;font-weight:800;cursor:pointer}
+.section-header{padding:20px 20px 12px;font-size:0.65rem;font-weight:700;color:var(--text-tertiary);letter-spacing:2px;text-transform:uppercase;display:flex;align-items:center;gap:12px;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none}
+.section-header::after{content:'';height:1px;background:var(--border);flex:1}
+.section-chevron{font-size:0.7rem;color:var(--text-tertiary);transition:transform 0.3s ease;margin-left:auto;flex-shrink:0}
+.section-header.collapsed .section-chevron{transform:rotate(-90deg)}
+.section-body{overflow:hidden;transition:max-height 0.4s ease,opacity 0.3s ease;opacity:1;max-height:2000px}
+.section-body.collapsed{max-height:0!important;opacity:0;margin:0;padding-top:0;padding-bottom:0}
+.section-summary{display:none;font-size:0.65rem;color:var(--text-secondary);margin-left:4px;font-weight:600}
+.section-header.collapsed .section-summary{display:inline}
+.recovery-battery{background:var(--panel);border:1px solid var(--border);border-radius:20px;padding:20px;margin:20px;position:relative;overflow:hidden}
+.recovery-battery::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#4facfe,#00f2fe)}
+.battery-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.battery-title{font-size:0.7rem;font-weight:700;color:var(--text-secondary);letter-spacing:1.5px}
+.battery-score{font-size:2.5rem;font-weight:800;background:linear-gradient(135deg,#4facfe,#00f2fe);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.battery-bar{height:12px;background:var(--panel-elevated);border-radius:6px;overflow:hidden;margin-bottom:12px}
+.battery-fill{height:100%;background:linear-gradient(90deg,#4facfe,#00f2fe);border-radius:6px;transition:width 1s;box-shadow:0 0 20px rgba(79,172,254,0.4)}
+.battery-components{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.battery-component{text-align:center;padding:8px;background:var(--panel-elevated);border-radius:8px}
+.bc-value{font-size:0.9rem;font-weight:700}
+.bc-label{font-size:0.5rem;color:var(--text-tertiary);text-transform:uppercase;margin-top:2px}
+.bc-trend{font-size:0.55rem;margin-top:2px}
+.battery-detail-row{display:flex;justify-content:space-between;padding:10px 4px 0;border-top:1px solid var(--border);margin-top:10px}
+.battery-detail{text-align:center;flex:1}
+.bd-label{display:block;font-size:0.45rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.5px}
+.bd-value{display:block;font-size:0.75rem;font-weight:700;margin-top:2px}
+.trend-up{color:var(--success)}
+.trend-down{color:var(--alert)}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:0 20px;margin-bottom:20px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:0 20px;margin-bottom:20px}
+.orb-card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:16px 8px 12px;display:flex;flex-direction:column;align-items:center;transition:transform 0.2s}
+.orb-card:active{transform:scale(0.97)}
+.orb-card.alert{border-color:var(--alert);background:rgba(255,71,87,0.1)}
+.orb-card.warning{border-color:var(--orange);background:rgba(255,149,0,0.1)}
+.orb-card.optimal{border-color:var(--success);background:rgba(52,211,153,0.1)}
+.orb-container{width:52px;height:52px;position:relative;margin-bottom:8px}
+.orb-svg{transform:rotate(-90deg);width:100%;height:100%;position:absolute}
+.orb-bg{fill:none;stroke:var(--panel-elevated);stroke-width:5}
+.orb-fg{fill:none;stroke-width:5;stroke-dasharray:138;stroke-dashoffset:138;transition:stroke-dashoffset 1s;stroke-linecap:round;filter:drop-shadow(0 0 6px currentColor)}
+.orb-val-box{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+.orb-val{font-size:0.75rem;font-weight:800;line-height:1}
+.orb-label{font-size:0.5rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase}
+.score-row{display:flex;gap:12px;justify-content:center;padding:20px}
+.score-orb{flex:0 0 90px;height:90px;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer}
+.score-orb svg{position:absolute;width:100%;height:100%;transform:rotate(-90deg)}
+.score-orb-bg{fill:none;stroke:var(--panel-elevated);stroke-width:6}
+.score-orb-fg{fill:none;stroke-width:6;stroke-linecap:round;stroke-dasharray:251;stroke-dashoffset:251;transition:stroke-dashoffset 1.5s;filter:drop-shadow(0 0 8px currentColor)}
+.score-orb-value{font-size:1.6rem;font-weight:800;z-index:1}
+.score-orb-label{font-size:0.45rem;color:var(--text-tertiary);text-transform:uppercase;z-index:1}
+.score-orb.primary{flex:0 0 110px;height:110px}
+.score-orb.primary .score-orb-value{font-size:2.2rem;background:linear-gradient(135deg,#c8ff00,#00d4ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.score-orb-badge{position:absolute;bottom:-6px;background:var(--panel);border:1px solid var(--border);padding:2px 6px;border-radius:8px;font-size:0.4rem;color:var(--cyan);font-weight:700}
+.status-container{margin:0 20px 20px;padding:16px;background:var(--panel);border:1px solid var(--border);border-radius:14px;border-left:3px solid var(--acid)}
+.status-label{font-size:0.6rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.status-msg{font-size:0.85rem;font-weight:600;line-height:1.4}
+.insight-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;margin:0 20px 16px}
+.insight-card.warning{border-left:3px solid var(--orange)}
+.insight-card.alert{border-left:3px solid var(--alert)}
+.insight-header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.insight-icon{font-size:1.2rem}
+.insight-title{font-size:0.8rem;font-weight:700}
+.insight-body{font-size:0.75rem;color:var(--text-secondary);line-height:1.5}
+.insight-action{margin-top:10px;padding:10px;background:rgba(200,255,0,0.1);border-radius:8px;font-size:0.7rem;color:var(--acid);font-weight:600}
+.heart-container{width:52px;height:52px;position:relative;margin-bottom:8px}
+.heart-svg{width:100%;height:100%}
+.heart-bg{fill:none;stroke:var(--panel-elevated);stroke-width:2}
+.heart-fg{fill:none;stroke-width:2.5;stroke-dasharray:100;stroke-dashoffset:100;transition:stroke-dashoffset 1s;filter:drop-shadow(0 0 4px currentColor)}
+.beating{animation:heartbeat 1.5s infinite}
+@keyframes heartbeat{0%,100%{transform:scale(1)}15%{transform:scale(1.08)}30%{transform:scale(1)}45%{transform:scale(1.08)}}
+.water-container,.rainbow-container{padding:0 20px;margin-bottom:20px}
+.water-header,.rainbow-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.water-title,.rainbow-title{font-size:0.7rem;font-weight:700;color:var(--text-secondary)}
+.water-score{font-size:1rem;font-weight:800;color:var(--cyan)}
+.rainbow-score{font-size:1rem;font-weight:800;color:var(--acid)}
+.water-track{height:12px;background:var(--panel);border-radius:6px;overflow:hidden;border:1px solid var(--border);cursor:pointer}
+.water-fill{height:100%;background:linear-gradient(90deg,#00d4ff,#0088ff);border-radius:6px;transition:width 0.3s}
+.rainbow-track{height:12px;background:var(--panel);border-radius:6px;display:flex;overflow:hidden;border:1px solid var(--border)}
+.rainbow-seg{height:100%;transition:width 0.5s}
+.timeline{padding:0 20px 40px}
+.task{display:flex;gap:12px;margin-bottom:14px}
+.task-time{width:50px;color:var(--text-tertiary);font-size:0.7rem;padding-top:16px;text-align:right;font-weight:600}
+.task-card{flex:1;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;display:flex;justify-content:space-between;align-items:center;transition:all 0.2s}
+.task-card:active{transform:scale(0.98)}
+.task-card.checked{border-color:var(--acid);background:rgba(200,255,0,0.05)}
+.task-card.auto-detected{border-color:var(--cyan);background:rgba(0,212,255,0.05)}
+.task-card.hrv-adjusted{border-color:var(--orange);background:rgba(255,149,0,0.05)}
+.task-card.recovery{border-color:var(--purple);background:rgba(168,85,247,0.05)}
+.task-card.facial{border-color:var(--cyan);background:rgba(0,212,255,0.08)}
+.task-card.workout-rec{border-color:var(--orange);background:rgba(255,149,0,0.06);border-style:dashed}
+.task-card.ai-filled .task-title::after{content:' ✨';font-size:0.65rem}
+.task-card.optional{border-style:dashed;border-color:#444;opacity:0.7}
+.task-info{flex:1}
+.task-title{font-weight:700;font-size:0.85rem;margin-bottom:4px}
+.task-desc{font-size:0.7rem;color:var(--text-secondary)}
+.chevron{font-size:1.3rem;color:var(--text-tertiary);margin-left:12px}
+.check-btn{width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.check-circle{width:28px;height:28px;border:2px solid var(--border);border-radius:50%;background:var(--panel-elevated);display:flex;align-items:center;justify-content:center;font-weight:800;color:transparent;transition:all 0.2s}
+.task-card.checked .check-circle{background:var(--acid);border-color:var(--acid);color:#000;box-shadow:0 0 15px var(--acid)}
+.modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);z-index:500;display:none;overflow-y:auto;backdrop-filter:blur(10px)}
+.modal-overlay.show{display:block}
+.modal-content{width:100%;min-height:100vh;background:var(--bg);padding-bottom:100px}
+.modal-header{padding:20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:rgba(10,10,12,0.95);backdrop-filter:blur(20px);z-index:10}
+.modal-title{font-size:1rem;font-weight:800;color:var(--acid);text-transform:uppercase;letter-spacing:1px}
+.modal-close{background:transparent;border:none;color:var(--text);font-size:2rem;cursor:pointer;padding:8px}
+.modal-body{padding:20px}
+.menu-item{padding:18px;background:var(--panel);border:1px solid var(--border);border-radius:12px;margin-bottom:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.menu-item:active{background:var(--panel-elevated)}
+.menu-name{font-size:0.95rem;font-weight:700;margin-bottom:4px}
+.menu-meta{font-size:0.7rem;color:var(--text-secondary)}
+.menu-arrow{color:var(--text-tertiary);font-size:1.3rem}
+.recipe-hero{margin-bottom:25px;text-align:center}
+.recipe-title{font-size:1.6rem;font-weight:900;line-height:1.2;margin-bottom:8px}
+.recipe-stats{font-size:0.85rem;color:var(--text-secondary);font-weight:700}
+.macro-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:25px}
+.macro-stat{background:var(--panel);border:1px solid var(--border);padding:12px 5px;border-radius:10px;text-align:center}
+.m-val{font-size:1.1rem;font-weight:900;line-height:1}
+.m-lbl{font-size:0.5rem;color:var(--acid);text-transform:uppercase;margin-top:6px;font-weight:900}
+.synergy-box{background:linear-gradient(135deg,rgba(0,212,255,0.08) 0%,rgba(0,0,0,0) 100%);border:1px solid rgba(0,212,255,0.3);padding:20px;border-radius:12px;margin-bottom:25px}
+.syn-title{color:var(--cyan);font-weight:900;font-size:0.75rem;text-transform:uppercase;margin-bottom:10px}
+.syn-text{color:#ccc;font-size:0.95rem;font-style:italic;line-height:1.6}
+.ing-item{color:#ccc;font-size:0.9rem;border-bottom:1px solid var(--border);padding:12px 0;display:flex;align-items:center;cursor:pointer;transition:all 0.2s;-webkit-tap-highlight-color:transparent}
+.ing-item:active{background:rgba(255,255,255,0.03)}
+.ing-item::before{content:'•';color:var(--acid);font-weight:bold;margin-right:12px;font-size:1.3rem}
+.ing-item.removed{opacity:0.35;text-decoration:line-through;color:#666}
+.ing-item.removed::before{content:'✕';color:var(--alert)}
+.ing-hint{text-align:center;font-size:0.6rem;color:var(--text-tertiary);margin-top:6px;margin-bottom:12px}
+.step-item{display:flex;gap:15px;font-size:0.9rem;color:#ddd;line-height:1.6;margin-bottom:15px;background:var(--panel);padding:15px;border-radius:10px;border:1px solid var(--border)}
+.footer{position:fixed;bottom:0;left:0;width:100%;background:rgba(10,10,12,0.95);backdrop-filter:blur(20px);padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;z-index:90}
+.sync-status{font-size:0.65rem;color:var(--text-tertiary)}
+.sync-btn{background:linear-gradient(135deg,#c8ff00,#00d4ff);color:#000;border:none;padding:10px 20px;border-radius:10px;font-weight:700;font-size:0.75rem;cursor:pointer}
+</style>
+</head>
+<body>
+
+<div class="header">
+<div class="user-switch">
+<button id="btn-jermaine" onclick="app.switchUser('jermaine')">JERMAINE</button>
+<button id="btn-sophia" onclick="app.switchUser('sophia')">SOPHIA</button>
+</div>
+<div class="date-nav">
+<button class="nav-btn" onclick="app.changeDate(-1)">◀</button>
+<span id="dateLabel">LOADING...</span>
+<button class="nav-btn" onclick="app.changeDate(1)">▶</button>
+<button class="bio-btn" onclick="app.openBio()">BIO</button>
+<button class="bio-btn" onclick="app.showSynergyDashboard()" style="background:var(--purple);margin-left:6px">💑</button>
+</div>
+</div>
+
+<div class="recovery-battery">
+<div class="battery-header">
+<div class="battery-title">⚡ RECOVERY BATTERY</div>
+<div class="battery-score" id="batteryScore">--</div>
+</div>
+<div class="battery-bar"><div class="battery-fill" id="batteryFill" style="width:0%"></div></div>
+<div class="battery-components">
+<div class="battery-component" id="hrvCard"><div class="bc-value" id="bcHrv" style="color:var(--purple)">--</div><div class="bc-label">HRV (ms)</div><div class="bc-trend" id="bcHrvTrend"></div></div>
+<div class="battery-component"><div class="bc-value" id="bcSleep">--</div><div class="bc-label" id="bcBedLabel">SLEEP</div><div class="bc-trend" id="bcSleepTrend"></div></div>
+<div class="battery-component"><div class="bc-value" id="bcReadiness">--</div><div class="bc-label">READY</div><div class="bc-trend" id="bcReadinessTrend"></div></div>
+<div class="battery-component"><div class="bc-value" id="bcStrain">--</div><div class="bc-label">STRAIN</div><div class="bc-trend" id="bcStrainTrend"></div></div>
+</div>
+<div class="battery-detail-row">
+<div class="battery-detail"><span class="bd-label">DEEP</span><span class="bd-value" id="deepVal">--</span></div>
+<div class="battery-detail"><span class="bd-label">REM</span><span class="bd-value" id="remVal">--</span></div>
+<div class="battery-detail"><span class="bd-label">TEMP</span><span class="bd-value" id="tempVal">+0.0°</span></div>
+<div class="battery-detail"><span class="bd-label">RESP</span><span class="bd-value" id="respVal">--</span></div>
+<div class="battery-detail"><span class="bd-label">DEBT</span><span class="bd-value" id="sleepDebtValue">0h</span></div>
+</div>
+</div>
+
+<div class="score-row">
+<div class="score-orb" onclick="app.showWeeklySummary()">
+<svg viewBox="0 0 100 100"><circle class="score-orb-bg" cx="50" cy="50" r="40"/><circle class="score-orb-fg" id="dayScoreOrb" cx="50" cy="50" r="40" style="stroke:var(--cyan)"/></svg>
+<div class="score-orb-value" id="dayGrade">--</div>
+<div class="score-orb-label">TODAY</div>
+</div>
+<div class="score-orb primary" onclick="app.showWeeklySummary()">
+<svg viewBox="0 0 100 100"><circle class="score-orb-bg" cx="50" cy="50" r="40"/><circle class="score-orb-fg" id="longevityOrb" cx="50" cy="50" r="40" style="stroke:var(--acid)"/></svg>
+<div class="score-orb-value" id="longevityScore">--</div>
+<div class="score-orb-label">LONGEVITY</div>
+<div class="score-orb-badge">7-DAY AVG</div>
+</div>
+<div class="score-orb">
+<svg viewBox="0 0 100 100"><circle class="score-orb-bg" cx="50" cy="50" r="40"/><circle class="score-orb-fg" id="streakOrb" cx="50" cy="50" r="40" style="stroke:var(--acid)"/></svg>
+<div class="score-orb-value" id="streakCount" style="color:var(--acid)">0</div>
+<div class="score-orb-label">STREAK</div>
+</div>
+</div>
+
+<div class="status-container">
+<div class="status-label">🧠 AI PROTOCOL ADVISOR</div>
+<div class="status-msg" id="statusMsg">ANALYZING...</div>
+</div>
+
+<div id="insightContainer"></div>
+
+<div id="partnerStatus" style="background:var(--panel);border:1px solid var(--purple)30;border-radius:12px;padding:12px 16px;margin:0 20px 15px;cursor:pointer" onclick="app.showPartnerLog()">
+<div style="display:flex;justify-content:space-between;align-items:center">
+<div style="font-size:0.65rem;font-weight:800;color:var(--purple)">💑 <span id="partnerLabel">PARTNER'S FOOD LOG</span></div>
+<div style="font-size:0.5rem;color:var(--text-tertiary)">tap to view →</div>
+</div>
+<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap" id="partnerQuickStats"></div>
+</div>
+
+<div class="section-header" onclick="app.toggleSection(this)">FUEL (NUTRITION)<span class="section-summary" id="fuelSummary"></span><span class="section-chevron">▼</span></div>
+<div class="section-body" id="fuelBody">
+<div class="grid-4">
+<div class="orb-card"><div class="orb-container"><svg class="orb-svg" viewBox="0 0 50 50"><circle class="orb-bg" cx="25" cy="25" r="22"/><circle class="orb-fg" id="proteinOrb" cx="25" cy="25" r="22" style="stroke:#fff"/></svg><div class="orb-val-box"><div class="orb-val" id="proteinVal">0</div></div></div><div class="orb-label">PROTEIN</div></div>
+<div class="orb-card"><div class="orb-container"><svg class="orb-svg" viewBox="0 0 50 50"><circle class="orb-bg" cx="25" cy="25" r="22"/><circle class="orb-fg" id="omega3Orb" cx="25" cy="25" r="22" style="stroke:var(--cyan)"/></svg><div class="orb-val-box"><div class="orb-val" id="omega3Val">0</div></div></div><div class="orb-label" style="color:var(--cyan)">OMEGA-3</div></div>
+<div class="orb-card"><div class="orb-container"><svg class="orb-svg" viewBox="0 0 50 50"><circle class="orb-bg" cx="25" cy="25" r="22"/><circle class="orb-fg" id="fiberOrb" cx="25" cy="25" r="22" style="stroke:var(--success)"/></svg><div class="orb-val-box"><div class="orb-val" id="fiberVal">0</div></div></div><div class="orb-label" style="color:var(--success)">FIBER</div></div>
+<div class="orb-card"><div class="orb-container"><svg class="orb-svg" viewBox="0 0 50 50"><circle class="orb-bg" cx="25" cy="25" r="22"/><circle class="orb-fg" id="polyphenolOrb" cx="25" cy="25" r="22" style="stroke:var(--purple)"/></svg><div class="orb-val-box"><div class="orb-val" id="polyphenolVal">0</div></div></div><div class="orb-label" style="color:var(--purple)">POLYPHENOL</div></div>
+</div>
+</div>
+
+<div class="section-header" onclick="app.toggleSection(this)">METABOLISM (BALANCE)<span class="section-summary" id="metabSummary"></span><span class="section-chevron">▼</span></div>
+<div class="section-body" id="metabBody">
+<div class="grid-4">
+<div class="orb-card"><div class="orb-container"><svg class="orb-svg" viewBox="0 0 50 50"><circle class="orb-bg" cx="25" cy="25" r="22"/><circle class="orb-fg" id="balanceOrb" cx="25" cy="25" r="22" style="stroke:var(--success)"/></svg><div class="orb-val-box"><div class="orb-val" id="balanceVal">--</div></div></div><div class="orb-label" style="color:var(--success)" id="balanceLabel">BALANCE</div></div>
+<div class="orb-card"><div style="text-align:center"><div style="font-size:0.5rem;color:var(--text-tertiary);margin-bottom:4px">EATEN</div><div style="font-size:1.2rem;font-weight:900;color:var(--success)" id="eatenVal">0</div></div><div class="orb-label" style="color:var(--success)">CALORIES</div></div>
+<div class="orb-card"><div style="text-align:center"><div style="font-size:0.5rem;color:var(--text-tertiary);margin-bottom:4px">BURNED</div><div style="font-size:1.2rem;font-weight:900;color:var(--alert)" id="burnedVal">0</div></div><div class="orb-label" style="color:var(--alert)">TOTAL</div></div>
+<div class="orb-card"><div style="text-align:center"><div style="font-size:0.5rem;color:var(--text-tertiary);margin-bottom:4px">BMR</div><div style="font-size:1.2rem;font-weight:900;color:var(--orange)" id="bmrVal">2000</div></div><div class="orb-label" style="color:var(--orange)">BASE</div></div>
+</div>
+</div>
+
+<div class="section-header" onclick="app.toggleSection(this)">VASCULAR (AGING)<span class="section-summary" id="vascSummary"></span><span class="section-chevron">▼</span></div>
+<div class="section-body" id="vascBody">
+<div class="grid-3">
+<div class="orb-card"><div style="text-align:center"><div style="font-size:0.5rem;color:var(--text-tertiary);margin-bottom:4px">VASCULAR</div><div style="font-size:1.4rem;font-weight:900;color:var(--alert)" id="vascularAge">--</div></div><div class="orb-label" style="color:var(--alert)">AGE</div></div>
+<div class="orb-card"><div style="text-align:center"><div style="font-size:0.5rem;color:var(--text-tertiary);margin-bottom:4px">DIFFERENCE</div><div style="font-size:1.4rem;font-weight:900;color:var(--success)" id="ageDiff">--</div></div><div class="orb-label" style="color:var(--success)" id="ageDiffLabel">YOUNGER</div></div>
+<div class="orb-card"><div style="text-align:center"><div style="font-size:0.5rem;color:var(--text-tertiary);margin-bottom:4px">TREND</div><div style="font-size:1.4rem;font-weight:900;color:var(--orange)" id="vascularTrend">--</div></div><div class="orb-label" style="color:var(--orange)">7-DAY</div></div>
+</div>
+</div>
+
+<div class="section-header" onclick="app.toggleSection(this)">ENGINE (CARDIO)<span class="section-summary" id="cardioSummary"></span><span class="section-chevron">▼</span></div>
+<div class="section-body" id="cardioBody">
+<div class="grid-4">
+<div class="orb-card"><div class="heart-container"><svg class="heart-svg beating" viewBox="0 0 24 24"><path class="heart-bg" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/><path class="heart-fg" style="stroke:var(--alert);stroke-dasharray:none;stroke-dashoffset:0" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg><div class="orb-val-box"><div class="orb-val" id="rhrVal" style="color:var(--alert)">--</div></div></div><div class="orb-label" style="color:var(--alert)">RHR</div></div>
+<div class="orb-card"><div class="heart-container"><svg class="heart-svg" viewBox="0 0 24 24"><path class="heart-bg" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/><path class="heart-fg" id="z2Heart" pathLength="100" style="stroke:var(--cyan)" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg><div class="orb-val-box"><div class="orb-val" id="z2Val" style="color:var(--cyan)">0</div></div></div><div class="orb-label" style="color:var(--cyan)">ZONE 2</div></div>
+<div class="orb-card" id="z5Card"><div class="heart-container"><svg class="heart-svg" viewBox="0 0 24 24"><path class="heart-bg" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/><path class="heart-fg" id="z5Heart" pathLength="100" style="stroke:var(--alert)" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg><div class="orb-val-box"><div class="orb-val" id="z5Val" style="color:var(--alert)">0</div></div></div><div class="orb-label" style="color:var(--alert)" id="z5Label">ZONE 5</div></div>
+<div class="orb-card"><div class="heart-container"><svg class="heart-svg" viewBox="0 0 24 24"><path class="heart-bg" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/><path class="heart-fg" id="calHeart" pathLength="100" style="stroke:var(--orange)" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg><div class="orb-val-box"><div class="orb-val" id="calVal" style="color:var(--orange)">0</div></div></div><div class="orb-label" style="color:var(--orange)">BURN</div></div>
+</div>
+</div>
+
+<div class="section-header" onclick="app.toggleSection(this)">HYDRATION 💧<span class="section-summary" id="hydroSummary"></span><span class="section-chevron">▼</span></div>
+<div class="section-body" id="hydroBody">
+<div class="water-container">
+<div class="water-header"><div class="water-title">WATER INTAKE</div><div class="water-score" id="waterScore">0 / 140 oz</div></div>
+<div class="water-track" onclick="app.addWater()"><div class="water-fill" id="waterFill"></div></div>
+<div style="text-align:center;margin-top:8px;font-size:0.65rem;color:var(--text-tertiary)">Tap bar to add 8oz glass</div>
+</div>
+</div>
+
+<div class="section-header" onclick="app.toggleSection(this)">PHYTONUTRIENT 🌈<span class="section-summary" id="rainbowSummaryText"></span><span class="section-chevron">▼</span></div>
+<div class="section-body" id="rainbowBody">
+<div class="rainbow-container">
+<div class="rainbow-header"><div class="rainbow-title">RAINBOW SCORE</div><div class="rainbow-score" id="rainbowScore">0%</div></div>
+<div class="rainbow-track" id="rainbowTrack"></div>
+</div>
+</div>
+
+<div class="section-header" onclick="app.toggleSection(this)">SYNERGY PROTOCOL<span class="section-chevron">▼</span></div>
+<div class="section-body" id="protocolBody">
+<div class="timeline" id="timeline"></div>
+</div>
+
+<div class="modal-overlay" id="mainModal">
+<div class="modal-content">
+<div class="modal-header"><div class="modal-title" id="modalTitle">MENU</div><button class="modal-close" onclick="app.closeModal()">×</button></div>
+<div class="modal-body" id="modalBody"></div>
+</div>
+</div>
+
+<div class="footer">
+<span class="sync-status" id="syncStatus" onclick="document.getElementById('debugPanel').style.display=document.getElementById('debugPanel').style.display==='none'?'block':'none'">INIT</span>
+<button class="sync-btn" onclick="app.sync()">🔄 SYNC</button>
+</div>
+<div id="debugPanel" style="display:none;background:#111;border:1px solid var(--orange);border-radius:8px;margin:10px 20px;padding:10px;max-height:300px;overflow-y:auto;font-family:monospace;font-size:0.55rem;color:var(--cyan);line-height:1.6;word-break:break-all"></div>
+</div>
+
+<script>
+// ============================================================================
+// PLACEHOLDER: MEALS DATABASE WILL BE INJECTED HERE
+// ============================================================================
+const MEALS={
+breakfast:[
+{title:"Starbucks Oatmeal (Rolled & Steel-Cut)",time:"grab & go",servings:1,macros:{p:8,o:400,f:6,cal:320,poly:100},ingredients:["Starbucks Rolled & Steel-Cut Oatmeal","Nut Medley Topping (almonds, pecans, walnuts)","Dried Fruit Mix Topping","Skip Brown Sugar Packet"],steps:["Order Rolled & Steel-Cut Oatmeal","Add nut medley topping (omega-3 from walnuts)","Add dried fruit topping (polyphenols)","Skip the brown sugar packet — unnecessary sugar","Pair with a protein side item to hit macro targets"],why:"Grab-and-go option with 6g fiber from whole grain oats — soluble beta-glucan fiber specifically lowers LDL and ApoB. Walnut medley adds omega-3 ALA. Low protein at 8g — use side items to add egg whites or protein shake to balance macros.",colors:['brown','orange']},
+{title:"Greek Yogurt & Berries",time:"5min",servings:1,macros:{p:20,o:4100,f:13,cal:310,poly:250},ingredients:["1 cup Greek Yogurt","1/2 cup Mixed Berries","1 tbsp Honey","1 tbsp Walnuts","1 tbsp Ground Flaxseed","1 tbsp Chia Seeds"],steps:["Scoop yogurt into bowl","Top with berries and walnuts","Drizzle with honey"],why:"Probiotics + Antioxidants. Quick high protein start. Flax+Chia add Ω3+fiber for Lp(a).",colors:['white','purple','brown'],suggestedBeverage:"Green Tea (Sencha)"},
+{title:"Omega Breakfast",time:"15min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:58,o:3500,f:12,cal:680,poly:450},ingredients:["8oz Wild Salmon","2 Eggs","2 cups Kale","1 cup Blueberries","1 tsp EVOO"],steps:["Heat EVOO in pan","Season salmon with salt/pepper","Sear salmon 4min per side","Scramble eggs separately","Massage kale for 2min","Plate kale as base","Top with salmon, eggs, and berries"],why:"Salmon + Eggs = Choline/Omega-3 synergy for brain health.",colors:['orange','purple','green'],suggestedBeverage:"Lemon Ginger Water"},
+{title:"Sophia's Sea Moss Oatmeal",time:"10min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:48,o:8200,f:18,cal:580,poly:300},ingredients:["1 cup Oats","1 tbsp Sea Moss","3 tbsp Flaxseed","Pea Protein","Berries"],steps:["Cook oats in water or oat milk","Stir in Sea Moss gel and protein","Top with ground flax and berries"],why:"Sea Moss minerals support thyroid. Flax lowers Lp(a).",colors:['purple','white']},
+{title:"PB Sea Moss Power Shake",time:"5min",servings:1,portions:{jermaine:1,sophia:0.5},servingSize:"16oz",macros:{p:55,o:7200,f:18,cal:780,poly:150},ingredients:["Pea Protein","Sea Moss","Flaxseed","PB","1 Banana","Spinach","Oat Milk"],steps:["Add all ingredients to blender","Blend with Oat Milk until smooth"],why:"Sea Moss supports mucus membranes. Pea protein = 54g complete. Banana = potassium + natural sweetness + prebiotic fiber.",colors:['green','white','yellow']},
+{title:"Smoked Trout Hash",time:"18min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:54,o:3200,f:16,cal:640,poly:100},ingredients:["6oz Trout","2 Eggs","1 Sweet Potato","Brussels Sprouts","Garlic"],steps:["Dice sweet potato and saute","Add sprouts and garlic","Crack eggs into wells","Cover until eggs set","Top with flaked trout"],why:"Trout is lower mercury than tuna. Sprouts = Sulforaphane.",colors:['orange','green']},
+{title:"Savory Turmeric Oats",time:"12min",servings:1,macros:{p:20,o:1200,f:12,cal:450,poly:250},ingredients:["1 cup Oats","Turmeric","Black Pepper","Spinach","Poached Egg"],steps:["Cook oats with turmeric/pepper","Stir in spinach","Top with egg"],why:"Turmeric + Pepper = 2000% absorption boost.",colors:['yellow','green']},
+{title:"Mackerel Scramble",time:"12min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:56,o:4800,f:10,cal:660,poly:250},ingredients:["mackerel","eggs","arugula","turmeric"],steps:["Whisk eggs with turmeric","Scramble with mackerel","Serve over wilted arugula"],why:"Mackerel is highest Omega-3 fish. Turmeric reduces inflammation.",colors:['yellow','green']},
+{title:"Smoked Salmon Avocado Toast",time:"12min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:54,o:3400,f:14,cal:680,poly:200},ingredients:["smoked salmon","sprouted grain bread","avocado","eggs","1 tbsp EVOO drizzle","Fresh Dill + Capers"],swaps:{1:{label:"Bread",options:["sprouted grain bread","sourdough","Dave's Killer Bread","Ezekiel English Muffin","low-carb tortilla (wrap style)","sweet potato toast (1/2 inch slices, toasted)"]}},steps:["Toast bread","Mash avocado","Top with salmon and poached egg"],why:"Sprouted grains easier to digest. Salmon + Avocado = healthy fats.",colors:['orange','green']},
+{title:"Flax Protein Parfait",time:"5min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:48,o:8600,f:22,cal:620,poly:300},ingredients:["pea protein","flaxseed","greek yogurt","berries","1/2 cup Mixed Berries","1 tsp Turmeric"],steps:["Mix yogurt and protein","Layer with flax and berries"],why:"Flax is highest plant source of ALA. Yogurt = probiotics.",colors:['white','purple','purple']},
+{title:"Tofu Scramble Supreme",time:"12min",servings:1,portions:{jermaine:1,sophia:0.5},macros:{p:50,o:2800,f:16,cal:720,poly:310},ingredients:["tofu","spinach","mushrooms","turmeric","1 tbsp EVOO","Fresh Turmeric + Black Pepper","2 slices Sprouted Grain Toast","1/2 cup Fresh Raspberries"],steps:["Crumble tofu","Saut\u00e9 with veggies and spices","Toast sprouted bread","Plate scramble with toast and raspberries on the side"],why:"Soy protein lowers cholesterol. Turmeric/Pepper combo = 2000% curcumin absorption. Sprouted grain toast = more bioavailable nutrients + 6g fiber per 2 slices. Raspberries = 4g fiber + ellagic acid (potent anti-inflammatory).",colors:['yellow','green','white','red']},
+{title:"Protein Pancakes",time:"15min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:52,o:6400,f:14,cal:660,poly:250},ingredients:["pea protein","flaxseed","oats","berries","1/2 cup Blueberries","Drizzle Raw Honey"],steps:["Blend batter ingredients","Cook on griddle","Top with berries"],why:"High protein start to day. Oats = soluble fiber.",colors:['purple','white','purple']},
+{title:"Eggs & Oatmeal Combo",time:"12min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:52,o:7800,f:16,cal:670,poly:250},ingredients:["\u00bd cup steel-cut oats","2 tbsp ground flaxseed","1 tbsp Sea Moss Gel","3 eggs","1 cup spinach","\u00bd avocado","Berries","1/2 cup Blueberries","1 tsp Cinnamon"],steps:["Cook oats with Sea Moss","Scramble eggs with spinach","Plate oatmeal with flax, berries","Serve eggs on side with avocado"],why:"Best of both worlds. Flax omega-3 + egg choline. Sea Moss minerals.",colors:['green','white','purple']},
+{title:"Power Berry Smoothie",time:"5min",servings:1,portions:{jermaine:1,sophia:0.75},servingSize:"16oz",macros:{p:58,o:8400,f:18,cal:680,poly:400},ingredients:["1 scoop Pea Protein","2 tbsp Ground Flaxseed","2 tbsp Hemp Seeds","1 cup Greek Yogurt","2 tbsp Peanut Butter","1 cup Mixed Berries","1 cup Oat Milk","1 tsp Vanilla Extract"],steps:["Add all ingredients to blender","Blend on high for 60 seconds","Pour into glass","Optional: top with extra berries"],why:"Triple protein stack (pea + yogurt + peanut). Flax + Hemp = massive omega-3 hit. Berries = antioxidants.",colors:['purple','brown','white']},
+{title:"Sea Moss Berry Smoothie",time:"5min",servings:1,portions:{jermaine:1,sophia:0.75},servingSize:"16oz",macros:{p:36,o:4200,f:14,cal:520,poly:350},ingredients:["1 cup Mixed Berries","1 tbsp Sea Moss Gel","2 tbsp Ground Flaxseed","1 scoop Pea Protein","1 tbsp Peanut Butter Powder","1 cup Oat Milk","1/2 Banana","Handful Spinach"],steps:["Add all ingredients to blender","Blend until smooth","Pour into glass"],why:"Sea Moss = 92 minerals for thyroid. Berries = polyphenols. Flax = omega-3 ALA. Pea + peanut protein stack. Oat milk adds beta-glucan for ApoB reduction.",colors:['purple','green']},
+{title:"Pressed Juice Power Bowl",time:"10min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:45,o:2800,f:18,cal:620,poly:300},ingredients:["1 Pressed Juice Acai Base","1 scoop Pea Protein","2 tbsp Ground Flaxseed","2 tbsp Hemp Hearts","1/2 cup Granola","1/2 cup Mixed Berries","1/2 Banana","1 tbsp Almond Butter"],steps:["Blend acai base with protein and flaxseed","Pour into bowl","Top with granola, berries, banana","Drizzle with almond butter","Sprinkle hemp hearts"],why:"Acai = antioxidant powerhouse. Protein keeps you full. Flax + Hemp = omega-3 stack. Perfect post-workout recovery.",colors:['purple','brown']},
+{title:"Simple Avocado Toast",time:"5min",servings:1,macros:{p:22,o:1200,f:14,cal:420,poly:150},ingredients:["1 slice Sprouted Grain Bread","1/2 Avocado","Sea Salt","Black Pepper","Red Pepper Flakes","2 Eggs","1 tbsp Hemp Hearts","1 tbsp EVOO","Everything Bagel Seasoning"],swaps:{0:{label:"Bread",options:["1 slice Sprouted Grain Bread","1 slice Sourdough","1 slice Dave's Killer Bread","1 Ezekiel English Muffin","1 Low-Carb Tortilla (wrap style)","Sweet Potato Toast (1/2 inch slices, toasted)"]}},steps:["Toast bread until golden","Mash avocado with fork","Spread on toast","Season with salt, pepper, red pepper flakes"],why:"Monounsaturated fats + potassium from avocado. Sprouted bread easier to digest. Quick anti-inflammatory breakfast.",colors:['green','brown','yellow'],suggestedBeverage:"Golden Milk (Hot)"},
+{title:"Loaded Salmon Avocado Toast",time:"6min",servings:1,macros:{p:32,o:3800,f:14,cal:480,poly:100},ingredients:["1 slice Sprouted Grain Bread","1/2 Avocado","3oz Smoked Salmon","1 tbsp Hemp Hearts","1 tbsp Ground Flaxseed","Lemon","Everything Bagel Seasoning"],swaps:{0:{label:"Bread",options:["1 slice Sprouted Grain Bread","1 slice Sourdough","1 slice Dave's Killer Bread","1 Ezekiel English Muffin","1 Low-Carb Tortilla (wrap style)","Sweet Potato Toast (1/2 inch slices, toasted)"]}},steps:["Toast bread until golden","Mash avocado, spread on toast","Layer smoked salmon on top","Sprinkle hemp hearts and flaxseed","Squeeze lemon, add seasoning"],why:"Triple omega-3 stack: salmon DHA/EPA + hemp ALA + flax ALA. Avocado monounsaturated fats boost absorption. Complete protein from salmon.",colors:['pink','green','brown'],suggestedBeverage:"Golden Milk (Hot)"},
+{title:"Egg White Zucchini Scramble",time:"10min",servings:1,macros:{p:24,o:1800,f:10,cal:290,poly:200},ingredients:["6 Egg Whites","1 cup Diced Zucchini","1/2 cup Diced Bell Peppers","1 tsp Olive Oil","Garlic Powder","Salt","Pepper","1 tbsp Ground Flaxseed","1 tbsp EVOO","Fresh Herbs"],steps:["Heat olive oil in pan","Saut\u00e9 diced zucchini and bell peppers until tender","Whisk egg whites with seasonings","Pour egg whites over veggies","Scramble until cooked through"],why:"Pure lean protein from egg whites. Zucchini + bell peppers add fiber + vitamin C. Low calorie, high volume breakfast.",colors:['white','green','red']},
+{title:"Spinach Tofu Scramble",time:"12min",servings:1,macros:{p:22,o:800,f:9,cal:300,poly:140},ingredients:["8oz Firm Tofu","2 cups Spinach","1/2 cup Diced Bell Peppers","1/2 Onion","Turmeric","Nutritional Yeast","Garlic","Olive Oil"],steps:["Crumble tofu into chunks","Saut\u00e9 onion, garlic, and bell peppers","Add crumbled tofu with turmeric","Fold in fresh spinach","Season with nutritional yeast"],why:"Complete plant protein from tofu. Turmeric = anti-inflammatory. Bell peppers = vitamin C. Nutritional yeast = B vitamins. Spinach = iron + folate.",colors:['yellow','green','red']},
+{title:"Chicken & Veggie Breakfast Bowl",time:"15min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:54,o:600,f:16,cal:520,poly:110},ingredients:["6oz Grilled Chicken Breast","1/2 cup Black Beans","1 cup Broccoli","1 cup Bell Peppers","2 Eggs","Sweet Potato","Avocado"],steps:["Dice and roast sweet potato","Steam broccoli and peppers","Warm black beans","Slice pre-cooked chicken","Scramble eggs","Combine all in bowl","Top with sliced avocado"],why:"Savory breakfast with complete protein. Black beans add 8g fiber + resistant starch. Sweet potato = complex carbs for sustained energy. Veggies = fiber + phytonutrients.",colors:['brown','green','orange','yellow','black']},
+{title:"The ApoB Destroyer",time:"10min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:38,o:5200,f:24,cal:520,poly:180},ingredients:["1/2 cup Steel Cut Oats","1 tbsp Psyllium Husk","2 tbsp Ground Flaxseed","1 scoop Pea Protein","1 tbsp Chia Seeds","1/2 cup Blueberries","1 tbsp Almond Butter","Cinnamon"],steps:["Cook steel cut oats","Stir in psyllium husk while hot (thickens fast)","Mix in flax and chia seeds","Stir in pea protein","Top with blueberries and almond butter","Dust with cinnamon"],why:"Triple soluble fiber stack: Psyllium (4g soluble fiber binds bile acids forcing liver to pull LDL from blood), oat beta-glucan (3g = clinically proven -5-10% LDL), flax lignans. This single meal delivers ~12g soluble fiber — the #1 dietary tool for ApoB reduction.",colors:['brown','purple','white']},
+{title:"Egg Whites & Kodiak Pancakes w/ Berries",time:"15min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:36,o:100,f:7,cal:400,poly:200},ingredients:["6 Egg Whites","3 Kodiak Protein Pancakes (1/2 cup mix)","1 cup Mixed Berries (blueberries, strawberries, raspberries)","1 tbsp Maple Syrup","Cinnamon"],steps:["Scramble egg whites with cinnamon","Mix 1/2 cup Kodiak mix with water, cook 3 pancakes","Top pancakes with mixed berries and light maple syrup","Serve egg whites on the side"],why:"36g protein from egg whites + Kodiak's protein-packed batter. 7g fiber from berries and whole grain. Anthocyanins in berries reduce oxidized LDL and lower CRP. Use side items to add spinach or flax for extra omega-3.",colors:['white','brown','purple','red']},
+{title:"Huevos Rancheros",time:"15min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:42,o:2400,f:18,cal:520,poly:200},ingredients:["1 cup Egg Whites","1 cup Black Beans","1 cup Zucchini (diced)","1 cup Yellow Squash (diced)","1/2 block Firm Tofu (crumbled)","2 cups Spinach","2 tbsp Ground Flaxseed","2 tbsp Hemp Hearts","1/2 cup Red Salsa","1 tsp Turmeric","1/2 tsp Black Pepper","1 tbsp EVOO"],steps:["Heat EVOO in large skillet","Sauté zucchini and squash until tender","Add crumbled tofu and spinach, cook until wilted","Add turmeric and black pepper, stir through","Push veggies aside, scramble egg whites","Warm black beans with salsa in separate pan","Plate beans and salsa, top with egg white and veggie scramble","Sprinkle flaxseed and hemp hearts on top"],why:"Loaded anti-inflammatory breakfast. Turmeric + black pepper = 2000% curcumin absorption. Black beans = 15g soluble fiber binding bile acids for ApoB. Flax lignans + hemp hearts add omega-3 ALA + complete plant protein. Tofu isoflavones lower LDL. Zucchini and squash add bulk with minimal calories.",colors:['yellow','green','black','red']}
+],
+lunch:[
+{title:"Protein Pasta w/ Ground Turkey & Hot Link",time:"25min",servings:1,portions:{jermaine:1,sophia:0.5},macros:{p:59,o:200,f:14,cal:700,poly:180},ingredients:["2 oz Protein Pasta (Banza or Barilla Protein+)","5 oz Ground Turkey (93% lean)","1 Everlasting Hot Link (sliced)","1/2 cup Trader Joe's Marinara Sauce","1/2 Yellow Bell Pepper (diced)","1/2 Red Bell Pepper (diced)","1 medium Zucchini (sliced)","1/2 Onion (diced)","3 cloves Minced Garlic","Olive Oil","Red Pepper Flakes"],steps:["Cook protein pasta per package directions, reserve 1/4 cup pasta water","Brown ground turkey with garlic and onion until cooked through","Add sliced hot link, cook 2-3 min until browned","Add bell peppers and zucchini, sauté 3-4 min until tender","Pour in TJ's marinara sauce, simmer 3 min","Toss in pasta with splash of pasta water, combine","Top with red pepper flakes"],why:"59g protein from triple sources — turkey, hot link, and protein pasta. 14g fiber from protein pasta, zucchini, and peppers. Lycopene in marinara is a powerful antioxidant that reduces oxidized LDL. Zucchini adds potassium for blood pressure support.",colors:['red','yellow','green','brown','white']},
+{title:"Yellow Curry Shrimp w/ Quinoa Brown Rice & Flax",time:"25min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:48,o:2200,f:15,cal:615,poly:170},ingredients:["6 oz Shrimp (peeled, deveined)","2 tbsp Yellow Curry Paste","1/4 cup Light Coconut Milk","3 cloves Minced Garlic","1/2 Red Onion (diced)","1/2 Yellow Bell Pepper (sliced)","1/2 Green Bell Pepper (sliced)","1/2 Red Bell Pepper (sliced)","6 Asparagus Spears (cut 2-inch pieces)","1/2 cup Cooked Quinoa","1/2 cup Cooked Brown Rice","1 tbsp Ground Flaxseed","Lime Wedge"],steps:["Sauté garlic and red onion in light oil until fragrant","Add curry paste and coconut milk, stir to combine","Add bell peppers and asparagus, cook 3-4 min until crisp-tender","Add shrimp, cook 3-4 min until pink","Mix quinoa and brown rice together, top with ground flaxseed","Serve curry over the grain base, squeeze lime"],why:"48g protein from shrimp. 2,200mg omega-3 from shrimp + flaxseed ALA. 15g fiber from quinoa, rice, flax, and vegetables. Triple bell pepper = vitamin C trifecta boosting polyphenol absorption. Asparagus adds folate + prebiotic fiber. Curcumin in curry is anti-inflammatory — directly targets ApoB oxidation and CRP.",colors:['yellow','green','red','orange','brown','white']},
+{title:"Double Chicken Chipotle Bowl",time:"15min",servings:1,portions:{jermaine:1,sophia:0.5},macros:{p:68,o:800,f:12,cal:720,poly:200},ingredients:["8oz Grilled Chicken","Brown Rice","Black Beans","Pico de Gallo","Shredded Lettuce","Chipotle Sauce","Lime"],steps:["Grill seasoned chicken breast","Warm brown rice and black beans","Build bowl with rice base","Add beans, grilled chicken","Top with pico, lettuce, sauce","Squeeze lime over top"],why:"Maximum protein + fiber combo. Black beans = resistant starch for gut health. Chipotle peppers = capsaicin metabolism boost.",colors:['brown','black','green','red']},
+{title:"Classic Bison Burger",time:"20min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:48,o:2000,f:12,cal:620,poly:180},ingredients:["6oz Ground Bison (with garlic + diced jalapeño mixed in patty)","1 Sprouted Grain Bun","1 Fried Egg","1/2 Avocado (sliced)","1/2 cup Sautéed Mushrooms","1/4 cup Sautéed Onions","1 cup Mixed Greens","1 tbsp Ground Flaxseed (in patty)","1 tbsp EVOO"],swaps:{1:{label:"Bun",options:["1 Sprouted Grain Bun","1 Sourdough Bun","Lettuce Wrap (no bun)"]}},steps:["Mix garlic and diced jalapeño into ground bison with flaxseed — don't overwork","Form patty, season with salt and pepper","Grill or pan sear 3-4 min per side (medium rare)","Sauté mushrooms and onions in EVOO until caramelized","Fry egg sunny side up","Toast bun lightly","Stack: bun, mixed greens, patty, mushrooms, onions, avocado, fried egg"],why:"Bison = lower TMAO and inflammation than beef with higher iron bioavailability. Jalapeño capsaicin boosts metabolism 5% and reduces appetite. Fried egg adds choline for brain health. Avocado monounsaturated fats improve LDL particle size. Mushrooms deliver beta-glucan for immune modulation — relevant for ANA.",colors:['brown','green','red','yellow','white']},
+{title:"Ahi Poke Bowl",time:"15min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:53,o:1600,f:16,cal:620,poly:150},ingredients:["6oz Ahi Tuna","Brown Rice","1 cup Edamame","Cucumber","Mango","Seaweed","Sesame Oil"],steps:["Cube raw tuna","Toss in sesame oil and soy","Cook edamame for 3 mins","Plate over brown rice","Add edamame","Top with tuna, sliced veg and mango"],why:"Raw fish preserves delicate Omega-3s. Seaweed = Iodine. Edamame adds 8g fiber + plant protein + isoflavones.",colors:['red','green','yellow']},
+{title:"Turkey Club Wrap",time:"10min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:38,o:2000,f:10,cal:590,poly:150},ingredients:["1 large tortilla","4oz turkey breast","2 slices turkey bacon","Lettuce","Tomato","Mayo (light)","1 tbsp Ground Flaxseed","Spinach + Tomato","EVOO drizzle"],swaps:{0:{label:"Wrap/Bread",options:["1 large tortilla","1 large whole wheat tortilla","1 low-carb tortilla","Lettuce Wrap (no bread)","2 slices Sprouted Grain Bread","2 slices Sourdough"]}},steps:["Cook bacon until crisp","Spread mayo on wrap","Layer turkey, bacon, veg","Roll tightly and slice"],why:"High protein lunch standard.",colors:['white','green','red','red']},
+{title:"Bean & Cheese Burrito",time:"10min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:22,o:1800,f:18,cal:620,poly:150},ingredients:["1 large whole wheat tortilla","1/2 cup refried beans (vegetarian)","1/4 cup cheddar","Salsa","Spinach","Greek yogurt","1 tbsp Ground Flaxseed","Fresh Cilantro + Lime","Pico de Gallo"],swaps:{0:{label:"Tortilla",options:["1 large whole wheat tortilla","1 large flour tortilla","1 low-carb tortilla","Lettuce Wrap (no tortilla)"]}},steps:["Spread beans on tortilla","Add cheese and salsa","Add spinach","Roll and heat in pan","Dip in yogurt"],why:"Beans = fiber/protein combo. Whole wheat = sustained energy.",colors:['brown','green','white','red']},
+{title:"Zoodles & Shrimp",time:"15min",servings:1,macros:{p:35,o:1600,f:8,cal:450,poly:200},ingredients:["Zucchini","Shrimp","Garlic","Lemon","Olive Oil","1 tbsp EVOO","Fresh Basil + Parsley","1 tbsp Hemp Hearts"],steps:["Spiralize zucchini","Saute shrimp with garlic","Toss zoodles in pan for 1 min"],why:"Low carb, high nutrient density.",colors:['green','pink']},
+{title:"Cottage Cheese Bowl",time:"5min",servings:1,macros:{p:30,o:4300,f:14,cal:420,poly:250},ingredients:["Cottage Cheese","Pineapple","Walnuts","Chia Seeds","1 tbsp Chia Seeds","1/2 cup Berries","1 tbsp Ground Flaxseed"],steps:["Scoop cheese into bowl","Top with fruit and nuts"],why:"Casein protein creates slow release amino acids.",colors:['white','yellow','purple']},
+{title:"Salmon Pesto Pasta",time:"20min",servings:1,portions:{jermaine:1,sophia:0.5},macros:{p:56,o:4200,f:12,cal:740,poly:250},ingredients:["6oz Salmon","Chickpea Pasta","Pesto","Tomatoes","Arugula","Fresh Basil Pesto (EVOO base)","Lemon Zest"],steps:["Boil chickpea pasta","Sear salmon separately","Toss pasta with pesto","Combine salmon and pasta","Top with tomatoes"],why:"Chickpea pasta = high fiber/protein. Pesto = polyphenols.",colors:['pink','green','red']},
+{title:"Chipotle Bowl (Bison)",time:"18min",servings:1,portions:{jermaine:1,sophia:0.5},macros:{p:58,o:2800,f:20,cal:740,poly:200},ingredients:["6oz Bison","Brown Rice","Black Beans","Peppers","Guacamole","Fresh Cilantro + Lime","1 tbsp EVOO"],steps:["Brown bison in pan","Warm black beans","Build bowl with rice base","Top with meat, beans, peppers","Add guacamole"],why:"Bison = nutrient dense red meat. Beans = soluble fiber.",colors:['brown','black','green','red']},
+{title:"Chipotle Bowl (Tofu)",time:"20min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:46,o:3200,f:22,cal:680,poly:200},ingredients:["tofu","brown rice","black beans","peppers","Fresh Cilantro + Lime","1 tbsp EVOO"],steps:["Season and bake tofu","Assemble bowl with beans and rice"],why:"Plant-based complete protein. High fiber.",colors:['white','black','green']},
+{title:"Mediterranean Quinoa Salad",time:"15min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:22,o:2200,f:18,cal:630,poly:250},ingredients:["quinoa","cucumber","tomatoes","olives","feta","1 tbsp EVOO dressing","Fresh Parsley + Mint","1 tbsp Hemp Hearts"],steps:["Mix cooked quinoa with chopped veg","Add olives and feta","Drizzle with olive oil"],why:"Mediterranean diet gold standard. Olives = healthy fats.",colors:['white','green','red','black']},
+{title:"Lentil Soup with Kale",time:"30min",servings:2,portions:{jermaine:1,sophia:0.75},macros:{p:24,o:800,f:22,cal:500,poly:250},ingredients:["lentils","kale","carrots","celery","1 tbsp EVOO finish","Turmeric + Black Pepper","Fresh Parsley"],steps:["Simmer lentils with veg","Add kale at end to wilt"],why:"High fiber lowers cholesterol. Kale = nutrient density.",colors:['brown','green','orange','yellow']},
+{title:"Turkey Burger & Sweet Potato",time:"20min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:38,o:1900,f:12,cal:630,poly:180},ingredients:["turkey","1 Sprouted Grain Bun","sweet potato","lettuce","tomato","1 tbsp Ground Flaxseed (in patty)","Arugula","1 tbsp EVOO"],swaps:{1:{label:"Bun",options:["1 Sprouted Grain Bun","1 Sourdough Bun","Lettuce Wrap (no bun)"]}},steps:["Grill turkey burger","Roast sweet potato wedges","Serve with salad"],why:"Lean protein. Sweet potato = Vitamin A.",colors:['white','orange','green']},
+{title:"Chickpea Curry (Quick)",time:"20min",servings:2,portions:{jermaine:1,sophia:0.75},macros:{p:22,o:1400,f:18,cal:540,poly:250},ingredients:["1 can chickpeas","1 cup coconut milk (light)","1 tbsp red curry paste","1 cup spinach","1/2 cup bell pepper","1/2 onion","Basmati rice","Turmeric + Black Pepper","1 tbsp EVOO","Fresh Cilantro","1 tbsp Hemp Hearts"],steps:["Saut\u00e9 onion and peppers","Add curry paste, cook 1 min","Add coconut milk and chickpeas","Simmer 10 mins","Stir in spinach","Serve over rice"],why:"Chickpeas = fiber/protein. Turmeric in paste = anti-inflammatory.",colors:['yellow','green','white','yellow']},
+{title:"Bison Taco Salad",time:"15min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:45,o:800,f:12,cal:620,poly:180},ingredients:["5oz ground bison","2 cups romaine","1/2 cup black beans","1/4 cup salsa","1/4 avocado","1 tbsp greek yogurt","Cumin, chili powder","1 tbsp EVOO dressing","Fresh Cilantro + Lime"],steps:["Brown bison with spices","Drain fat","Assemble lettuce base","Top with meat, beans, salsa","Add avocado and yogurt dollop"],why:"Bison = nutrient dense red meat. Beans = soluble fiber.",colors:['brown','black','green','red']},
+{title:"Edamame & Quinoa Bowl",time:"15min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:24,o:1800,f:12,cal:540,poly:200},ingredients:["1 cup cooked quinoa","1 cup shelled edamame","1/2 cup shredded purple cabbage","1 carrot (shredded)","Ginger soy dressing","Sesame seeds","1 tbsp EVOO","Turmeric Tahini Dressing","Fresh Herbs"],steps:["Warm quinoa and edamame","Toss with cabbage and carrot","Drizzle dressing","Top with sesame seeds"],why:"Edamame = soy protein. Purple cabbage = antioxidants.",colors:['green','purple','orange','yellow']},
+{title:"Smoked Salmon Bagel (Open)",time:"5min",servings:1,macros:{p:32,o:2800,f:6,cal:480,poly:180},ingredients:["1 whole grain bagel","4oz smoked salmon","2 tbsp cream cheese","Capers","Red onion","Dill","Cucumber slices","Capers + Red Onion","1 tbsp EVOO","Fresh Dill"],steps:["Toast bagel","Spread cream cheese","Layer salmon","Top with capers, onion, dill","Serve cucumber on side"],why:"Salmon = omega-3. Whole grain = fiber.",colors:['orange','white','green']},
+{title:"Leftover Roast Chicken Salad",time:"10min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:40,o:3100,f:12,cal:580,poly:200},ingredients:["5oz roast chicken (cold)","2 cups arugula","1/2 apple (diced)","1/4 cup walnuts","Celery","Yogurt dressing","1 tbsp EVOO vinaigrette","1 tbsp Walnuts","Fresh Herbs"],steps:["Chop chicken and celery","Toss with arugula and apple","Add walnuts","Mix with yogurt dressing"],why:"Chicken = protein. Walnuts = ALA omega-3. Apple = quercetin.",colors:['white','green','brown']},
+{title:"Tempeh Reuben Bowl",time:"15min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:28,o:1200,f:16,cal:560,poly:200},ingredients:["6oz tempeh strips","1/2 cup sauerkraut","1 slice swiss cheese","Rye croutons","Thousand island dressing (light)","Mixed greens","1 tbsp EVOO","Sauerkraut (probiotic)","Fresh Herbs"],swaps:{3:{label:"Bread",options:["Rye croutons","Sprouted grain bread","Sourdough","No bread (bowl only)"]}},steps:["Pan fry tempeh strips","Melt cheese on tempeh","Place over greens","Add kraut and croutons","Drizzle dressing"],why:"Tempeh/Kraut = gut health powerhouse.",colors:['brown','green']},
+{title:"Shrimp & Asparagus Stir Fry",time:"15min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:40,o:1200,f:16,cal:520,poly:150},ingredients:["6oz shrimp","1 bunch asparagus","1 cup edamame","Garlic","Ginger","Soy sauce","Sesame oil","Cauliflower rice"],steps:["Saut\u00e9 garlic/ginger in oil","Add asparagus and edamame, stir fry 3min","Add shrimp, cook until pink","Add soy sauce","Serve over cauli rice"],why:"Shrimp = astaxanthin. Asparagus = prebiotic. Edamame adds plant protein + 8g fiber boost.",colors:['pink','green','white']},
+{title:"Turkey Club (Sourdough)",time:"10min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:40,o:500,f:10,cal:590,poly:150},ingredients:["Sliced Turkey","2 slices Sourdough Bread","Avocado","Tomato","Lettuce","1 tbsp EVOO","Arugula + Tomato"],swaps:{1:{label:"Bread",options:["2 slices Sourdough Bread","2 slices Sprouted Grain Bread","1 large tortilla (wrap style)","Lettuce Wrap (no bread)"]}},steps:["Toast sourdough","Layer turkey and veg","Add mashed avocado"],why:"Sourdough is fermented/low glycemic. Turkey = lean protein.",colors:['white','red','green','red']},
+{title:"Costco Cauliflower Pizza",time:"25min",servings:2,portions:{jermaine:1,sophia:0.75},macros:{p:36,o:1200,f:12,cal:640,poly:200},ingredients:["1 Costco Cauliflower Pizza Crust","1 cup Marinara Sauce","2 cups Mozzarella","Toppings: Peppers, Mushrooms, Onions","Italian Herbs","Side Salad","Side Arugula Salad w/ EVOO","1 tbsp Hemp Hearts"],steps:["Preheat oven to 425\u00b0F","Spread marinara on cauliflower crust","Add mozzarella and toppings","Sprinkle with herbs","Bake 18-20 mins until cheese bubbles","Serve with side salad"],why:"Cauliflower crust = lower carb, higher fiber. Costco convenience meets nutrition.",colors:['white','red','green']},
+{title:"Bone Broth Pho",time:"15min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:50,o:1000,f:16,cal:520,poly:100},ingredients:["3 cups Bone Broth (beef or chicken)","6oz Sliced Beef or Chicken","Rice Noodles","1 cup Edamame","Bean Sprouts","Fresh Basil","Cilantro","Lime","Jalape\u00f1o","Hoisin","Sriracha"],steps:["Heat bone broth to boiling","Cook rice noodles according to package","Add edamame to broth for 3 mins","Add sliced meat to hot broth (cooks in 2min)","Drain noodles, add to bowl","Pour hot broth, meat, and edamame over noodles","Top with sprouts, herbs, lime, jalape\u00f1o","Add hoisin and sriracha to taste"],why:"Bone broth = collagen, glycine, minerals for gut/joint health. Edamame adds 8g fiber + plant protein boost. High protein, anti-inflammatory.",colors:['brown','white','green']},
+{title:"Belgian Mussels & Frites",time:"20min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:44,o:1400,f:14,cal:620,poly:80},ingredients:["2lbs Mussels (cleaned)","1 cup White Wine","1/2 cup White Beans","3 cloves Garlic","Shallots","Fresh Thyme","Butter","Parsley","Lemon","Sweet Potato Fries","Side Salad"],steps:["Saut\u00e9 shallots and garlic in butter","Add white wine, white beans and thyme, bring to boil","Add mussels, cover and steam 5-7 mins until open","Discard any unopened mussels","Finish with parsley and lemon","Serve with baked sweet potato fries and salad"],why:"Mussels = zinc, iron, B12, omega-3. White beans add 8g fiber. Sweet potato = vitamin A. High protein, low calorie.",colors:['black','orange','green','white']},
+{title:"Chicken Caesar Salad",time:"15min",servings:1,macros:{p:45,o:400,f:6,cal:480,poly:80},ingredients:["6oz Grilled Chicken Breast","2 cups Romaine Lettuce","2 tbsp Caesar Dressing","2 tbsp Parmesan Cheese","Whole Grain Croutons","Lemon Wedge"],steps:["Chop romaine lettuce","Grill or slice pre-cooked chicken","Toss lettuce with Caesar dressing","Top with chicken, parmesan, croutons","Squeeze lemon over top"],why:"Classic high-protein option. Romaine = vitamin K for bone health. Grilled chicken = lean complete protein.",colors:['green','white','brown']},
+{title:"Fish Taco",time:"20min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:38,o:2200,f:10,cal:520,poly:100},ingredients:["6oz White Fish (cod/mahi)","2 Corn Tortillas","1/2 cup Shredded Cabbage","1/4 cup Pico de Gallo","1/4 Avocado","Lime","Cilantro","Chipotle Crema"],swaps:{1:{label:"Tortilla",options:["2 Corn Tortillas","2 Flour Tortillas","Lettuce Wrap (no tortilla)"]}},steps:["Season fish with cumin, chili powder","Grill or pan sear fish 3-4 mins per side","Warm corn tortillas","Flake fish into tortillas","Top with cabbage, pico, avocado","Drizzle with crema and lime","Garnish with cilantro"],why:"White fish = lean omega-3 protein. Corn tortillas = whole grain. Cabbage = cruciferous fiber. Perfect balance.",colors:['white','green','red','yellow']},
+{title:"Salmon Quinoa Power Bowl",time:"20min",servings:1,portions:{jermaine:1,sophia:0.5},macros:{p:58,o:4200,f:20,cal:720,poly:200},ingredients:["6oz Wild Salmon","1/2 cup Quinoa","1/2 cup Brown Rice","1 cup Edamame","1/2 Avocado","Lemon","Olive Oil","Sea Salt"],steps:["Cook quinoa and brown rice","Boil edamame 3 mins","Season salmon with salt, pepper","Pan sear salmon 4 mins per side","Plate grains and edamame","Top with salmon and sliced avocado","Drizzle with olive oil and lemon"],why:"Salmon = omega-3 DHA/EPA. Quinoa = complete protein with all 9 amino acids. Edamame adds 8g fiber + plant protein. Brown rice = sustained energy. Avocado = healthy fats for nutrient absorption.",colors:['pink','brown','green']},
+{title:"Mendo Farms Turkey Avo Salsa Verde",time:"0min",servings:1,portions:{jermaine:1,sophia:0.5},macros:{p:41,o:200,f:8,cal:840,poly:80},ingredients:["Roasted Turkey","Smashed Avocado","Smoked Gouda","Cotija","Mama Lil's Sweet Hot Peppers","Jalapeño Salsa Aioli","Tomatoes","Shredded Romaine","Red Onions","Panini-Pressed Sourdough","Side Jalapeño Salsa Verde"],steps:["Order from Mendocino Farms","Enjoy"],why:"41g protein from roasted turkey. Avocado healthy fats. Gouda + cotija for calcium. Convenient restaurant option with solid macros.",colors:['green','red','white','yellow']},
+{title:"Caballo Blanco Chile Verde",time:"0min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:42,o:300,f:12,cal:650,poly:60},ingredients:["Tender Pork in Tomatillo Salsa Verde","Rice","Beans","Tortillas"],steps:["Order Chile Verde plate from Caballo Blanco","5604 Franklin Blvd, Sacramento","Enjoy"],why:"Slow-simmered pork = high bioavailable protein. Tomatillo sauce = vitamin C + antioxidants. Beans add fiber + plant protein. Sacramento staple since 1961.",colors:['green','brown','white']},
+{title:"The Golden Shield",time:"25min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:56,o:200,f:12,cal:570,poly:480},ingredients:["6oz Chicken Breast","1 tsp Turmeric","1/2 tsp Black Pepper","1 Zucchini (sliced)","1 cup Mushrooms (sliced)","1/2 cup Quinoa","1/2 cup Brown Rice","1 tbsp EVOO","2 cloves Garlic","2 cups Fresh Spinach","Sea Salt"],steps:["Cook quinoa and brown rice together","Season chicken with turmeric, black pepper, salt","Sear chicken in EVOO 5 min per side","Remove chicken, sauté garlic, zucchini, mushrooms 4 min","Wilt spinach into vegetables last 30 seconds","Slice chicken, plate over grains","Top with sautéed vegetables and spinach","Drizzle remaining pan juices over everything"],why:"Curcumin + piperine = 2000% absorption boost. Anti-inflammatory powerhouse targeting NF-κB pathway. Mushrooms add beta-glucan for immune support. Quinoa = complete protein. High protein, moderate cal, massive polyphenol hit.",colors:['yellow','green','brown','white']},
+{title:"The Barley Particle Sweep",time:"30min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:44,o:1900,f:22,cal:620,poly:160},ingredients:["1 cup Pearl Barley (cooked)","1/2 cup Lentils (cooked)","5oz Grilled Salmon","2 cups Spinach","1/2 Avocado","Cherry Tomatoes","1 tbsp EVOO","Lemon","2 tbsp Walnuts"],steps:["Cook barley and lentils (can batch prep)","Grill or bake salmon","Build bowl: barley and lentils base","Add spinach, halved cherry tomatoes","Top with salmon and sliced avocado","Scatter walnuts","Dress with EVOO and lemon juice"],why:"Barley beta-glucan is clinically equivalent to oats for LDL reduction — 3g/day = 5-10% ApoB drop. Lentils add resistant starch + soluble fiber that binds bile acids. Salmon EPA/DHA lowers VLDL particle production in the liver. Walnuts = ALA + plant sterols. This is a full-spectrum ApoB assault.",colors:['brown','green','pink','red']},
+{title:"Chicken Fried Rice",time:"20min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:38,o:400,f:6,cal:650,poly:40},ingredients:["6oz Chicken Breast (diced)","2 cups Jasmine Rice (cooked)","2 Eggs","1 cup Mixed Vegetables (peas, carrots, corn)","2 tbsp Soy Sauce","1 tbsp Sesame Oil","3 cloves Garlic","Green Onions"],steps:["Cook rice ahead (day-old best)","Scramble eggs, set aside","Sear diced chicken in sesame oil","Add garlic, then vegetables","Add rice, toss on high heat","Add soy sauce and eggs back in","Top with green onions"],why:"High-volume comfort meal. Day-old rice = resistant starch (feeds gut bacteria). Eggs add choline. Sesame oil adds flavor with minimal sat fat.",colors:['brown','green','yellow','white']},
+{title:"Chicken Enchiladas",time:"35min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:42,o:300,f:8,cal:680,poly:80},ingredients:["6oz Shredded Chicken","2 Flour Tortillas","1/2 cup Black Beans","1/2 cup Enchilada Sauce","1/4 cup Monterey Jack Cheese","1/4 Avocado","Cilantro","Onion"],steps:["Shred chicken and mix with beans and sauce","Fill tortillas and roll","Place in baking dish, top with remaining sauce and cheese","Bake at 375°F for 20 min","Top with avocado and cilantro"],why:"Black beans add resistant starch + soluble fiber for ApoB. Chicken = lean protein. Avocado = monounsaturated fat + plant sterols.",colors:['brown','red','green','black']},
+{title:"Mediterranean Salmon (Yard House)",time:"0min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:50,o:3000,f:8,cal:630,poly:100},ingredients:["Atlantic Salmon","Artichoke Hearts","Sun-Dried Tomatoes","Kalamata Olives","Couscous","Arugula","Lemon Herb Vinaigrette","Capers"],steps:["Order at Yard House","Enjoy"],why:"Restaurant salmon done right. Atlantic salmon delivers ~3000mg EPA/DHA. Artichoke hearts = prebiotic inulin fiber. Kalamata olives = oleic acid + polyphenols. Arugula = glucosinolates (anti-cancer). Use HALF portion to keep macros in range.",colors:['pink','green','yellow','purple']},
+{title:"Chipotle Chicken & Steak Burrito",time:"0min",servings:1,portions:{jermaine:1,sophia:0.5},macros:{p:68,o:200,f:18,cal:1370,poly:60},ingredients:["Flour Tortilla","4oz Chicken","4oz Steak","Pinto & Black Bean Mix","Fajita Veggies (peppers, onions)","Cilantro-Lime White Rice","Fresh Tomato Salsa","Guacamole","Romaine Lettuce"],swaps:{0:{label:"Tortilla/Style",options:["Flour Tortilla","Bowl (no tortilla)","Lettuce Wrap"]}},steps:["Order at Chipotle","Double protein: chicken + steak","Mixed beans (pinto + black)","Add fajita veggies","Rice, salsa, guac, lettuce","NO cheese, NO sour cream"],why:"68g protein monster. Mixed beans = 15g soluble fiber binding bile acids for ApoB reduction + resistant starch feeding gut bacteria. Fajita veggies add vitamin C. Guac = monounsaturated fat + plant sterols. Skipping cheese/sour cream saves 200cal + saturated fat.",colors:['brown','green','red','black']},
+{title:"Black Beans & Mackerel",time:"20min",servings:1,portions:{jermaine:1,sophia:0.5},macros:{p:55,o:4400,f:15,cal:710,poly:80},ingredients:["6oz Atlantic Mackerel (fillets)","1 cup Black Beans (cooked)","1 tbsp EVOO","3 cloves Garlic","1 Lime","Fresh Cilantro","1 tsp Cumin","Sea Salt","Red Pepper Flakes"],steps:["Season mackerel with cumin, salt, pepper flakes","Sear in EVOO 3-4 min per side","Warm black beans with garlic","Squeeze lime over beans, stir in cilantro","Plate beans, top with mackerel","Garnish with extra cilantro and lime wedge"],why:"Mackerel is the highest omega-3 fish per serving (4200mg EPA/DHA) — 3x more than salmon. Combined with 15g soluble fiber from black beans binding bile acids, this is a dual ApoB attack: reduce VLDL production (omega-3) + remove LDL from blood (fiber). Resistant starch in beans feeds gut bacteria.",colors:['black','silver','green']},
+{title:"Bean Soup w/ Chicken Kale & Oxtail",time:"2hrs",servings:2,portions:{jermaine:1,sophia:0.5},macros:{p:58,o:300,f:16,cal:720,poly:150},ingredients:["6oz Chicken Thigh (bone-in)","8oz Oxtail","1 cup White Beans","1 cup Kidney Beans","2 cups Kale (chopped)","Onion","Garlic","Celery","Carrots","Tomato Paste","Cumin","Smoked Paprika","Bay Leaves","Chicken Broth"],steps:["Brown oxtail in pot, sear all sides, 6 min","Remove oxtail, sauté onion, garlic, celery, carrots","Add tomato paste, cumin, smoked paprika, stir 1 min","Return oxtail, add chicken broth and bay leaves","Simmer 90 min until oxtail is fall-off-bone tender","Add chicken thighs, beans, simmer 20 min","Add kale last 5 min to wilt","Remove bay leaves, season to taste"],why:"58g protein from triple sources. Oxtail = collagen + gelatin for joint health and gut lining repair. 16g fiber from dual beans binds bile acids (ApoB reduction). Kale adds sulforaphane + vitamin K. Makes 2 servings — meal prep friendly.",colors:['brown','green','white','red']},
+{title:"Southwest Tortilla Soup",time:"30min",servings:2,portions:{jermaine:1,sophia:0.75},macros:{p:48,o:200,f:18,cal:660,poly:150},ingredients:["6oz Chicken Breast (diced)","1/3 cup Kidney Beans","1/3 cup Black Beans","1/3 cup Pinto Beans","1 can Fire-Roasted Diced Tomatoes","1 cup Chicken Broth","1/2 cup Corn","1 Bell Pepper (diced)","1 Jalapeño (diced)","1 Onion (diced)","3 cloves Garlic","1 tbsp Cumin","1 tsp Chili Powder","1 tsp Smoked Paprika","Tortilla Strips","1/4 Avocado","Fresh Cilantro","Lime"],steps:["Sauté onion, pepper, jalapeño, garlic in EVOO","Add chicken, brown 3-4 min","Add cumin, chili powder, smoked paprika","Pour in broth, tomatoes, all three beans, corn","Simmer 20 min","Ladle into bowl","Top with tortilla strips, avocado, cilantro, lime squeeze"],why:"Triple bean stack = 18g soluble fiber from three sources (kidney, black, pinto) — each binds bile acids differently for maximum ApoB clearance. Resistant starch from all three feeds diverse gut bacteria. Chicken = lean protein. Lycopene from fire-roasted tomatoes. Capsaicin from jalapeño boosts metabolism.",colors:['red','black','brown','green']},
+{title:"Chipotle Chicken & Steak Bowl",time:"0min",servings:1,portions:{jermaine:1,sophia:0.5},macros:{p:76,o:200,f:19,cal:850,poly:60},ingredients:["4oz Chicken","4oz Steak","Brown Rice","1/2 cup Black Beans","1/2 cup Pinto Beans","Fajita Veggies (peppers, onions)","Spinach","Romaine Lettuce"],steps:["Order at Chipotle","Double protein: chicken + steak","Brown rice (more fiber than white)","Both beans","Fajita veggies","Spinach and lettuce","NO cheese, NO sour cream, NO tortilla"],why:"76g protein bowl. Double beans = 19g soluble fiber binding bile acids for ApoB. Brown rice adds resistant starch. No tortilla saves 300 cal. Spinach adds folate + magnesium. This is a clean macro monster.",colors:['brown','green','black','red']},
+{title:"Steak Salad (Adalberto's)",time:"0min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:35,o:100,f:6,cal:550,poly:30},ingredients:["Carne Asada","Romaine Lettuce","Tomatoes","Carrots","Sliced Avocado","Cheese","Ranch Dressing"],steps:["Order at Adalberto's","Enjoy"],why:"Carne asada = bioavailable iron + zinc + B12. Avocado adds monounsaturated fat + plant sterols. Lettuce and tomato add fiber + lycopene. Ask for dressing on the side to control calories.",colors:['brown','green','red','yellow']},
+{title:"Steak Rolled Tacos (Adalberto's)",time:"0min",servings:1,portions:{jermaine:1,sophia:0.5},macros:{p:35,o:50,f:4,cal:700,poly:20},ingredients:["5 Beef Rolled Tacos (fried)","Guacamole","Cheese","Lettuce"],steps:["Order 5-piece steak rolled tacos at Adalberto's","Enjoy"],why:"Quick protein hit. Fried but 35g protein across 5 taquitos. Guac adds healthy fat. Use half portion for 2-3 tacos to keep calories in check.",colors:['brown','green','yellow']},
+{title:"In-N-Out Double Double (Protein Style)",time:"0min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:52,o:50,f:3,cal:520,poly:10},ingredients:["2 Beef Patties","2 slices American Cheese","Lettuce Wrap (no bun)","Tomato","Onion","Spread"],steps:["Order Double-Double Protein Style","Enjoy"],why:"Protein style = lettuce wrap saves ~150 cal + 30g refined carbs vs bun. 52g bioavailable animal protein. Keep it simple — balance with high-fiber, high-omega-3 meals the rest of the day.",colors:['brown','green','yellow','red']},
+{title:"Protein Power Smoothie",time:"5min",servings:1,servingSize:"16oz",macros:{p:50,o:3200,f:10,cal:460,poly:120},ingredients:["1 scoop Pea Protein","1 tbsp Peanut Butter Powder","1 tbsp Ground Flaxseed","1 tbsp Chia Seeds","1 cup Spinach","1 cup Frozen Berries","1 tbsp Almond Butter","1 cup Oat Milk","Ice"],steps:["Add oat milk and spinach to blender","Add frozen berries, pea protein, peanut powder, flax, chia","Add almond butter and ice","Blend until smooth"],why:"Pea + peanut protein stack. Flax + chia = soluble fiber + ALA omega-3 for ApoB reduction. Oat milk adds beta-glucan. Spinach = magnesium + folate. Berries = anthocyanin polyphenols.",colors:['purple','green','brown']},
 {
   title: "Guyanese Curry Chicken & Brown Rice",
   time: "45min",
@@ -28,3 +698,331 @@
   why: "The spice blend is a polyphenol powerhouse. 'Burning' the curry in EVOO activates the fat-soluble curcumin, drastically reducing systemic inflammation (crucial for ANA 1:320). Brown rice adds resistant starch and soluble fiber, which binds to bile acids in the gut to drive down ApoB.",
   colors: ['yellow', 'brown', 'green']
 }
+],
+dinner:[
+{title:"Protein Pasta w/ Ground Turkey & Hot Link",time:"25min",servings:1,portions:{jermaine:1,sophia:0.5},macros:{p:59,o:200,f:14,cal:700,poly:180},ingredients:["2 oz Protein Pasta (Banza or Barilla Protein+)","5 oz Ground Turkey (93% lean)","1 Everlasting Hot Link (sliced)","1/2 cup Trader Joe's Marinara Sauce","1/2 Yellow Bell Pepper (diced)","1/2 Red Bell Pepper (diced)","1 medium Zucchini (sliced)","1/2 Onion (diced)","3 cloves Minced Garlic","Olive Oil","Red Pepper Flakes"],steps:["Cook protein pasta per package directions, reserve 1/4 cup pasta water","Brown ground turkey with garlic and onion until cooked through","Add sliced hot link, cook 2-3 min until browned","Add bell peppers and zucchini, sauté 3-4 min until tender","Pour in TJ's marinara sauce, simmer 3 min","Toss in pasta with splash of pasta water, combine","Top with red pepper flakes"],why:"59g protein from triple sources — turkey, hot link, and protein pasta. 14g fiber from protein pasta, zucchini, and peppers. Lycopene in marinara is a powerful antioxidant that reduces oxidized LDL. Zucchini adds potassium for blood pressure support. High-satiety meal for evening.",colors:['red','yellow','green','brown','white']},
+{title:"Whole Branzino w/ Seafood Medley",time:"40min",servings:2,portions:{jermaine:1,sophia:0.75},macros:{p:58,o:3000,f:20,cal:680,poly:100},ingredients:["2 Whole Branzino (cleaned)","1/2lb Shrimp","1/2lb Mussels","1 cup White Beans (cannellini)","Cherry Tomatoes","1/2 cup White Wine","Garlic & Parsley","Lemon Slices"],steps:["Score fish, stuff with lemon/herbs","Place in roasting pan","Surround with shrimp, mussels, white beans, tomatoes","Pour wine and garlic over everything","Bake at 400\u00b0F for 25 mins"],why:"Whole Fish = Collagen/Glycine from skin/bones. Shellfish = Zinc stack. White beans add 8g fiber + plant protein.",colors:['white','pink','red']},
+{title:"Turkey Chili",time:"35min",servings:2,portions:{jermaine:1,sophia:0.75},macros:{p:35,o:400,f:15,cal:500,poly:200},ingredients:["1lb ground turkey","1 can kidney beans","1 can diced tomatoes","1 onion","1 bell pepper","Chili powder","Cumin","Garlic","1 tbsp EVOO finish","Turmeric + Cumin","Fresh Cilantro"],steps:["Brown turkey with onion/garlic","Add peppers and spices","Add tomatoes and beans","Simmer 30 mins"],why:"Turkey = lean protein. Beans = fiber. Tomatoes = lycopene.",colors:['brown','red','yellow']},
+{title:"Beef Bolognese (Zoodles)",time:"40min",servings:2,portions:{jermaine:1,sophia:0.75},macros:{p:40,o:2100,f:14,cal:600,poly:200},ingredients:["1lb ground beef","1 jar marinara (no sugar)","1 onion","2 carrots","Celery","Zucchini noodles","1 tbsp EVOO","Fresh Basil + Oregano","1 tbsp Ground Flaxseed"],steps:["Brown beef","Add chopped veg, cook 5 min","Add sauce, simmer 20 min","Serve over raw or lightly saut\u00e9ed zoodles"],why:"Beef = iron. Tomato sauce = lycopene.",colors:['red','green']},
+{title:"Stuffed Peppers",time:"50min",servings:4,portions:{jermaine:1,sophia:0.75},macros:{p:30,o:400,f:14,cal:500,poly:200},ingredients:["Bell Peppers","Ground Bison","Brown Rice","Spinach","Tomato Sauce","1 tbsp EVOO drizzle","Turmeric in filling","Fresh Parsley"],steps:["Hollow peppers","Mix meat/rice/veg","Stuff peppers","Bake at 375F for 40m"],why:"Vitamin C from peppers boosts iron absorption from bison.",colors:['red','green','brown','yellow']},
+{title:"Sesame Seared Tuna",time:"15min",servings:2,macros:{p:50,o:1500,f:10,cal:480,poly:200},ingredients:["Ahi Tuna Steaks","Sesame Seeds","Soy Sauce","Ginger","Asparagus","Side Edamame","Wakame Seaweed Salad","1 tbsp EVOO"],steps:["Coat tuna in seeds","Sear 1 min/side","Serve with steamed asparagus"],why:"High selenium content in tuna. Ginger aids digestion.",colors:['red','white','green']},
+{title:"Seafood Cioppino",time:"40min",servings:2,portions:{jermaine:1,sophia:0.75},macros:{p:48,o:2000,f:16,cal:580,poly:120},ingredients:["White Fish","Mussels/Shrimp","1 cup White Beans","Tomato Broth","Fennel","Garlic"],steps:["Saute fennel and garlic","Add broth, white beans and simmer","Poach fish gently in broth"],why:"Tomato (cooked) = high Lycopene. White beans add 8g fiber. Low calorie, high mineral.",colors:['white','red','green']},
+{title:"Herb Crusted Cod",time:"20min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:52,o:2800,f:10,cal:580,poly:200},ingredients:["8oz wild cod","\u00bd cup almond flour","1 egg","Parsley","Dill","Lemon zest","Asparagus","1 tbsp EVOO","1 tbsp EVOO","Fresh Herb Crust (parsley/dill)","Lemon Zest"],steps:["Mix almond flour, herbs, zest","Dip cod in egg, then flour","Pan fry 4min per side in EVOO","Steam asparagus","Plate with lemon wedges"],why:"Cod = lean protein. Almonds = Vitamin E. Asparagus = prebiotic fiber.",colors:['white','green']},
+{title:"Grass-Fed Steak & Sprouts",time:"25min",servings:1,portions:{jermaine:1,sophia:0.5},macros:{p:60,o:1200,f:14,cal:720,poly:250},ingredients:["8oz grass-fed sirloin","2 cups Brussels sprouts","\u00bd sweet potato","Garlic","Rosemary","Balsamic vinegar","1 tbsp EVOO","1 tbsp EVOO","Fresh Rosemary + Thyme","Balsamic Reduction"],steps:["Halve sprouts, toss in balsamic","Roast sprouts and potato 20min at 400\u00b0F","Sear steak 3min per side","Rest steak 5min","Slice against grain"],why:"Grass-fed beef = CLA and Omega-3. Brussels = sulforaphane. Sweet potato = potassium.",colors:['red','green','orange']},
+{title:"Mediterranean Chicken",time:"25min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:55,o:800,f:12,cal:640,poly:250},ingredients:["8oz chicken breast","1 cup quinoa","Cucumber","Cherry tomatoes","Kalamata olives","Feta cheese","Oregano","Olive oil","1 tbsp EVOO","Kalamata Olives","Fresh Oregano + Lemon"],steps:["Cook quinoa","Grill chicken with oregano","Chop veg","Mix quinoa, veg, olives","Top with sliced chicken and feta","Drizzle olive oil"],why:"Chicken = lean complete protein. Olives = hydroxytyrosol (potent antioxidant). Quinoa = complete plant protein.",colors:['white','black','red']},
+{title:"Tempeh Stir Fry (Plant)",time:"15min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:50,o:2600,f:26,cal:680,poly:200},ingredients:["8oz tempeh","1 cup edamame","Broccoli","Bell peppers","Snap peas","Ginger","Garlic","Tamari","Sesame oil","Brown rice"],steps:["Steam tempeh 5min (removes bitterness)","Cube and saut\u00e9 in sesame oil","Add edamame, veggies, ginger, garlic","Add splash of water to steam veg","Finish with tamari","Serve over rice"],why:"Tempeh = fermented soy (gut health). Edamame adds 8g fiber. Ginger = anti-inflammatory. Broccoli = sulforaphane.",colors:['brown','green','red']},
+{title:"Sheet Pan Salmon & Veggies",time:"20min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:45,o:3200,f:10,cal:620,poly:200},ingredients:["6oz salmon fillet","1 cup broccoli florets","1 cup bell peppers","1 tbsp olive oil","Lemon slices","Dill","Garlic powder","1 tbsp EVOO","Turmeric + Black Pepper","Fresh Dill"],steps:["Preheat oven to 400\u00b0F","Toss veggies in oil and spices","Place salmon and veggies on pan","Top salmon with lemon/dill","Roast 15-18 mins"],why:"Salmon = omega-3. One pan meal. Broccoli = detox support.",colors:['orange','green','red','yellow']},
+{title:"Shrimp Scampi with Zoodles",time:"15min",servings:1,macros:{p:32,o:2200,f:10,cal:480,poly:200},ingredients:["6oz shrimp","2 zucchini (spiralized)","2 tbsp butter/ghee","3 cloves garlic","Lemon juice","Parsley","Red pepper flakes","1 tbsp EVOO","Fresh Parsley + Basil","1 tbsp Ground Flaxseed"],steps:["Saut\u00e9 garlic in butter","Add shrimp, cook pink","Add lemon and flakes","Toss in zoodles for 1 min","Garnish parsley"],why:"Shrimp = iodine/selenium. Zucchini = low cal volume.",colors:['pink','green','white']},
+{title:"Lamb Kofta Bowl",time:"25min",servings:1,portions:{jermaine:1,sophia:0.5},macros:{p:46,o:1100,f:18,cal:780,poly:110},ingredients:["6oz ground lamb","1 tsp cumin/coriander","1/2 cup Black Beans","Cucumber yogurt sauce","Tomatoes","Onion","Mixed greens","Pita"],steps:["Mix lamb with spices","Form small oblong patties","Grill or pan fry 8 mins","Warm black beans","Assemble bowl with greens and beans","Top with kofta and sauce"],why:"Lamb = zinc/iron. Fermented yogurt = gut health. Black beans add 8g fiber + resistant starch.",colors:['brown','green','white','red','black']},
+{title:"Pesto Chicken Zoodles",time:"15min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:45,o:500,f:8,cal:550,poly:200},ingredients:["6oz chicken breast","2 zucchini","1/4 cup basil pesto","Cherry tomatoes","Parmesan","Basil Pesto (EVOO base)","Pine Nuts","Lemon Zest"],steps:["Cook chicken pieces","Spiralize zucchini","Toss chicken and zoodles with pesto","Add halved tomatoes","Warm through"],why:"Basil = anti-bacterial. Chicken = protein base.",colors:['green','white','red']},
+{title:"Seared Scallops & Risotto",time:"30min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:35,o:700,f:8,cal:630,poly:200},ingredients:["6oz sea scallops","1/2 cup arborio rice","2 cups broth","White wine (splash)","Parmesan","Peas","Butter","1 tbsp EVOO finish","Fresh Herbs","Side Arugula Salad"],steps:["Cook risotto (ladle broth slowly)","Stir in peas/parm","Sear scallops in hot butter (2 min/side)","Serve scallops atop risotto"],why:"Scallops = B12/magnesium. Peas = plant protein.",colors:['white','green']},
+{title:"Chicken Stir Fry",time:"15min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:48,o:700,f:16,cal:620,poly:120},ingredients:["6oz chicken breast","1 cup edamame","Broccoli","Snap peas","Carrots","Soy sauce","Ginger/Garlic","Sesame oil"],steps:["Slice chicken thin","Stir fry chicken","Remove, stir fry edamame and veg","Combine with sauce","Simmer 1 min"],why:"Lean protein + fiber rich veg. Edamame adds 8g fiber + plant protein.",colors:['white','green','orange']},
+{title:"Baked Cod with Salsa",time:"20min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:45,o:2000,f:14,cal:540,poly:180},ingredients:["8oz cod fillet","1/2 cup salsa","1/4 avocado","Cilantro","Lime","Asparagus side","Fresh Cilantro + Lime","1 tbsp EVOO","Side Black Beans"],steps:["Place cod in baking dish","Top with salsa","Bake 400\u00b0F for 15 min","Top with avocado/cilantro","Serve with steamed asparagus"],why:"Cod = low calorie protein source.",colors:['white','red','green']},
+{title:"Egg Roll in a Bowl",time:"15min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:35,o:600,f:14,cal:530,poly:200},ingredients:["1/2lb ground pork/turkey","1 bag coleslaw mix","Ginger","Garlic","Soy sauce","Sriracha","Green onions","1 tbsp EVOO","Turmeric + Ginger","Fresh Cilantro + Lime"],steps:["Brown meat","Add slaw mix, ginger, garlic","Saut\u00e9 until wilted","Stir in soy/sriracha","Top with green onions"],why:"Cabbage = cruciferous benefits. High volume meal.",colors:['white','green','yellow']},
+{title:"Lemon Garlic Shrimp",time:"15min",servings:1,macros:{p:30,o:500,f:10,cal:440,poly:200},ingredients:["8oz shrimp","2 tbsp butter","3 cloves garlic","Lemon juice","Parsley","Green beans","1 tbsp EVOO","Side Roasted Broccoli","Fresh Herbs"],steps:["Steam green beans","Saut\u00e9 garlic in butter","Cook shrimp","Finish with lemon/parsley","Plate together"],why:"Shrimp = high protein low fat.",colors:['pink','green','white']},
+{title:"Meatballs & Marinara",time:"30min",servings:2,portions:{jermaine:1,sophia:0.75},macros:{p:32,o:2000,f:12,cal:600,poly:250},ingredients:["1lb ground beef","1 egg","1/4 cup almond flour","Italian herbs","Marinara sauce","Spinach side","1 tbsp EVOO","1 tbsp Ground Flaxseed (in meatballs)","Fresh Basil"],steps:["Mix meat, egg, flour, herbs","Roll balls","Bake 400\u00b0F 20 min","Simmer in sauce 5 min","Serve with wilted spinach"],why:"Beef = B12/Zinc. Spinach = folate.",colors:['red','green']},
+{title:"Curry Chicken Salad",time:"10min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:40,o:800,f:8,cal:560,poly:250},ingredients:["5oz cooked chicken","Greek yogurt","Curry powder","Grapes/Raisins","Cashews","Celery","Turmeric + Black Pepper","1 tbsp EVOO dressing","Fresh Cilantro"],steps:["Chop chicken","Mix yogurt and curry powder","Combine all","Serve in lettuce cups"],why:"Curry = turmeric anti-inflammatory. Yogurt = probiotics.",colors:['yellow','green','yellow']},
+{title:"Chicken Breast Power Bowl",time:"25min",servings:1,portions:{jermaine:1,sophia:0.5},macros:{p:58,o:600,f:22,cal:720,poly:120},ingredients:["8oz chicken breast","1/2 cup quinoa","1/2 cup brown rice","1/2 cup black beans","2 cups broccoli","Garlic","Olive oil","Lemon"],steps:["Cook quinoa and brown rice together","Season chicken with salt, pepper, garlic","Grill or bake chicken 20 min at 375\u00b0F","Steam broccoli for 5 min","Warm black beans","Plate rice/quinoa base with beans","Top with sliced chicken and broccoli","Drizzle with olive oil and lemon"],why:"Complete protein + complex carbs + fiber. Quinoa = all 9 amino acids. Black beans add 8g fiber. Broccoli = sulforaphane.",colors:['white','brown','green','black']},
+{title:"Mediterranean Mussels Pasta",time:"25min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:44,o:1800,f:10,cal:580,poly:200},ingredients:["2lbs Mussels (cleaned)","Chickpea Pasta","Cherry Tomatoes","Kalamata Olives","Garlic","White Wine","Fresh Basil","Olive Oil","Red Pepper Flakes","Parmesan","1 tbsp EVOO finish","Fresh Parsley + Basil","Lemon Zest"],steps:["Cook chickpea pasta al dente","Saut\u00e9 garlic in olive oil","Add tomatoes, cook until blistered","Add white wine, bring to boil","Add mussels, cover 5-7 mins until open","Discard unopened mussels","Toss pasta with mussel broth","Top with olives, basil, red pepper","Finish with parmesan"],why:"Mussels = zinc, iron, B12, omega-3 stack. Chickpea pasta = protein + fiber. Mediterranean diet gold.",colors:['black','red','green']},
+{title:"Mixed Fajitas with Black Beans",time:"20min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:62,o:1400,f:16,cal:620,poly:150},ingredients:["4oz Chicken Breast","6oz Shrimp","1/2 cup Black Beans","Bell Peppers (red, yellow, green)","Onion","Fajita Seasoning","Lime","Cilantro","Pico de Gallo","Avocado"],steps:["Slice chicken into strips","Season chicken and shrimp with fajita spices","Slice peppers and onions","Heat cast iron skillet","Sear chicken strips 4-5 mins","Add shrimp, cook 2-3 mins until pink","Remove proteins, saut\u00e9 peppers and onions","Warm black beans","Plate veggies and beans","Top with chicken and shrimp","Add pico, avocado, cilantro, lime"],why:"Shrimp + chicken = lean protein stack. Shrimp = astaxanthin + selenium. Bell peppers = vitamin C. Black beans add 8g fiber + resistant starch. No tortillas = lower carb, higher protein.",colors:['pink','white','red','yellow','green','black']},
+{title:"The Golden Shield",time:"25min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:56,o:200,f:12,cal:570,poly:480},ingredients:["6oz Chicken Breast","1 tsp Turmeric","1/2 tsp Black Pepper","1 Zucchini (sliced)","1 cup Mushrooms (sliced)","1/2 cup Quinoa","1/2 cup Brown Rice","1 tbsp EVOO","2 cloves Garlic","2 cups Fresh Spinach","Sea Salt"],steps:["Cook quinoa and brown rice together","Season chicken with turmeric, black pepper, salt","Sear chicken in EVOO 5 min per side","Remove chicken, sauté garlic, zucchini, mushrooms 4 min","Wilt spinach into vegetables last 30 seconds","Slice chicken, plate over grains","Top with sautéed vegetables and spinach","Drizzle remaining pan juices over everything"],why:"Curcumin + piperine = 2000% absorption boost. Anti-inflammatory powerhouse targeting NF-κB pathway. Mushrooms add beta-glucan for immune support. Quinoa = complete protein. High protein, moderate cal, massive polyphenol hit.",colors:['yellow','green','brown','white']},
+{title:"The Sterol Fortress",time:"25min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:52,o:4800,f:18,cal:640,poly:220},ingredients:["6oz Wild Salmon","1 cup Edamame","1/2 cup Chickpeas","2 cups Kale","1/2 Avocado","2 tbsp Almonds (slivered)","1 tbsp EVOO","1 tbsp Ground Flaxseed","Lemon","Garlic"],steps:["Bake salmon at 400°F for 12 min","Steam edamame","Warm chickpeas with garlic and EVOO","Massage kale with lemon and olive oil","Plate kale, top with salmon","Add edamame, chickpeas, sliced avocado","Scatter almonds and flaxseed over top"],why:"Plant sterol triple stack: Edamame (soy sterols block cholesterol absorption in gut), almonds (natural plant sterols), avocado (beta-sitosterol). Salmon EPA/DHA reduces hepatic VLDL production. Chickpeas + kale add soluble fiber for bile acid binding. Flax = lignans + ALA. Full spectrum ApoB warfare.",colors:['pink','green','brown','white']},
+{title:"Chicken Fried Rice",time:"20min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:38,o:400,f:6,cal:650,poly:40},ingredients:["6oz Chicken Breast (diced)","2 cups Jasmine Rice (cooked)","2 Eggs","1 cup Mixed Vegetables (peas, carrots, corn)","2 tbsp Soy Sauce","1 tbsp Sesame Oil","3 cloves Garlic","Green Onions"],steps:["Cook rice ahead (day-old best)","Scramble eggs, set aside","Sear diced chicken in sesame oil","Add garlic, then vegetables","Add rice, toss on high heat","Add soy sauce and eggs back in","Top with green onions"],why:"High-volume comfort meal. Day-old rice = resistant starch (feeds gut bacteria). Eggs add choline. Sesame oil adds flavor with minimal sat fat.",colors:['brown','green','yellow','white']},
+{title:"Chicken Enchiladas",time:"35min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:42,o:300,f:8,cal:680,poly:80},ingredients:["6oz Shredded Chicken","2 Flour Tortillas","1/2 cup Black Beans","1/2 cup Enchilada Sauce","1/4 cup Monterey Jack Cheese","1/4 Avocado","Cilantro","Onion"],steps:["Shred chicken and mix with beans and sauce","Fill tortillas and roll","Place in baking dish, top with remaining sauce and cheese","Bake at 375°F for 20 min","Top with avocado and cilantro"],why:"Black beans add resistant starch + soluble fiber for ApoB. Chicken = lean protein. Avocado = monounsaturated fat + plant sterols.",colors:['brown','red','green','black']},
+{title:"Pepperoni Pizza (2 slices)",time:"0min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:22,o:100,f:4,cal:560,poly:20},ingredients:["2 slices Pepperoni Pizza"],steps:["Enjoy"],why:"Life needs pizza sometimes. 22g protein per 2 slices. Log it, own it, balance with high-fiber meals around it.",colors:['red','yellow','white']},
+{title:"Combo Pizza (2 slices)",time:"0min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:24,o:150,f:5,cal:580,poly:40},ingredients:["2 slices Combo Pizza (pepperoni, sausage, peppers, onions, olives)"],steps:["Enjoy"],why:"More vegetable toppings = more phytonutrients than plain pepperoni. Peppers add vitamin C, olives add monounsaturated fat. Balance with ApoB-attack meals.",colors:['red','yellow','green','black']},
+{title:"Steak Salad (Adalberto's)",time:"0min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:35,o:100,f:6,cal:550,poly:30},ingredients:["Carne Asada","Romaine Lettuce","Tomatoes","Carrots","Sliced Avocado","Cheese","Ranch Dressing"],steps:["Order at Adalberto's","Enjoy"],why:"Carne asada = bioavailable iron + zinc + B12. Avocado adds monounsaturated fat + plant sterols. Lettuce and tomato add fiber + lycopene. Ask for dressing on the side to control calories.",colors:['brown','green','red','yellow']},
+{title:"Steak Rolled Tacos (Adalberto's)",time:"0min",servings:1,portions:{jermaine:1,sophia:0.5},macros:{p:35,o:50,f:4,cal:700,poly:20},ingredients:["5 Beef Rolled Tacos (fried)","Guacamole","Cheese","Lettuce"],steps:["Order 5-piece steak rolled tacos at Adalberto's","Enjoy"],why:"Quick protein hit. Fried but 35g protein across 5 taquitos. Guac adds healthy fat. Use half portion for 2-3 tacos to keep calories in check.",colors:['brown','green','yellow']},
+{title:"In-N-Out Double Double (Protein Style)",time:"0min",servings:1,portions:{jermaine:1,sophia:0.75},macros:{p:52,o:50,f:3,cal:520,poly:10},ingredients:["2 Beef Patties","2 slices American Cheese","Lettuce Wrap (no bun)","Tomato","Onion","Spread"],steps:["Order Double-Double Protein Style","Enjoy"],why:"Protein style = lettuce wrap saves ~150 cal + 30g refined carbs vs bun. 52g bioavailable animal protein. Keep it simple — balance with high-fiber, high-omega-3 meals the rest of the day.",colors:['brown','green','yellow','red']},
+{title:"Protein Power Smoothie",time:"5min",servings:1,servingSize:"16oz",macros:{p:50,o:3200,f:10,cal:460,poly:120},ingredients:["1 scoop Pea Protein","1 tbsp Peanut Butter Powder","1 tbsp Ground Flaxseed","1 tbsp Chia Seeds","1 cup Spinach","1 cup Frozen Berries","1 tbsp Almond Butter","1 cup Oat Milk","Ice"],steps:["Add oat milk and spinach to blender","Add frozen berries, pea protein, peanut powder, flax, chia","Add almond butter and ice","Blend until smooth"],why:"Pea + peanut protein stack. Flax + chia = soluble fiber + ALA omega-3 for ApoB reduction. Oat milk adds beta-glucan. Spinach = magnesium + folate. Berries = anthocyanin polyphenols.",colors:['purple','green','brown']},
+{
+  title: "Guyanese Curry Chicken & Brown Rice",
+  time: "45min",
+  servings: 4,
+  portions: {jermaine: 1, sophia: 0.75},
+  macros: {p: 52, o: 600, f: 9, cal: 580, poly: 550},
+  ingredients: [
+    "1.5lbs Chicken Breast or Lean Thighs (cubed)", 
+    "3 tbsp Guyanese Curry Powder (e.g., Chief or Lalah's)", 
+    "1 tbsp Garam Masala", 
+    "4 cloves Garlic (minced)", 
+    "1 inch Fresh Ginger (grated)", 
+    "1/2 Scotch Bonnet or Wiri Wiri Pepper", 
+    "1 cup Brown Rice (dry)", 
+    "1 tbsp EVOO", 
+    "Fresh Thyme", 
+    "1/2 Onion (diced)"
+  ],
+  steps: [
+    "Wash and marinate chicken with garlic, ginger, thyme, and 1 tbsp of curry powder.",
+    "Cook brown rice separately (batch cook for the week if possible).",
+    "Heat EVOO in a heavy pot on medium. Add remaining curry powder and masala and 'burn' (toast) for 1-2 mins until fragrant.",
+    "Add onions and hot pepper, sauté until soft.",
+    "Add marinated chicken to the pot, stir to coat in the curry paste, and let it brown.",
+    "Add just enough water to cover the chicken. Simmer for 25-30 mins until the sauce thickens and chicken is tender.",
+    "Serve the curry over the cooked brown rice."
+  ],
+  why: "The spice blend is a polyphenol powerhouse. 'Burning' the curry in EVOO activates the fat-soluble curcumin, drastically reducing systemic inflammation (crucial for ANA 1:320). Brown rice adds resistant starch and soluble fiber, which binds to bile acids in the gut to drive down ApoB.",
+  colors: ['yellow', 'brown', 'green']
+}
+],
+juices:[
+{title:"Lemon Ginger Water",timeGroup:"☀️ MORNING — FASTED",servingSize:"16oz",macros:{p:0,o:0,f:0,cal:10,poly:30},ingredients:["1/2 Lemon (juiced)","1 inch Fresh Ginger (grated)","16oz Water","Ice"],steps:["Grate ginger into water","Add lemon juice","Stir and serve over ice"],why:"⏰ BEST: First thing AM on empty stomach (stimulates bile flow and digestive enzymes). 🎯 PRIMARY: Digestion + Hydration. Activates liver bile production for fat digestion at breakfast. Ginger stimulates gastric motility. Vitamin C from lemon enhances iron absorption. Zero calorie hydration base.",colors:['yellow']},
+{title:"ACV Digestive Tonic",timeGroup:"☀️ MORNING — FASTED",servingSize:"8oz",macros:{p:0,o:0,f:0,cal:15,poly:50},ingredients:["1 tbsp Apple Cider Vinegar (with mother)","1 tsp Honey","1/4 tsp Cinnamon","8oz Warm Water"],steps:["Mix ACV and honey in warm water","Add cinnamon","Stir well","Drink 15 min before meals"],why:"⏰ BEST: 15 minutes before meals (primes stomach acid for protein digestion). 🎯 PRIMARY: Protein Absorption + Blood Sugar. Acetic acid increases stomach acidity for better protein breakdown — critical when eating 175g+ protein daily. Slows gastric emptying = lower post-meal glucose spike.",colors:['brown','yellow']},
+{title:"The Lp(a) Crusher",timeGroup:"☀️ MORNING — FASTED",servingSize:"10oz",macros:{p:2,o:0,f:3,cal:140,poly:600},ingredients:["1 Pomegranate (seeds)","1 Beet","1 inch Ginger","1 Lemon","1/2 cup Blueberries"],steps:["Deseed pomegranate","Juice beet first, then pomegranate seeds","Add blueberries through juicer","Finish with ginger and lemon","Stir and drink immediately"],why:"⏰ BEST: Morning fasted (pomegranate punicalagins absorb best without food competition). 🎯 PRIMARY: Lp(a) (your #1 risk at 178 nmol/L). Pomegranate clinically shown to reduce Lp(a) and oxidized LDL. Beet nitrates for vasodilation. Blueberry anthocyanins amplify effect. Drink 3x/week minimum.",colors:['red','purple']},
+{title:"The Liver Reset",timeGroup:"☀️ MORNING — FASTED",servingSize:"10oz",macros:{p:1,o:0,f:2,cal:90,poly:200},ingredients:["1 cup Dandelion Greens","1 Green Apple","4 Celery Stalks","1 inch Ginger","1 Lemon"],steps:["Juice dandelion greens and celery first","Follow with green apple","Finish with ginger and lemon","Drink on empty stomach for best absorption"],why:"⏰ BEST: Morning on empty stomach (liver detox pathways most active 6-10am). 🎯 PRIMARY: Liver Function + eGFR Support. Dandelion stimulates Phase II liver detoxification enzymes. Green apple malic acid supports bile flow. Relevant for your elevated creatinine (1.32) — liver health affects kidney filtration.",colors:['green','yellow']},
+{title:"The ApoB Binder",timeGroup:"☀️ MORNING — FASTED",servingSize:"10oz",macros:{p:2,o:0,f:3,cal:130,poly:250},ingredients:["2 Green Apples","3 Carrots","4 Celery Stalks","1 inch Ginger","1 Lemon","2 cups Spinach"],steps:["Juice spinach and celery first","Follow with carrots and apples","Finish with ginger and lemon","Stir and drink immediately"],why:"⏰ BEST: Morning or before lunch (pectin needs to be in gut when bile acids release). 🎯 PRIMARY: ApoB + LDL. Apple pectin = soluble fiber that physically binds bile acids in the small intestine, forcing liver to pull LDL cholesterol from blood to make new bile. Direct ApoB reduction mechanism. Drink 2x/week.",colors:['green','orange']},
+{title:"The Nitric Oxide Flood",timeGroup:"☀️ MORNING — FASTED",servingSize:"10oz",macros:{p:2,o:0,f:1,cal:120,poly:300},ingredients:["1 Beet","2 cups Watermelon","3 Celery Stalks","1 Lemon","Fresh Mint"],steps:["Juice beet first","Add watermelon and celery","Finish with lemon","Garnish with mint","Drink 30 min before workout"],why:"⏰ BEST: 30-60min before workout (NO peaks 2-3hrs after beet consumption). 🎯 PRIMARY: Vascular Function + VO2max. Beet nitrates + watermelon citrulline = maximum vasodilation. Pre-workout timing amplifies Zone 2 cardio efficiency. Blood flow increase measurable within 1 hour.",colors:['red','green']},
+{title:"The Red Pipe Clearer",timeGroup:"☀️ MORNING — FASTED",servingSize:"10oz",macros:{p:2,o:0,f:2,cal:140,poly:450},ingredients:["1 Beet","3 Carrots","1 Pomegranate (seeds)","1 inch Ginger","1 Lemon"],steps:["Wash produce","Juice beets and carrots first","Add pomegranate seeds through juicer","Finish with ginger and lemon","Stir and drink immediately"],why:"⏰ BEST: Morning on empty stomach (maximum nitric oxide absorption). 🎯 PRIMARY: Lp(a) + Vasodilation. Beet nitrates peak in blood 2-3 hours after consumption. Pomegranate punicalagins directly reduce Lp(a) oxidation. Drink before cardio for amplified NO effect.",colors:['red','orange']},
+{title:"Ceremonial Matcha Latte",timeGroup:"☕ MORNING — WITH FOOD",servingSize:"12oz",macros:{p:3,o:0,f:0,cal:80,poly:400},ingredients:["1 tsp Ceremonial Grade Matcha","4oz Hot Water (175F)","8oz Oat Milk","Optional: 1 tsp Honey"],steps:["Sift matcha into bowl","Add hot water (not boiling)","Whisk vigorously until frothy","Heat oat milk, froth if desired","Combine matcha and milk"],why:"⏰ BEST: Morning or early afternoon (caffeine half-life 5-6hrs — avoid after 2pm). 🎯 PRIMARY: Polyphenols (EGCG) + Focus. L-theanine + caffeine = calm alertness without cortisol spike. EGCG catechins activate autophagy (cellular cleanup). 400mg polyphenols per serving.",colors:['green','white']},
+{title:"Green Tea (Sencha)",timeGroup:"☕ MORNING — WITH FOOD",servingSize:"12oz",macros:{p:0,o:0,f:0,cal:5,poly:300},ingredients:["1 tbsp Sencha Green Tea","12oz Water (175F)"],steps:["Heat water to 175F (not boiling)","Steep tea 2-3 minutes","Remove leaves, drink plain"],why:"⏰ BEST: Between meals, morning or early afternoon (tannins can block iron absorption with food). 🎯 PRIMARY: Polyphenols (EGCG) + ApoB. EGCG catechins inhibit cholesterol absorption in the gut. 175°F water preserves delicate compounds. L-theanine calms without drowsiness.",colors:['green']},
+{title:"Dutch Bros Large Golden Eagle (Protein)",timeGroup:"☕ MORNING — WITH FOOD",servingSize:"24oz",macros:{p:16,o:0,f:0,cal:240,poly:0},ingredients:["Large Golden Eagle","Protein Shot"],steps:["Order Large Golden Eagle","Add protein shot","Enjoy"],why:"⏰ BEST: Pre-workout morning (caffeine peaks 30-60min after consumption). 🎯 PRIMARY: Protein (16g) + Energy. Caffeine improves exercise performance 3-5%. Protein shot prevents muscle catabolism during fasted training. Grab-and-go option — not for daily use due to sugar content.",colors:['brown','yellow']},
+{title:"Bone Broth Elixir",timeGroup:"☕ MORNING — WITH FOOD",servingSize:"10oz",macros:{p:10,o:0,f:0,cal:45,poly:60},ingredients:["10oz Bone Broth","1/4 tsp Sea Salt","1/4 tsp Black Pepper","Pinch Turmeric"],steps:["Heat bone broth","Add spices","Sip slowly"],why:"⏰ BEST: Morning fasted or evening (gut repair happens overnight). 🎯 PRIMARY: Gut Lining + Joint Health. Collagen + glycine heal intestinal permeability. Bioavailable minerals absorbed best on empty stomach. Fasting-friendly at 45 cal — won't break a fast window.",colors:['brown']},
+{title:"Homemade Yogurt Drink",timeGroup:"☕ MORNING — WITH FOOD",servingSize:"12oz",macros:{p:12,o:0,f:0,cal:180,poly:0},ingredients:["1 cup Homemade Yogurt (whole milk + Fage starter, Chef IQ)","1 tbsp Raw Honey","1/2 cup Cold Water"],steps:["Blend homemade yogurt and water until smooth","Stir in honey","Serve chilled"],why:"⏰ BEST: With meals or as snack (probiotics survive better with food). 🎯 PRIMARY: Gut Microbiome + Protein (12g). Fresh-fermented = highest live probiotic count (billions CFU vs store-bought). Whole milk fat improves fat-soluble vitamin absorption. Fage starter = L. bulgaricus + S. thermophilus strains.",colors:['white']},
+{title:"The Centurion Smoothie",timeGroup:"☕ MORNING — WITH FOOD",time:"5min",servings:1,portions:{jermaine:1,sophia:0.75},servingSize:"24oz",macros:{p:66,o:2800,f:24,cal:820,poly:1050},ingredients:["1 scoop Pea Protein","2 tbsp PB Powder (Great Value)","1 cup Frozen Mixed Berries (Great Value)","1 scoop Vital Proteins Collagen Peptides","1 tbsp Psyllium Husk","1 tbsp Hemp Hearts","1/4 tsp Black Pepper","1 tsp Turmeric","1 tbsp Ground Flaxseed","1/2 cup Homemade Yogurt","1 tbsp Raw Honey","1/4 cup Pomegranate Seeds","1/2 scoop Wild Yam Root Powder","1 cup Oat Milk","1/2 cup Water"],steps:["Add water and oat milk to blender first","Add homemade yogurt, honey, and frozen berries","Add pomegranate seeds","Add pea protein, collagen peptides, PB powder, and yam powder","Add psyllium husk, flaxseed, turmeric, and black pepper","Blend until smooth 30-45 sec","Top with hemp hearts","Drink within 10 min (psyllium thickens fast)"],why:"⏰ BEST: Post-workout or AM snack. 🎯 PRIMARY: Full-Spectrum Longevity Stack. 66g protein from 4 sources. Collagen for joint/gut repair. Psyllium binds bile acids (ApoB reduction). Turmeric + black pepper = 2000x curcumin absorption for CRP. Pomegranate punicalagins reduce Lp(a) + oxidized LDL. Flax + hemp = 2800mg omega-3. Homemade yogurt = live probiotics. Daily longevity insurance.",colors:["purple","yellow","red","brown","white"]},
+{title:"Hibiscus Tea w/ Honey & Citrus Wheels",timeGroup:"🌤️ MIDDAY",time:"5min",servings:1,servingSize:"16oz",macros:{p:0,o:0,f:1,cal:65,poly:350},ingredients:["3 Hibiscus Tea Bags","16oz Hot Water","1 tbsp Raw Honey","Lemon Wheels","Orange Wheels"],steps:["Steep hibiscus tea bags in hot water 5-7 min","Add raw honey and stir","Float lemon and orange citrus wheels","Serve hot or chill over ice"],why:"⏰ BEST: Morning or early afternoon (mild diuretic — avoid before bed). 🎯 PRIMARY: Blood Pressure (systolic -7-10 points). 350mg polyphenols from hibiscus anthocyanins. Clinical dose at 16oz matches studies showing BP reduction comparable to ACE inhibitors. Vitamin C from citrus enhances polyphenol absorption.",colors:['red','yellow','orange']},
+{title:"The Citrus Alkalizer",timeGroup:"🌤️ MIDDAY",servingSize:"12oz",macros:{p:2,o:0,f:2,cal:120,poly:150},ingredients:["2 Apples","2 Oranges","2 cups Spinach","4 Celery Stalks","1 Lemon"],steps:["Wash all produce thoroughly","Juice spinach and celery first","Follow with apples and oranges","Finish with lemon","Stir and drink immediately"],why:"⏰ BEST: Mid-morning (alkalizing minerals counteract overnight acid buildup). 🎯 PRIMARY: Electrolytes + pH Balance. Apple + Celery = potassium flush for blood pressure. Spinach adds magnesium. Citrus vitamin C boosts iron absorption from next meal.",colors:['green','orange']},
+{title:"The ANA Green Soother",timeGroup:"🌤️ MIDDAY",servingSize:"10oz",macros:{p:2,o:0,f:2,cal:110,poly:350},ingredients:["4 Celery Stalks","1 Cucumber","1 Green Apple","1 inch Turmeric","1 inch Ginger","Pinch Black Pepper"],steps:["Juice turmeric and ginger first","Follow with celery and cucumber","Finish with green apple for sweetness","Add pinch black pepper (2000% curcumin absorption)","Stir and drink immediately"],why:"⏰ BEST: Morning or with lunch (curcumin absorbs better with food fat). 🎯 PRIMARY: ANA / Inflammation (CRP). Turmeric + Ginger = NF-κB suppression cascade. Black pepper increases curcumin bioavailability 2,000%. Designed for autoimmune markers — Sophia's ANA 1:320.",colors:['green','yellow']},
+{title:"The ANA Soother",timeGroup:"🌤️ MIDDAY",servingSize:"10oz",macros:{p:2,o:0,f:2,cal:120,poly:550},ingredients:["1 inch Turmeric","1 inch Ginger","1 cup Pineapple","1 Beet","1 Green Apple","Pinch Black Pepper"],steps:["Juice turmeric and ginger first","Follow with beet and pineapple","Finish with green apple","Add pinch black pepper","Stir and drink immediately"],why:"⏰ BEST: Morning with breakfast (curcumin absorbs better with food fat + Sophia's primary juice). 🎯 PRIMARY: ANA Titer + Autoimmune Inflammation. Curcumin modulates autoimmune response by dampening NF-κB and COX-2 pathways. Bromelain anti-inflammatory enzyme. Designed specifically for ANA 1:320.",colors:['yellow','red','green']},
+{title:"Homemade Kombucha Flight",timeGroup:"🌤️ MIDDAY",servingSize:"16oz",macros:{p:0,o:0,f:0,cal:35,poly:80},ingredients:["16oz Homemade Kombucha","Ice","Lemon slice","Mint sprig"],steps:["Pour chilled kombucha over ice","Garnish with fresh mint and lemon"],why:"⏰ BEST: With meals (probiotics survive better with food buffer). 🎯 PRIMARY: Gut Microbiome / Fiber Utilization. Live cultures improve nutrient extraction from fiber. Diverse probiotic strains support short-chain fatty acid production — directly feeds colon cells and reduces systemic inflammation.",colors:['yellow']},
+{title:"The Inflammation Killer",timeGroup:"🏋️ AFTERNOON — RECOVERY",servingSize:"10oz",macros:{p:1,o:0,f:1,cal:110,poly:400},ingredients:["1 cup Pineapple","1 Cucumber","1 inch Turmeric","1 inch Ginger","Pinch Black Pepper","1/2 Lemon"],steps:["Juice pineapple and cucumber first","Add turmeric and ginger","Squeeze lemon, add black pepper","Stir and drink immediately"],why:"⏰ BEST: Post-workout or low HRV days (anti-inflammatory cascade when body needs it most). 🎯 PRIMARY: CRP + Recovery. Bromelain (pineapple) + curcumin (turmeric) + gingerols = triple anti-inflammatory pathway suppression. Perfect for days when HRV drops below 38.",colors:['yellow','green']},
+{title:"Tart Cherry Recovery",timeGroup:"🏋️ AFTERNOON — RECOVERY",servingSize:"12oz",macros:{p:1,o:0,f:0,cal:120,poly:500},ingredients:["8oz Tart Cherry Juice (unsweetened)","4oz Water","Ice"],steps:["Mix cherry juice with water","Pour over ice","Drink post-workout"],why:"⏰ BEST: Immediately post-workout or 30min before bed (natural melatonin precursors). 🎯 PRIMARY: Muscle Recovery + Sleep. Anthocyanins reduce exercise-induced muscle soreness by 25%. Natural melatonin precursors improve sleep onset latency. Best on training days — skip rest days to manage sugar.",colors:['red']},
+{title:"Longevity Gold Elixir",timeGroup:"🏋️ AFTERNOON — RECOVERY",servingSize:"10oz",macros:{p:1,o:0,f:1,cal:90,poly:300},ingredients:["2 Oranges","1 cup Pineapple chunks","1 tbsp Sea Moss Gel","1 inch Turmeric","Pinch Black Pepper"],steps:["Juice oranges and pineapple","Stir in sea moss gel","Add turmeric and black pepper","Drink immediately"],why:"⏰ BEST: Afternoon (energy boost without caffeine, anti-inflammatory for PM recovery). 🎯 PRIMARY: CRP / Inflammation. Bromelain enzyme from pineapple reduces inflammatory cytokines. Sea moss delivers 92 trace minerals. Turmeric activated by piperine + fat from sea moss.",colors:['orange','yellow']},
+{title:"The Purple Longevity",timeGroup:"🏋️ AFTERNOON — RECOVERY",servingSize:"10oz",macros:{p:2,o:0,f:2,cal:130,poly:700},ingredients:["1/4 Red Cabbage","1 Beet","1 cup Blueberries","1 inch Ginger","1 Lemon"],steps:["Juice red cabbage first","Add beet and blueberries","Finish with ginger and lemon","Stir and drink immediately"],why:"⏰ BEST: Any time — highest polyphenol density of all juices (rotate with Lp(a) Crusher). 🎯 PRIMARY: Polyphenols (700mg) + Vascular Age. Triple anthocyanin source (cabbage + beet + blueberry) = highest antioxidant juice possible. Anthocyanins protect endothelial cells. Directly reduces vascular age score.",colors:['purple','red']},
+{title:"Adaptogen Cacao",timeGroup:"🏋️ AFTERNOON — RECOVERY",servingSize:"10oz",macros:{p:4,o:0,f:0,cal:85,poly:350},ingredients:["1 tbsp Raw Cacao Powder","1/2 tsp Ashwagandha","1/4 tsp Reishi Powder","10oz Oat Milk","1 tsp Honey"],steps:["Heat oat milk","Whisk in cacao and adaptogens","Add honey","Blend until frothy"],why:"⏰ BEST: Afternoon 2-4pm (cortisol dip — adaptogens smooth the curve). 🎯 PRIMARY: Cortisol Regulation + Polyphenols. Raw cacao flavanoids improve endothelial function (vascular age). Ashwagandha reduces cortisol 30% in clinical studies. Reishi modulates immune response — relevant for ANA.",colors:['brown','white']},
+{title:"Coconut Water Electrolyte",timeGroup:"🏋️ AFTERNOON — RECOVERY",servingSize:"12oz",macros:{p:1,o:0,f:0,cal:45,poly:0},ingredients:["12oz Coconut Water","Pinch Sea Salt","Squeeze Lime"],steps:["Pour coconut water over ice","Add sea salt and lime","Stir"],why:"⏰ BEST: Post-workout or mid-afternoon (replenish electrolytes lost during training). 🎯 PRIMARY: Electrolytes + Hydration. Natural potassium (600mg per serving) supports blood pressure regulation. Low sugar compared to sports drinks. Sea salt adds sodium for retention.",colors:['white']},
+{title:"Ginger Turmeric Tea",timeGroup:"🌙 EVENING — WIND DOWN",servingSize:"12oz",macros:{p:0,o:0,f:0,cal:15,poly:350},ingredients:["1.5 inch Fresh Ginger","1.5 inch Fresh Turmeric","1 Lemon","1/4 tsp Black Pepper","1 tsp Honey"],steps:["Slice ginger and turmeric thinly","Boil in 12oz water for 10 min","Add lemon juice and pepper","Strain, add honey"],why:"⏰ BEST: After meals (aids digestion) or evening (anti-inflammatory recovery). 🎯 PRIMARY: CRP + Digestion. Fresh ginger stimulates gastric motility and protein digestion. Turmeric fights systemic inflammation. Black pepper activates curcumin. Pairs perfectly after high-protein dinner.",colors:['yellow','orange']},
+{title:"Golden Milk (Hot)",timeGroup:"🌙 EVENING — WIND DOWN",servingSize:"8oz",macros:{p:2,o:0,f:0,cal:95,poly:250},ingredients:["1 cup Coconut Milk","1 tsp Turmeric","1/4 tsp Black Pepper","1 tbsp Sea Moss Gel","1 tsp Coconut Oil","1/2 tsp Cinnamon","Pinch Ginger"],steps:["Heat coconut milk in saucepan","Whisk in turmeric, pepper, sea moss","Add coconut oil and spices","Simmer 5 minutes","Strain and serve hot"],why:"⏰ BEST: Evening 1-2hrs before bed (anti-inflammatory nightcap + warm liquid promotes sleep). 🎯 PRIMARY: CRP + Sleep Quality. Curcumin needs fat + heat + black pepper for 2,000% absorption. Coconut oil provides the fat vehicle. Perfect recovery drink after evening training.",colors:['yellow','white']},
+{title:"Chamomile Magnesium Night",timeGroup:"🌙 EVENING — WIND DOWN",servingSize:"8oz",macros:{p:0,o:0,f:0,cal:5,poly:100},ingredients:["1 Chamomile Tea Bag","8oz Hot Water","200mg Magnesium Glycinate Powder"],steps:["Steep chamomile 5 minutes","Remove tea bag","Stir in magnesium powder","Drink 30 min before bed"],why:"⏰ BEST: 30 minutes before bed (GABA activation + muscle relaxation onset). 🎯 PRIMARY: Sleep Quality + HRV. Chamomile apigenin binds GABA receptors promoting sleep. Magnesium glycinate relaxes skeletal muscles and reduces cortisol. Directly improves HRV overnight — your biggest lever for vascular age.",colors:['yellow']}
+],
+alcohol:[
+{title:"Tequila Shot",macros:{p:0,o:0,f:0,cal:97,poly:0},ingredients:["1.5oz Tequila (Blanco or Reposado)","Lime Wedge","Pinch of Salt (optional)"],steps:["Pour tequila into shot glass","Lick salt if desired","Shoot tequila","Bite lime wedge"],why:"Lowest sugar spirit — 100% agave tequila has zero carbs and no added sugar. At 97 cal per shot it's one of the cleanest alcohol options. Agavins (agave sugars) are non-digestible and may support gut bacteria. One and done — protect your sleep score.",colors:['white']},
+{title:"Bogle Old Vine Zinfandel",macros:{p:0,o:0,f:0,cal:125,poly:350},ingredients:["5oz Red Wine"],steps:["Pour into wine glass","Let breathe 5 minutes","Enjoy with dinner"],why:"Red wine = resveratrol (activates sirtuins for longevity). Old vine = concentrated polyphenols. Moderate consumption linked to cardiovascular benefits.",colors:['red']},
+{title:"Sake (Junmai)",macros:{p:0,o:0,f:0,cal:105,poly:50},ingredients:["4oz Sake"],steps:["Serve chilled or warm","Pour into sake cup","Sip slowly with meal"],why:"Lower alcohol than wine. Amino acids from rice fermentation. Traditional pairing with omega-3 rich fish.",colors:['white']},
+{title:"Sapporo Premium Beer",macros:{p:1,o:0,f:0,cal:140,poly:30},ingredients:["12oz Sapporo"],steps:["Serve cold","Pour into glass","Enjoy"],why:"Japanese lager. Lower bitterness. Moderate alcohol content. Pairs well with sushi and Asian cuisine.",colors:['yellow']},
+{title:"Tito's Vodka Soda",macros:{p:0,o:0,f:0,cal:100,poly:0},ingredients:["1.5oz Tito's Handmade Vodka","Club Soda","Lime Wedge"],steps:["Fill glass with ice","Pour vodka","Top with club soda","Squeeze lime"],why:"Lowest calorie spirit option. Zero sugar, zero carbs. Club soda keeps it clean. Lime adds vitamin C.",colors:['white']},
+{title:"El Dorado Guyanese Rum",macros:{p:0,o:0,f:0,cal:110,poly:0},ingredients:["1.5oz El Dorado Rum","Ice"],steps:["Pour over ice or neat","Sip slowly"],why:"Premium Demerara rum. Sipping neat = no mixer calories. Enjoy the craft, respect the protocol — one and done.",colors:['brown']}
+
+],
+snack1:[
+{title:"The Centurion Smoothie",timeGroup:"☕ MORNING — WITH FOOD",time:"5min",servings:1,portions:{jermaine:1,sophia:0.75},servingSize:"24oz",macros:{p:66,o:2800,f:24,cal:820,poly:1050},ingredients:["1 scoop Pea Protein","2 tbsp PB Powder (Great Value)","1 cup Frozen Mixed Berries (Great Value)","1 scoop Vital Proteins Collagen Peptides","1 tbsp Psyllium Husk","1 tbsp Hemp Hearts","1/4 tsp Black Pepper","1 tsp Turmeric","1 tbsp Ground Flaxseed","1/2 cup Homemade Yogurt","1 tbsp Raw Honey","1/4 cup Pomegranate Seeds","1/2 scoop Wild Yam Root Powder","1 cup Oat Milk","1/2 cup Water"],steps:["Add water and oat milk to blender first","Add homemade yogurt, honey, and frozen berries","Add pomegranate seeds","Add pea protein, collagen peptides, PB powder, and yam powder","Add psyllium husk, flaxseed, turmeric, and black pepper","Blend until smooth 30-45 sec","Top with hemp hearts","Drink within 10 min (psyllium thickens fast)"],why:"⏰ BEST: Post-workout or AM snack. 🎯 PRIMARY: Full-Spectrum Longevity Stack. 66g protein from 4 sources. Collagen for joint/gut repair. Psyllium binds bile acids (ApoB reduction). Turmeric + black pepper = 2000x curcumin absorption for CRP. Pomegranate punicalagins reduce Lp(a) + oxidized LDL. Flax + hemp = 2800mg omega-3. Homemade yogurt = live probiotics. Daily longevity insurance.",colors:["purple","yellow","red","brown","white"]},
+{title:"Mikuni Pepper Fin",macros:{p:8,o:1200,f:2,cal:120,poly:50},ingredients:["1 serving Pepper Fin Tuna","Wasabi","Soy Sauce"],steps:["Open container","Add wasabi and soy to taste","Enjoy"],why:"High-quality sashimi-grade tuna. Omega-3 + protein. Quick restaurant-quality snack.",colors:['red','green']},
+{title:"Edamame",macros:{p:12,o:400,f:8,cal:150,poly:100},ingredients:["1 cup Edamame (in pods)","Sea Salt"],steps:["Boil edamame 5 mins","Drain and sprinkle with sea salt","Enjoy while warm"],why:"Complete plant protein. Isoflavones support cardiovascular health. High fiber.",colors:['green']},
+{title:"Crunchy Edamame",macros:{p:14,o:300,f:6,cal:130,poly:120},ingredients:["1 serving Dry Roasted Edamame","Sea Salt"],steps:["Open bag","Enjoy"],why:"Soy plant sterols block cholesterol absorption in the gut — direct ApoB reduction. Dry roasted = crunchy satisfying texture with 14g protein per serving. Isoflavones are concentrated in dried form.",colors:['green']},
+{title:"Yogurt Bowl (Hemp + Flax + Granola)",macros:{p:18,o:3100,f:6,cal:345,poly:90},ingredients:["1/2 cup Homemade Yogurt (Chef IQ, whole milk + Fage starter)","2 tbsp Hemp Hearts","1 tbsp Ground Flaxseed","1/4 cup Granola"],steps:["Scoop yogurt into bowl","Top with hemp hearts and flaxseed","Add granola","Enjoy"],why:"Live probiotics from fresh-fermented yogurt + hemp hearts deliver complete plant protein with all 9 amino acids + GLA (gamma-linolenic acid). Flax = ALA omega-3 + lignans that bind bile acids for ApoB reduction. Crunchy + creamy texture.",colors:['white','brown']},
+{title:"Caprese Salad",time:"5min",servings:1,macros:{p:26,o:100,f:4,cal:380,poly:120},ingredients:["4oz Fresh Mozzarella (sliced)","2 Large Heirloom Tomatoes (sliced)","Fresh Basil Leaves","2 tbsp EVOO","1 tbsp Balsamic Glaze","Sea Salt","Black Pepper"],steps:["Alternate slices of tomato and mozzarella on plate","Tuck fresh basil leaves between slices","Drizzle EVOO and balsamic glaze","Season with sea salt and cracked pepper"],why:"Tomato lycopene is fat-soluble — EVOO dramatically increases absorption. Lycopene lowers oxidized LDL (works alongside ApoB reduction). Fresh basil = eugenol (anti-inflammatory). Simple, clean, no-cook.",colors:['red','white','green']},
+{title:"Beef Jerky (Grass-Fed)",macros:{p:12,o:0,f:0,cal:80,poly:0},ingredients:["1oz Beef Jerky (Grass-fed)"],steps:["Open and enjoy"],why:"Pure bioavailable protein. Zero prep. convenient.",colors:['brown']},
+{title:"Savory Pulp Crackers",macros:{p:6,o:1200,f:12,cal:140,poly:50},ingredients:["Veggie Pulp","Flaxseed","Chia Seeds","Water"],steps:["Mix pulp and seeds","Spread thin on sheet","Dehydrate 8hrs"],why:"Zero waste. Massive fiber hit binds to cholesterol.",colors:['brown']},
+{title:"Citrus Ginger Pulp Chews",macros:{p:3,o:200,f:8,cal:110,poly:80},ingredients:["fruit pulp","almond flour","coconut"],steps:["Mix ingredients","Dehydrate until chewy"],why:"Uses leftover pulp. High fiber treat.",colors:['orange','white']},
+{title:"Dark Chocolate Oatmeal Balls",macros:{p:10,o:300,f:5,cal:210,poly:200},ingredients:["1.5 cups rolled oats","1/2 cup dark chocolate chips","1/2 cup almond butter"],steps:["Mix oats, protein, and salt","Fold in chocolate chips","Roll into balls"],why:"Oats = beta-glucan (lowers LDL). Dark chocolate = flavonols.",colors:['brown']},
+{title:"Centurion Protein Balls (PB)",macros:{p:12,o:800,f:4,cal:220,poly:30},ingredients:["1 cup oats","1/2 cup peanut butter","1/3 cup honey","Protein powder"],steps:["Mix all ingredients in a bowl","Roll into balls","Refrigerate"],why:"Quick protein hit + omega-3 from flax/chia.",colors:['brown']},
+{title:"Hummus & Carrots",macros:{p:4,o:0,f:6,cal:150,poly:40},ingredients:["1/2 cup Hummus","2 Carrots (sliced)"],steps:["Slice carrots","Scoop hummus","Enjoy"],why:"Fiber rich carb with healthy fats.",colors:['orange','white']},
+{title:"Roasted Seaweed Snacks",macros:{p:1,o:100,f:1,cal:30,poly:20},ingredients:["1 pack Seaweed sheets"],steps:["Eat straight from pack"],why:"Iodine powerhouse for thyroid health.",colors:['green']},
+{title:"Omega Nut Mix",macros:{p:6,o:2500,f:4,cal:180,poly:150},ingredients:["Walnuts","Brazil Nuts","Almonds"],steps:["Combine nuts"],why:"Walnuts essential for lowering Lp(a).",colors:['brown']},
+{title:"Hard Boiled Eggs",macros:{p:12,o:100,f:0,cal:140,poly:0},ingredients:["2 Eggs","Salt","Pepper"],steps:["Boil eggs for 10 mins","Cool in ice water","Peel and season"],why:"Choline source for brain health. Pure bioavailable protein.",colors:['white','yellow']},
+{title:"Sardines",macros:{p:22,o:2800,f:0,cal:190,poly:0},ingredients:["1 tin Wild-Caught Sardines","Lemon","Hot Sauce (optional)"],steps:["Open tin","Squeeze lemon over sardines","Add hot sauce if desired","Eat with fork"],why:"Sardines = highest omega-3 per calorie. Small fish = low mercury. Bones = calcium. B12 + Vitamin D. Sustainable seafood.",colors:['silver','white']},
+{title:"Tru Fru Dark Chocolate Raspberries",macros:{p:2,o:0,f:3,cal:130,poly:350},ingredients:["1 serving Tru Fru Dark Chocolate Raspberries"],steps:["Open bag","Enjoy frozen or room temp"],why:"Dark chocolate flavanols lower blood pressure + improve endothelial function. Raspberries = ellagic acid (anti-inflammatory). Polyphenol powerhouse snack.",colors:['red','brown']},
+{title:"Steak & Pico",portions:{jermaine:1,sophia:1},macros:{p:14,o:50,f:1,cal:110,poly:30},ingredients:["2oz Grilled Steak (sliced)","2 tbsp Pico de Gallo"],steps:["Slice leftover steak thin","Top with fresh pico de gallo","Enjoy cold or room temp"],why:"Quick 14g protein hit. Steak = bioavailable iron + zinc + B12. Pico adds vitamin C for iron absorption. Sophia's go-to work snack — no prep needed with leftover steak.",colors:['brown','red']}
+],
+snack2:[
+{title:"The Centurion Smoothie",timeGroup:"☕ MORNING — WITH FOOD",time:"5min",servings:1,portions:{jermaine:1,sophia:0.75},servingSize:"24oz",macros:{p:66,o:2800,f:24,cal:820,poly:1050},ingredients:["1 scoop Pea Protein","2 tbsp PB Powder (Great Value)","1 cup Frozen Mixed Berries (Great Value)","1 scoop Vital Proteins Collagen Peptides","1 tbsp Psyllium Husk","1 tbsp Hemp Hearts","1/4 tsp Black Pepper","1 tsp Turmeric","1 tbsp Ground Flaxseed","1/2 cup Homemade Yogurt","1 tbsp Raw Honey","1/4 cup Pomegranate Seeds","1/2 scoop Wild Yam Root Powder","1 cup Oat Milk","1/2 cup Water"],steps:["Add water and oat milk to blender first","Add homemade yogurt, honey, and frozen berries","Add pomegranate seeds","Add pea protein, collagen peptides, PB powder, and yam powder","Add psyllium husk, flaxseed, turmeric, and black pepper","Blend until smooth 30-45 sec","Top with hemp hearts","Drink within 10 min (psyllium thickens fast)"],why:"⏰ BEST: Post-workout or AM snack. 🎯 PRIMARY: Full-Spectrum Longevity Stack. 66g protein from 4 sources. Collagen for joint/gut repair. Psyllium binds bile acids (ApoB reduction). Turmeric + black pepper = 2000x curcumin absorption for CRP. Pomegranate punicalagins reduce Lp(a) + oxidized LDL. Flax + hemp = 2800mg omega-3. Homemade yogurt = live probiotics. Daily longevity insurance.",colors:["purple","yellow","red","brown","white"]},
+{title:"Mikuni Pepper Fin",macros:{p:8,o:1200,f:2,cal:120,poly:50},ingredients:["1 serving Pepper Fin Tuna","Wasabi","Soy Sauce"],steps:["Open container","Add wasabi and soy to taste","Enjoy"],why:"High-quality sashimi-grade tuna. Omega-3 + protein. Quick restaurant-quality snack.",colors:['red','green']},
+{title:"Edamame",macros:{p:12,o:400,f:8,cal:150,poly:100},ingredients:["1 cup Edamame (in pods)","Sea Salt"],steps:["Boil edamame 5 mins","Drain and sprinkle with sea salt","Enjoy while warm"],why:"Complete plant protein. Isoflavones support cardiovascular health. High fiber.",colors:['green']},
+{title:"Crunchy Edamame",macros:{p:14,o:300,f:6,cal:130,poly:120},ingredients:["1 serving Dry Roasted Edamame","Sea Salt"],steps:["Open bag","Enjoy"],why:"Soy plant sterols block cholesterol absorption in the gut — direct ApoB reduction. Dry roasted = crunchy satisfying texture with 14g protein per serving. Isoflavones are concentrated in dried form.",colors:['green']},
+{title:"Yogurt Bowl (Hemp + Flax + Granola)",macros:{p:18,o:3100,f:6,cal:345,poly:90},ingredients:["1/2 cup Homemade Yogurt (Chef IQ, whole milk + Fage starter)","2 tbsp Hemp Hearts","1 tbsp Ground Flaxseed","1/4 cup Granola"],steps:["Scoop yogurt into bowl","Top with hemp hearts and flaxseed","Add granola","Enjoy"],why:"Live probiotics from fresh-fermented yogurt + hemp hearts deliver complete plant protein with all 9 amino acids + GLA (gamma-linolenic acid). Flax = ALA omega-3 + lignans that bind bile acids for ApoB reduction. Crunchy + creamy texture.",colors:['white','brown']},
+{title:"Caprese Salad",time:"5min",servings:1,macros:{p:26,o:100,f:4,cal:380,poly:120},ingredients:["4oz Fresh Mozzarella (sliced)","2 Large Heirloom Tomatoes (sliced)","Fresh Basil Leaves","2 tbsp EVOO","1 tbsp Balsamic Glaze","Sea Salt","Black Pepper"],steps:["Alternate slices of tomato and mozzarella on plate","Tuck fresh basil leaves between slices","Drizzle EVOO and balsamic glaze","Season with sea salt and cracked pepper"],why:"Tomato lycopene is fat-soluble — EVOO dramatically increases absorption. Lycopene lowers oxidized LDL (works alongside ApoB reduction). Fresh basil = eugenol (anti-inflammatory). Simple, clean, no-cook.",colors:['red','white','green']},
+{title:"Beef Jerky (Grass-Fed)",macros:{p:12,o:0,f:0,cal:80,poly:0},ingredients:["1oz Beef Jerky (Grass-fed)"],steps:["Open and enjoy"],why:"Pure bioavailable protein. Zero prep. convenient.",colors:['brown']},
+{title:"Savory Pulp Crackers",macros:{p:6,o:1200,f:12,cal:140,poly:50},ingredients:["Veggie Pulp","Flaxseed","Chia Seeds","Water"],steps:["Mix pulp and seeds","Spread thin on sheet","Dehydrate 8hrs"],why:"Zero waste. Massive fiber hit binds to cholesterol.",colors:['brown']},
+{title:"Citrus Ginger Pulp Chews",macros:{p:3,o:200,f:8,cal:110,poly:80},ingredients:["fruit pulp","almond flour","coconut"],steps:["Mix ingredients","Dehydrate until chewy"],why:"Uses leftover pulp. High fiber treat.",colors:['orange','white']},
+{title:"Dark Chocolate Oatmeal Balls",macros:{p:10,o:300,f:5,cal:210,poly:200},ingredients:["1.5 cups rolled oats","1/2 cup dark chocolate chips","1/2 cup almond butter"],steps:["Mix oats, protein, and salt","Fold in chocolate chips","Roll into balls"],why:"Oats = beta-glucan (lowers LDL). Dark chocolate = flavonols.",colors:['brown']},
+{title:"Centurion Protein Balls (PB)",macros:{p:12,o:800,f:4,cal:220,poly:30},ingredients:["1 cup oats","1/2 cup peanut butter","1/3 cup honey","Protein powder"],steps:["Mix all ingredients in a bowl","Roll into balls","Refrigerate"],why:"Quick protein hit + omega-3 from flax/chia.",colors:['brown']},
+{title:"Hummus & Carrots",macros:{p:4,o:0,f:6,cal:150,poly:40},ingredients:["1/2 cup Hummus","2 Carrots (sliced)"],steps:["Slice carrots","Scoop hummus","Enjoy"],why:"Fiber rich carb with healthy fats.",colors:['orange','white']},
+{title:"Roasted Seaweed Snacks",macros:{p:1,o:100,f:1,cal:30,poly:20},ingredients:["1 pack Seaweed sheets"],steps:["Eat straight from pack"],why:"Iodine powerhouse for thyroid health.",colors:['green']},
+{title:"Omega Nut Mix",macros:{p:6,o:2500,f:4,cal:180,poly:150},ingredients:["Walnuts","Brazil Nuts","Almonds"],steps:["Combine nuts"],why:"Walnuts essential for lowering Lp(a).",colors:['brown']},
+{title:"Hard Boiled Eggs",macros:{p:12,o:100,f:0,cal:140,poly:0},ingredients:["2 Eggs","Salt","Pepper"],steps:["Boil eggs for 10 mins","Cool in ice water","Peel and season"],why:"Choline source for brain health. Pure bioavailable protein.",colors:['white','yellow']},
+{title:"Sardines",macros:{p:22,o:2800,f:0,cal:190,poly:0},ingredients:["1 tin Wild-Caught Sardines","Lemon","Hot Sauce (optional)"],steps:["Open tin","Squeeze lemon over sardines","Add hot sauce if desired","Eat with fork"],why:"Sardines = highest omega-3 per calorie. Small fish = low mercury. Bones = calcium. B12 + Vitamin D. Sustainable seafood.",colors:['silver','white']},
+{title:"Tru Fru Dark Chocolate Raspberries",macros:{p:2,o:0,f:3,cal:130,poly:350},ingredients:["1 serving Tru Fru Dark Chocolate Raspberries"],steps:["Open bag","Enjoy frozen or room temp"],why:"Dark chocolate flavanols lower blood pressure + improve endothelial function. Raspberries = ellagic acid (anti-inflammatory). Polyphenol powerhouse snack.",colors:['red','brown']},
+{title:"Steak & Pico",portions:{jermaine:1,sophia:1},macros:{p:14,o:50,f:1,cal:110,poly:30},ingredients:["2oz Grilled Steak (sliced)","2 tbsp Pico de Gallo"],steps:["Slice leftover steak thin","Top with fresh pico de gallo","Enjoy cold or room temp"],why:"Quick 14g protein hit. Steak = bioavailable iron + zinc + B12. Pico adds vitamin C for iron absorption. Sophia's go-to work snack — no prep needed with leftover steak.",colors:['brown','red']}
+],
+snack3:null, // Will be set to snack pool below
+juice1:null, // Will be set to juices array below
+juice2:null,
+juice3:null,
+juice4:null
+};
+// Map all juice slots to the same juices array
+MEALS.juice1=MEALS.juices;
+MEALS.juice2=MEALS.juices;
+MEALS.juice3=MEALS.juices;
+MEALS.juice4=MEALS.juices;
+// snack3 shares the same pool as snack1/snack2
+MEALS.snack3=MEALS.snack1;
+
+// ============================================================================
+// USER CONFIG & TOKENS
+// ============================================================================
+const USERS={
+jermaine:{name:"Jermaine",dob:"1983-01-13",goals:{protein:175,omega3:4000,fiber:50,water:140,poly:600,weightTarget:210,heightInches:76.5,z2:45,z5:20,calBurn:500,sleepHours:8},defaultBios:{bmr:'2072',apob:'114',lpa:'178',weight:'216.1',hscrp:'0.4',hba1c:'5.4',bodyfat:'19.6',muscle:'99.4',fatmass:'42.4',bmi:'26.3',inbodyscore:'84',trunklean:'75.6',trunkfat:'24.3',smi:'9.0',ldl:'118',hdl:'55',trig:'92',insulin:'10.5',glucose:'92',creatinine:'1.32',egfr:'69'},hrvBaseline:45},
+sophia:{name:"Sophia",dob:"1987-01-25",goals:{protein:130,omega3:4000,fiber:35,water:100,poly:500,weightTarget:118,heightInches:62,z2:30,z5:15,calBurn:350,sleepHours:8},defaultBios:{bmr:'1308',apob:'70',lpa:'20',weight:'143.1',hscrp:'0.5',hba1c:'5.0',bodyfat:'33.1',muscle:'52.5',fatmass:'47.4',bmi:'25.4',inbodyscore:'74',trunklean:'44.7',trunkfat:'25.4',smi:'6.6',ana:'1:320',glucose:'84',creatinine:'0.82',egfr:'94',ferritin:'75',tsh:'1.35'},hrvBaseline:55}
+};
+const TOKENS={jermaine:'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y',sophia:'4QSDWYJJUZFHRWRH727NCK7WH4COQJF4'};
+const COLORS={red:'#ff4757',orange:'#ff9500',yellow:'#ffd60a',green:'#34d399',purple:'#a855f7',white:'#fff',brown:'#A0522D',pink:'#f093fb',black:'#333',silver:'#ccc'};
+
+// ============================================================================
+// PROTOCOLS (v21)
+// ============================================================================
+const PROTOCOLS={
+microcurrent:{title:"⚡ MICROCURRENT",steps:["1. CLEANSE: Oil-free","2. GEL: Thick layer","3. FOREHEAD: Upward 3min","4. CHEEKS: Nose to ear 4min each","5. JAWLINE: Jaw to ear 3min","6. NECK: Upward only 2min","7. SLOW movements"]},
+microneedling:{title:"📍 MICRONEEDLING",steps:["1. SANITIZE device","2. CLEANSE 2x","3. SERUM: Apply HA","4. NEEDLE: Cross-hatch","5. WAIT 10min","6. NO actives 24hrs","7. SPF mandatory next day"]},
+massage:{title:"💆 MASSAGE",steps:["1. OIL: Apply facial oil","2. JAW: Chin to ear","3. CHEEKS: Lift to temples","4. EYES: Gentle circles","5. FOREHEAD: Horizontal","6. DRAIN: Down to collarbone"]},
+cupping:{title:"🔵 CUPPING",steps:["1. OIL back","2. STATIC 3-5min on knots","3. SLIDING along spine","4. AVOID direct spine","5. MARKS = stagnation","6. HEAT: Hyperice 15min after"]},
+clubstudio:{title:"🏢 CLUB STUDIO",steps:["OPTION A: Full Recovery","1. CRYO 3min","2. WAIT 5min","3. SAUNA 20min","4. MASSAGE BED 20min","","OPTION B: Quick","1. CRYO or Sauna only","2. MASSAGE BED 15min"]},
+hipflexor:{title:"🧘 HIP FLEXOR STRETCH",steps:["DURATION: 5 min total","","1. Kneeling lunge position","2. Engage core, tuck pelvis","3. Shift weight forward","4. Hold 2.5 min each side"]},
+shoulder:{title:"🦾 SHOULDER MOBILITY",steps:["1. ARM CIRCLES (1 min)","2. DOORWAY PEC STRETCH (2 min)","3. SLEEPER STRETCH (2 min)"]},
+lowhrv:{title:"💜 LOW HRV PROTOCOL",steps:["HRV IS BELOW BASELINE","","• Skip HIIT today","• Focus on Zone 2 only","• Extra 30min sleep","• No alcohol today"]},
+sauna:{title:"🔥 SAUNA PROTOCOL",steps:["DURATION: 20-25 min","","1. HYDRATE: 16oz water before","2. TEMP: 170-185°F (infrared: 130-150°F)","3. SESSION: 20-25min continuous","4. BREATHE: Deep nasal breathing","5. COOL: 2-3min cold shower after","6. HYDRATE: 24oz water + electrolytes","7. REST: 10min before activity","","BENEFITS: Growth hormone ↑, HSP activation,","cardiovascular conditioning, detox"]},
+cryo:{title:"❄️ CRYO PROTOCOL",steps:["DURATION: 3 min","","1. DRY SKIN: Remove moisture","2. PROTECT: Gloves, socks, ear cover","3. ENTER: -130°F to -270°F","4. KEEP MOVING: Rotate slowly","5. BREATHE: Steady controlled breaths","6. EXIT: After 3min max","7. WARM: Natural rewarming 5-10min","","BENEFITS: Inflammation ↓, NE ↑ 200-300%,","vasoconstriction → vasodilation, recovery"]},
+contrast:{title:"🔥❄️ CONTRAST PROTOCOL",steps:["TOTAL: 20-30 min","","1. SAUNA: 15-20min at 170°F+","2. COLD: 3min cryo or cold plunge","3. REST: 5min natural rewarming","4. REPEAT: 2-3 rounds if time allows","","SEQUENCE: Always end on COLD","","BENEFITS: Vascular elasticity, norepinephrine,","deep recovery, immune activation"]},
+normatec:{title:"🦵 NORMATEC",steps:["1. SETUP Legs/Hips","2. LEVEL 7 flush","3. TIME 30-45min","4. ZONE boost if sore","5. HYDRATE 16oz after","6. Can do 2x daily"]},
+inshape:{title:"🏊 INSHAPE",steps:["1. STEAM 15min","2. SAUNA 20min","3. POOL 20min light","4. AQUA BED 30min","5. SHOWER cold finish","6. NORMATEC 45min home"]}
+};
+
+// ============================================================================
+// BASE PROTOCOL (v21)
+// ============================================================================
+const BASE=[
+{id:'morningBeverage',time:'7:15 AM',title:'Morning Beverage',desc:'Tap to select',macros:{p:0,o:0,f:0,cal:0,poly:0},colors:[],clickable:true,mealSlot:'juice2',cssClass:'optional',tag:'BEVERAGE'},
+{id:'breakfast',time:'7:30 AM',title:'Breakfast',desc:'Tap to select',macros:{p:0,o:0,f:0,cal:0,poly:0},colors:[],clickable:true,mealSlot:'breakfast',tag:'BREAKFAST'},
+{id:'breakfastSnack',time:'10:00 AM',title:'Morning Snack',desc:'Tap to select',macros:{p:0,o:0,f:0,cal:0,poly:0},colors:[],clickable:true,mealSlot:'snack1',tag:'SNACK'},
+{id:'lunch',time:'1:00 PM',title:'Lunch',desc:'Tap to select',macros:{p:0,o:0,f:0,cal:0,poly:0},colors:[],clickable:true,mealSlot:'lunch',tag:'LUNCH'},
+{id:'lunchSnack',time:'3:00 PM',title:'Afternoon Snack',desc:'Tap to select',macros:{p:0,o:0,f:0,cal:0,poly:0},colors:[],clickable:true,mealSlot:'snack2',tag:'SNACK'},
+{id:'afternoonBeverage',time:'3:30 PM',title:'Afternoon Beverage',desc:'Tap to select',macros:{p:0,o:0,f:0,cal:0,poly:0},colors:[],clickable:true,mealSlot:'juice3',cssClass:'optional',tag:'BEVERAGE'},
+{id:'eveningSnack',time:'5:00 PM',title:'Evening Snack',desc:'Tap to select',macros:{p:0,o:0,f:0,cal:0,poly:0},colors:[],clickable:true,mealSlot:'snack3',tag:'SNACK'},
+{id:'dinner',time:'6:30 PM',title:'Dinner',desc:'Tap to select',macros:{p:0,o:0,f:0,cal:0,poly:0},colors:[],clickable:true,mealSlot:'dinner',tag:'DINNER'},
+{id:'eveningBeverage',time:'7:30 PM',title:'Evening Beverage',desc:'Tap to select',macros:{p:0,o:0,f:0,cal:0,poly:0},colors:[],clickable:true,mealSlot:'juice4',cssClass:'optional',tag:'BEVERAGE'},
+{id:'alcohol',time:'8:00 PM',title:'Alcohol (Optional)',desc:'Tap to select',macros:{p:0,o:0,f:0,cal:0,poly:0},colors:[],clickable:true,mealSlot:'alcohol',cssClass:'optional',tag:'ALCOHOL'}
+];
+
+// ============================================================================
+// MAIN APPLICATION - MERGED v21 Logic + v22 Oura Features
+// ============================================================================
+class CenturionApp{
+dbg(msg){const p=document.getElementById('debugPanel');if(p)p.innerHTML+=msg+'<br>';console.log(msg)}
+constructor(){
+console.log('🚀 Centurion v23.1 SKELETON');
+this.user=localStorage.getItem('c_user')||'jermaine';
+this.history=[];this.currentIndex=0;this.currentDateStr=new Date().toLocaleDateString('en-CA');
+this.checked=JSON.parse(localStorage.getItem(`c_chk_${this.user}`)||'{}');
+this.meals=JSON.parse(localStorage.getItem(`c_meals_${this.user}`)||'{}');
+this.portions=JSON.parse(localStorage.getItem(`c_portions_${this.user}`)||'{}');
+this.water=JSON.parse(localStorage.getItem(`c_water_${this.user}`)||'{}');
+this.bios=JSON.parse(localStorage.getItem(`c_bios_${this.user}`)||'null')||USERS[this.user].defaultBios;
+this.bioHistory=JSON.parse(localStorage.getItem(`c_bioHist_${this.user}`)||'[]');
+if(this.bioHistory.length===0){
+const seeds={jermaine:[
+{"date":"2025-12-23","weight":"217.1","bodyfat":"20.7","muscle":"98.8","fatmass":"44.9","bmr":"2057","bmi":"26.4","inbodyscore":"74"},
+{"date":"2026-01-06","weight":"217.1","bodyfat":"20.7","muscle":"98.8","fatmass":"44.9","bmr":"2057","bmi":"26.4","inbodyscore":"74","apob":"114","lpa":"178","ldl":"118","hdl":"46","trig":"92","hscrp":"0.4","glucose":"87","hba1c":"5.4","insulin":"10.5","creatinine":"1.32","egfr":"69"},
+{"date":"2026-02-23","weight":"216.1","bodyfat":"19.6","muscle":"99.4","fatmass":"42.4","bmr":"2072","bmi":"26.3","inbodyscore":"84","trunklean":"75.6","trunkfat":"24.3","smi":"9.0","apob":"114","lpa":"178","ldl":"118","hdl":"46","trig":"92","hscrp":"0.4","glucose":"87","hba1c":"5.4","insulin":"10.5","creatinine":"1.32","egfr":"69"}
+],sophia:[
+{"date":"2026-02-23","weight":"143.1","bodyfat":"33.1","muscle":"52.5","fatmass":"47.4","bmr":"1308","bmi":"25.4","inbodyscore":"74","trunklean":"44.7","trunkfat":"25.4","smi":"6.6","ana":"1:320","glucose":"84","creatinine":"0.82","egfr":"94","ferritin":"75","tsh":"1.35","hscrp":"0.5","hba1c":"5.0"}
+]};
+if(seeds[this.user]){this.bioHistory=seeds[this.user];localStorage.setItem(`c_bioHist_${this.user}`,JSON.stringify(this.bioHistory))}
+}
+this.protocol=[];this.currentPortion=1;this.currentMealSlot=null;this.inRecipeView=false;this.streak=0;
+this.removedIngredients=JSON.parse(localStorage.getItem(`c_remIng_${this.user}`)||'{}');
+this.sideItems=JSON.parse(localStorage.getItem(`c_sides_${this.user}`)||'{}');
+this.ingredientSwaps=JSON.parse(localStorage.getItem(`c_swaps_${this.user}`)||'{}');
+document.querySelectorAll('.user-switch button').forEach(b=>b.classList.remove('active'));
+document.getElementById(`btn-${this.user}`)?.classList.add('active');
+// Seed manual sleep for 2026-02-16 (Oura died, Apple Health backup)
+if(!localStorage.getItem('c_manualSleep_jermaine')){
+localStorage.setItem('c_manualSleep_jermaine',JSON.stringify({'2026-02-16':{totalSec:18420,deepSec:4200,remSec:4500,rhr:59,score:55}}));
+}
+this.setPlaceholder();this.restoreSectionStates();this.render();this.fetchOura();
+}
+
+save(){
+
+// USER CONFIG & TOKENS
+// ============================================================================
+const USERS={
+jermaine:{name:"Jermaine",dob:"1983-01-13",goals:{protein:175,omega3:4000,fiber:50,water:140,poly:600,weightTarget:210,heightInches:76.5,z2:45,z5:20,calBurn:500,sleepHours:8},defaultBios:{bmr:'2072',apob:'114',lpa:'178',weight:'216.1',hscrp:'0.4',hba1c:'5.4',bodyfat:'19.6',muscle:'99.4',fatmass:'42.4',bmi:'26.3',inbodyscore:'84',trunklean:'75.6',trunkfat:'24.3',smi:'9.0',ldl:'118',hdl:'55',trig:'92',insulin:'10.5',glucose:'92',creatinine:'1.32',egfr:'69'},hrvBaseline:45},
+sophia:{name:"Sophia",dob:"1987-01-25",goals:{protein:130,omega3:4000,fiber:35,water:100,poly:500,weightTarget:118,heightInches:62,z2:30,z5:15,calBurn:350,sleepHours:8},defaultBios:{bmr:'1308',apob:'70',lpa:'20',weight:'143.1',hscrp:'0.5',hba1c:'5.0',bodyfat:'33.1',muscle:'52.5',fatmass:'47.4',bmi:'25.4',inbodyscore:'74',trunklean:'44.7',trunkfat:'25.4',smi:'6.6',ana:'1:320',glucose:'84',creatinine:'0.82',egfr:'94',ferritin:'75',tsh:'1.35'},hrvBaseline:55}
+};
+const TOKENS={jermaine:'WLIGFPFJQY73G43BY7CK7H6UJXPQ7N5Y',sophia:'4QSDWYJJUZFHRWRH727NCK7WH4COQJF4'};
+const COLORS={red:'#ff4757',orange:'#ff9500',yellow:'#ffd60a',green:'#34d399',purple:'#a855f7',white:'#fff',brown:'#A0522D',pink:'#f093fb',black:'#333',silver:'#ccc'};
+
+// ============================================================================
+// PROTOCOLS (v21)
+// ============================================================================
+const PROTOCOLS={
+microcurrent:{title:"⚡ MICROCURRENT",steps:["1. CLEANSE: Oil-free","2. GEL: Thick layer","3. FOREHEAD: Upward 3min","4. CHEEKS: Nose to ear 4min each","5. JAWLINE: Jaw to ear 3min","6. NECK: Upward only 2min","7. SLOW movements"]},
+microneedling:{title:"📍 MICRONEEDLING",steps:["1. SANITIZE device","2. CLEANSE 2x","3. SERUM: Apply HA","4. NEEDLE: Cross-hatch","5. WAIT 10min","6. NO actives 24hrs","7. SPF mandatory next day"]},
+massage:{title:"💆 MASSAGE",steps:["1. OIL: Apply facial oil","2. JAW: Chin to ear","3. CHEEKS: Lift to temples","4. EYES: Gentle circles","5. FOREHEAD: Horizontal","6. DRAIN: Down to collarbone"]},
+cupping:{title:"🔵 CUPPING",steps:["1. OIL back","2. STATIC 3-5min on knots","3. SLIDING along spine","4. AVOID direct spine","5. MARKS = stagnation","6. HEAT: Hyperice 15min after"]},
+clubstudio:{title:"🏢 CLUB STUDIO",steps:["OPTION A: Full Recovery","1. CRYO 3min","2. WAIT 5min","3. SAUNA 20min","4. MASSAGE BED 20min","","OPTION B: Quick","1. CRYO or Sauna only","2. MASSAGE BED 15min"]},
+hipflexor:{title:"🧘 HIP FLEXOR STRETCH",steps:["DURATION: 5 min total","","1. Kneeling lunge position","2. Engage core, tuck pelvis","3. Shift weight forward","4. Hold 2.5 min each side"]},
+shoulder:{title:"🦾 SHOULDER MOBILITY",steps:["1. ARM CIRCLES (1 min)","2. DOORWAY PEC STRETCH (2 min)","3. SLEEPER STRETCH (2 min)"]},
+lowhrv:{title:"💜 LOW HRV PROTOCOL",steps:["HRV IS BELOW BASELINE","","• Skip HIIT today","• Focus on Zone 2 only","• Extra 30min sleep","• No alcohol today"]},
+sauna:{title:"🔥 SAUNA PROTOCOL",steps:["DURATION: 20-25 min","","1. HYDRATE: 16oz water before","2. TEMP: 170-185°F (infrared: 130-150°F)","3. SESSION: 20-25min continuous","4. BREATHE: Deep nasal breathing","5. COOL: 2-3min cold shower after","6. HYDRATE: 24oz water + electrolytes","7. REST: 10min before activity","","BENEFITS: Growth hormone ↑, HSP activation,","cardiovascular conditioning, detox"]},
+cryo:{title:"❄️ CRYO PROTOCOL",steps:["DURATION: 3 min","","1. DRY SKIN: Remove moisture","2. PROTECT: Gloves, socks, ear cover","3. ENTER: -130°F to -270°F","4. KEEP MOVING: Rotate slowly","5. BREATHE: Steady controlled breaths","6. EXIT: After 3min max","7. WARM: Natural rewarming 5-10min","","BENEFITS: Inflammation ↓, NE ↑ 200-300%,","vasoconstriction → vasodilation, recovery"]},
+contrast:{title:"🔥❄️ CONTRAST PROTOCOL",steps:["TOTAL: 20-30 min","","1. SAUNA: 15-20min at 170°F+","2. COLD: 3min cryo or cold plunge","3. REST: 5min natural rewarming","4. REPEAT: 2-3 rounds if time allows","","SEQUENCE: Always end on COLD","","BENEFITS: Vascular elasticity, norepinephrine,","deep recovery, immune activation"]},
+normatec:{title:"🦵 NORMATEC",steps:["1. SETUP Legs/Hips","2. LEVEL 7 flush","3. TIME 30-45min","4. ZONE boost if sore","5. HYDRATE 16oz after","6. Can do 2x daily"]},
+inshape:{title:"🏊 INSHAPE",steps:["1. STEAM 15min","2. SAUNA 20min","3. POOL 20min light","4. AQUA BED 30min","5. SHOWER cold finish","6. NORMATEC 45min home"]}
+};
+
+// ============================================================================
+// BASE PROTOCOL (v21)
+// ============================================================================
+const BASE=[
+{id:'morningBeverage',time:'7:15 AM',title:'Morning Beverage',desc:'Tap to select',macros:{p:0,o:0,f:0,cal:0,poly:0},colors:[],clickable:true,mealSlot:'juice2',cssClass:'optional',tag:'BEVERAGE'},
+{id:'breakfast',time:'7:30 AM',title:'Breakfast',desc:'Tap to select',macros:{p:0,o:0,f:0,cal:0,poly:0},colors:[],clickable:true,mealSlot:'breakfast',tag:'BREAKFAST'},
+{id:'breakfastSnack',time:'10:00 AM',title:'Morning Snack',desc:'Tap to select',macros:{p:0,o:0,f:0,cal:0,poly:0},colors:[],clickable:true,mealSlot:'snack1',tag:'SNACK'},
+{id:'lunch',time:'1:00 PM',title:'Lunch',desc:'Tap to select',macros:{p:0,o:0,f:0,cal:0,poly:0},colors:[],clickable:true,mealSlot:'lunch',tag:'LUNCH'},
+{id:'lunchSnack',time:'3:00 PM',title:'Afternoon Snack',desc:'Tap to select',macros:{p:0,o:0,f:0,cal:0,poly:0},colors:[],clickable:true,mealSlot:'snack2',tag:'SNACK'},
+{id:'afternoonBeverage',time:'3:30 PM',title:'Afternoon Beverage',desc:'Tap to select',macros:{p:0,o:0,f:0,cal:0,poly:0},colors:[],clickable:true,mealSlot:'juice3',cssClass:'optional',tag:'BEVERAGE'},
+{id:'eveningSnack',time:'5:00 PM',title:'Evening Snack',desc:'Tap to select',macros:{p:0,o:0,f:0,cal:0,poly:0},colors:[],clickable:true,mealSlot:'snack3',tag:'SNACK'},
+{id:'dinner',time:'6:30 PM',title:'Dinner',desc:'Tap to select',macros:{p:0,o:0,f:0,cal:0,poly:0},colors:[],clickable:true,mealSlot:'dinner',tag:'DINNER'},
+{id:'eveningBeverage',time:'7:30 PM',title:'Evening Beverage',desc:'Tap to select',macros:{p:0,o:0,f:0,cal:0,poly:0},colors:[],clickable:true,mealSlot:'juice4',cssClass:'optional',tag:'BEVERAGE'},
+{id:'alcohol',time:'8:00 PM',title:'Alcohol (Optional)',desc:'Tap to select',macros:{p:0,o:0,f:0,cal:0,poly:0},colors:[],clickable:true,mealSlot:'alcohol',cssClass:'optional',tag:'ALCOHOL'}
+];
+
+// ============================================================================
+// MAIN APPLICATION - MERGED v21 Logic + v22 Oura Features
+// ============================================================================
+class CenturionApp{
+dbg(msg){const p=document.getElementById('debugPanel');if(p)p.innerHTML+=msg+'<br>';console.log(msg)}
+constructor(){
+console.log('🚀 Centurion v23.1 SKELETON');
+this.user=localStorage.getItem('c_user')||'jermaine';
+this.history=[];this.currentIndex=0;this.currentDateStr=new Date().toLocaleDateString('en-CA');
+this.checked=JSON.parse(localStorage.getItem(`c_chk_${this.user}`)||'{}');
+this.meals=JSON.parse(localStorage.getItem(`c_meals_${this.user}`)||'{}');
+this.portions=JSON.parse(localStorage.getItem(`c_portions_${this.user}`)||'{}');
+this.water=JSON.parse(localStorage.getItem(`c_water_${this.user}`)||'{}');
+this.bios=JSON.parse(localStorage.getItem(`c_bios_${this.user}`)||'null')||USERS[this.user].defaultBios;
+this.bioHistory=JSON.parse(localStorage.getItem(`c_bioHist_${this.user}`)||'[]');
+if(this.bioHistory.length===0){
+const seeds={jermaine:[
+{"date":"2025-12-23","weight":"217.1","bodyfat":"20.7","muscle":"98.8","fatmass":"44.9","bmr":"2057","bmi":"26.4","inbodyscore":"74"},
+{"date":"2026-01-06","weight":"217.1","bodyfat":"20.7","muscle":"98.8","fatmass":"44.9","bmr":"2057","bmi":"26.4","inbodyscore":"74","apob":"114","lpa":"178","ldl":"118","hdl":"46","trig":"92","hscrp":"0.4","glucose":"87","hba1c":"5.4","insulin":"10.5","creatinine":"1.32","egfr":"69"},
+{"date":"2026-02-23","weight":"216.1","bodyfat":"19.6","muscle":"99.4","fatmass":"42.4","bmr":"2072","bmi":"26.3","inbodyscore":"84","trunklean":"75.6","trunkfat":"24.3","smi":"9.0","apob":"114","lpa":"178","ldl":"118","hdl":"46","trig":"92","hscrp":"0.4","glucose":"87","hba1c":"5.4","insulin":"10.5","creatinine":"1.32","egfr":"69"}
+],sophia:[
+{"date":"2026-02-23","weight":"143.1","bodyfat":"33.1","muscle":"52.5","fatmass":"47.4","bmr":"1308","bmi":"25.4","inbodyscore":"74","trunklean":"44.7","trunkfat":"25.4","smi":"6.6","ana":"1:320","glucose":"84","creatinine":"0.82","egfr":"94","ferritin":"75","tsh":"1.35","hscrp":"0.5","hba1c":"5.0"}
+]};
+if(seeds[this.user]){this.bioHistory=seeds[this.user];localStorage.setItem(`c_bioHist_${this.user}`,JSON.stringify(this.bioHistory))}
+}
+this.protocol=[];this.currentPortion=1;this.currentMealSlot=null;this.inRecipeView=false;this.streak=0;
+this.removedIngredients=JSON.parse(localStorage.getItem(`c_remIng_${this.user}`)||'{}');
+this.sideItems=JSON.parse(localStorage.getItem(`c_sides_${this.user}`)||'{}');
+this.ingredientSwaps=JSON.parse(localStorage.getItem(`c_swaps_${this.user}`)||'{}');
+document.querySelectorAll('.user-switch button').forEach(b=>b.classList.remove('active'));
+document.getElementById(`btn-${this.user}`)?.classList.add('active');
+// Seed manual sleep for 2026-02-16 (Oura died, Apple Health backup)
+if(!localStorage.getItem('c_manualSleep_jermaine')){
+localStorage.setItem('c_manualSleep_jermaine',JSON.stringify({'2026-02-16':{totalSec:18420,deepSec:4200,remSec:4500,rhr:59,score:55}}));
+}
+this.setPlaceholder();this.restoreSectionStates();this.render();this.fetchOura();
+}
+
+save(){
