@@ -1096,6 +1096,36 @@ const metrics=[
 
 let html=`<div style="padding:10px">`;
 const cats=[...new Set(metrics.map(m=>m.cat))];
+// Total progress header — add right after: html+=`<div style="padding:10px">`;
+const first=hist[0];
+const latest=hist[hist.length-1];
+const daysSince=Math.round((new Date(latest.date)-new Date(first.date))/(1000*60*60*24));
+const progMetrics=[
+{key:'weight',label:'Weight',unit:'lbs',dir:-1},
+{key:'bodyfat',label:'Body Fat',unit:'%',dir:-1},
+{key:'muscle',label:'Muscle',unit:'lbs',dir:1},
+{key:'fatmass',label:'Fat Mass',unit:'lbs',dir:-1},
+{key:'inbodyscore',label:'InBody',unit:'',dir:1}
+];
+
+html+=`<div style="background:linear-gradient(135deg,rgba(200,255,0,0.06),rgba(0,212,255,0.06));border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:20px">`;
+html+=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="font-size:0.7rem;font-weight:900;color:var(--acid);letter-spacing:1px">TOTAL PROGRESS</div><div style="font-size:0.55rem;color:var(--text-tertiary)">${daysSince} days tracked · ${hist.length} scans</div></div>`;
+html+=`<div style="display:grid;grid-template-columns:repeat(${progMetrics.length},1fr);gap:6px">`;
+progMetrics.forEach(pm=>{
+const f=parseFloat(first[pm.key]||0);
+const l=parseFloat(latest[pm.key]||0);
+if(!f&&!l)return;
+const diff=l-f;
+const improving=(pm.dir===-1&&diff<0)||(pm.dir===1&&diff>0);
+const sign=diff>0?'+':'';
+const color=diff===0?'var(--text-tertiary)':improving?'var(--success)':'var(--alert)';
+html+=`<div style="text-align:center;padding:8px 4px;background:var(--panel);border-radius:8px;border:1px solid var(--border)">
+<div style="font-size:0.45rem;color:var(--text-tertiary);margin-bottom:4px">${pm.label}</div>
+<div style="font-size:0.9rem;font-weight:800;color:${color}">${sign}${diff.toFixed(1)}</div>
+<div style="font-size:0.4rem;color:var(--text-tertiary)">${pm.unit}</div></div>`;
+});
+html+=`</div></div>`;
+
 cats.forEach(cat=>{
 const catMetrics=metrics.filter(m=>m.cat===cat);
 const catColor=cat==='Body Comp'?'var(--cyan)':cat==='Cardiovascular'?'var(--alert)':cat==='Metabolic'?'var(--orange)':'var(--success)';
