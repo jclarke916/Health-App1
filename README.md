@@ -36,6 +36,21 @@ Two things the Ollama box must allow:
 
 `python tools/mock_ollama.py` runs a fake Ollama on port 11435 for UI work without loading a model.
 
+## Home sync (automatic)
+
+Both phones keep their own full copy in `localStorage` and sync it with `server/sync_server.py`, a stdlib-only Python service on the home PC:
+
+```bash
+pythonw server/sync_server.py --data C:/Users/<you>/CenturionData --port 8792
+tailscale serve --bg --https=10000 http://127.0.0.1:8792
+```
+
+- The server listens on localhost only; `tailscale serve` makes it reachable (https, tailnet-only) from the phones. Data is `<data>/state.json`, with a daily copy in `<data>/backups/` (60 kept) and activity in `sync.log`.
+- In the app, **⚙ → Home Sync → Sync server URL**. A `#setup=<base64 {"sync": "...", "ai": "..."}>` link fills in both server URLs in one tap (the app asks first).
+- Sync runs by itself: on open, ~1.5 s after any change, when the app comes back to the foreground, when the network returns, and every 20 s while open. The footer shows `☁ SYNCED <time>` / `☁ CAN'T REACH HOME`. Offline edits are kept and go up later.
+- Unit of sync is one first-level property of one storage key (one day of meals, one lab field…), last write wins. `c_user`, `c_sections` and `c_ai` are per-device and never synced. Change detection is a diff against hashes of the last synced state (`csync_shadow`), so app code never has to call sync.
+- **First sync of a device** trusts that phone for its current user's data and the server for everyone else's, so two phones with separate histories merge instead of overwriting each other. The phone's pre-merge data is kept in `csync_prefirst`.
+
 ## Oura proxy
 
 Oura's API has no CORS headers, so requests go through a Cloudflare Worker (`OURA_PROXY` in `index.html`). `worker/oura-proxy.js` is the locked-down version: Oura URLs only, known origins only.
@@ -43,5 +58,6 @@ Oura's API has no CORS headers, so requests go through a Cloudflare Worker (`OUR
 ## Layout
 
 - `index.html` — the app. `MEALS` / `USERS` / `PROTOCOLS` data, then `class CenturionApp` (everything on screen), then `class CenturionAI` (the 🤖 panel).
+- `server/` — home sync server.
 - `worker/` — Cloudflare Worker source.
 - `tools/` — dev helpers.

@@ -338,7 +338,10 @@ textarea.ai-text-input{resize:none;font-family:inherit;line-height:1.4;min-heigh
 </div>
 
 <div class="footer">
+<div style="display:flex;flex-direction:column;gap:3px;min-width:0">
 <span class="sync-status" id="syncStatus" onclick="document.getElementById('debugPanel').style.display=document.getElementById('debugPanel').style.display==='none'?'block':'none'">INIT</span>
+<span class="sync-status" id="cloudStatus" onclick="app.openSettings()" style="cursor:pointer"></span>
+</div>
 <button class="sync-btn" onclick="app.sync()">🔄 SYNC</button>
 </div>
 <div id="debugPanel" style="display:none;background:#111;border:1px solid var(--orange);border-radius:8px;margin:10px 20px;padding:10px;max-height:300px;overflow-y:auto;font-family:monospace;font-size:0.55rem;color:var(--cyan);line-height:1.6;word-break:break-all"></div>
@@ -627,25 +630,108 @@ const BASE=[
 // ============================================================================
 // MAIN APPLICATION - MERGED v21 Logic + v22 Oura Features
 // ============================================================================
+// ============================================================================
+// SYNC — automatic two-way sync of every tracked localStorage key with the
+// home server (server/sync_server.py). Unit of sync = one first-level property
+// of one key (e.g. c_meals_sophia / "2026-09-18"); last write wins per entry.
+// Change detection is a diff against `csync_shadow` (hashes of the last synced
+// state), so no write site in the app needs to know sync exists.
+// ============================================================================
+const SYNC={
+LOCAL_ONLY:new Set(['c_user','c_sections','c_ai']), // per-device choices, never synced
+SEP:'\u0000',busy:false,again:false,applying:false,timer:null,lastOk:null,state:'off',
+tracks(k){return typeof k==='string'&&k.startsWith('c_')&&!this.LOCAL_ONLY.has(k)},
+url(){return(localStorage.getItem('csync_url')||'').trim().replace(/\/+$/,'')},
+read(k,d){try{return JSON.parse(localStorage.getItem(k)||'null')??d}catch(e){return d}},
+clientId(){let id=localStorage.getItem('csync_client');if(!id){id=(crypto.randomUUID?.()||String(Math.random()).slice(2)+Date.now());localStorage.setItem('csync_client',id)}return id},
+hash(str){let h1=0xdeadbeef,h2=0x41c6ce57;for(let i=0;i<str.length;i++){const c=str.charCodeAt(i);h1=Math.imul(h1^c,2654435761);h2=Math.imul(h2^c,1597334677)}
+h1=Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909);return(4294967296*(2097151&h2)+(h1>>>0)).toString(36)},
+isMap(v){return v!==null&&typeof v==='object'&&!Array.isArray(v)},
+// {entryId:{k,s,v,h}} for everything tracked. Objects split per property; arrays/strings are one entry ('').
+snapshot(){const out={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(!this.tracks(k))continue;
+let v;try{v=JSON.parse(localStorage.getItem(k))}catch(e){v=localStorage.getItem(k)}
+const put=(s,val)=>{if(val===undefined)return;out[k+this.SEP+s]={k,s,v:val,h:this.hash(JSON.stringify(val))}};
+if(this.isMap(v))Object.keys(v).forEach(s=>put(s,v[s]));else put('',v)}return out},
+write(e){if(e.s===''){if(e.d)localStorage.removeItem(e.k);else localStorage.setItem(e.k,typeof e.v==='string'?e.v:JSON.stringify(e.v));return}
+let cur=this.read(e.k,{});if(!this.isMap(cur))cur={};if(e.d)delete cur[e.s];else cur[e.s]=e.v;localStorage.setItem(e.k,JSON.stringify(cur))},
+status(state,detail){this.state=state;const el=document.getElementById('cloudStatus');if(!el)return;
+const t=this.lastOk?this.lastOk.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):'';
+el.textContent={off:'☁ SYNC OFF',syncing:'☁ SYNCING…',ok:`☁ SYNCED ${t}`,offline:`☁ CAN'T REACH HOME${t?` · LAST ${t}`:''}`}[state]||'';
+el.style.color=state==='ok'?'var(--success)':state==='offline'?'var(--orange)':'var(--text-tertiary)';el.title=detail||''},
+schedule(ms=1500){if(this.applying||!this.url())return;clearTimeout(this.timer);this.timer=setTimeout(()=>this.run(),ms)},
+async run(){
+const url=this.url();if(!url){this.status('off');return}
+if(this.busy){this.again=true;return}
+this.busy=true;this.again=false;if(this.state!=='ok')this.status('syncing');
+try{
+const meta=this.read('csync_meta',{});const first=!meta.serverId;
+const shadow=first?{}:this.read('csync_shadow',{});
+const local=this.snapshot();const changes=[];
+for(const id in local)if(shadow[id]!==local[id].h)changes.push({k:local[id].k,s:local[id].s,v:local[id].v});
+for(const id in shadow)if(!(id in local)){const[k,s]=id.split(this.SEP);changes.push({k,s,d:true})}
+const r=await fetch(url+'/sync',{method:'POST',headers:{'Content-Type':'application/json'},signal:AbortSignal.timeout(20000),
+body:JSON.stringify({client:this.clientId(),since:meta.rev||0,serverId:meta.serverId||null,first,owner:localStorage.getItem('c_user')||'jermaine',changes})});
+if(!r.ok)throw new Error('HTTP '+r.status);
+const res=await r.json();
+const fresh=first||res.serverId!==meta.serverId; // first contact with this server: it decided who wins, take its answer as-is
+if(fresh&&res.entries.length){try{const bak={};Object.values(local).forEach(e=>{(bak[e.k]=bak[e.k]||{})[e.s]=e.v});localStorage.setItem('csync_prefirst',JSON.stringify({at:new Date().toISOString(),data:bak}))}catch(e){}}
+if(fresh&&!first)for(const id in shadow)delete shadow[id];
+changes.forEach(c=>{const id=c.k+this.SEP+c.s;if(c.d)delete shadow[id];else shadow[id]=local[id].h});
+const touched=new Set();
+if(res.entries.length){
+const now=this.snapshot(); // the user may have kept tapping while the request was in flight
+this.applying=true;
+try{res.entries.forEach(e=>{const id=e.k+this.SEP+e.s;if(!this.tracks(e.k))return;
+if(!fresh&&(now[id]?.h)!==shadow[id])return; // unsynced local edit — it wins and goes up next round
+this.write(e);touched.add(e.k);shadow[id]=null})}finally{this.applying=false}
+const after=this.snapshot();for(const id in shadow)if(shadow[id]===null){if(after[id])shadow[id]=after[id].h;else delete shadow[id]}}
+this.applying=true;try{localStorage.setItem('csync_shadow',JSON.stringify(shadow));localStorage.setItem('csync_meta',JSON.stringify({serverId:res.serverId,rev:res.rev}))}finally{this.applying=false}
+this.lastOk=new Date();this.status('ok',`rev ${res.rev} · sent ${changes.length} · received ${res.entries.length}`);
+if(touched.size)window.app?.reloadFromStorage(touched);
+this.backoff=0;
+}catch(e){this.status('offline',e.message);this.backoff=Math.min(60000,(this.backoff||2500)*2);this.schedule(this.backoff)} // quick retry, easing off to the 20s heartbeat
+finally{this.busy=false;if(this.again)this.schedule(300)}},
+start(){
+const set=Storage.prototype.setItem,rem=Storage.prototype.removeItem,self=this;
+Storage.prototype.setItem=function(k,v){set.call(this,k,v);if(this===localStorage&&self.tracks(k))self.schedule()};
+Storage.prototype.removeItem=function(k){rem.call(this,k);if(this===localStorage&&self.tracks(k))self.schedule()};
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)this.run()});
+window.addEventListener('online',()=>this.run());
+window.addEventListener('pageshow',e=>{if(e.persisted)this.run()});
+setInterval(()=>{if(!document.hidden)this.run()},20000);
+this.run()},
+// One-tap device setup: open the app with #setup=<base64 JSON {sync,ai}>. Always asks, because a
+// sync URL decides where all health data is sent.
+consumeSetupLink(){const m=location.hash.match(/^#setup=(.+)$/);if(!m)return;history.replaceState(null,'',location.pathname+location.search);
+try{const cfg=JSON.parse(atob(decodeURIComponent(m[1])));const lines=[];if(cfg.sync)lines.push('Sync server: '+cfg.sync);if(cfg.ai)lines.push('AI server: '+cfg.ai);
+if(lines.length&&confirm('Set up this device?\n\n'+lines.join('\n')+'\n\nOnly accept if you made this link yourself.')){if(cfg.sync)localStorage.setItem('csync_url',cfg.sync);if(cfg.ai)AI_CONFIG.set({host:cfg.ai})}}catch(e){alert('That setup link is not valid.')}}
+};
+
 class CenturionApp{
 dbg(msg){const p=document.getElementById('debugPanel');if(p)p.innerHTML+=msg+'<br>';console.log(msg)}
 constructor(){
 console.log('🚀 Centurion v23.1 SKELETON');
 this.user=localStorage.getItem('c_user')||'jermaine';
 this.history=[];this.currentIndex=0;this.currentDateStr=new Date().toLocaleDateString('en-CA');
-this.checked=JSON.parse(localStorage.getItem(`c_chk_${this.user}`)||'{}');
-this.meals=JSON.parse(localStorage.getItem(`c_meals_${this.user}`)||'{}');
-this.portions=JSON.parse(localStorage.getItem(`c_portions_${this.user}`)||'{}');
-this.water=JSON.parse(localStorage.getItem(`c_water_${this.user}`)||'{}');
-this.bios=JSON.parse(localStorage.getItem(`c_bios_${this.user}`)||'null')||{};
-this.bioHistory=JSON.parse(localStorage.getItem(`c_bioHist_${this.user}`)||'[]');
+this.loadUserData();
 this.protocol=[];this.currentPortion=1;this.currentMealSlot=null;this.inRecipeView=false;this.streak=0;
-this.removedIngredients=JSON.parse(localStorage.getItem(`c_remIng_${this.user}`)||'{}');
-this.sideItems=JSON.parse(localStorage.getItem(`c_sides_${this.user}`)||'{}');
-this.ingredientSwaps=JSON.parse(localStorage.getItem(`c_swaps_${this.user}`)||'{}');
 document.querySelectorAll('.user-switch button').forEach(b=>b.classList.remove('active'));
 document.getElementById(`btn-${this.user}`)?.classList.add('active');
 this.setPlaceholder();this.restoreSectionStates();this.render();this.fetchOura();
+}
+
+loadUserData(){
+const u=this.user,get=(name,d)=>{try{return JSON.parse(localStorage.getItem(`c_${name}_${u}`)||'null')??d}catch(e){return d}};
+this.checked=get('chk',{});this.meals=get('meals',{});this.portions=get('portions',{});this.water=get('water',{});
+this.bios=get('bios',{});this.bioHistory=get('bioHist',[]);
+this.removedIngredients=get('remIng',{});this.sideItems=get('sides',{});this.ingredientSwaps=get('swaps',{});
+}
+// Sync just changed localStorage underneath us: refresh the in-memory copies before anything calls save().
+reloadFromStorage(keys){
+this.loadUserData();
+try{this.render()}catch(e){console.error('Render error:',e)}
+if(keys?.has(`c_profile_${this.user}`)&&!this.history.some(h=>h.score>0))this.fetchOura();
+window.centurionAI?.renderLoggedMeals();
 }
 
 save(){
@@ -720,7 +806,7 @@ this.calculatedHrvBaseline=null; // not enough data, fall back to hardcoded
 
 changeDate(dir){const n=this.currentIndex-dir;if(n>=0&&n<this.history.length){this.currentIndex=n;this.currentDateStr=this.history[n].date;this.render()}}
 
-switchUser(u){if(u===this.user)return;this.user=u;localStorage.setItem('c_user',u);document.querySelectorAll('.user-switch button').forEach(b=>b.classList.remove('active'));document.getElementById(`btn-${u}`).classList.add('active');this.checked=JSON.parse(localStorage.getItem(`c_chk_${u}`)||'{}');this.meals=JSON.parse(localStorage.getItem(`c_meals_${u}`)||'{}');this.portions=JSON.parse(localStorage.getItem(`c_portions_${u}`)||'{}');this.water=JSON.parse(localStorage.getItem(`c_water_${u}`)||'{}');this.bios=JSON.parse(localStorage.getItem(`c_bios_${u}`)||'null')||{};this.bioHistory=JSON.parse(localStorage.getItem(`c_bioHist_${u}`)||'[]');this.removedIngredients=JSON.parse(localStorage.getItem(`c_remIng_${u}`)||'{}');this.sideItems=JSON.parse(localStorage.getItem(`c_sides_${u}`)||'{}');this.ingredientSwaps=JSON.parse(localStorage.getItem(`c_swaps_${u}`)||'{}');this.history=[];this.setPlaceholder();this.render();this.fetchOura();window.centurionAI?.onUserSwitch()}
+switchUser(u){if(u===this.user)return;this.user=u;localStorage.setItem('c_user',u);document.querySelectorAll('.user-switch button').forEach(b=>b.classList.remove('active'));document.getElementById(`btn-${u}`).classList.add('active');this.loadUserData();this.history=[];this.setPlaceholder();this.render();this.fetchOura();window.centurionAI?.onUserSwitch()}
 
 toggleTask(id){const dk=this.currentDateStr;if(!this.checked[dk])this.checked[dk]=[];const i=this.checked[dk].indexOf(id);if(i===-1)this.checked[dk].push(id);else this.checked[dk].splice(i,1);this.save();this.render()}
 
@@ -1044,6 +1130,9 @@ const ai=AI_CONFIG.get();
 html+=`<div style="margin-top:16px;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--panel)"><div style="font-size:0.75rem;font-weight:800;color:var(--purple);letter-spacing:1px">AI COACH (OLLAMA)</div>
 <label style="${lab}" for="set-ai-host">SERVER URL</label><input id="set-ai-host" type="url" autocapitalize="off" spellcheck="false" value="${esc(ai.host)}" placeholder="${AI_CONFIG.DEFAULT_HOST}" style="${inp}">
 <div style="font-size:0.6rem;color:var(--text-tertiary);margin-top:6px;line-height:1.5">From the GitHub Pages (https) site the server must also be https — e.g. a Tailscale Funnel URL. The model is picked inside the AI panel.</div></div>`;
+html+=`<div style="margin-top:16px;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--panel)"><div style="font-size:0.75rem;font-weight:800;color:var(--success);letter-spacing:1px">☁ HOME SYNC</div>
+<label style="${lab}" for="set-sync-url">SYNC SERVER URL</label><input id="set-sync-url" type="url" autocapitalize="off" spellcheck="false" value="${esc(SYNC.url())}" placeholder="https://your-pc.your-tailnet.ts.net:10000" style="${inp}">
+<div style="font-size:0.6rem;color:var(--text-tertiary);margin-top:6px;line-height:1.5">Both phones sync automatically with your own PC whenever they can reach it (Tailscale on). Everything keeps working offline and catches up later. Leave blank to keep this device on its own. ${SYNC.state==='off'?'':`Status: ${esc(document.getElementById('cloudStatus')?.textContent||'')} ${esc(document.getElementById('cloudStatus')?.title||'')}`}</div></div>`;
 html+=`<button onclick="app.saveSettings()" style="width:100%;background:linear-gradient(135deg,#c8ff00,#00d4ff);color:#000;padding:15px;margin-top:16px;border:none;border-radius:10px;font-weight:800">SAVE SETTINGS</button>
 <div style="display:flex;gap:8px;margin-top:8px"><button onclick="app.exportBackup()" style="flex:1;background:var(--panel);color:var(--text-secondary);padding:13px;border:1px solid var(--border);border-radius:10px;font-weight:800;font-size:0.7rem;cursor:pointer">⬇ EXPORT BACKUP</button>
 <label style="flex:1;text-align:center;background:var(--panel);color:var(--text-secondary);padding:13px;border:1px solid var(--border);border-radius:10px;font-weight:800;font-size:0.7rem;cursor:pointer">⬆ IMPORT BACKUP<input type="file" accept="application/json,.json" style="display:none" onchange="app.importBackup(this)"></label></div>
@@ -1057,6 +1146,8 @@ const t=document.getElementById(`set-token-${u}`).value.trim();if(t)p.token=t;
 const d=document.getElementById(`set-dob-${u}`).value;if(d)p.dob=d;else delete p.dob;
 PROFILE.set(u,p)});
 AI_CONFIG.set({host:document.getElementById('set-ai-host').value.trim().replace(/\/+$/,'')});
+const su=document.getElementById('set-sync-url').value.trim().replace(/\/+$/,'');if(su!==SYNC.url()){if(su)localStorage.setItem('csync_url',su);else localStorage.removeItem('csync_url');localStorage.removeItem('csync_meta');localStorage.removeItem('csync_shadow')}
+SYNC.run();
 this.closeModal();this.render();this.fetchOura();
 }
 exportBackup(){
@@ -2733,7 +2824,7 @@ return `<div class="task"><div class="task-time">${t.time}</div><div class="${cc
 this.updateSectionSummaries();
 }
 
-sync(){this.fetchOura()}
+sync(){this.fetchOura();SYNC.run()}
 }
 
 // ============================================================================
@@ -3016,7 +3107,7 @@ STYLE: Be concise and direct. Lead with the key insight. Use the actual numbers 
 
 window.addEventListener('load',()=>{setTimeout(()=>{window.centurionAI=new CenturionAI(window.app)},500)});
 
-let app;window.onload=()=>{app=new CenturionApp();window.app=app};
+let app;window.onload=()=>{SYNC.consumeSetupLink();app=new CenturionApp();window.app=app;SYNC.start()};
 </script>
 
 <!-- CENTURION AI PANEL -->
