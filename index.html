@@ -151,6 +151,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .ai-fab{position:fixed;bottom:100px;right:20px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#c8ff00,#00d4ff);border:none;font-size:1.4rem;cursor:pointer;z-index:999;box-shadow:0 4px 20px rgba(200,255,0,0.4);display:flex;align-items:center;justify-content:center;transition:transform 0.2s}
 .ai-fab:active{transform:scale(0.92)}
 body:has(.modal-overlay.show) .ai-fab{display:none}
+.sb td+td{padding-left:12px;white-space:nowrap}
 .ai-panel{position:fixed;bottom:0;left:0;right:0;height:85vh;background:var(--panel);border-top:1px solid var(--border);border-radius:24px 24px 0 0;z-index:1000;display:none;flex-direction:column;transform:translateY(100%);transition:transform 0.3s ease}
 .ai-panel-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:12px auto 0}
 .ai-panel-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--border)}
@@ -231,6 +232,8 @@ textarea.ai-text-input{resize:none;font-family:inherit;line-height:1.4;min-heigh
 </div>
 <div id="appleRings" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)"></div>
 </div>
+
+<div id="scoreboardCard" onclick="app.showScoreboard()" style="margin:0 20px 16px;padding:14px 16px;background:var(--panel);border:1px solid var(--border);border-radius:16px;cursor:pointer"></div>
 
 <div class="score-row">
 <div class="score-orb" onclick="app.showWeeklySummary()">
@@ -750,6 +753,126 @@ this.history.sort((x,y)=>y.date.localeCompare(x.date));
 const i=this.history.findIndex(h=>h.date===this.currentDateStr);if(i>=0)this.currentIndex=i;
 }
 currentDateStrToday(){return new Date().toLocaleDateString('en-CA')}
+
+// ============================================================================
+// SCOREBOARD — daily points (max 100, each person against their OWN goals),
+// daily + weekly winners from points, monthly champion from InBody scans.
+// Each phone scores the user it is showing (it has that user's Oura/watch data)
+// and saves it to c_points_<user>; home sync carries it to the other phone.
+// ============================================================================
+pointsRules(){return[
+{key:'sleep',label:'Sleep',max:20,hint:'hours vs your sleep goal'},
+{key:'move',label:'Training',max:20,hint:'10 for a workout + 10 for Zone 2 / exercise minutes'},
+{key:'protein',label:'Protein',max:15,hint:'grams vs goal'},
+{key:'protocol',label:'Protocol',max:15,hint:'required checklist items done'},
+{key:'fiber',label:'Fiber',max:10,hint:'grams vs goal'},
+{key:'water',label:'Water',max:10,hint:'oz vs goal'},
+{key:'omega3',label:'Omega-3',max:5,hint:'mg vs goal'},
+{key:'recovery',label:'Recovery',max:5,hint:'sauna / cold logged'}]}
+scoreDay(day){
+const g=USERS[this.user].goals,date=day.date,frac=(v,goal)=>goal?Math.max(0,Math.min(1,(v||0)/goal)):0;
+const mac=this.calculateMacrosForDate(date);
+const required=BASE.filter(t=>!t.cssClass?.includes('optional')).map(t=>t.id),chk=this.checked[date]||[];
+const zone=Math.max(frac(day.med,g.z2),frac(day.rings?.exercise,30));
+const parts={
+sleep:frac((day.totalSec||0)/3600,g.sleepHours)*20,
+move:((day.workouts||[]).length?10:0)+zone*10,
+protein:frac(mac.protein,g.protein)*15,
+protocol:required.length?required.filter(id=>chk.includes(id)).length/required.length*15:0,
+fiber:frac(mac.fiber,g.fiber)*10,
+water:frac(this.water[date],g.water)*10,
+omega3:frac(mac.omega3,g.omega3)*5,
+recovery:Object.keys(this.getThermalLog(date)).length?5:0};
+Object.keys(parts).forEach(k=>parts[k]=Math.round(parts[k]*10)/10);
+return{total:Math.round(Object.values(parts).reduce((a,b)=>a+b,0)),parts}}
+// Re-score every day we have data for and persist only what changed (keeps sync quiet).
+updatePoints(){
+const key=`c_points_${this.user}`;let all={};try{all=JSON.parse(localStorage.getItem(key)||'{}')||{}}catch(e){}
+let dirty=false;
+this.history.forEach(day=>{const sc=this.scoreDay(day),old=all[day.date];
+// Wearable data not loaded (offline / still fetching)? Don't let that erase points already earned.
+if(old?.parts){if(!day.totalSec&&old.parts.sleep>sc.parts.sleep)sc.parts.sleep=old.parts.sleep;
+if(!(day.workouts||[]).length&&!day.med&&!day.rings&&old.parts.move>sc.parts.move)sc.parts.move=old.parts.move;
+sc.total=Math.round(Object.values(sc.parts).reduce((x,y)=>x+y,0))}
+if(JSON.stringify(all[day.date])!==JSON.stringify(sc)){all[day.date]=sc;dirty=true}});
+if(dirty)localStorage.setItem(key,JSON.stringify(all));
+return all}
+pointsOf(u){try{return JSON.parse(localStorage.getItem(`c_points_${u}`)||'{}')||{}}catch(e){return{}}}
+weekStart(dateStr){const d=new Date(dateStr+'T12:00');d.setDate(d.getDate()-((d.getDay()+6)%7));return d.toLocaleDateString('en-CA')} // Monday
+verdict(a,b){return a===b?'tie':a>b?'jermaine':'sophia'}
+weekTotals(startStr){
+const pj=this.pointsOf('jermaine'),ps=this.pointsOf('sophia'),today=this.currentDateStrToday();
+const out={start:startStr,jermaine:0,sophia:0,daysJ:0,daysS:0,ties:0,final:false};
+for(let i=0;i<7;i++){const d=new Date(startStr+'T12:00');d.setDate(d.getDate()+i);const ds=d.toLocaleDateString('en-CA');if(ds>today)break;
+const a=pj[ds]?.total||0,b=ps[ds]?.total||0;out.jermaine+=a;out.sophia+=b;
+if(ds<today&&(a||b)){const w=this.verdict(a,b);if(w==='jermaine')out.daysJ++;else if(w==='sophia')out.daysS++;else out.ties++}
+if(i===6&&ds<today)out.final=true}
+out.winner=this.verdict(out.jermaine,out.sophia);return out}
+// Monthly champion: change between the last InBody scan IN the month and the scan before it.
+// Relative measures so two very different bodies compete fairly:
+//   10 pts per 1.0 point of body-fat % lost · 10 pts per 1% of muscle mass gained · 2 pts per InBody score point.
+inbodyMonth(u,ym){
+let hist=[];try{hist=JSON.parse(localStorage.getItem(`c_bioHist_${u}`)||'[]')||[]}catch(e){}
+const scans=hist.filter(h=>/^\d{4}-\d{2}-\d{2}$/.test(h.date)&&(h.bodyfat||h.muscle||h.inbodyscore)).sort((a,b)=>a.date.localeCompare(b.date));
+const end=[...scans].reverse().find(h=>h.date.startsWith(ym));if(!end)return null;
+const base=[...scans].reverse().find(h=>h.date<end.date&&!h.date.startsWith(ym))||[...scans].reverse().find(h=>h.date<end.date);
+if(!base)return{end,base:null,score:null};
+const n=x=>parseFloat(x),has=(k)=>!isNaN(n(end[k]))&&!isNaN(n(base[k]));
+const fat=has('bodyfat')?(n(base.bodyfat)-n(end.bodyfat))*10:0;
+const muscle=has('muscle')&&n(base.muscle)?(n(end.muscle)-n(base.muscle))/n(base.muscle)*100*10:0;
+const inbody=has('inbodyscore')?(n(end.inbodyscore)-n(base.inbodyscore))*2:0;
+const r=x=>Math.round(x*10)/10;
+return{end,base,fat:r(fat),muscle:r(muscle),inbody:r(inbody),score:r(fat+muscle+inbody)}}
+monthVerdict(ym){
+const j=this.inbodyMonth('jermaine',ym),s=this.inbodyMonth('sophia',ym);
+let winner=null,note='';
+if(j?.score!=null&&s?.score!=null)winner=this.verdict(j.score,s.score);
+else if(!j&&!s)note='No InBody scans logged this month yet.';
+else note=`Waiting on ${!j||j.score==null?'Jermaine':'Sophia'}'s ${(!j&&s)||(!s&&j)?'scan':'earlier scan to compare against'}.`;
+if(!winner){const sum=u=>Object.entries(this.pointsOf(u)).filter(([d])=>d.startsWith(ym)).reduce((t,[,v])=>t+(v.total||0),0);const pj=sum('jermaine'),ps=sum('sophia');if(pj||ps)note+=` Points so far: Jermaine ${pj} – Sophia ${ps}.`}
+return{ym,jermaine:j,sophia:s,winner,note}}
+renderScoreboardCard(){
+const el=document.getElementById('scoreboardCard');if(!el)return;
+const date=this.currentDateStr,today=this.currentDateStrToday();
+const a=this.pointsOf('jermaine')[date]?.total,b=this.pointsOf('sophia')[date]?.total;
+const wk=this.weekTotals(this.weekStart(date));
+const name=u=>USERS[u].name.toUpperCase(),col=u=>u==='jermaine'?'var(--cyan)':'var(--purple)';
+const bar=(u,v)=>`<div style="display:flex;align-items:center;gap:8px;margin-top:6px"><div style="width:64px;font-size:0.6rem;font-weight:800;letter-spacing:0.5px;color:${col(u)}">${name(u)}</div><div style="flex:1;height:8px;background:var(--panel-elevated);border-radius:4px;overflow:hidden"><div style="width:${Math.min(100,v||0)}%;height:100%;background:${col(u)};border-radius:4px"></div></div><div style="width:30px;text-align:right;font-size:0.8rem;font-weight:800;color:${v==null?'var(--text-tertiary)':'var(--text)'}">${v==null?'--':v}</div></div>`;
+let head;
+if(a==null&&b==null)head='NO POINTS YET';
+else{const w=this.verdict(a||0,b||0);head=w==='tie'?(date<today?'DAY TIED':'ALL SQUARE'):`${name(w)} ${date<today?'WON THE DAY':'LEADS TODAY'}`}
+const wkLine=wk.winner==='tie'?`Week tied ${wk.jermaine}–${wk.sophia}`:`${USERS[wk.winner].name} ${wk.final?'won':'leads'} the week ${Math.max(wk.jermaine,wk.sophia)}–${Math.min(wk.jermaine,wk.sophia)}`;
+el.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><div style="font-size:0.6rem;font-weight:800;letter-spacing:1.5px;color:var(--text-tertiary)">🏆 SCOREBOARD</div><div style="font-size:0.65rem;font-weight:800;letter-spacing:0.5px;color:var(--acid)">${head}</div></div>${bar('jermaine',a)}${bar('sophia',b)}<div style="display:flex;justify-content:space-between;margin-top:10px;font-size:0.62rem;color:var(--text-secondary)"><span>${wkLine} · days ${wk.daysJ}–${wk.daysS}</span><span style="color:var(--text-tertiary)">details ›</span></div>`}
+showScoreboard(){
+this.setText('modalTitle','SCOREBOARD');
+const date=this.currentDateStr,today=this.currentDateStrToday();
+const pj=this.pointsOf('jermaine'),ps=this.pointsOf('sophia');
+const name=u=>USERS[u].name,col=u=>u==='jermaine'?'var(--cyan)':'var(--purple)';
+const tag=w=>w==='tie'?'<span style="color:var(--text-tertiary)">TIE</span>':w?`<span style="color:${col(w)};font-weight:800">${name(w).toUpperCase()}</span>`:'<span style="color:var(--text-tertiary)">—</span>';
+const box=(title,inner)=>`<div class="sb" style="margin-top:14px;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--panel)"><div style="font-size:0.65rem;font-weight:800;letter-spacing:1.5px;color:var(--text-tertiary);margin-bottom:10px">${title}</div>${inner}</div>`;
+// 1. the day in view, category by category
+const A=pj[date],B=ps[date];
+let dayRows=this.pointsRules().map(r=>`<tr><td style="padding:5px 0;color:var(--text-secondary)">${r.label}<div style="font-size:0.55rem;color:var(--text-tertiary)">${r.hint}</div></td><td style="text-align:right;color:${col('jermaine')};font-weight:700">${A?A.parts[r.key]:'--'}</td><td style="text-align:right;color:${col('sophia')};font-weight:700">${B?B.parts[r.key]:'--'}</td><td style="text-align:right;color:var(--text-tertiary)">${r.max}</td></tr>`).join('');
+dayRows+=`<tr style="border-top:1px solid var(--border)"><td style="padding-top:8px;font-weight:800">TOTAL</td><td style="text-align:right;font-weight:800;padding-top:8px">${A?A.total:'--'}</td><td style="text-align:right;font-weight:800;padding-top:8px">${B?B.total:'--'}</td><td style="text-align:right;color:var(--text-tertiary);padding-top:8px">100</td></tr>`;
+let html=`<div style="padding:16px">`;
+html+=box(`${date===today?'TODAY':date} — ${A||B?(date<today?'WINNER: ':'LEADING: ')+tag(this.verdict(A?.total||0,B?.total||0)):'no points yet'}`,`<table style="width:100%;border-collapse:collapse;font-size:0.72rem"><tr style="font-size:0.55rem;color:var(--text-tertiary);letter-spacing:1px"><td></td><td style="text-align:right">${name('jermaine').toUpperCase()}</td><td style="text-align:right">${name('sophia').toUpperCase()}</td><td style="text-align:right">MAX</td></tr>${dayRows}</table>${(!A||!B)?`<div style="font-size:0.6rem;color:var(--text-tertiary);margin-top:8px;line-height:1.5">A person's points are scored on a phone showing their profile (it needs their Oura/watch data) and arrive here through home sync.</div>`:''}`);
+// 2. last 7 days
+let days='';for(let i=0;i<7;i++){const d=new Date(today+'T12:00');d.setDate(d.getDate()-i);const ds=d.toLocaleDateString('en-CA');const a=pj[ds]?.total,b=ps[ds]?.total;
+days+=`<tr><td style="padding:4px 0;color:var(--text-secondary)">${d.toLocaleDateString('en-US',{weekday:'short',month:'numeric',day:'numeric'})}</td><td style="text-align:right">${a??'--'}</td><td style="text-align:right">${b??'--'}</td><td style="text-align:right">${a==null&&b==null?tag(null):ds===today?'<span style="color:var(--text-tertiary)">live</span>':tag(this.verdict(a||0,b||0))}</td></tr>`}
+html+=box('DAILY WINNERS — LAST 7 DAYS',`<table style="width:100%;border-collapse:collapse;font-size:0.72rem">${days}</table>`);
+// 3. weeks
+let weeks='';for(let i=0;i<4;i++){const d=new Date(this.weekStart(today)+'T12:00');d.setDate(d.getDate()-7*i);const w=this.weekTotals(d.toLocaleDateString('en-CA'));if(!w.jermaine&&!w.sophia)continue;
+weeks+=`<tr><td style="padding:4px 0;color:var(--text-secondary)">Week of ${d.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</td><td style="text-align:right">${w.jermaine}</td><td style="text-align:right">${w.sophia}</td><td style="text-align:right">${w.final?tag(w.winner):`<span style="color:var(--text-tertiary)">${w.winner==='tie'?'tied':name(w.winner)+' leads'}</span>`}</td></tr>`}
+html+=box('WEEKLY WINNERS (MON–SUN, TOTAL POINTS)',weeks?`<table style="width:100%;border-collapse:collapse;font-size:0.72rem">${weeks}</table>`:'<div style="font-size:0.7rem;color:var(--text-tertiary)">No points yet.</div>');
+// 4. months — InBody decides
+let months='';for(let i=0;i<3;i++){const d=new Date(today.slice(0,7)+'-15T12:00');d.setMonth(d.getMonth()-i);const ym=d.toLocaleDateString('en-CA').slice(0,7);const v=this.monthVerdict(ym);
+const line=(u,x)=>x?.score!=null?`<div style="display:flex;justify-content:space-between;font-size:0.68rem;margin-top:4px"><span style="color:${col(u)};font-weight:700">${name(u)}</span><span style="color:var(--text-secondary)">fat ${x.fat>=0?'+':''}${x.fat} · muscle ${x.muscle>=0?'+':''}${x.muscle} · score ${x.inbody>=0?'+':''}${x.inbody} = <b style="color:var(--text)">${x.score}</b></span></div><div style="font-size:0.55rem;color:var(--text-tertiary);text-align:right">${x.base.date} → ${x.end.date}</div>`:'';
+months+=`<div style="padding:8px 0;${i?'border-top:1px solid var(--border)':''}"><div style="display:flex;justify-content:space-between;font-size:0.72rem"><span style="font-weight:700">${d.toLocaleDateString('en-US',{month:'long',year:'numeric'})}</span><span>${v.winner?'🏆 '+tag(v.winner):`<span style="color:var(--text-tertiary);font-size:0.62rem">${v.note}</span>`}</span></div>${line('jermaine',v.jermaine)}${line('sophia',v.sophia)}</div>`}
+html+=box('MONTHLY CHAMPION — DECIDED BY INBODY',months+`<div style="font-size:0.6rem;color:var(--text-tertiary);margin-top:8px;line-height:1.5">Compares the last scan in the month with the scan before it: 10 pts per 1.0 of body-fat % lost, 10 pts per 1% of muscle gained, 2 pts per InBody score point. Log scans in BIO.</div>`);
+html+=`</div>`;
+document.getElementById('modalBody').innerHTML=html;
+document.getElementById('mainModal').classList.add('show');
+}
 
 loadUserData(){
 const u=this.user,get=(name,d)=>{try{return JSON.parse(localStorage.getItem(`c_${name}_${u}`)||'null')??d}catch(e){return d}};
@@ -2825,6 +2948,9 @@ const _aiM=JSON.parse(localStorage.getItem(`c_aiMeals_${this.user}`)||'{}');
 (_aiM[date]||[]).forEach(m=>{this.protocol.push({id:m.id,time:m.time,title:'🤖 '+m.title,desc:`P:${Math.round(m.macros.p||0)}g Fiber:${Math.round(m.macros.f||0)}g Cal:${Math.round(m.macros.cal||0)}`,macros:m.macros,tag:'AI LOGGED',cssClass:'ai-logged',aiLogged:true})});
 this.protocol.sort((a,b)=>{const pt=t=>{const m=t.match(/(\d+):(\d+)\s*(AM|PM)/i);if(!m)return 0;let h=parseInt(m[1]);if(m[3].toUpperCase()==='PM'&&h!==12)h+=12;if(m[3].toUpperCase()==='AM'&&h===12)h=0;return h*60+parseInt(m[2])};return pt(a.time)-pt(b.time)});
 
+// Scoreboard
+try{this.updatePoints();this.renderScoreboardCard()}catch(e){console.error('Scoreboard error:',e)}
+
 // Streak (v21)
 this.calculateStreak();
 this.setText('streakCount',this.streak);
@@ -2938,6 +3064,7 @@ Resp rate: ${v(day.respRate,' br/min')} | Zone 2: ${Math.round(day.med||0)} min 
 Workouts: ${workouts}
 ${day.rings?`Apple Watch rings: Move ${v(day.rings.move,' cal')} | Exercise ${v(day.rings.exercise,' min')} | Stand ${v(day.rings.stand,' hr')} | Steps ${v(day.rings.steps)} | VO2max ${v(day.rings.vo2max)}\n`:''}Nutrition so far: Protein ${Math.round(mac.protein)}g${pct(mac.protein,goals.protein)} | Omega-3 ${Math.round(mac.omega3)}mg${pct(mac.omega3,goals.omega3)} | Fiber ${Math.round(mac.fiber)}g${pct(mac.fiber,goals.fiber)} | Polyphenols ${Math.round(mac.polyphenol||0)}mg | Calories ${Math.round(mac.calories)} | Water ${a.water[date]||0}oz
 AI-logged meals today: ${aiMeals}
+COUPLE SCOREBOARD (points/100 today): Jermaine ${a.pointsOf('jermaine')[date]?.total??'--'} vs Sophia ${a.pointsOf('sophia')[date]?.total??'--'}
 7-DAY AVERAGES: HRV ${avg('hrv',Math.round)} ms | Sleep ${avg('totalSec',x=>(x/3600).toFixed(1))} h | Readiness ${avg('readiness',Math.round)} | Sleep score ${avg('score',Math.round)}
 DAILY TARGETS: Protein ${goals.protein}g | Omega-3 ${goals.omega3}mg | Fiber ${goals.fiber}g | Polyphenols ${goals.poly}mg | Water ${goals.water}oz | Zone 2 ${goals.z2} min | Zone 5 ${goals.z5} min | Sleep ${goals.sleepHours}h | Goal weight ${goals.weightTarget} lbs
 STYLE: Be concise and direct. Lead with the key insight. Use the actual numbers above; say so when a value is missing ("--") instead of guessing. Keep responses under 180 words unless asked to elaborate. You are not a doctor — flag anything that needs one.`}
