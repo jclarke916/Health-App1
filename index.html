@@ -229,6 +229,7 @@ textarea.ai-text-input{resize:none;font-family:inherit;line-height:1.4;min-heigh
 <div class="battery-detail"><span class="bd-label">RESP</span><span class="bd-value" id="respVal">--</span></div>
 <div class="battery-detail"><span class="bd-label">DEBT</span><span class="bd-value" id="sleepDebtValue">0h</span></div>
 </div>
+<div id="appleRings" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)"></div>
 </div>
 
 <div class="score-row">
@@ -720,6 +721,36 @@ document.getElementById(`btn-${this.user}`)?.classList.add('active');
 this.setPlaceholder();this.restoreSectionStates();this.render();this.fetchOura();
 }
 
+// Apple Watch / Health data arrives through home sync as c_apple_<user> (pushed to the server by the
+// phone — see README). Oura stays the primary source; the watch fills gaps and adds rings + workouts.
+applyAppleHealth(){
+let apple={};try{apple=JSON.parse(localStorage.getItem(`c_apple_${this.user}`)||'{}')||{}}catch(e){}
+const cutoff=new Date();cutoff.setDate(cutoff.getDate()-14);const minDate=cutoff.toLocaleDateString('en-CA');
+const blank=date=>({date,score:0,totalSec:0,deepSec:0,remSec:0,rhr:'-',cal:0,high:0,med:0,workouts:[],hrv:null,tempDev:0,respRate:null,readiness:null,vascularAge:null,bedtime:null,waketime:null});
+Object.keys(apple).forEach(date=>{
+if(date<minDate||date>this.currentDateStrToday())return;
+const a=apple[date]||{};let d=this.history.find(h=>h.date===date);
+if(!d){d=blank(date);this.history.push(d)}
+d.workouts=d.workouts.filter(w=>w.source!=='apple'); // re-applied from scratch each time
+d.rings={move:a.move??null,moveGoal:a.moveGoal??null,exercise:a.exercise??null,stand:a.stand??null,steps:a.steps??null,vo2max:a.vo2max??null};
+if(a.sleep&&!d.totalSec){d.totalSec=a.sleep.totalSec||0;d.deepSec=a.sleep.deepSec||0;d.remSec=a.sleep.remSec||0;d.bedtime=d.bedtime||a.sleep.bedtime||null;d.waketime=d.waketime||a.sleep.waketime||null;
+if(!d.score&&d.totalSec)d.score=Math.min(100,Math.round(d.totalSec/3600/USERS[this.user].goals.sleepHours*100));d.sleepSource='apple'}
+if(d.rhr==='-'&&a.rhr)d.rhr=Math.round(a.rhr);
+if(!d.hrv&&a.hrv)d.hrv=Math.round(a.hrv);
+if(!d.respRate&&a.resp)d.respRate=a.resp;
+if(!d.cal&&a.move)d.cal=Math.round(a.move);
+(a.workouts||[]).forEach(w=>{
+const t=w.start?new Date(w.start).getTime():NaN;
+const dup=d.workouts.some(o=>o.start&&Math.abs(new Date(o.start).getTime()-t)<20*60000); // Oura already imported it
+if(dup)return;
+d.workouts.push({type:w.type||'Workout',calories:Math.round(w.calories||0)||(w.duration||0)*8,duration:Math.round(w.duration||0),start:w.start||null,avgHr:w.avgHr||null,source:'apple',
+time:isNaN(t)?'':new Date(t).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})})});
+});
+this.history.sort((x,y)=>y.date.localeCompare(x.date));
+const i=this.history.findIndex(h=>h.date===this.currentDateStr);if(i>=0)this.currentIndex=i;
+}
+currentDateStrToday(){return new Date().toLocaleDateString('en-CA')}
+
 loadUserData(){
 const u=this.user,get=(name,d)=>{try{return JSON.parse(localStorage.getItem(`c_${name}_${u}`)||'null')??d}catch(e){return d}};
 this.checked=get('chk',{});this.meals=get('meals',{});this.portions=get('portions',{});this.water=get('water',{});
@@ -729,6 +760,7 @@ this.removedIngredients=get('remIng',{});this.sideItems=get('sides',{});this.ing
 // Sync just changed localStorage underneath us: refresh the in-memory copies before anything calls save().
 reloadFromStorage(keys){
 this.loadUserData();
+if(keys?.has(`c_apple_${this.user}`))this.applyAppleHealth();
 try{this.render()}catch(e){console.error('Render error:',e)}
 if(keys?.has(`c_profile_${this.user}`)&&!this.history.some(h=>h.score>0))this.fetchOura();
 window.centurionAI?.renderLoggedMeals();
@@ -754,7 +786,7 @@ try{
 const end=new Date();end.setDate(end.getDate()+1);const start=new Date();start.setDate(start.getDate()-14);
 const startStr=start.toISOString().split('T')[0],endStr=end.toISOString().split('T')[0];
 const token=PROFILE.get(this.user).token,proxy=OURA_PROXY;
-if(!token){this.setText('syncStatus','NO OURA TOKEN — TAP ⚙');this.render();return}
+if(!token){this.setText('syncStatus','NO OURA TOKEN — TAP ⚙');this.applyAppleHealth();this.render();return}
 const eps=['sleep','workout','daily_activity','daily_readiness','daily_hrv','daily_sleep'];
 const results=await Promise.allSettled(eps.map(async ep=>{
 const url=`${proxy}${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/${ep}?start_date=${startStr}&end_date=${endStr}`)}`;
@@ -779,7 +811,7 @@ this.dbg(`🫀 Sleep ${s.day} | type:${s.type} | avg_hr:${s.average_heart_rate} 
 (data.daily_sleep||[]).forEach(ds=>{const d=g(ds.day);this.dbg(`😴 DailySleep ${ds.day} | score:${ds.score} | rhr_contributor:${ds.contributors?.resting_heart_rate} | keys:${Object.keys(ds).join(',')}`)});
 (data.daily_activity||[]).forEach(a=>{const d=g(a.day);d.cal=a.active_calories||0;d.high=(a.high_activity_time||0)/60;d.med=(a.medium_activity_time||0)/60;d.met=a.met?.average||a.equivalent_walking_distance||0;this.dbg(`🏃 Activity ${a.day} | high:${a.high_activity_time} med:${a.medium_activity_time} cal:${a.active_calories} keys:${Object.keys(a).join(',')}`)});
 (data.workout||[]).forEach(w=>{this.dbg(`💪 Workout ${w.day} | ${JSON.stringify(w).slice(0,250)}`);const wDay=w.start_datetime?w.start_datetime.slice(0,10):w.day;const d=g(wDay);
-const cal=w.calories||w.active_calories||0;const dur=w.duration?Math.round(w.duration/60):0;d.workouts.push({type:w.label||w.activity||w.sport||'workout',calories:cal||dur*8||300,duration:dur,time:w.start_datetime?new Date(w.start_datetime).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):''})});
+const cal=w.calories||w.active_calories||0;const dur=w.duration?Math.round(w.duration/60):0;d.workouts.push({type:w.label||w.activity||w.sport||'workout',calories:cal||dur*8||300,duration:dur,start:w.start_datetime||null,time:w.start_datetime?new Date(w.start_datetime).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):''})});
 this.history=Array.from(m.values()).sort((a,b)=>b.date.localeCompare(a.date));
 const today=this.history[0];if(today)this.dbg(`<br>⚡ TODAY ${today.date} FINAL → RHR:${today.rhr} | high:${today.high} med:${today.med} | workouts:${today.workouts.length} (${today.workouts.map(w=>w.type+':'+w.calories+'cal').join(', ')}) | sleep_sessions:${(data.sleep||[]).filter(s=>s.day===today.date).length}`);
 this.currentIndex=this.history.findIndex(h=>h.date===this.currentDateStr);
@@ -795,6 +827,7 @@ if(entry.remSec===0&&ms.remSec)entry.remSec=ms.remSec;
 if(entry.rhr==='-'&&ms.rhr)entry.rhr=ms.rhr;
 if(!entry.score&&ms.score)entry.score=ms.score;
 }});
+this.applyAppleHealth();
 // Calculate rolling HRV baseline from last 30 days of actual data
 const hrvDays=this.history.filter(h=>h.hrv&&h.hrv>0).slice(0,30);
 if(hrvDays.length>=7){
@@ -2513,6 +2546,11 @@ const strainPct=strainCap>0?Math.min((strainRaw/strainCap)*100,150):50;
 const strainRecovery=strainPct<=100?100:Math.max(0,200-strainPct);
 const batteryScore=Math.round(hrvPct*0.30+sleepPct*0.25+readyPct*0.25+strainRecovery*0.20);
 this.setText('batteryScore',batteryScore||'--');
+const ringsEl=document.getElementById('appleRings');
+if(ringsEl){const r=day.rings;const has=r&&[r.move,r.exercise,r.stand,r.steps].some(v=>v!=null);
+ringsEl.style.display=has?'block':'none';
+if(has){const cell=(label,val,goal,unit,color)=>val==null?'':`<div style="flex:1;min-width:0;text-align:center"><div style="font-size:0.95rem;font-weight:800;color:${color}">${Math.round(val).toLocaleString()}${goal?`<span style="font-size:0.6rem;color:var(--text-tertiary);font-weight:600">/${Math.round(goal)}</span>`:''}</div><div style="font-size:0.5rem;letter-spacing:1px;color:var(--text-tertiary);font-weight:700;margin-top:2px">${label}${unit?` (${unit})`:''}</div></div>`;
+ringsEl.innerHTML=`<div style="font-size:0.55rem;letter-spacing:1.5px;font-weight:800;color:var(--text-tertiary);margin-bottom:8px">⌚ APPLE WATCH${day.sleepSource==='apple'?' · SLEEP FROM WATCH':''}</div><div style="display:flex;gap:6px">${cell('MOVE',r.move,r.moveGoal,'cal','#ff375f')}${cell('EXERCISE',r.exercise,30,'min','#a6ff00')}${cell('STAND',r.stand,12,'hr','#00d4ff')}${cell('STEPS',r.steps,null,'','var(--text)')}</div>`}}
 const bf=document.getElementById('batteryFill');
 bf.style.width=`${Math.min(batteryScore,100)}%`;
 bf.style.background=batteryScore>=80?'linear-gradient(90deg,#34d399,#00f2fe)':batteryScore>=60?'linear-gradient(90deg,#4facfe,#00f2fe)':batteryScore>=40?'linear-gradient(90deg,#ff9500,#ffcc00)':'linear-gradient(90deg,#ff4757,#ff6b81)';
@@ -2898,7 +2936,7 @@ Sleep: score ${v(day.score)} | total ${hrs(day.totalSec)} | deep ${hrs(day.deepS
 HRV: ${v(day.hrv,' ms')} vs ${baseline} ms baseline — ${hrvStatus} | RHR: ${v(day.rhr,' bpm')} | Readiness: ${v(day.readiness,'/100')} — ${readyStatus}
 Resp rate: ${v(day.respRate,' br/min')} | Zone 2: ${Math.round(day.med||0)} min | Zone 5: ${Math.round(day.high||0)} min | Active burn: ${Math.round(day.cal||0)} cal
 Workouts: ${workouts}
-Nutrition so far: Protein ${Math.round(mac.protein)}g${pct(mac.protein,goals.protein)} | Omega-3 ${Math.round(mac.omega3)}mg${pct(mac.omega3,goals.omega3)} | Fiber ${Math.round(mac.fiber)}g${pct(mac.fiber,goals.fiber)} | Polyphenols ${Math.round(mac.polyphenol||0)}mg | Calories ${Math.round(mac.calories)} | Water ${a.water[date]||0}oz
+${day.rings?`Apple Watch rings: Move ${v(day.rings.move,' cal')} | Exercise ${v(day.rings.exercise,' min')} | Stand ${v(day.rings.stand,' hr')} | Steps ${v(day.rings.steps)} | VO2max ${v(day.rings.vo2max)}\n`:''}Nutrition so far: Protein ${Math.round(mac.protein)}g${pct(mac.protein,goals.protein)} | Omega-3 ${Math.round(mac.omega3)}mg${pct(mac.omega3,goals.omega3)} | Fiber ${Math.round(mac.fiber)}g${pct(mac.fiber,goals.fiber)} | Polyphenols ${Math.round(mac.polyphenol||0)}mg | Calories ${Math.round(mac.calories)} | Water ${a.water[date]||0}oz
 AI-logged meals today: ${aiMeals}
 7-DAY AVERAGES: HRV ${avg('hrv',Math.round)} ms | Sleep ${avg('totalSec',x=>(x/3600).toFixed(1))} h | Readiness ${avg('readiness',Math.round)} | Sleep score ${avg('score',Math.round)}
 DAILY TARGETS: Protein ${goals.protein}g | Omega-3 ${goals.omega3}mg | Fiber ${goals.fiber}g | Polyphenols ${goals.poly}mg | Water ${goals.water}oz | Zone 2 ${goals.z2} min | Zone 5 ${goals.z5} min | Sleep ${goals.sleepHours}h | Goal weight ${goals.weightTarget} lbs

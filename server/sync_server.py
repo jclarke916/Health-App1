@@ -19,15 +19,21 @@ server already has wins.
 
 POST /sync  {client, since, serverId, first, owner, changes:[{k, s, v, d}]}
          -> {serverId, rev, entries:[{k, s, v, d}]}
+POST /apple?user=<name>   Apple Watch / Health data pushed from the phone (an
+         iOS Shortcut or the Health Auto Export app - the web app cannot read
+         HealthKit itself). Stored as c_apple_<user> / <date>, so it reaches
+         both phones through the normal sync. See parse_apple() for formats.
 GET  /health
 """
 import argparse
+import datetime
 import json
 import logging
 import os
 import shutil
 import threading
 import time
+import urllib.parse
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -72,6 +78,34 @@ class Store:
             for old in sorted(os.listdir(self.backups))[:-60]:
                 os.remove(os.path.join(self.backups, old))
 
+    def apple(self, user, days):
+        """Merge pushed watch data; later pushes for a day update fields, workouts dedupe by start."""
+        changed = 0
+        with self.lock:
+            entries = self.state['entries']
+            for date, vals in days.items():
+                eid = 'c_apple_%s%s%s' % (user, SEP, date)
+                cur = entries.get(eid)
+                old = dict(cur['v']) if cur and not cur.get('d') and isinstance(cur.get('v'), dict) else {}
+                new = dict(old)
+                for field, val in vals.items():
+                    if field == 'workouts':
+                        seen = {w.get('start'): w for w in old.get('workouts', [])}
+                        seen.update({w.get('start'): w for w in val if isinstance(w, dict)})
+                        new['workouts'] = sorted(seen.values(), key=lambda w: str(w.get('start')))
+                    elif val is not None:
+                        new[field] = val
+                if new == old:
+                    continue
+                self.state['rev'] += 1
+                entries[eid] = {'v': new, 'd': False, 'rev': self.state['rev'], 'by': 'apple-push',
+                                'at': time.strftime('%Y-%m-%dT%H:%M:%S')}
+                changed += 1
+            if changed:
+                self._daily_backup()
+                self._write()
+        return changed
+
     def sync(self, req):
         client = str(req.get('client') or '?')[:64]
         owner = str(req.get('owner') or '')
@@ -111,6 +145,101 @@ class Store:
             return {'serverId': self.state['serverId'], 'rev': self.state['rev'], 'entries': out}
 
 
+USERS = ('jermaine', 'sophia')
+
+
+def _num(x):
+    """HAE wraps numbers as {"qty": n, "units": ...}; Shortcuts may send strings."""
+    if isinstance(x, dict):
+        x = x.get('qty')
+    try:
+        return float(x)
+    except (TypeError, ValueError):
+        return None
+
+
+def _when(text):
+    """'2026-09-18 07:02:00 -0700' (HAE) or ISO 8601 -> aware/naive datetime, else None."""
+    if not isinstance(text, str):
+        return None
+    for fmt in ('%Y-%m-%d %H:%M:%S %z', '%Y-%m-%dT%H:%M:%S%z', '%Y-%m-%dT%H:%M:%S.%f%z',
+                '%Y-%m-%dT%H:%M:%S', '%Y-%m-%d %H:%M:%S', '%Y-%m-%d'):
+        try:
+            return datetime.datetime.strptime(text.replace('Z', '+0000'), fmt)
+        except ValueError:
+            pass
+    return None
+
+
+# Health Auto Export metric name -> (our field, how to combine samples within a day)
+HAE_METRICS = {
+    'active_energy': ('move', 'sum'), 'apple_exercise_time': ('exercise', 'sum'),
+    'apple_stand_hour': ('stand', 'sum'), 'step_count': ('steps', 'sum'),
+    'resting_heart_rate': ('rhr', 'last'), 'heart_rate_variability': ('hrv', 'mean'),
+    'vo2_max': ('vo2max', 'last'), 'respiratory_rate': ('resp', 'mean'),
+}
+
+
+def parse_apple(body):
+    """-> {date: {field: value}}. Accepts either
+
+    simple:  {"days": {"2026-09-18": {"move": 520, "moveGoal": 600, "exercise": 42, "stand": 10,
+              "steps": 8412, "rhr": 52, "hrv": 61, "vo2max": 44.1, "resp": 14.2,
+              "sleep": {"totalSec": 25200, "deepSec": 4200, "remSec": 5400, "bedtime": iso, "waketime": iso},
+              "workouts": [{"type": "Strength", "start": iso, "duration": 48, "calories": 390, "avgHr": 128}]}}}
+    or Health Auto Export's REST payload: {"data": {"metrics": [...], "workouts": [...]}}.
+    """
+    days = {}
+    if isinstance(body.get('days'), dict):
+        for date, vals in body['days'].items():
+            if _when(date) and isinstance(vals, dict):
+                days[date[:10]] = vals
+        return days
+    data = body.get('data') or {}
+    for metric in data.get('metrics') or []:
+        name = metric.get('name')
+        for sample in metric.get('data') or []:
+            when = _when(sample.get('date'))
+            if not when:
+                continue
+            day = days.setdefault(when.strftime('%Y-%m-%d'), {})
+            if name == 'sleep_analysis':
+                hours = lambda key: (_num(sample.get(key)) or 0) * 3600
+                total = hours('totalSleep') or hours('asleep') or (hours('core') + hours('deep') + hours('rem'))
+                if total:
+                    day['sleep'] = {'totalSec': round(total), 'deepSec': round(hours('deep')), 'remSec': round(hours('rem')),
+                                    'bedtime': (_when(sample.get('sleepStart')) or when).isoformat(),
+                                    'waketime': (_when(sample.get('sleepEnd')) or when).isoformat()}
+            elif name in HAE_METRICS:
+                field, how = HAE_METRICS[name]
+                qty = _num(sample.get('qty'))
+                if qty is None:
+                    continue
+                if how == 'sum':
+                    day[field] = round(day.get(field, 0) + qty, 1)
+                elif how == 'mean':
+                    n = day.get('_n_' + field, 0)
+                    day[field] = round((day.get(field, 0) * n + qty) / (n + 1), 1)
+                    day['_n_' + field] = n + 1
+                else:
+                    day[field] = round(qty, 1)
+    for w in data.get('workouts') or []:
+        start, end = _when(w.get('start')), _when(w.get('end'))
+        if not start:
+            continue
+        minutes = _num(w.get('duration'))
+        minutes = round(minutes / 60) if minutes and minutes > 600 else (round(minutes) if minutes else
+                  (round((end - start).total_seconds() / 60) if end else 0))
+        days.setdefault(start.strftime('%Y-%m-%d'), {}).setdefault('workouts', []).append({
+            'type': w.get('name') or 'Workout', 'start': start.isoformat(), 'duration': minutes,
+            'calories': round(_num(w.get('activeEnergyBurned')) or _num(w.get('activeEnergy')) or 0),
+            'avgHr': round(_num(w.get('avgHeartRate')) or _num(w.get('heartRateAvg')) or 0) or None})
+    for day in days.values():
+        for key in [k for k in day if k.startswith('_n_')]:
+            del day[key]
+    return days
+
+
 class Handler(BaseHTTPRequestHandler):
     protocol_version = 'HTTP/1.1'
     store = None
@@ -147,11 +276,26 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         if not self._origin_ok():
             return self._send(403, {'error': 'origin not allowed'})
-        if self.path.rstrip('/') != '/sync':
+        url = urllib.parse.urlparse(self.path)
+        route = url.path.rstrip('/')
+        if route not in ('/sync', '/apple'):
             return self._send(404, {'error': 'not found'})
         length = int(self.headers.get('Content-Length') or 0)
         if length > MAX_BODY:
             return self._send(413, {'error': 'too large'})
+        if route == '/apple':
+            try:
+                body = json.loads(self.rfile.read(length) or b'{}')
+                user = (urllib.parse.parse_qs(url.query).get('user') or [body.get('user')])[0]
+                if user not in USERS:
+                    return self._send(400, {'error': 'user must be one of %s' % (USERS,)})
+                days = parse_apple(body)
+                changed = self.store.apple(user, days)
+            except Exception as e:
+                log.exception('apple push failed')
+                return self._send(400, {'error': str(e)})
+            log.info('apple push for %s: %d day(s) in payload, %d changed', user, len(days), changed)
+            return self._send(200, {'ok': True, 'days': sorted(days), 'changed': changed})
         try:
             req = json.loads(self.rfile.read(length) or b'{}')
             res = self.store.sync(req)
