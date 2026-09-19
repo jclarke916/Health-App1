@@ -98,7 +98,9 @@ final class WebModel: NSObject, ObservableObject, WKNavigationDelegate, WKUIDele
 
     func loadHome() {
         failure = nil
-        webView.load(URLRequest(url: WebModel.home))
+        // Always ask GitHub whether the page changed: the web app updates by a push, and a
+        // cached copy hid a fix from an iPad for a day. Unchanged pages still come from cache.
+        webView.load(URLRequest(url: WebModel.home, cachePolicy: .reloadRevalidatingCacheData))
     }
 
     @objc private func pulledToRefresh(_ sender: UIRefreshControl) {

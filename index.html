@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Centurion v24</title>
+<title>Centurion v24.2</title>
 <style>
 :root{--bg:#0a0a0c;--panel:#141418;--panel-elevated:#1a1a20;--border:rgba(255,255,255,0.08);--acid:#c8ff00;--cyan:#00d4ff;--purple:#a855f7;--alert:#ff4757;--orange:#ff9500;--success:#34d399;--text:#fff;--text-secondary:rgba(255,255,255,0.6);--text-tertiary:rgba(255,255,255,0.4)}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -645,7 +645,7 @@ const SYNC={
 LOCAL_ONLY:new Set(['c_user','c_sections','c_ai']), // per-device choices, never synced
 SEP:'\u0000',busy:false,again:false,applying:false,timer:null,lastOk:null,state:'off',
 tracks(k){return typeof k==='string'&&k.startsWith('c_')&&!this.LOCAL_ONLY.has(k)},
-url(){return(localStorage.getItem('csync_url')||'').trim().replace(/\/+$/,'')},
+url(){return homeUrl(localStorage.getItem('csync_url'),'sync')},
 read(k,d){try{return JSON.parse(localStorage.getItem(k)||'null')??d}catch(e){return d}},
 clientId(){let id=localStorage.getItem('csync_client');if(!id){id=(crypto.randomUUID?.()||String(Math.random()).slice(2)+Date.now());localStorage.setItem('csync_client',id)}return id},
 hash(str){let h1=0xdeadbeef,h2=0x41c6ce57;for(let i=0;i<str.length;i++){const c=str.charCodeAt(i);h1=Math.imul(h1^c,2654435761);h2=Math.imul(h2^c,1597334677)}
@@ -1306,7 +1306,7 @@ this.setText('modalTitle','SETTINGS');
 const esc=v=>String(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
 const inp='width:100%;box-sizing:border-box;background:var(--panel-elevated);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:12px;font-size:0.8rem;outline:none;margin-top:6px';
 const lab='font-size:0.6rem;font-weight:800;letter-spacing:1px;color:var(--text-tertiary);margin-top:14px;display:block';
-let html=`<div style="padding:16px"><div style="font-size:0.7rem;color:var(--text-secondary);line-height:1.5">Stored on this device only. Nothing here is ever written into the app's code or sent anywhere except Oura and your own AI server.</div>`;
+let html=`<div style="padding:16px"><div style="font-size:0.55rem;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:6px">CENTURION v24.2</div><div style="font-size:0.7rem;color:var(--text-secondary);line-height:1.5">Stored on this device only. Nothing here is ever written into the app's code or sent anywhere except Oura and your own AI server.</div>`;
 const connected=SYNC.url()&&AI_CONFIG.get().host!==AI_CONFIG.DEFAULT_HOST;
 html+=`<div style="margin-top:16px;padding:14px;border:1px solid ${connected?'var(--border)':'var(--acid)'};border-radius:12px;background:var(--panel)"><div style="font-size:0.75rem;font-weight:800;color:var(--acid);letter-spacing:1px">⚡ QUICK SETUP${connected?' — CONNECTED':''}</div>
 <div style="font-size:0.65rem;color:var(--text-secondary);margin-top:6px;line-height:1.5">${connected?'This device knows your home servers. Re-enter only if they moved.':'This device is not connected to your home PC yet. Type the PC\'s Tailscale name (like <b>my-pc.tailnet-name.ts.net</b>) or paste your setup link — it fills in both server addresses below.'}</div>
@@ -1344,8 +1344,8 @@ saveSettings(){
 const t=document.getElementById(`set-token-${u}`).value.trim();if(t)p.token=t;
 const d=document.getElementById(`set-dob-${u}`).value;if(d)p.dob=d;else delete p.dob;
 PROFILE.set(u,p)});
-AI_CONFIG.set({host:document.getElementById('set-ai-host').value.trim().replace(/\/+$/,'')});
-const su=document.getElementById('set-sync-url').value.trim().replace(/\/+$/,'');if(su!==SYNC.url()){if(su)localStorage.setItem('csync_url',su);else localStorage.removeItem('csync_url');localStorage.removeItem('csync_meta');localStorage.removeItem('csync_shadow')}
+AI_CONFIG.set({host:document.getElementById('set-ai-host').value});
+const su=homeUrl(document.getElementById('set-sync-url').value,'sync');if(su!==SYNC.url()){if(su)localStorage.setItem('csync_url',su);else localStorage.removeItem('csync_url');localStorage.removeItem('csync_meta');localStorage.removeItem('csync_shadow')}
 SYNC.run();
 this.closeModal();this.render();this.fetchOura();
 }
@@ -3037,10 +3037,18 @@ sync(){this.fetchOura();SYNC.run()}
 // ============================================================================
 // CENTURION AI — Ollama Integration v2.0 (streaming chat, model picker, configurable host)
 // ============================================================================
+const HOME_PORTS={ai:8443,sync:10000};
+function homeUrl(text,kind){
+let u=String(text||'').trim().replace(/\s+/g,'').replace(/\/+$/,'');if(!u)return'';
+if(!/^https?:\/\//i.test(u))u=(/^(localhost|[\d.]+)(:|\/|$)/i.test(u)?'http://':'https://')+u;
+const m=u.match(/^(https?):\/\/([^\/:]+)(?::(\d+))?(\/.*)?$/i);if(!m)return u;
+let[,scheme,host,port,path]=m;host=host.toLowerCase();
+if(host.endsWith('.ts.net')){scheme='https';if(!port||port==='443'||port==='80')port=String(HOME_PORTS[kind])}
+return`${scheme.toLowerCase()}://${host}${port?':'+port:''}${path||''}`}
 const AI_CONFIG={
 DEFAULT_HOST:'http://localhost:11434',
-get(){let c={};try{c=JSON.parse(localStorage.getItem('c_ai')||'{}')||{}}catch(e){}return{host:c.host||this.DEFAULT_HOST,model:c.model||'',visionModel:c.visionModel||''}},
-set(patch){const c=this.get();Object.assign(c,patch);if(!c.host)c.host=this.DEFAULT_HOST;localStorage.setItem('c_ai',JSON.stringify(c))}
+get(){let c={};try{c=JSON.parse(localStorage.getItem('c_ai')||'{}')||{}}catch(e){}return{host:homeUrl(c.host,'ai')||this.DEFAULT_HOST,model:c.model||'',visionModel:c.visionModel||''}},
+set(patch){const c=this.get();Object.assign(c,patch);c.host=homeUrl(c.host,'ai')||this.DEFAULT_HOST;localStorage.setItem('c_ai',JSON.stringify(c))}
 };
 
 class CenturionAI{
