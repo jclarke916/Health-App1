@@ -51,6 +51,32 @@ tailscale serve --bg --https=10000 http://127.0.0.1:8792
 - Unit of sync is one first-level property of one storage key (one day of meals, one lab field…), last write wins. `c_user`, `c_sections` and `c_ai` are per-device and never synced. Change detection is a diff against hashes of the last synced state (`csync_shadow`), so app code never has to call sync.
 - **First sync of a device** trusts that phone for its current user's data and the server for everyone else's, so two phones with separate histories merge instead of overwriting each other. The phone's pre-merge data is kept in `csync_prefirst`.
 
+## Apple Watch / Apple Health
+
+A web page cannot read HealthKit, and the iOS shell is an App Playground (no HealthKit entitlement), so the phone **pushes** watch data to the sync server and both phones receive it through sync as `c_apple_<user>`:
+
+```
+POST https://<sync-server>/apple?user=jermaine        (or sophia)
+{"days": {"2026-09-18": {"move": 520, "moveGoal": 600, "exercise": 42, "stand": 10, "steps": 8412,
+  "rhr": 52, "hrv": 61, "vo2max": 44.1, "resp": 14.2,
+  "sleep": {"totalSec": 25200, "deepSec": 4200, "remSec": 5400, "bedtime": "<iso>", "waketime": "<iso>"},
+  "workouts": [{"type": "Strength", "start": "<iso>", "duration": 48, "calories": 390, "avgHr": 128}]}}}
+```
+
+Every field is optional; later pushes for the same day update it, workouts de-duplicate by start time. Two ways to send it, neither needing Xcode: an iOS **Shortcuts** automation ("Find Health Samples" → "Get Contents of URL", e.g. run when Centurion opens), or the **Health Auto Export** app's REST automation pointed at the same URL — its native JSON (`{"data": {"metrics": [...], "workouts": [...]}}`) is parsed too (mapping written from its documented format, not yet tried against the real app).
+
+In the app Oura stays primary. The watch fills in missing sleep / RHR / HRV / respiratory rate, adds the rings row under the Recovery Battery, and adds workouts Oura did not already import (matched within 20 minutes).
+
+## Scoreboard
+
+Daily points out of 100, each person measured against **their own** goals: Sleep 20, Training 20 (10 for a logged workout + 10 for Zone 2 / exercise minutes), Protein 15, Protocol checklist 15, Fiber 10, Water 10, Omega-3 5, Recovery (sauna / cold) 5. A phone scores the profile it is showing (that is where that person's Oura / watch data is) and saves `c_points_<user>`, which sync shares; points already earned are never erased just because wearable data has not loaded.
+
+- **Day**: higher total wins once the day is over.
+- **Week** (Mon–Sun): total points; the card also shows days won.
+- **Month**: decided by **InBody** — last scan in the month vs. the scan before it: 10 pts per 1.0 of body-fat % lost, 10 pts per 1 % of muscle gained, 2 pts per InBody score point. Relative measures, so two different bodies compete fairly. Until both have a scan that month it shows the running points instead.
+
+The rules live in `pointsRules()` / `scoreDay()` / `inbodyMonth()` in `index.html`.
+
 ## Oura proxy
 
 Oura's API has no CORS headers, so requests go through a Cloudflare Worker (`OURA_PROXY` in `index.html`). `worker/oura-proxy.js` is the locked-down version: Oura URLs only, known origins only.
@@ -58,6 +84,7 @@ Oura's API has no CORS headers, so requests go through a Cloudflare Worker (`OUR
 ## Layout
 
 - `index.html` — the app. `MEALS` / `USERS` / `PROTOCOLS` data, then `class CenturionApp` (everything on screen), then `class CenturionAI` (the 🤖 panel).
-- `server/` — home sync server.
+- `server/` — home sync server (+ Apple Health push endpoint).
+- `ios/` — Swift Playgrounds app package for TestFlight (see `ios/README.md`).
 - `worker/` — Cloudflare Worker source.
 - `tools/` — dev helpers.
