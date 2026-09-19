@@ -30,6 +30,7 @@ import datetime
 import json
 import logging
 import os
+import re
 import shutil
 import threading
 import time
@@ -152,10 +153,13 @@ def _num(x):
     """HAE wraps numbers as {"qty": n, "units": ...}; Shortcuts may send strings."""
     if isinstance(x, dict):
         x = x.get('qty')
-    try:
-        return float(x)
-    except (TypeError, ValueError):
+    if isinstance(x, bool) or x is None:
         return None
+    if isinstance(x, (int, float)):
+        return float(x)
+    # Shortcuts sends text: "8,412", "540.2 kcal", "52 count/min" - or "" when there were no samples
+    m = re.search(r'-?\d+(?:\.\d+)?', str(x).replace(',', ''))
+    return float(m.group(0)) if m else None
 
 
 def _when(text):
@@ -190,6 +194,24 @@ def parse_apple(body):
     or Health Auto Export's REST payload: {"data": {"metrics": [...], "workouts": [...]}}.
     """
     days = {}
+    if 'days' not in body and 'data' not in body:
+        # flat form, easiest to build in Shortcuts: one day, numbers may be text.
+        # {"date": "2026-09-18" (optional, default today), "move": .., "moveGoal": .., "exercise": ..,
+        #  "stand": .., "steps": .., "rhr": .., "hrv": .., "vo2max": .., "resp": .., "sleepHours": ..,
+        #  "deepHours": .., "remHours": ..}
+        when = _when(str(body.get('date') or '')[:10]) or datetime.datetime.now()
+        day = {}
+        for field in ('move', 'moveGoal', 'exercise', 'stand', 'steps', 'rhr', 'hrv', 'vo2max', 'resp'):
+            val = _num(body.get(field))
+            if val is not None and val > 0:
+                day[field] = round(val, 1)
+        hours = _num(body.get('sleepHours'))
+        if hours and 0 < hours < 24:
+            day['sleep'] = {'totalSec': round(hours * 3600), 'deepSec': round((_num(body.get('deepHours')) or 0) * 3600),
+                            'remSec': round((_num(body.get('remHours')) or 0) * 3600)}
+        if day:
+            days[when.strftime('%Y-%m-%d')] = day
+        return days
     if isinstance(body.get('days'), dict):
         for date, vals in body['days'].items():
             if _when(date) and isinstance(vals, dict):
