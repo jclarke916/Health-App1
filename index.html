@@ -704,11 +704,40 @@ window.addEventListener('online',()=>this.run());
 window.addEventListener('pageshow',e=>{if(e.persisted)this.run()});
 setInterval(()=>{if(!document.hidden)this.run()},20000);
 this.run()},
-// One-tap device setup: open the app with #setup=<base64 JSON {sync,ai}>. Always asks, because a
-// sync URL decides where all health data is sent.
-consumeSetupLink(){const m=location.hash.match(/^#setup=(.+)$/);if(!m)return;history.replaceState(null,'',location.pathname+location.search);
-try{const cfg=JSON.parse(atob(decodeURIComponent(m[1])));const lines=[];if(cfg.sync)lines.push('Sync server: '+cfg.sync);if(cfg.ai)lines.push('AI server: '+cfg.ai);
-if(lines.length&&confirm('Set up this device?\n\n'+lines.join('\n')+'\n\nOnly accept if you made this link yourself.')){if(cfg.sync)localStorage.setItem('csync_url',cfg.sync);if(cfg.ai)AI_CONFIG.set({host:cfg.ai})}}catch(e){alert('That setup link is not valid.')}}
+// Device setup = telling this device where the home servers are. Three ways in, one code path:
+// a #setup=<base64 JSON {sync,ai}> link, the same link/code pasted into Settings, or just the
+// PC's Tailscale name typed into Settings (ports are the ones `tailscale serve` was given).
+// No confirm()/alert(): iOS drops them during page load, in in-app browsers and in bare
+// WKWebViews, so the link used to do nothing. The link path asks in an in-page sheet instead,
+// because the sync URL decides where all health data is sent.
+parseSetup(text){
+text=String(text||'').trim();if(!text)return null;
+const clean=u=>{u=String(u||'').trim().replace(/\/+$/,'');return /^https?:\/\/[^\s]+$/i.test(u)?u:''};
+const m=text.match(/setup=([^&\s]+)/);let code=m?m[1]:text;
+try{code=decodeURIComponent(code)}catch(e){}
+if(/^[A-Za-z0-9+\/_=-]{16,}$/.test(code)){try{const b=code.replace(/-/g,'+').replace(/_/g,'/');const cfg=JSON.parse(atob(b+'==='.slice((b.length+3)%4)));
+const out={sync:clean(cfg.sync),ai:clean(cfg.ai)};if(out.sync||out.ai)return out}catch(e){}}
+const host=text.replace(/^https?:\/\//i,'').replace(/[:\/].*$/,'').toLowerCase();
+if(/^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(host))return{sync:`https://${host}:10000`,ai:`https://${host}:8443`};
+return null},
+applySetup(cfg){
+if(cfg.sync&&cfg.sync!==this.url()){localStorage.setItem('csync_url',cfg.sync);localStorage.removeItem('csync_meta');localStorage.removeItem('csync_shadow')}
+if(cfg.ai)AI_CONFIG.set({host:cfg.ai});
+this.run();window.centurionAI?.loadModels?.()},
+consumeSetupLink(){if(!/^#setup=/.test(location.hash))return;this.pendingSetup=this.parseSetup(location.hash)||'invalid';history.replaceState(null,'',location.pathname+location.search)},
+showPendingSetup(){const cfg=this.pendingSetup;if(!cfg)return;this.pendingSetup=null;
+const esc=v=>String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const row=(label,v)=>v?`<div style="margin-top:12px"><div style="font-size:0.6rem;font-weight:800;letter-spacing:1px;color:var(--text-tertiary)">${label}</div><div style="font-size:0.8rem;color:var(--text);word-break:break-all;margin-top:4px">${esc(v)}</div></div>`:'';
+const btn='width:100%;padding:15px;margin-top:10px;border-radius:10px;font-weight:800;font-size:0.8rem;cursor:pointer';
+window.app.setText('modalTitle','SET UP THIS DEVICE');
+document.getElementById('modalBody').innerHTML=cfg==='invalid'
+?`<div style="padding:20px"><div style="font-size:0.8rem;color:var(--alert);line-height:1.5">That setup link could not be read. Open ⚙ Settings and type your PC's Tailscale name under Quick Setup instead.</div><button onclick="app.closeModal();app.openSettings()" style="${btn};background:var(--panel);color:var(--text);border:1px solid var(--border)">OPEN SETTINGS</button></div>`
+:`<div style="padding:20px"><div style="font-size:0.8rem;color:var(--text-secondary);line-height:1.5">Connect this device to your home servers? Your health data will sync with the first one.</div>${row('SYNC SERVER',cfg.sync)}${row('AI SERVER',cfg.ai)}
+<div style="font-size:0.65rem;color:var(--text-tertiary);line-height:1.5;margin-top:14px">Only accept if you made this link yourself.</div>
+<button id="setupAccept" style="${btn};background:linear-gradient(135deg,#c8ff00,#00d4ff);color:#000;border:none">USE THESE SERVERS</button>
+<button onclick="app.closeModal()" style="${btn};background:var(--panel);color:var(--text-secondary);border:1px solid var(--border)">CANCEL</button></div>`;
+const ok=document.getElementById('setupAccept');if(ok)ok.onclick=()=>{this.applySetup(cfg);window.app.closeModal();window.app.openSettings()};
+document.getElementById('mainModal').classList.add('show')}
 };
 
 class CenturionApp{
@@ -1278,6 +1307,11 @@ const esc=v=>String(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(
 const inp='width:100%;box-sizing:border-box;background:var(--panel-elevated);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:12px;font-size:0.8rem;outline:none;margin-top:6px';
 const lab='font-size:0.6rem;font-weight:800;letter-spacing:1px;color:var(--text-tertiary);margin-top:14px;display:block';
 let html=`<div style="padding:16px"><div style="font-size:0.7rem;color:var(--text-secondary);line-height:1.5">Stored on this device only. Nothing here is ever written into the app's code or sent anywhere except Oura and your own AI server.</div>`;
+const connected=SYNC.url()&&AI_CONFIG.get().host!==AI_CONFIG.DEFAULT_HOST;
+html+=`<div style="margin-top:16px;padding:14px;border:1px solid ${connected?'var(--border)':'var(--acid)'};border-radius:12px;background:var(--panel)"><div style="font-size:0.75rem;font-weight:800;color:var(--acid);letter-spacing:1px">⚡ QUICK SETUP${connected?' — CONNECTED':''}</div>
+<div style="font-size:0.65rem;color:var(--text-secondary);margin-top:6px;line-height:1.5">${connected?'This device knows your home servers. Re-enter only if they moved.':'This device is not connected to your home PC yet. Type the PC\'s Tailscale name (like <b>my-pc.tailnet-name.ts.net</b>) or paste your setup link — it fills in both server addresses below.'}</div>
+<div style="display:flex;gap:8px;margin-top:8px"><input id="set-quick" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="my-pc.tailnet-name.ts.net" style="${inp};margin-top:0;flex:1;min-width:0"><button onclick="app.applyQuickSetup()" style="background:var(--acid);color:#000;border:none;border-radius:10px;padding:0 16px;font-weight:800;font-size:0.7rem;cursor:pointer">APPLY</button></div>
+<div id="set-quick-msg" style="font-size:0.65rem;margin-top:6px;color:var(--alert)"></div></div>`;
 ['jermaine','sophia'].forEach(u=>{const p=PROFILE.get(u);
 html+=`<div style="margin-top:16px;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--panel)"><div style="font-size:0.75rem;font-weight:800;color:var(--cyan);letter-spacing:1px">${USERS[u].name.toUpperCase()}</div>
 <label style="${lab}" for="set-token-${u}">OURA PERSONAL ACCESS TOKEN</label><input id="set-token-${u}" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${p.token?'•••• saved — leave blank to keep':'paste token from cloud.ouraring.com'}" style="${inp}">
@@ -1296,6 +1330,15 @@ html+=`<button onclick="app.saveSettings()" style="width:100%;background:linear-
 document.getElementById('modalBody').innerHTML=html;
 document.getElementById('mainModal').classList.add('show');
 }
+applyQuickSetup(){
+const cfg=SYNC.parseSetup(document.getElementById('set-quick').value);
+if(!cfg){document.getElementById('set-quick-msg').textContent='Could not read that. Type the name only, e.g. my-pc.tailnet-name.ts.net';return}
+SYNC.applySetup(cfg);this.openSettings();
+const msg=document.getElementById('set-quick-msg');msg.style.color='var(--success)';msg.textContent='Saved. Connecting…';
+setTimeout(()=>{const m=document.getElementById('set-quick-msg');if(!m)return;const ok=SYNC.state==='ok';m.style.color=ok?'var(--success)':'var(--orange)';
+m.textContent=ok?'Connected to your home PC ✓':'Saved, but the PC did not answer — is Tailscale on (this device and the PC)?'},4000);
+}
+
 saveSettings(){
 ['jermaine','sophia'].forEach(u=>{const p=PROFILE.get(u);
 const t=document.getElementById(`set-token-${u}`).value.trim();if(t)p.token=t;
@@ -3031,7 +3074,7 @@ class CenturionAI{
     }catch(e){
       this.online=false;
       chatSel.innerHTML=visSel.innerHTML='<option value="">offline</option>';
-      if(!this.messages.length)this.note(`Cannot reach the AI server at <code>${this.esc(cfg.host)}</code> (${this.esc(e.message)}). Set the URL in ⚙ Settings.`);
+      if(!this.messages.length)this.note(cfg.host===AI_CONFIG.DEFAULT_HOST&&location.protocol==='https:'?`This device has not been connected to your home PC yet. Open ⚙ Settings → <b>Quick Setup</b> and type the PC's Tailscale name.`:`Cannot reach the AI server at <code>${this.esc(cfg.host)}</code> (${this.esc(e.message)}). Is Tailscale on? The address is in ⚙ Settings.`);
     }}
 
   setModel(kind,value){AI_CONFIG.set({[kind]:value})}
@@ -3272,7 +3315,7 @@ STYLE: Be concise and direct. Lead with the key insight. Use the actual numbers 
 
 window.addEventListener('load',()=>{setTimeout(()=>{window.centurionAI=new CenturionAI(window.app)},500)});
 
-let app;window.onload=()=>{SYNC.consumeSetupLink();app=new CenturionApp();window.app=app;SYNC.start()};
+let app;window.onload=()=>{SYNC.consumeSetupLink();app=new CenturionApp();window.app=app;SYNC.start();SYNC.showPendingSetup()};
 </script>
 
 <!-- CENTURION AI PANEL -->
