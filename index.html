@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Centurion v24.2</title>
+<title>Centurion v24.3</title>
 <style>
 :root{--bg:#0a0a0c;--panel:#141418;--panel-elevated:#1a1a20;--border:rgba(255,255,255,0.08);--acid:#c8ff00;--cyan:#00d4ff;--purple:#a855f7;--alert:#ff4757;--orange:#ff9500;--success:#34d399;--text:#fff;--text-secondary:rgba(255,255,255,0.6);--text-tertiary:rgba(255,255,255,0.4)}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -645,7 +645,7 @@ const SYNC={
 LOCAL_ONLY:new Set(['c_user','c_sections','c_ai']), // per-device choices, never synced
 SEP:'\u0000',busy:false,again:false,applying:false,timer:null,lastOk:null,state:'off',
 tracks(k){return typeof k==='string'&&k.startsWith('c_')&&!this.LOCAL_ONLY.has(k)},
-url(){return homeUrl(localStorage.getItem('csync_url'),'sync')},
+url(){const v=localStorage.getItem('csync_url');if(v==='off')return'';return homeUrl(v,'sync')||(ON_SITE?`https://${HOME_HOST}:${HOME_PORTS.sync}`:'')},
 read(k,d){try{return JSON.parse(localStorage.getItem(k)||'null')??d}catch(e){return d}},
 clientId(){let id=localStorage.getItem('csync_client');if(!id){id=(crypto.randomUUID?.()||String(Math.random()).slice(2)+Date.now());localStorage.setItem('csync_client',id)}return id},
 hash(str){let h1=0xdeadbeef,h2=0x41c6ce57;for(let i=0;i<str.length;i++){const c=str.charCodeAt(i);h1=Math.imul(h1^c,2654435761);h2=Math.imul(h2^c,1597334677)}
@@ -721,7 +721,7 @@ const host=text.replace(/^https?:\/\//i,'').replace(/[:\/].*$/,'').toLowerCase()
 if(/^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(host))return{sync:`https://${host}:10000`,ai:`https://${host}:8443`};
 return null},
 applySetup(cfg){
-if(cfg.sync&&cfg.sync!==this.url()){localStorage.setItem('csync_url',cfg.sync);localStorage.removeItem('csync_meta');localStorage.removeItem('csync_shadow')}
+if(cfg.sync&&(cfg.sync!==this.url()||localStorage.getItem('csync_url')==='off')){localStorage.setItem('csync_url',cfg.sync);localStorage.removeItem('csync_meta');localStorage.removeItem('csync_shadow')}
 if(cfg.ai)AI_CONFIG.set({host:cfg.ai});
 this.run();window.centurionAI?.loadModels?.()},
 consumeSetupLink(){if(!/^#setup=/.test(location.hash))return;this.pendingSetup=this.parseSetup(location.hash)||'invalid';history.replaceState(null,'',location.pathname+location.search)},
@@ -1306,12 +1306,12 @@ this.setText('modalTitle','SETTINGS');
 const esc=v=>String(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
 const inp='width:100%;box-sizing:border-box;background:var(--panel-elevated);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:12px;font-size:0.8rem;outline:none;margin-top:6px';
 const lab='font-size:0.6rem;font-weight:800;letter-spacing:1px;color:var(--text-tertiary);margin-top:14px;display:block';
-let html=`<div style="padding:16px"><div style="font-size:0.55rem;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:6px">CENTURION v24.2</div><div style="font-size:0.7rem;color:var(--text-secondary);line-height:1.5">Stored on this device only. Nothing here is ever written into the app's code or sent anywhere except Oura and your own AI server.</div>`;
-const connected=SYNC.url()&&AI_CONFIG.get().host!==AI_CONFIG.DEFAULT_HOST;
-html+=`<div style="margin-top:16px;padding:14px;border:1px solid ${connected?'var(--border)':'var(--acid)'};border-radius:12px;background:var(--panel)"><div style="font-size:0.75rem;font-weight:800;color:var(--acid);letter-spacing:1px">⚡ QUICK SETUP${connected?' — CONNECTED':''}</div>
-<div style="font-size:0.65rem;color:var(--text-secondary);margin-top:6px;line-height:1.5">${connected?'This device knows your home servers. Re-enter only if they moved.':'This device is not connected to your home PC yet. Type the PC\'s Tailscale name (like <b>my-pc.tailnet-name.ts.net</b>) or paste your setup link — it fills in both server addresses below.'}</div>
-<div style="display:flex;gap:8px;margin-top:8px"><input id="set-quick" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="my-pc.tailnet-name.ts.net" style="${inp};margin-top:0;flex:1;min-width:0"><button onclick="app.applyQuickSetup()" style="background:var(--acid);color:#000;border:none;border-radius:10px;padding:0 16px;font-weight:800;font-size:0.7rem;cursor:pointer">APPLY</button></div>
-<div id="set-quick-msg" style="font-size:0.65rem;margin-top:6px;color:var(--alert)"></div></div>`;
+let html=`<div style="padding:16px"><div style="font-size:0.55rem;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:6px">CENTURION v24.3</div><div style="font-size:0.7rem;color:var(--text-secondary);line-height:1.5">Stored on this device only. Nothing here is ever written into the app's code or sent anywhere except Oura and your own AI server.</div>`;
+const connected=SYNC.state==='ok';
+html+=`<div style="margin-top:16px;padding:14px;border:1px solid ${connected?'var(--success)':'var(--orange)'};border-radius:12px;background:var(--panel)"><div style="font-size:0.75rem;font-weight:800;color:${connected?'var(--success)':'var(--orange)'};letter-spacing:1px">${connected?'✓ CONNECTED TO YOUR HOME PC':SYNC.url()?'⚠ HOME PC NOT ANSWERING':'HOME SYNC IS OFF'}</div>
+<div style="font-size:0.65rem;color:var(--text-secondary);margin-top:6px;line-height:1.5">${connected?'Sync and the AI coach are using your home PC. Nothing to set up.':SYNC.url()?'The address is already built in — nothing to type. Check that <b>Tailscale is switched on</b> on this device and that the home PC is awake, then tap the button.':'Tap the button to connect this device to your home PC.'}</div>
+<button onclick="app.applyQuickSetup()" style="width:100%;margin-top:10px;background:${connected?'var(--panel-elevated)':'var(--acid)'};color:${connected?'var(--text-secondary)':'#000'};border:${connected?'1px solid var(--border)':'none'};border-radius:10px;padding:12px;font-weight:800;font-size:0.7rem;cursor:pointer">${connected?'RE-CHECK CONNECTION':'CONNECT TO HOME PC'}</button>
+<div id="set-quick-msg" style="font-size:0.65rem;margin-top:6px;color:var(--text-tertiary)"></div></div>`;
 ['jermaine','sophia'].forEach(u=>{const p=PROFILE.get(u);
 html+=`<div style="margin-top:16px;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--panel)"><div style="font-size:0.75rem;font-weight:800;color:var(--cyan);letter-spacing:1px">${USERS[u].name.toUpperCase()}</div>
 <label style="${lab}" for="set-token-${u}">OURA PERSONAL ACCESS TOKEN</label><input id="set-token-${u}" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${p.token?'•••• saved — leave blank to keep':'paste token from cloud.ouraring.com'}" style="${inp}">
@@ -1331,12 +1331,12 @@ document.getElementById('modalBody').innerHTML=html;
 document.getElementById('mainModal').classList.add('show');
 }
 applyQuickSetup(){
-const cfg=SYNC.parseSetup(document.getElementById('set-quick').value);
-if(!cfg){document.getElementById('set-quick-msg').textContent='Could not read that. Type the name only, e.g. my-pc.tailnet-name.ts.net';return}
-SYNC.applySetup(cfg);this.openSettings();
-const msg=document.getElementById('set-quick-msg');msg.style.color='var(--success)';msg.textContent='Saved. Connecting…';
-setTimeout(()=>{const m=document.getElementById('set-quick-msg');if(!m)return;const ok=SYNC.state==='ok';m.style.color=ok?'var(--success)':'var(--orange)';
-m.textContent=ok?'Connected to your home PC ✓':'Saved, but the PC did not answer — is Tailscale on (this device and the PC)?'},4000);
+SYNC.applySetup({sync:`https://${HOME_HOST}:${HOME_PORTS.sync}`,ai:`https://${HOME_HOST}:${HOME_PORTS.ai}`});
+const say=(t,c)=>{const m=document.getElementById('set-quick-msg');if(m){m.style.color=c;m.textContent=t}};
+say('Connecting…','var(--text-tertiary)');
+let tries=0;const poll=setInterval(()=>{tries++;
+if(SYNC.state==='ok'){clearInterval(poll);if(document.getElementById('set-quick-msg'))this.openSettings();return}
+if(tries>=12){clearInterval(poll);say('No answer from the home PC. Turn Tailscale on (this device), make sure the PC is awake, then tap again.','var(--orange)')}},1000);
 }
 
 saveSettings(){
@@ -1345,7 +1345,7 @@ const t=document.getElementById(`set-token-${u}`).value.trim();if(t)p.token=t;
 const d=document.getElementById(`set-dob-${u}`).value;if(d)p.dob=d;else delete p.dob;
 PROFILE.set(u,p)});
 AI_CONFIG.set({host:document.getElementById('set-ai-host').value});
-const su=homeUrl(document.getElementById('set-sync-url').value,'sync');if(su!==SYNC.url()){if(su)localStorage.setItem('csync_url',su);else localStorage.removeItem('csync_url');localStorage.removeItem('csync_meta');localStorage.removeItem('csync_shadow')}
+const su=homeUrl(document.getElementById('set-sync-url').value,'sync');if(su!==SYNC.url()){localStorage.setItem('csync_url',su||'off');localStorage.removeItem('csync_meta');localStorage.removeItem('csync_shadow')}
 SYNC.run();
 this.closeModal();this.render();this.fetchOura();
 }
@@ -3038,6 +3038,12 @@ sync(){this.fetchOura();SYNC.run()}
 // CENTURION AI — Ollama Integration v2.0 (streaming chat, model picker, configurable host)
 // ============================================================================
 const HOME_PORTS={ai:8443,sync:10000};
+// The home PC's Tailscale name. Not a secret: Tailscale's HTTPS certificates put it in the public
+// certificate-transparency logs, and it only resolves/answers from inside the tailnet. Building it
+// in means a new phone/iPad needs NO setup (typing it in proved error-prone). Only used on the
+// deployed https site; local http development stays on localhost with sync off.
+const HOME_HOST='sophia.tail9f5f4a.ts.net';
+const ON_SITE=location.protocol==='https:';
 function homeUrl(text,kind){
 let u=String(text||'').trim().replace(/\s+/g,'').replace(/\/+$/,'');if(!u)return'';
 if(!/^https?:\/\//i.test(u))u=(/^(localhost|[\d.]+)(:|\/|$)/i.test(u)?'http://':'https://')+u;
@@ -3046,8 +3052,8 @@ let[,scheme,host,port,path]=m;host=host.toLowerCase();
 if(host.endsWith('.ts.net')){scheme='https';if(!port||port==='443'||port==='80')port=String(HOME_PORTS[kind])}
 return`${scheme.toLowerCase()}://${host}${port?':'+port:''}${path||''}`}
 const AI_CONFIG={
-DEFAULT_HOST:'http://localhost:11434',
-get(){let c={};try{c=JSON.parse(localStorage.getItem('c_ai')||'{}')||{}}catch(e){}return{host:homeUrl(c.host,'ai')||this.DEFAULT_HOST,model:c.model||'',visionModel:c.visionModel||''}},
+DEFAULT_HOST:ON_SITE?`https://${HOME_HOST}:${HOME_PORTS.ai}`:'http://localhost:11434',
+get(){let c={};try{c=JSON.parse(localStorage.getItem('c_ai')||'{}')||{}}catch(e){}if(ON_SITE&&/^http:\/\/(localhost|127\.)/i.test(c.host||''))c.host='';return{host:homeUrl(c.host,'ai')||this.DEFAULT_HOST,model:c.model||'',visionModel:c.visionModel||''}},
 set(patch){const c=this.get();Object.assign(c,patch);c.host=homeUrl(c.host,'ai')||this.DEFAULT_HOST;localStorage.setItem('c_ai',JSON.stringify(c))}
 };
 
@@ -3082,7 +3088,7 @@ class CenturionAI{
     }catch(e){
       this.online=false;
       chatSel.innerHTML=visSel.innerHTML='<option value="">offline</option>';
-      if(!this.messages.length)this.note(cfg.host===AI_CONFIG.DEFAULT_HOST&&location.protocol==='https:'?`This device has not been connected to your home PC yet. Open ⚙ Settings → <b>Quick Setup</b> and type the PC's Tailscale name.`:`Cannot reach the AI server at <code>${this.esc(cfg.host)}</code> (${this.esc(e.message)}). Is Tailscale on? The address is in ⚙ Settings.`);
+      if(!this.messages.length)this.note(`Can't reach your home PC for the AI coach (${this.esc(e.message)}). Check that <b>Tailscale is on</b> on this device and the PC is awake, then reopen this panel. <span style="opacity:0.7">Trying ${this.esc(cfg.host)}</span>`);
     }}
 
   setModel(kind,value){AI_CONFIG.set({[kind]:value})}

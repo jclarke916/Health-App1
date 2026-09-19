@@ -126,7 +126,8 @@ class Store:
                 if cur and cur.get('d', False) == deleted and cur.get('v') == value:
                     written.add(eid)  # already identical - nothing to record or echo
                     continue
-                if first and cur and not (owner and k.endswith('_' + owner)):
+                derived = k.startswith('c_points_')  # re-computed scores: a fresh device must not overwrite them
+                if first and cur and (derived or not (owner and k.endswith('_' + owner))):
                     continue  # first sync: the server's copy of someone else's data wins
                 if first and deleted:
                     continue  # a fresh device has no history to delete from
