@@ -18,7 +18,7 @@ let package = Package(
             // App Store Connect refuses a (version, build) pair it has seen before:
             // bump bundleVersion on EVERY upload, displayVersion when the release changes.
             displayVersion: "1.0.0",
-            bundleVersion: "20260919.1",
+            bundleVersion: "20260919.2",
             // 1024x1024 RGB with NO alpha channel — ASC rejects an icon that has one.
             appIcon: .asset("AppIcon"),
             accentColor: .presetColor(.green),

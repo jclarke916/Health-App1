@@ -78,6 +78,9 @@ final class WebModel: NSObject, ObservableObject, WKNavigationDelegate, WKUIDele
         let config = WKWebViewConfiguration()
         config.websiteDataStore = WKWebsiteDataStore.default()   // persistent: localStorage survives relaunch
         config.allowsInlineMediaPlayback = true
+        // Puts "Centurion" in the User-Agent. The web app keys off it to hide its
+        // "add to home screen" offer: we are already the installed app.
+        config.applicationNameForUserAgent = "Centurion/" + Version.current
         let view = WKWebView(frame: .zero, configuration: config)
         view.isOpaque = false
         view.backgroundColor = UIColor(red: 10 / 255, green: 10 / 255, blue: 12 / 255, alpha: 1)

@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Centurion v24.4</title>
+<title>Centurion v24.5</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0a0a0c">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -252,6 +252,7 @@ textarea.ai-text-input{resize:none;font-family:inherit;line-height:1.4;min-heigh
 <!-- v22 RECOVERY BATTERY -->
 
 <div class="col-a">
+<div id="installCard" style="display:none;margin:16px 20px 0"></div>
 <div class="recovery-battery">
 <div class="battery-header">
 <div class="battery-title">⚡ RECOVERY BATTERY</div>
@@ -687,7 +688,7 @@ const BASE=[
 // state), so no write site in the app needs to know sync exists.
 // ============================================================================
 const SYNC={
-LOCAL_ONLY:new Set(['c_user','c_sections','c_ai']), // per-device choices, never synced
+LOCAL_ONLY:new Set(['c_user','c_sections','c_ai','c_installHint']), // per-device choices, never synced
 SEP:'\u0000',busy:false,again:false,applying:false,timer:null,lastOk:null,state:'off',
 tracks(k){return typeof k==='string'&&k.startsWith('c_')&&!this.LOCAL_ONLY.has(k)},
 url(){const v=localStorage.getItem('csync_url');if(v==='off')return'';return homeUrl(v,'sync')||(ON_SITE?`https://${HOME_HOST}:${HOME_PORTS.sync}`:'')},
@@ -783,6 +784,56 @@ document.getElementById('modalBody').innerHTML=cfg==='invalid'
 <button onclick="app.closeModal()" style="${btn};background:var(--panel);color:var(--text-secondary);border:1px solid var(--border)">CANCEL</button></div>`;
 const ok=document.getElementById('setupAccept');if(ok)ok.onclick=()=>{this.applySetup(cfg);window.app.closeModal();window.app.openSettings()};
 document.getElementById('mainModal').classList.add('show')}
+};
+
+// ── ADD TO HOME SCREEN ──────────────────────────────────────────────────────
+// With the manifest + icons (v24.4) this page installs as a real app, which is the
+// no-TestFlight route onto a phone. Offer it only where it can actually happen:
+// a one-tap prompt on Android/desktop Chromium, and the Share-sheet instructions on
+// iOS Safari (iOS has no programmatic install). Never inside our own WKWebView shell.
+const INSTALL={
+ua:navigator.userAgent,
+deferred:null,
+isIOS(){return /iPad|iPhone|iPod/.test(this.ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)},
+// Our TestFlight shell sets "Centurion" in the UA; any other in-app browser on iOS
+// is a WKWebView too, and those carry no "Safari/" token. Neither can install anything.
+inApp(){return /\bCenturion\b/.test(this.ua)||(this.isIOS()&&!/Safari\//.test(this.ua))},
+installed(){try{return matchMedia('(display-mode: standalone)').matches||navigator.standalone===true}catch(e){return false}},
+canPrompt(){return !!this.deferred},
+canInstruct(){return this.isIOS()&&!this.inApp()&&/Safari\//.test(this.ua)},
+offerable(){return !this.installed()&&!this.inApp()&&(this.canPrompt()||this.canInstruct())},
+dismissed(){return localStorage.getItem('c_installHint')==='off'},
+dismiss(){localStorage.setItem('c_installHint','off');this.render()},
+async prompt(){
+const d=this.deferred;if(!d)return;
+this.deferred=null;
+try{d.prompt();await d.userChoice}catch(e){}
+this.render();window.app?.openSettings&&document.getElementById('mainModal')?.classList.contains('show')&&window.app.openSettings()},
+// the same explanation in two places: the dismissible card, and Settings (never hidden)
+html(compact){
+const step='display:flex;gap:8px;align-items:flex-start;font-size:0.68rem;color:var(--text-secondary);line-height:1.5;margin-top:6px';
+if(this.installed())return`<div style="font-size:0.68rem;color:var(--success);line-height:1.5">✓ Running as an installed app on this device.</div>`;
+if(this.inApp())return`<div style="font-size:0.68rem;color:var(--text-secondary);line-height:1.5">You are in the Centurion app.</div>`;
+if(this.canPrompt())return`<div style="font-size:0.68rem;color:var(--text-secondary);line-height:1.5">Install Centurion so it opens full screen from your home screen, with its own icon.</div>
+<button onclick="INSTALL.prompt()" style="width:100%;margin-top:10px;background:var(--acid);color:#000;border:none;border-radius:10px;padding:12px;font-weight:800;font-size:0.7rem;cursor:pointer">INSTALL APP</button>`;
+if(this.canInstruct())return`<div style="font-size:0.68rem;color:var(--text-secondary);line-height:1.5">Put Centurion on your home screen — it gets its own icon and opens full screen, no App Store needed.</div>
+<div style="${step}"><span style="color:var(--cyan);font-weight:800">1.</span><span>Tap the <b>Share</b> button — the square with an arrow, in Safari's toolbar.</span></div>
+<div style="${step}"><span style="color:var(--cyan);font-weight:800">2.</span><span>Scroll down and tap <b>Add to Home Screen</b>.</span></div>
+<div style="${step}"><span style="color:var(--cyan);font-weight:800">3.</span><span>Tap <b>Add</b>. Open it from the new icon from now on.</span></div>`;
+return`<div style="font-size:0.68rem;color:var(--text-secondary);line-height:1.5">To install, open this page in Safari (iPhone/iPad) or Chrome (Android, computer).</div>`},
+render(){
+const el=document.getElementById('installCard');if(!el)return;
+const show=this.offerable()&&!this.dismissed();
+el.style.display=show?'block':'none';
+if(!show)return;
+el.innerHTML=`<div style="padding:14px;border:1px solid var(--acid);border-radius:12px;background:var(--panel)">
+<div style="display:flex;justify-content:space-between;align-items:center"><div style="font-size:0.7rem;font-weight:800;color:var(--acid);letter-spacing:1px">📲 ADD TO HOME SCREEN</div>
+<button onclick="INSTALL.dismiss()" aria-label="Dismiss" style="background:transparent;border:none;color:var(--text-tertiary);font-size:1.1rem;line-height:1;cursor:pointer;padding:0 4px">×</button></div>
+${this.html()}</div>`},
+start(){
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();this.deferred=e;this.render()});
+addEventListener('appinstalled',()=>{this.deferred=null;localStorage.removeItem('c_installHint');this.render()});
+this.render()}
 };
 
 class CenturionApp{
@@ -1351,12 +1402,13 @@ this.setText('modalTitle','SETTINGS');
 const esc=v=>String(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
 const inp='width:100%;box-sizing:border-box;background:var(--panel-elevated);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:12px;font-size:0.8rem;outline:none;margin-top:6px';
 const lab='font-size:0.6rem;font-weight:800;letter-spacing:1px;color:var(--text-tertiary);margin-top:14px;display:block';
-let html=`<div style="padding:16px"><div style="font-size:0.55rem;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:6px">CENTURION v24.4</div><div style="font-size:0.7rem;color:var(--text-secondary);line-height:1.5">Stored on this device only. Nothing here is ever written into the app's code or sent anywhere except Oura and your own AI server.</div>`;
+let html=`<div style="padding:16px"><div style="font-size:0.55rem;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:6px">CENTURION v24.5</div><div style="font-size:0.7rem;color:var(--text-secondary);line-height:1.5">Stored on this device only. Nothing here is ever written into the app's code or sent anywhere except Oura and your own AI server.</div>`;
 const connected=SYNC.state==='ok';
 html+=`<div style="margin-top:16px;padding:14px;border:1px solid ${connected?'var(--success)':'var(--orange)'};border-radius:12px;background:var(--panel)"><div style="font-size:0.75rem;font-weight:800;color:${connected?'var(--success)':'var(--orange)'};letter-spacing:1px">${connected?'✓ CONNECTED TO YOUR HOME PC':SYNC.url()?'⚠ HOME PC NOT ANSWERING':'HOME SYNC IS OFF'}</div>
 <div style="font-size:0.65rem;color:var(--text-secondary);margin-top:6px;line-height:1.5">${connected?'Sync and the AI coach are using your home PC. Nothing to set up.':SYNC.url()?'The address is already built in — nothing to type. Check that <b>Tailscale is switched on</b> on this device and that the home PC is awake, then tap the button.':'Tap the button to connect this device to your home PC.'}</div>
 <button onclick="app.applyQuickSetup()" style="width:100%;margin-top:10px;background:${connected?'var(--panel-elevated)':'var(--acid)'};color:${connected?'var(--text-secondary)':'#000'};border:${connected?'1px solid var(--border)':'none'};border-radius:10px;padding:12px;font-weight:800;font-size:0.7rem;cursor:pointer">${connected?'RE-CHECK CONNECTION':'CONNECT TO HOME PC'}</button>
 <div id="set-quick-msg" style="font-size:0.65rem;margin-top:6px;color:var(--text-tertiary)"></div></div>`;
+html+=`<div style="margin-top:16px;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--panel)"><div style="font-size:0.75rem;font-weight:800;color:var(--cyan);letter-spacing:1px">📲 ADD TO HOME SCREEN</div>${INSTALL.html()}</div>`;
 ['jermaine','sophia'].forEach(u=>{const p=PROFILE.get(u);
 html+=`<div style="margin-top:16px;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--panel)"><div style="font-size:0.75rem;font-weight:800;color:var(--cyan);letter-spacing:1px">${USERS[u].name.toUpperCase()}</div>
 <label style="${lab}" for="set-token-${u}">OURA PERSONAL ACCESS TOKEN</label><input id="set-token-${u}" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${p.token?'•••• saved — leave blank to keep':'paste token from cloud.ouraring.com'}" style="${inp}">
@@ -3374,7 +3426,7 @@ STYLE: Be concise and direct. Lead with the key insight. Use the actual numbers 
 
 window.addEventListener('load',()=>{setTimeout(()=>{window.centurionAI=new CenturionAI(window.app)},500)});
 
-let app;window.onload=()=>{SYNC.consumeSetupLink();app=new CenturionApp();window.app=app;SYNC.start();SYNC.showPendingSetup()};
+let app;window.onload=()=>{SYNC.consumeSetupLink();app=new CenturionApp();window.app=app;SYNC.start();INSTALL.start();SYNC.showPendingSetup()};
 </script>
 
 <!-- CENTURION AI PANEL -->
