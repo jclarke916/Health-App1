@@ -4,7 +4,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Centurion v24.3</title>
+<title>Centurion v24.4</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0a0a0c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Centurion">
+<meta name="description" content="Private two-person longevity dashboard: Oura, meals, labs and an AI coach on your own server.">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <style>
 :root{--bg:#0a0a0c;--panel:#141418;--panel-elevated:#1a1a20;--border:rgba(255,255,255,0.08);--acid:#c8ff00;--cyan:#00d4ff;--purple:#a855f7;--alert:#ff4757;--orange:#ff9500;--success:#34d399;--text:#fff;--text-secondary:rgba(255,255,255,0.6);--text-tertiary:rgba(255,255,255,0.4)}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -188,6 +196,38 @@ body:has(.modal-overlay.show) .ai-fab{display:none}
 .ai-chip{background:var(--panel-elevated);border:1px solid var(--border);color:var(--text-secondary);padding:8px 12px;border-radius:20px;font-size:0.62rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;-webkit-tap-highlight-color:transparent}
 .ai-chip:active{border-color:var(--cyan);color:var(--cyan)}
 textarea.ai-text-input{resize:none;font-family:inherit;line-height:1.4;min-height:42px;max-height:120px}
+/* ── LAYOUT FOR BIG SCREENS (iPad split view, iPad full, desktop) ───────────
+   Phones and narrow split-view panes keep the original single column: the two
+   wrappers are display:contents, i.e. invisible to layout. */
+.col-a,.col-b{display:contents}
+/* iPad Split View middle band: still one column, but centred so it does not sprawl */
+@media (min-width:600px) and (max-width:879px){
+  html{background:var(--bg)}
+  body{max-width:720px;margin:0 auto}
+}
+@media (min-width:880px){
+  html{background:var(--bg)}
+  body{max-width:1280px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:flex-start;column-gap:20px;padding-bottom:120px}
+  .header{flex:0 0 100%}
+  .col-a,.col-b{display:block;flex:1 1 420px;min-width:0}
+  .col-a{padding-bottom:20px}
+  .score-row{padding:20px 0}
+  .modal-content{max-width:860px;margin:0 auto;min-height:0;border-radius:0 0 20px 20px}
+  .modal-overlay{padding-bottom:40px}
+  /* keep transform free: the JS sets translateY inline for the slide-up */
+  .ai-panel{width:820px;left:50%;right:auto;margin-left:-410px;height:80vh;border-radius:24px 24px 0 0}
+  .footer{padding-left:max(20px,calc(50% - 620px));padding-right:max(20px,calc(50% - 620px))}
+  #debugPanel{flex:0 0 100%}
+}
+@media (min-width:1320px){
+  .ai-fab{right:calc(50% - 640px + 20px)}
+}
+/* very wide desktop: stop the cards growing past a comfortable reading width */
+@media (min-width:1500px){
+  body{max-width:1400px}
+  .col-a{flex:1 1 520px}
+  .col-b{flex:1 1 640px}
+}
 @media (prefers-reduced-motion:reduce){.ai-dot,.ai-msg.streaming::after{animation:none}}
 
 </style>
@@ -211,6 +251,7 @@ textarea.ai-text-input{resize:none;font-family:inherit;line-height:1.4;min-heigh
 
 <!-- v22 RECOVERY BATTERY -->
 
+<div class="col-a">
 <div class="recovery-battery">
 <div class="battery-header">
 <div class="battery-title">⚡ RECOVERY BATTERY</div>
@@ -269,6 +310,8 @@ textarea.ai-text-input{resize:none;font-family:inherit;line-height:1.4;min-heigh
 <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap" id="partnerQuickStats"></div>
 </div>
 
+</div><!-- /col-a -->
+<div class="col-b">
 <div class="section-header" onclick="app.toggleSection(this)">FUEL (NUTRITION)<span class="section-summary" id="fuelSummary"></span><span class="section-chevron">▼</span></div>
 <div class="section-body" id="fuelBody">
 <div class="grid-4">
@@ -333,6 +376,8 @@ textarea.ai-text-input{resize:none;font-family:inherit;line-height:1.4;min-heigh
 <div class="section-body" id="protocolBody">
 <div class="timeline" id="timeline"></div>
 </div>
+
+</div><!-- /col-b -->
 
 <div class="modal-overlay" id="mainModal">
 <div class="modal-content">
@@ -1306,7 +1351,7 @@ this.setText('modalTitle','SETTINGS');
 const esc=v=>String(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
 const inp='width:100%;box-sizing:border-box;background:var(--panel-elevated);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:12px;font-size:0.8rem;outline:none;margin-top:6px';
 const lab='font-size:0.6rem;font-weight:800;letter-spacing:1px;color:var(--text-tertiary);margin-top:14px;display:block';
-let html=`<div style="padding:16px"><div style="font-size:0.55rem;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:6px">CENTURION v24.3</div><div style="font-size:0.7rem;color:var(--text-secondary);line-height:1.5">Stored on this device only. Nothing here is ever written into the app's code or sent anywhere except Oura and your own AI server.</div>`;
+let html=`<div style="padding:16px"><div style="font-size:0.55rem;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:6px">CENTURION v24.4</div><div style="font-size:0.7rem;color:var(--text-secondary);line-height:1.5">Stored on this device only. Nothing here is ever written into the app's code or sent anywhere except Oura and your own AI server.</div>`;
 const connected=SYNC.state==='ok';
 html+=`<div style="margin-top:16px;padding:14px;border:1px solid ${connected?'var(--success)':'var(--orange)'};border-radius:12px;background:var(--panel)"><div style="font-size:0.75rem;font-weight:800;color:${connected?'var(--success)':'var(--orange)'};letter-spacing:1px">${connected?'✓ CONNECTED TO YOUR HOME PC':SYNC.url()?'⚠ HOME PC NOT ANSWERING':'HOME SYNC IS OFF'}</div>
 <div style="font-size:0.65rem;color:var(--text-secondary);margin-top:6px;line-height:1.5">${connected?'Sync and the AI coach are using your home PC. Nothing to set up.':SYNC.url()?'The address is already built in — nothing to type. Check that <b>Tailscale is switched on</b> on this device and that the home PC is awake, then tap the button.':'Tap the button to connect this device to your home PC.'}</div>
