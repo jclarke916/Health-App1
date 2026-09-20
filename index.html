@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Centurion v24.7</title>
+<title>Centurion v24.8</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0a0a0c">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -639,6 +639,42 @@ get(u){try{return JSON.parse(localStorage.getItem(`c_profile_${u}`)||'{}')||{}}c
 set(u,p){localStorage.setItem(`c_profile_${u}`,JSON.stringify(p))},
 age(u){const dob=this.get(u).dob;if(!dob)return null;const b=new Date(dob+'T12:00'),n=new Date();let a=n.getFullYear()-b.getFullYear();if(n<new Date(n.getFullYear(),b.getMonth(),b.getDate()))a--;return a}
 };
+// Oura killed Personal Access Tokens in 2026 - new ones cannot be created and the old
+// ones are being switched off, so the way in is OAuth2. The client secret cannot live in
+// a public repo, so the home server holds it, keeps the refresh token, and fetches the
+// data on the phone's behalf. No Oura credential ever touches a device.
+const OURA={
+status:null,
+async load(){
+if(!SYNC.url())return this.status=null;
+try{const r=await fetch(SYNC.url()+'/oura/config',{signal:AbortSignal.timeout(8000)});
+this.status=r.ok?await r.json():null}catch(e){this.status=null}
+return this.status},
+linked(user){return !!this.status?.connected?.[user]},
+// state is "<user>.<nonce>": oura.html checks it back against what we stored here
+connect(user){
+const st=this.status;
+if(!st?.configured){alert('The home server does not have the Oura client id and secret yet.');return}
+const nonce=(crypto.randomUUID?.()||String(Math.random()).slice(2))+Date.now().toString(36);
+const state=`${user}.${nonce}`;
+localStorage.setItem('c_oura_state',state);
+const redirect=location.origin+location.pathname.replace(/[^\/]*$/,'')+'oura.html';
+location.href='https://cloud.ouraring.com/oauth/authorize?'+new URLSearchParams(
+{response_type:'code',client_id:st.client_id,redirect_uri:redirect,scope:st.scopes,state});
+},
+async disconnect(user){
+if(!confirm(`Disconnect ${USERS[user].name}'s Oura account? Data already downloaded stays.`))return;
+try{await fetch(SYNC.url()+'/oura/disconnect',{method:'POST',headers:{'Content-Type':'application/json'},
+body:JSON.stringify({user})})}catch(e){}
+await this.load();window.app?.openSettings()},
+// endpoint fetch through the server; throws so fetchOura can fall back to a legacy token
+async fetch(user,endpoint,start,end){
+const r=await fetch(`${SYNC.url()}/oura/data?`+new URLSearchParams({user,endpoint,start,end}),
+{signal:AbortSignal.timeout(60000)});
+const body=await r.json().catch(()=>({}));
+if(!r.ok)throw new Error(body.error||('HTTP '+r.status));
+return body.data||[]}
+};
 const OURA_PROXY='https://oura-proxy.jclarke-9a0.workers.dev?url=';
 const COLORS={red:'#ff4757',orange:'#ff9500',yellow:'#ffd60a',green:'#34d399',purple:'#a855f7',white:'#fff',brown:'#A0522D',pink:'#f093fb',black:'#333',silver:'#ccc'};
 
@@ -1033,16 +1069,22 @@ this.setText('syncStatus','SYNCING...');
 try{
 const end=new Date();end.setDate(end.getDate()+1);const start=new Date();start.setDate(start.getDate()-14);
 const startStr=start.toISOString().split('T')[0],endStr=end.toISOString().split('T')[0];
-const token=PROFILE.get(this.user).token,proxy=OURA_PROXY;
-if(!token){this.setText('syncStatus','NO OURA TOKEN — TAP ⚙');this.applyAppleHealth();this.render();return}
 const eps=['sleep','workout','daily_activity','daily_readiness','daily_hrv','daily_sleep'];
+const token=PROFILE.get(this.user).token,proxy=OURA_PROXY;
+if(OURA.status===null)await OURA.load();
+const viaServer=OURA.linked(this.user);
+if(!viaServer&&!token){this.setText('syncStatus','OURA NOT CONNECTED — TAP ⚙');this.applyAppleHealth();this.render();return}
 const results=await Promise.allSettled(eps.map(async ep=>{
+if(viaServer)return{name:ep,data:await OURA.fetch(this.user,ep,startStr,endStr)};
+// legacy path: a Personal Access Token that still works until Oura switches it off
 const url=`${proxy}${encodeURIComponent(`https://api.ouraring.com/v2/usercollection/${ep}?start_date=${startStr}&end_date=${endStr}`)}`;
 const res=await fetch(url,{headers:{'Authorization':`Bearer ${token}`}});
 if(!res.ok)throw new Error(ep);
 return{name:ep,data:(await res.json()).data||[]};
 }));
-if(results.every(r=>r.status==='rejected')){this.setText('syncStatus','OURA REJECTED — CHECK TOKEN ⚙');this.render();return}
+if(results.every(r=>r.status==='rejected')){
+this.setText('syncStatus',viaServer?'OURA FAILED — TAP ⚙':'OURA REJECTED — CHECK TOKEN ⚙');
+this.applyAppleHealth();this.render();return}
 const data={};results.forEach(r=>{if(r.status==='fulfilled')data[r.value.name]=r.value.data});
 this.processData(data);this.setText('syncStatus','SYNCED ✓');this.render();
 }catch(e){console.error('Oura sync error:',e);this.setText('syncStatus','OFFLINE');try{this.render()}catch(re){console.error('Render error:',re)}}
@@ -1399,10 +1441,11 @@ document.getElementById('mainModal').classList.remove('show');
 // ── SETTINGS: per-device private data (token, DOB, AI host) + backup ──
 openSettings(){
 this.setText('modalTitle','SETTINGS');
+if(OURA.status===null)OURA.load().then(()=>{if(document.getElementById('set-quick'))this.openSettings()});
 const esc=v=>String(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
 const inp='width:100%;box-sizing:border-box;background:var(--panel-elevated);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:12px;font-size:0.8rem;outline:none;margin-top:6px';
 const lab='font-size:0.6rem;font-weight:800;letter-spacing:1px;color:var(--text-tertiary);margin-top:14px;display:block';
-let html=`<div style="padding:16px"><div style="font-size:0.55rem;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:6px">CENTURION v24.7</div><div style="font-size:0.7rem;color:var(--text-secondary);line-height:1.5">Stored on this device only. Nothing here is ever written into the app's code or sent anywhere except Oura and your own AI server.</div>`;
+let html=`<div style="padding:16px"><div style="font-size:0.55rem;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:6px">CENTURION v24.8</div><div style="font-size:0.7rem;color:var(--text-secondary);line-height:1.5">Stored on this device only. Nothing here is ever written into the app's code or sent anywhere except Oura and your own AI server.</div>`;
 const connected=SYNC.state==='ok';
 html+=`<div style="margin-top:16px;padding:14px;border:1px solid ${connected?'var(--success)':'var(--orange)'};border-radius:12px;background:var(--panel)"><div style="font-size:0.75rem;font-weight:800;color:${connected?'var(--success)':'var(--orange)'};letter-spacing:1px">${connected?'✓ CONNECTED TO YOUR HOME PC':SYNC.url()?'⚠ HOME PC NOT ANSWERING':'HOME SYNC IS OFF'}</div>
 <div style="font-size:0.65rem;color:var(--text-secondary);margin-top:6px;line-height:1.5">${connected?'Sync and the AI coach are using your home PC. Nothing to set up.':SYNC.url()?'The address is already built in — nothing to type. Check that <b>Tailscale is switched on</b> on this device and that the home PC is awake, then tap the button.':'Tap the button to connect this device to your home PC.'}</div>
@@ -1411,7 +1454,18 @@ html+=`<div style="margin-top:16px;padding:14px;border:1px solid ${connected?'va
 html+=`<div style="margin-top:16px;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--panel)"><div style="font-size:0.75rem;font-weight:800;color:var(--cyan);letter-spacing:1px">📲 ADD TO HOME SCREEN</div>${INSTALL.html()}</div>`;
 ['jermaine','sophia'].forEach(u=>{const p=PROFILE.get(u);
 html+=`<div style="margin-top:16px;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--panel)"><div style="font-size:0.75rem;font-weight:800;color:var(--cyan);letter-spacing:1px">${USERS[u].name.toUpperCase()}</div>
-<label style="${lab}" for="set-token-${u}">OURA PERSONAL ACCESS TOKEN</label><input id="set-token-${u}" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${p.token?'•••• saved — leave blank to keep':'paste token from cloud.ouraring.com'}" style="${inp}">
+${(()=>{const st=OURA.status,on=OURA.linked(u);
+return `<div style="margin-top:12px;padding:10px 12px;border-radius:10px;background:var(--panel-elevated);border:1px solid ${on?'var(--success)':'var(--border)'}">
+<div style="font-size:0.65rem;font-weight:800;letter-spacing:1px;color:${on?'var(--success)':'var(--text-tertiary)'}">OURA ${on?'CONNECTED ✓':(p.token?'USING OLD TOKEN':'NOT CONNECTED')}</div>
+<div style="font-size:0.6rem;color:var(--text-tertiary);margin-top:4px;line-height:1.5">${
+ !st?'Can\'t reach the home PC, so the Oura link cannot be checked.'
+ :!st.configured?'The home server still needs the Oura client id and secret.'
+ :on?'The home PC holds the login and fetches this data. Nothing is stored on your phone.'
+ :p.token?'Oura is switching old tokens off. Connect properly to keep the data coming.'
+ :'Sign in once to let Centurion read this Oura account.'}</div>
+${st&&st.configured?`<button onclick="OURA.${on?'disconnect':'connect'}('${u}')" style="width:100%;margin-top:8px;background:${on?'var(--panel)':'var(--acid)'};color:${on?'var(--text-secondary)':'#000'};border:${on?'1px solid var(--border)':'none'};border-radius:9px;padding:10px;font-weight:800;font-size:0.65rem;cursor:pointer">${on?'DISCONNECT':'CONNECT OURA'}</button>`:''}
+</div>`})()}
+<label style="${lab}" for="set-token-${u}">OLD OURA TOKEN ${p.token?'(still in use)':'(deprecated)'}</label><input id="set-token-${u}" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${p.token?'•••• saved — leave blank to keep':'Oura no longer issues these'}" style="${inp}">
 <label style="${lab}" for="set-dob-${u}">DATE OF BIRTH</label><input id="set-dob-${u}" type="date" value="${esc(p.dob)}" style="${inp}"></div>`});
 const ai=AI_CONFIG.get();
 html+=`<div style="margin-top:16px;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--panel)"><div style="font-size:0.75rem;font-weight:800;color:var(--purple);letter-spacing:1px">AI COACH (OLLAMA)</div>

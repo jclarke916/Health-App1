@@ -77,7 +77,28 @@ Daily points out of 100, each person measured against **their own** goals: Sleep
 
 The rules live in `pointsRules()` / `scoreDay()` / `inbodyMonth()` in `index.html`.
 
-## Oura proxy
+## Oura (OAuth2)
+
+Oura retired Personal Access Tokens in 2026 - new ones cannot be created and existing ones are
+being switched off - so access is OAuth2 against a registered application. The client secret
+cannot live in a public repo, so the sync server holds it:
+
+```
+<data>/oura_client.json    {"client_id": "...", "client_secret": "..."}   <- you create this
+<data>/oura_tokens.json    written by the server, per user
+```
+
+Registered redirect URI: `https://jclarke916.github.io/Health-App1/oura.html`. Scopes: `daily workout`.
+
+Flow: **⚙ Settings → CONNECT OURA** sends the browser to Oura with a `state` of `<user>.<nonce>`;
+Oura returns to `oura.html`, which checks the nonce it stored and posts the code to
+`POST /oura/exchange`; the server swaps it for tokens and keeps them. The app then reads data
+through `GET /oura/data?user=&endpoint=&start=&end=`, which attaches the bearer token and
+refreshes it when expired. **No Oura credential is ever stored on a phone.** The endpoint name
+is checked against an allowlist. A still-valid legacy token in Settings is used as a fallback
+until Oura switches it off.
+
+## Oura proxy (legacy)
 
 Oura's API has no CORS headers, so requests go through a Cloudflare Worker (`OURA_PROXY` in `index.html`). `worker/oura-proxy.js` is the locked-down version: Oura URLs only, known origins only.
 

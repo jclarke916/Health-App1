@@ -35,6 +35,8 @@ import shutil
 import threading
 import time
 import urllib.parse
+import urllib.error
+import urllib.request
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -263,9 +265,123 @@ def parse_apple(body):
     return days
 
 
+class Oura:
+    """Oura OAuth2 on behalf of the household.
+
+    Personal Access Tokens were killed by Oura in 2026 (new ones cannot be created and old
+    ones are being switched off), so the only way in is OAuth2 - which needs a client secret.
+    A public GitHub Pages app cannot hold one, so it lives here:
+
+        <data>/oura_client.json   {"client_id": "...", "client_secret": "..."}
+        <data>/oura_tokens.json   written by us, per user
+
+    The phones never see an Oura credential at all. They ask this server for data and it
+    attaches the bearer token itself, refreshing it when it has expired.
+    """
+    AUTHORIZE = 'https://cloud.ouraring.com/oauth/authorize'
+    TOKEN = 'https://api.ouraring.com/oauth/token'
+    API = 'https://api.ouraring.com/v2/usercollection/'
+    SCOPES = 'daily workout'          # only what the app actually reads
+    ENDPOINTS = {'sleep', 'workout', 'daily_activity', 'daily_readiness', 'daily_hrv', 'daily_sleep'}
+
+    def __init__(self, data_dir):
+        self.dir = data_dir
+        self.tokens_path = os.path.join(data_dir, 'oura_tokens.json')
+        self.lock = threading.Lock()
+        self.client = self._read(os.path.join(data_dir, 'oura_client.json'), {})
+        self.tokens = self._read(self.tokens_path, {})
+
+    @staticmethod
+    def _read(path, default):
+        try:
+            with open(path, encoding='utf-8') as f:
+                return json.load(f)
+        except Exception:
+            return dict(default)
+
+    def _save_tokens(self):
+        tmp = self.tokens_path + '.tmp'
+        with open(tmp, 'w', encoding='utf-8') as f:
+            json.dump(self.tokens, f, indent=1)
+        os.replace(tmp, self.tokens_path)
+
+    def configured(self):
+        return bool(self.client.get('client_id') and self.client.get('client_secret'))
+
+    def status(self):
+        return {'configured': self.configured(),
+                'client_id': self.client.get('client_id', ''),
+                'scopes': self.SCOPES,
+                'connected': {u: bool(self.tokens.get(u, {}).get('refresh_token')) for u in USERS}}
+
+    def _post_token(self, fields):
+        body = urllib.parse.urlencode(dict(
+            fields, client_id=self.client['client_id'], client_secret=self.client['client_secret']
+        )).encode()
+        req = urllib.request.Request(self.TOKEN, data=body, method='POST',
+                                     headers={'Content-Type': 'application/x-www-form-urlencoded'})
+        try:
+            with urllib.request.urlopen(req, timeout=30) as r:
+                return json.loads(r.read().decode())
+        except urllib.error.HTTPError as e:
+            raise RuntimeError('Oura refused the request: %s %s' % (e.code, e.read().decode()[:200]))
+
+    def _store(self, user, tok):
+        if not tok.get('access_token'):
+            raise RuntimeError('Oura returned no access token')
+        keep = self.tokens.get(user, {})
+        self.tokens[user] = {
+            'access_token': tok['access_token'],
+            # a refresh response does not always resend the refresh token - keep the old one
+            'refresh_token': tok.get('refresh_token') or keep.get('refresh_token'),
+            'expires_at': time.time() + int(tok.get('expires_in') or 3600) - 120,
+            'scope': tok.get('scope', keep.get('scope', '')),
+            'linked_at': keep.get('linked_at') or time.strftime('%Y-%m-%dT%H:%M:%S'),
+        }
+        self._save_tokens()
+
+    def exchange(self, user, code, redirect_uri):
+        with self.lock:
+            self._store(user, self._post_token({'grant_type': 'authorization_code', 'code': code,
+                                                'redirect_uri': redirect_uri}))
+            log.info('oura linked for %s (scopes %s)', user, self.tokens[user].get('scope'))
+
+    def disconnect(self, user):
+        with self.lock:
+            if self.tokens.pop(user, None) is not None:
+                self._save_tokens()
+
+    def _bearer(self, user):
+        with self.lock:
+            t = self.tokens.get(user)
+            if not t:
+                raise RuntimeError('%s has not connected an Oura account yet' % user)
+            if time.time() >= t.get('expires_at', 0):
+                if not t.get('refresh_token'):
+                    raise RuntimeError('the Oura link for %s expired - reconnect in Settings' % user)
+                self._store(user, self._post_token({'grant_type': 'refresh_token',
+                                                    'refresh_token': t['refresh_token']}))
+                log.info('oura token refreshed for %s', user)
+            return self.tokens[user]['access_token']
+
+    def fetch(self, user, endpoint, start, end):
+        if endpoint not in self.ENDPOINTS:
+            raise RuntimeError('endpoint not allowed')
+        token = self._bearer(user)
+        url = '%s%s?%s' % (self.API, endpoint,
+                           urllib.parse.urlencode({'start_date': start, 'end_date': end}))
+        req = urllib.request.Request(url, headers={'Authorization': 'Bearer ' + token})
+        try:
+            with urllib.request.urlopen(req, timeout=60) as r:
+                return json.loads(r.read().decode())
+        except urllib.error.HTTPError as e:
+            raise RuntimeError('Oura API %s: %s' % (e.code, e.read().decode()[:200]))
+
+
 class Handler(BaseHTTPRequestHandler):
     protocol_version = 'HTTP/1.1'
     store = None
+    oura = None
 
     def _send(self, status, obj=None):
         body = b'' if obj is None else json.dumps(obj, separators=(',', ':')).encode()
@@ -291,9 +407,27 @@ class Handler(BaseHTTPRequestHandler):
         self._send(204 if self._origin_ok() else 403)
 
     def do_GET(self):
-        if self.path.rstrip('/') in ('', '/health'):
+        url = urllib.parse.urlparse(self.path)
+        route = url.path.rstrip('/')
+        if route in ('', '/health'):
             st = self.store.state
-            return self._send(200, {'ok': True, 'rev': st['rev'], 'entries': len(st['entries'])})
+            return self._send(200, {'ok': True, 'rev': st['rev'], 'entries': len(st['entries']),
+                                    'oura': self.oura.status()})
+        if not self._origin_ok():
+            return self._send(403, {'error': 'origin not allowed'})
+        if route == '/oura/config':
+            return self._send(200, self.oura.status())
+        if route == '/oura/data':
+            q = urllib.parse.parse_qs(url.query)
+            one = lambda k: (q.get(k) or [''])[0]
+            user, endpoint = one('user'), one('endpoint')
+            if user not in USERS:
+                return self._send(400, {'error': 'user must be one of %s' % (USERS,)})
+            try:
+                return self._send(200, self.oura.fetch(user, endpoint, one('start'), one('end')))
+            except Exception as e:
+                log.info('oura fetch failed for %s/%s: %s', user, endpoint, e)
+                return self._send(502, {'error': str(e)})
         self._send(404, {'error': 'not found'})
 
     def do_POST(self):
@@ -301,11 +435,27 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(403, {'error': 'origin not allowed'})
         url = urllib.parse.urlparse(self.path)
         route = url.path.rstrip('/')
-        if route not in ('/sync', '/apple'):
+        if route not in ('/sync', '/apple', '/oura/exchange', '/oura/disconnect'):
             return self._send(404, {'error': 'not found'})
         length = int(self.headers.get('Content-Length') or 0)
         if length > MAX_BODY:
             return self._send(413, {'error': 'too large'})
+        if route.startswith('/oura/'):
+            try:
+                body = json.loads(self.rfile.read(int(self.headers.get('Content-Length') or 0)) or b'{}')
+                user = body.get('user')
+                if user not in USERS:
+                    return self._send(400, {'error': 'user must be one of %s' % (USERS,)})
+                if route == '/oura/disconnect':
+                    self.oura.disconnect(user)
+                else:
+                    if not self.oura.configured():
+                        raise RuntimeError('this server has no Oura client id/secret yet')
+                    self.oura.exchange(user, body.get('code') or '', body.get('redirect_uri') or '')
+            except Exception as e:
+                log.info('oura %s failed: %s', route, e)
+                return self._send(400, {'error': str(e)})
+            return self._send(200, {'ok': True, 'oura': self.oura.status()})
         if route == '/apple':
             try:
                 body = json.loads(self.rfile.read(length) or b'{}')
@@ -344,6 +494,7 @@ def main():
     logging.basicConfig(filename=os.path.join(args.data, 'sync.log'), level=logging.INFO,
                         format='%(asctime)s %(message)s')
     Handler.store = Store(args.data)
+    Handler.oura = Oura(args.data)
     try:
         httpd = ThreadingHTTPServer(('127.0.0.1', args.port), Handler)
     except OSError:

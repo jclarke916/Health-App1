@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Connecting Oura — Centurion</title>
+<link rel="stylesheet" href="legal.css">
+<style>
+  main{max-width:520px;padding-top:40px}
+  .status{font-size:1.05rem;font-weight:600;margin-bottom:10px}
+  .ok{color:var(--acid)} .bad{color:#ff9500}
+  .detail{color:var(--dim);font-size:0.85rem;line-height:1.6}
+  .btn{display:inline-block;margin-top:24px;background:var(--acid);color:#000;text-decoration:none;
+       padding:13px 22px;border-radius:10px;font-weight:800;font-size:0.8rem}
+  code{background:#1d1d22;padding:2px 6px;border-radius:4px;font-size:0.8rem;word-break:break-all}
+</style>
+</head>
+<body>
+<main>
+<h1>Oura</h1>
+<div id="status" class="status">Finishing the connection…</div>
+<div id="detail" class="detail">One moment.</div>
+<a class="btn" href="./">Back to Centurion</a>
+</main>
+<script>
+// Oura sends the user here after they approve access. This page never sees the client
+// secret: it hands the one-time code to the home sync server, which does the exchange and
+// keeps the tokens. Same origin as the app, so it can read the state nonce the app stored.
+(function(){
+const HOME_PORTS={sync:10000};
+const HOME_HOST='sophia.tail9f5f4a.ts.net';
+const q=new URLSearchParams(location.search);
+const say=(cls,msg,detail)=>{
+  const s=document.getElementById('status'),d=document.getElementById('detail');
+  s.className='status '+cls; s.textContent=msg; d.innerHTML=detail;
+};
+const syncUrl=()=>{
+  let v=null;try{v=localStorage.getItem('csync_url')}catch(e){}
+  if(v==='off')v=null;
+  return (v||`https://${HOME_HOST}:${HOME_PORTS.sync}`).replace(/\/+$/,'');
+};
+
+if(q.get('error')){
+  say('bad','Not connected',`Oura reported: <code>${(q.get('error')||'').replace(/[<>&]/g,'')}</code>. Nothing was changed. You can try again from Settings.`);
+  return;
+}
+const code=q.get('code');
+if(!code){
+  say('bad','Nothing to do','This page is the return point for connecting an Oura account. Start from Settings in the app.');
+  return;
+}
+
+// state is "<user>.<nonce>" - the nonce proves this redirect answers our own request
+const state=q.get('state')||'';
+let expected=null;try{expected=localStorage.getItem('c_oura_state')}catch(e){}
+const user=state.split('.')[0];
+if(!state||state!==expected||!['jermaine','sophia'].includes(user)){
+  say('bad','Could not verify this request',
+      'The security check did not match, so the code was discarded. This happens if the link was opened twice, or on a different device from the one that started it. Please start again from Settings on the same device.');
+  return;
+}
+try{localStorage.removeItem('c_oura_state')}catch(e){}
+
+fetch(syncUrl()+'/oura/exchange',{
+  method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({user,code,redirect_uri:location.origin+location.pathname})
+}).then(async r=>{
+  const body=await r.json().catch(()=>({}));
+  if(!r.ok||body.error)throw new Error(body.error||('HTTP '+r.status));
+  const name=user.charAt(0).toUpperCase()+user.slice(1);
+  say('ok','Connected ✓',
+      `${name}'s Oura account is linked. Scopes granted: <code>${(q.get('scope')||'').replace(/[<>&]/g,'')}</code>.<br><br>Head back and tap SYNC — the data should start filling in.`);
+}).catch(e=>{
+  say('bad','Could not finish the connection',
+      `The home server did not accept the code: <code>${String(e.message).replace(/[<>&]/g,'')}</code>.<br><br>Check that Tailscale is on and the home PC is awake, then start again from Settings. The code expires quickly, so it cannot be reused.`);
+});
+})();
+</script>
+</body>
+</html>
