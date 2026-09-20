@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Centurion v24.5</title>
+<title>Centurion v24.6</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0a0a0c">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1402,7 +1402,7 @@ this.setText('modalTitle','SETTINGS');
 const esc=v=>String(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
 const inp='width:100%;box-sizing:border-box;background:var(--panel-elevated);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:12px;font-size:0.8rem;outline:none;margin-top:6px';
 const lab='font-size:0.6rem;font-weight:800;letter-spacing:1px;color:var(--text-tertiary);margin-top:14px;display:block';
-let html=`<div style="padding:16px"><div style="font-size:0.55rem;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:6px">CENTURION v24.5</div><div style="font-size:0.7rem;color:var(--text-secondary);line-height:1.5">Stored on this device only. Nothing here is ever written into the app's code or sent anywhere except Oura and your own AI server.</div>`;
+let html=`<div style="padding:16px"><div style="font-size:0.55rem;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:6px">CENTURION v24.6</div><div style="font-size:0.7rem;color:var(--text-secondary);line-height:1.5">Stored on this device only. Nothing here is ever written into the app's code or sent anywhere except Oura and your own AI server.</div>`;
 const connected=SYNC.state==='ok';
 html+=`<div style="margin-top:16px;padding:14px;border:1px solid ${connected?'var(--success)':'var(--orange)'};border-radius:12px;background:var(--panel)"><div style="font-size:0.75rem;font-weight:800;color:${connected?'var(--success)':'var(--orange)'};letter-spacing:1px">${connected?'✓ CONNECTED TO YOUR HOME PC':SYNC.url()?'⚠ HOME PC NOT ANSWERING':'HOME SYNC IS OFF'}</div>
 <div style="font-size:0.65rem;color:var(--text-secondary);margin-top:6px;line-height:1.5">${connected?'Sync and the AI coach are using your home PC. Nothing to set up.':SYNC.url()?'The address is already built in — nothing to type. Check that <b>Tailscale is switched on</b> on this device and that the home PC is awake, then tap the button.':'Tap the button to connect this device to your home PC.'}</div>
@@ -3224,19 +3224,46 @@ DAILY TARGETS: Protein ${goals.protein}g | Omega-3 ${goals.omega3}mg | Fiber ${g
 STYLE: Be concise and direct. Lead with the key insight. Use the actual numbers above; say so when a value is missing ("--") instead of guessing. Keep responses under 180 words unless asked to elaborate. You are not a doctor — flag anything that needs one.`}
 
   // One-shot (non-streaming) call — used for the JSON extraction tasks. Returns null on failure and sets lastError.
-  async callOllama(messages,images=null,opts={}){
+  // One JSON answer (meal / scan), but STREAMED on purpose. A non-streaming request
+  // sends nothing until the model finishes, and a phone drops a connection that sits
+  // idle ~60 s - which is why Log Meal failed while chat (already streaming) worked.
+  // Loading the vision model alone takes ~34 s. think:false matters as much: nemotron
+  // spent 1600 characters reasoning about a 150 character answer (12.8 s -> 1.4 s).
+  async callOllama(messages,images=null,opts={},onWait=null){
     const cfg=AI_CONFIG.get();
-    const model=images?(cfg.visionModel||cfg.model):cfg.model;
     const msgs=messages.map(m=>({...m}));
     if(images&&msgs.length>0)msgs[msgs.length-1].images=images;
     this.lastError=null;
+    const started=Date.now();
+    let tick=null;
     try{
-      if(!model){await this.loadModels();if(!AI_CONFIG.get().model)throw new Error('no model available')}
+      if(!cfg.model)await this.loadModels();
       const c2=AI_CONFIG.get();
-      const r=await fetch(`${c2.host}/api/chat`,{method:'POST',headers:this.headers(),body:JSON.stringify({model:images?(c2.visionModel||c2.model):c2.model,messages:msgs,stream:false,...opts})});
+      const model=images?(c2.visionModel||c2.model):c2.model;
+      if(!model)throw new Error('no model available');
+      if(onWait){tick=setInterval(()=>onWait(Math.round((Date.now()-started)/1000)),2000)}
+      const r=await fetch(`${c2.host}/api/chat`,{method:'POST',headers:this.headers(),
+        body:JSON.stringify({model,messages:msgs,stream:true,think:false,keep_alive:'30m',...opts})});
       if(!r.ok)throw new Error((await r.text())||`HTTP ${r.status}`);
-      return (await r.json()).message?.content||'';
-    }catch(e){this.lastError=`Cannot reach the AI server at ${cfg.host} — ${e.message}`;return null}}
+      const reader=r.body.getReader(),dec=new TextDecoder();
+      let buf='',out='';
+      const take=line=>{if(!line.trim())return;let d;try{d=JSON.parse(line)}catch(e){return}
+        if(d.error)throw new Error(d.error);
+        if(d.message?.content)out+=d.message.content};
+      for(;;){const{done,value}=await reader.read();if(done)break;
+        buf+=dec.decode(value,{stream:true});
+        const lines=buf.split('\n');buf=lines.pop();
+        lines.forEach(take)}
+      take(buf);
+      if(!out.trim())throw new Error('the model returned nothing');
+      return out;
+    }catch(e){
+      const secs=Math.round((Date.now()-started)/1000);
+      this.lastError=/fetch|network|load failed/i.test(e.message)
+        ?`Lost the connection to your home PC after ${secs}s. Is Tailscale still on and the PC awake? Try again.`
+        :`AI server error after ${secs}s - ${e.message}`;
+      return null;
+    }finally{if(tick)clearInterval(tick)}}
 
   async sendChat(){
     const input=document.getElementById('aiChatInput');
@@ -3312,16 +3339,16 @@ STYLE: Be concise and direct. Lead with the key insight. Use the actual numbers 
     const b64=await this.toB64(file);
     document.getElementById('foodPhotoPreview').src=`data:${file.type};base64,${b64}`;
     document.getElementById('foodPhotoPreview').style.display='block';
-    document.getElementById('foodAnalysisResult').innerHTML='<div style="color:var(--cyan);font-size:0.75rem">🤖 Analyzing food...</div>';
+    const wait=s=>{const el=document.getElementById('foodAnalysisResult');if(el)el.innerHTML=`<div style="color:var(--cyan);font-size:0.75rem">🤖 Analyzing food… ${s}s${s>15?' · loading the photo model, the first one is slow':''}</div>`};wait(0);
     const prompt='Analyze this food. Respond ONLY in JSON: {"foods":["item"],"protein":0,"fat":0,"carbs":0,"fiber":0,"calories":0,"omega3":0,"summary":"short meal name"}. Units: protein, fat, carbs and fiber in grams; omega3 in MILLIGRAMS of EPA+DHA (e.g. 6 oz salmon = about 3000); calories in kcal.';
-    const raw=await this.callOllama([{role:'user',content:prompt}],[b64],{format:'json'});
+    const raw=await this.callOllama([{role:'user',content:prompt}],[b64],{format:'json'},wait);
     this.showFoodResult(this.parseJSON(raw))}
 
   async handleQuickMeal(){
     const text=document.getElementById('quickMealInput').value.trim();if(!text)return;
-    document.getElementById('foodAnalysisResult').innerHTML='<div style="color:var(--cyan);font-size:0.75rem">🤖 Estimating macros...</div>';
+    const wait=s=>{const el=document.getElementById('foodAnalysisResult');if(el)el.innerHTML=`<div style="color:var(--cyan);font-size:0.75rem">🤖 Estimating macros… ${s}s</div>`};wait(0);
     const prompt=`Estimate nutrition for: "${text}". Respond ONLY in JSON: {"foods":["item"],"protein":0,"fat":0,"carbs":0,"fiber":0,"calories":0,"omega3":0,"summary":"short meal name"}. Units: protein, fat, carbs and fiber in grams; omega3 in MILLIGRAMS of EPA+DHA (e.g. 6 oz salmon = about 3000); calories in kcal.`;
-    const raw=await this.callOllama([{role:'user',content:prompt}],null,{format:'json'});
+    const raw=await this.callOllama([{role:'user',content:prompt}],null,{format:'json'},wait);
     this.showFoodResult(this.parseJSON(raw))}
 
   showFoodResult(r){
@@ -3384,9 +3411,9 @@ STYLE: Be concise and direct. Lead with the key insight. Use the actual numbers 
   async handleScanUpload(input){
     const file=input.files[0];if(!file)return;
     const b64=await this.toB64(file);
-    document.getElementById('scanResult').innerHTML='<div style="color:var(--cyan);font-size:0.75rem">🤖 Reading scan...</div>';
+    const wait=s=>{const el=document.getElementById('scanResult');if(el)el.innerHTML=`<div style="color:var(--cyan);font-size:0.75rem">🤖 Reading scan… ${s}s${s>15?' · loading the photo model, the first one is slow':''}</div>`};wait(0);
     const prompt='This is an InBody body composition scan or medical lab document. Extract all numerical health values. Respond ONLY in JSON: {"weight":null,"bodyfat":null,"muscle":null,"fatmass":null,"bmr":null,"bmi":null,"inbodyscore":null,"trunklean":null,"trunkfat":null,"smi":null,"apob":null,"lpa":null,"ldl":null,"hdl":null,"trig":null,"hscrp":null,"glucose":null,"hba1c":null,"insulin":null,"creatinine":null,"egfr":null,"date":null}. Only include values clearly visible. Use null for missing fields.';
-    const raw=await this.callOllama([{role:'user',content:prompt}],[b64],{format:'json'});
+    const raw=await this.callOllama([{role:'user',content:prompt}],[b64],{format:'json'},wait);
     this.showScanResult(this.parseJSON(raw))}
 
   showScanResult(r){
