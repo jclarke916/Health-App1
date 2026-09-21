@@ -61,8 +61,10 @@ if(!state||state!==expected||!['jermaine','sophia'].includes(user)){
 }
 try{localStorage.removeItem('c_oura_state')}catch(e){}
 
+// the home server refuses requests without the household key (set on this device by the setup link)
+let key='';try{key=localStorage.getItem('csync_key')||''}catch(e){}
 fetch(syncUrl()+'/oura/exchange',{
-  method:'POST',headers:{'Content-Type':'application/json'},
+  method:'POST',headers:Object.assign({'Content-Type':'application/json'},key&&(()=>{try{const u=new URL(syncUrl());return u.protocol==='https:'&&u.hostname===HOME_HOST}catch(e){return false}})()?{Authorization:'Bearer '+key}:{}),
   body:JSON.stringify({user,code,redirect_uri:location.origin+location.pathname})
 }).then(async r=>{
   const body=await r.json().catch(()=>({}));

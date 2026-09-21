@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Centurion v26</title>
+<title>Centurion v27</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0a0a0c">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -649,7 +649,7 @@ const OURA={
 status:null,
 async load(){
 if(!SYNC.url())return this.status=null;
-try{const r=await fetch(SYNC.url()+'/oura/config',{signal:AbortSignal.timeout(8000)});
+try{const r=await fetch(SYNC.url()+'/oura/config',{headers:HOME_KEY.headers(SYNC.url()),signal:AbortSignal.timeout(8000)});
 this.status=r.ok?await r.json():null}catch(e){this.status=null}
 return this.status},
 linked(user){return !!this.status?.connected?.[user]},
@@ -666,13 +666,13 @@ location.href='https://cloud.ouraring.com/oauth/authorize?'+new URLSearchParams(
 },
 async disconnect(user){
 if(!confirm(`Disconnect ${USERS[user].name}'s Oura account? Data already downloaded stays.`))return;
-try{await fetch(SYNC.url()+'/oura/disconnect',{method:'POST',headers:{'Content-Type':'application/json'},
+try{await fetch(SYNC.url()+'/oura/disconnect',{method:'POST',headers:HOME_KEY.headers(SYNC.url(),{'Content-Type':'application/json'}),
 body:JSON.stringify({user})})}catch(e){}
 await this.load();window.app?.openSettings()},
 // endpoint fetch through the server; throws so fetchOura can fall back to a legacy token
 async fetch(user,endpoint,start,end){
 const r=await fetch(`${SYNC.url()}/oura/data?`+new URLSearchParams({user,endpoint,start,end}),
-{signal:AbortSignal.timeout(60000)});
+{headers:HOME_KEY.headers(SYNC.url()),signal:AbortSignal.timeout(60000)});
 const body=await r.json().catch(()=>({}));
 if(!r.ok)throw new Error(body.error||('HTTP '+r.status));
 return body.data||[]}
@@ -744,8 +744,8 @@ write(e){if(e.s===''){if(e.d)localStorage.removeItem(e.k);else localStorage.setI
 let cur=this.read(e.k,{});if(!this.isMap(cur))cur={};if(e.d)delete cur[e.s];else cur[e.s]=e.v;localStorage.setItem(e.k,JSON.stringify(cur))},
 status(state,detail){this.state=state;const el=document.getElementById('cloudStatus');if(!el)return;
 const t=this.lastOk?this.lastOk.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):'';
-el.textContent={off:'☁ SYNC OFF',syncing:'☁ SYNCING…',ok:`☁ SYNCED ${t}`,offline:`☁ CAN'T REACH HOME${t?` · LAST ${t}`:''}`}[state]||'';
-el.style.color=state==='ok'?'var(--success)':state==='offline'?'var(--orange)':'var(--text-tertiary)';el.title=detail||''},
+el.textContent={off:'☁ SYNC OFF',syncing:'☁ SYNCING…',ok:`☁ SYNCED ${t}`,offline:`☁ CAN'T REACH HOME${t?` · LAST ${t}`:''}`,nokey:'☁ NEEDS SETUP LINK'}[state]||'';
+el.style.color=state==='ok'?'var(--success)':state==='offline'||state==='nokey'?'var(--orange)':'var(--text-tertiary)';el.title=detail||''},
 schedule(ms=1500){if(this.applying||!this.url())return;clearTimeout(this.timer);this.timer=setTimeout(()=>this.run(),ms)},
 async run(){
 const url=this.url();if(!url){this.status('off');return}
@@ -757,8 +757,9 @@ const shadow=first?{}:this.read('csync_shadow',{});
 const local=this.snapshot();const changes=[];
 for(const id in local)if(shadow[id]!==local[id].h)changes.push({k:local[id].k,s:local[id].s,v:local[id].v});
 for(const id in shadow)if(!(id in local)){const[k,s]=id.split(this.SEP);changes.push({k,s,d:true})}
-const r=await fetch(url+'/sync',{method:'POST',headers:{'Content-Type':'application/json'},signal:AbortSignal.timeout(20000),
+const r=await fetch(url+'/sync',{method:'POST',headers:HOME_KEY.headers(url,{'Content-Type':'application/json'}),signal:AbortSignal.timeout(20000),
 body:JSON.stringify({client:this.clientId(),since:meta.rev||0,serverId:meta.serverId||null,first,owner:localStorage.getItem('c_user')||'jermaine',changes})});
+if(r.status===401){this.status('nokey','the home server needs this device\'s household key');this.backoff=60000;return}
 if(!r.ok)throw new Error('HTTP '+r.status);
 const res=await r.json();
 const fresh=first||res.serverId!==meta.serverId; // first contact with this server: it decided who wins, take its answer as-is
@@ -800,13 +801,14 @@ const clean=u=>{u=String(u||'').trim().replace(/\/+$/,'');return /^https?:\/\/[^
 const m=text.match(/setup=([^&\s]+)/);let code=m?m[1]:text;
 try{code=decodeURIComponent(code)}catch(e){}
 if(/^[A-Za-z0-9+\/_=-]{16,}$/.test(code)){try{const b=code.replace(/-/g,'+').replace(/_/g,'/');const cfg=JSON.parse(atob(b+'==='.slice((b.length+3)%4)));
-const out={sync:clean(cfg.sync),ai:clean(cfg.ai)};if(out.sync||out.ai)return out}catch(e){}}
+const out={sync:clean(cfg.sync),ai:clean(cfg.ai),key:/^[A-Za-z0-9_-]{24,}$/.test(cfg.key||'')?cfg.key:''};if(out.sync||out.ai||out.key)return out}catch(e){}}
 const host=text.replace(/^https?:\/\//i,'').replace(/[:\/].*$/,'').toLowerCase();
 if(/^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(host))return{sync:`https://${host}:10000`,ai:`https://${host}:8443`};
 return null},
 applySetup(cfg){
 if(cfg.sync&&(cfg.sync!==this.url()||localStorage.getItem('csync_url')==='off')){localStorage.setItem('csync_url',cfg.sync);localStorage.removeItem('csync_meta');localStorage.removeItem('csync_shadow')}
 if(cfg.ai)AI_CONFIG.set({host:cfg.ai});
+if(cfg.key)HOME_KEY.set(cfg.key);
 this.run();window.centurionAI?.loadModels?.()},
 consumeSetupLink(){if(!/^#setup=/.test(location.hash))return;this.pendingSetup=this.parseSetup(location.hash)||'invalid';history.replaceState(null,'',location.pathname+location.search)},
 showPendingSetup(){const cfg=this.pendingSetup;if(!cfg)return;this.pendingSetup=null;
@@ -1823,7 +1825,7 @@ if(OURA.status===null)OURA.load().then(()=>{if(document.getElementById('set-quic
 const esc=v=>String(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
 const inp='width:100%;box-sizing:border-box;background:var(--panel-elevated);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:12px;font-size:0.8rem;outline:none;margin-top:6px';
 const lab='font-size:0.6rem;font-weight:800;letter-spacing:1px;color:var(--text-tertiary);margin-top:14px;display:block';
-let html=`<div style="padding:16px"><div style="font-size:0.55rem;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:6px">CENTURION v26</div><div style="font-size:0.7rem;color:var(--text-secondary);line-height:1.5">Stored on this device only. Nothing here is ever written into the app's code or sent anywhere except Oura and your own AI server.</div>`;
+let html=`<div style="padding:16px"><div style="font-size:0.55rem;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:6px">CENTURION v27</div><div style="font-size:0.7rem;color:var(--text-secondary);line-height:1.5">Stored on this device only. Nothing here is ever written into the app's code or sent anywhere except Oura and your own AI server.</div>`;
 const connected=SYNC.state==='ok';
 html+=`<div style="margin-top:16px;padding:14px;border:1px solid ${connected?'var(--success)':'var(--orange)'};border-radius:12px;background:var(--panel)"><div style="font-size:0.75rem;font-weight:800;color:${connected?'var(--success)':'var(--orange)'};letter-spacing:1px">${connected?'✓ CONNECTED TO YOUR HOME PC':SYNC.url()?'⚠ HOME PC NOT ANSWERING':'HOME SYNC IS OFF'}</div>
 <div style="font-size:0.65rem;color:var(--text-secondary);margin-top:6px;line-height:1.5">${connected?'Sync and the AI coach are using your home PC. Nothing to set up.':SYNC.url()?'The address is already built in — nothing to type. Check that <b>Tailscale is switched on</b> on this device and that the home PC is awake, then tap the button.':'Tap the button to connect this device to your home PC.'}</div>
@@ -1851,7 +1853,8 @@ html+=`<div style="margin-top:16px;padding:14px;border:1px solid var(--border);b
 <div style="font-size:0.6rem;color:var(--text-tertiary);margin-top:6px;line-height:1.5">From the GitHub Pages (https) site the server must also be https — e.g. a Tailscale Funnel URL. The model is picked inside the AI panel.</div></div>`;
 html+=`<div style="margin-top:16px;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--panel)"><div style="font-size:0.75rem;font-weight:800;color:var(--success);letter-spacing:1px">☁ HOME SYNC</div>
 <label style="${lab}" for="set-sync-url">SYNC SERVER URL</label><input id="set-sync-url" type="url" autocapitalize="off" spellcheck="false" value="${esc(SYNC.url())}" placeholder="https://your-pc.your-tailnet.ts.net:10000" style="${inp}">
-<div style="font-size:0.6rem;color:var(--text-tertiary);margin-top:6px;line-height:1.5">Both phones sync automatically with your own PC whenever they can reach it (Tailscale on). Everything keeps working offline and catches up later. Leave blank to keep this device on its own. ${SYNC.state==='off'?'':`Status: ${esc(document.getElementById('cloudStatus')?.textContent||'')} ${esc(document.getElementById('cloudStatus')?.title||'')}`}</div></div>`;
+<label style="${lab}" for="set-key">HOUSEHOLD KEY ${HOME_KEY.get()?'<span style="color:var(--success)">· SET ✓</span>':'<span style="color:var(--orange)">· MISSING</span>'}</label><input id="set-key" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${HOME_KEY.get()?'•••• saved — leave blank to keep':'comes in the setup link — or paste it here'}" style="${inp}">
+<div style="font-size:0.6rem;color:var(--text-tertiary);margin-top:6px;line-height:1.5">Both phones sync automatically with your own PC — no VPN needed once this device has the household key. Everything keeps working offline and catches up later. Leave blank to keep this device on its own. ${SYNC.state==='off'?'':`Status: ${esc(document.getElementById('cloudStatus')?.textContent||'')} ${esc(document.getElementById('cloudStatus')?.title||'')}`}</div></div>`;
 html+=`<button onclick="app.saveSettings()" style="width:100%;background:linear-gradient(135deg,#c8ff00,#00d4ff);color:#000;padding:15px;margin-top:16px;border:none;border-radius:10px;font-weight:800">SAVE SETTINGS</button>
 <div style="display:flex;gap:8px;margin-top:8px"><button onclick="app.exportBackup()" style="flex:1;background:var(--panel);color:var(--text-secondary);padding:13px;border:1px solid var(--border);border-radius:10px;font-weight:800;font-size:0.7rem;cursor:pointer">⬇ EXPORT BACKUP</button>
 <label style="flex:1;text-align:center;background:var(--panel);color:var(--text-secondary);padding:13px;border:1px solid var(--border);border-radius:10px;font-weight:800;font-size:0.7rem;cursor:pointer">⬆ IMPORT BACKUP<input type="file" accept="application/json,.json" style="display:none" onchange="app.importBackup(this)"></label></div>
@@ -1875,6 +1878,7 @@ const t=document.getElementById(`set-token-${u}`).value.trim();if(t)p.token=t;
 const d=document.getElementById(`set-dob-${u}`).value;if(d)p.dob=d;else delete p.dob;
 PROFILE.set(u,p)});
 AI_CONFIG.set({host:document.getElementById('set-ai-host').value});
+const nk=document.getElementById('set-key')?.value.trim();if(nk)HOME_KEY.set(nk);
 const su=homeUrl(document.getElementById('set-sync-url').value,'sync');if(su!==SYNC.url()){localStorage.setItem('csync_url',su||'off');localStorage.removeItem('csync_meta');localStorage.removeItem('csync_shadow')}
 SYNC.run();
 this.closeModal();this.render();this.fetchOura();
@@ -3583,15 +3587,28 @@ const HOME_PORTS={ai:8443,sync:10000};
 // deployed https site; local http development stays on localhost with sync off.
 const HOME_HOST='sophia.tail9f5f4a.ts.net';
 const ON_SITE=location.protocol==='https:';
+// Household key: with Funnel on, the home server is reachable from the internet, and it
+// refuses anything without this. Stored per device (csync_ = never synced), arrives in the
+// setup link's #fragment (never sent to any server), and is only ever sent to HOME_HOST.
+const HOME_KEY={
+get(){try{return localStorage.getItem('csync_key')||''}catch(e){return''}},
+set(k){k=String(k||'').trim();if(k)localStorage.setItem('csync_key',k);else localStorage.removeItem('csync_key')},
+// the key goes ONLY to the home server - never to Oura, GitHub, or any other host
+isHome(url){try{const u=new URL(url);return u.protocol==='https:'&&u.hostname===HOME_HOST}catch(e){return false}},
+headers(url,extra={}){const h={...extra};const k=this.get();
+if(k&&this.isHome(url))h.Authorization='Bearer '+k;return h}};
 function homeUrl(text,kind){
 let u=String(text||'').trim().replace(/\s+/g,'').replace(/\/+$/,'');if(!u)return'';
 if(!/^https?:\/\//i.test(u))u=(/^(localhost|[\d.]+)(:|\/|$)/i.test(u)?'http://':'https://')+u;
 const m=u.match(/^(https?):\/\/([^\/:]+)(?::(\d+))?(\/.*)?$/i);if(!m)return u;
 let[,scheme,host,port,path]=m;host=host.toLowerCase();
-if(host.endsWith('.ts.net')){scheme='https';if(!port||port==='443'||port==='80')port=String(HOME_PORTS[kind])}
+if(host.endsWith('.ts.net')){scheme='https';
+// the AI used to be raw Ollama on :8443 (tailnet only); it now goes through the key-checked proxy
+if(kind==='ai'&&(!port||['443','80','8443'].includes(port))){port=String(HOME_PORTS.sync);path='/ai'}
+else if(!port||port==='443'||port==='80')port=String(HOME_PORTS[kind])}
 return`${scheme.toLowerCase()}://${host}${port?':'+port:''}${path||''}`}
 const AI_CONFIG={
-DEFAULT_HOST:ON_SITE?`https://${HOME_HOST}:${HOME_PORTS.ai}`:'http://localhost:11434',
+DEFAULT_HOST:ON_SITE?`https://${HOME_HOST}:${HOME_PORTS.sync}/ai`:'http://localhost:11434',
 get(){let c={};try{c=JSON.parse(localStorage.getItem('c_ai')||'{}')||{}}catch(e){}if(ON_SITE&&/^http:\/\/(localhost|127\.)/i.test(c.host||''))c.host='';return{host:homeUrl(c.host,'ai')||this.DEFAULT_HOST,model:c.model||'',visionModel:c.visionModel||''}},
 set(patch){const c=this.get();Object.assign(c,patch);c.host=homeUrl(c.host,'ai')||this.DEFAULT_HOST;localStorage.setItem('c_ai',JSON.stringify(c))}
 };
@@ -3599,7 +3616,7 @@ set(patch){const c=this.get();Object.assign(c,patch);c.host=homeUrl(c.host,'ai')
 class CenturionAI{
   constructor(app){this.app=app;this.messages=[];this.isOpen=false;this.streaming=false;this.lastError=null}
 
-  headers(){const h={'Content-Type':'application/json'};if(/ngrok/.test(AI_CONFIG.get().host))h['ngrok-skip-browser-warning']='true';return h}
+  headers(){const host=AI_CONFIG.get().host;const h=HOME_KEY.headers(host,{'Content-Type':'application/json'});if(/ngrok/.test(host))h['ngrok-skip-browser-warning']='true';return h}
 
   async loadModels(){
     const cfg=AI_CONFIG.get();

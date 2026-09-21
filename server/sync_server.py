@@ -27,6 +27,7 @@ GET  /health
 """
 import argparse
 import datetime
+import hmac
 import json
 import logging
 import os
@@ -378,21 +379,41 @@ class Oura:
             raise RuntimeError('Oura API %s: %s' % (e.code, e.read().decode()[:200]))
 
 
+# Ollama is only ever reached through here. It has no auth of its own, and its API can pull,
+# copy and DELETE models - so only these read/chat calls are passed through, and only with the key.
+AI_UPSTREAM = 'http://127.0.0.1:11434'
+AI_ALLOWED = {('POST', '/api/chat'), ('POST', '/api/show'), ('GET', '/api/tags'), ('GET', '/api/version')}
+
+
+def load_key(data_dir):
+    """<data>/household_key.txt, one line. No file = auth off (how it ran before Funnel)."""
+    try:
+        with open(os.path.join(data_dir, 'household_key.txt'), encoding='utf-8') as f:
+            key = f.read().strip()
+        return key or None
+    except OSError:
+        return None
+
+
 class Handler(BaseHTTPRequestHandler):
     protocol_version = 'HTTP/1.1'
     store = None
     oura = None
+    key = None
 
-    def _send(self, status, obj=None):
-        body = b'' if obj is None else json.dumps(obj, separators=(',', ':')).encode()
+    def _cors(self):
         origin = self.headers.get('Origin')
-        self.send_response(status)
         if origin in ALLOWED_ORIGINS:
             self.send_header('Access-Control-Allow-Origin', origin)
-            self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+            self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
             self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
             self.send_header('Access-Control-Max-Age', '86400')
             self.send_header('Vary', 'Origin')
+
+    def _send(self, status, obj=None):
+        body = b'' if obj is None else json.dumps(obj, separators=(',', ':')).encode()
+        self.send_response(status)
+        self._cors()
         self.send_header('Content-Type', 'application/json')
         self.send_header('Cache-Control', 'no-store')
         self.send_header('Content-Length', str(len(body)))
@@ -403,6 +424,101 @@ class Handler(BaseHTTPRequestHandler):
         origin = self.headers.get('Origin')
         return origin is None or origin in ALLOWED_ORIGINS  # no Origin = curl / health checks
 
+    def _authorized(self):
+        """With Funnel on, this server is on the public internet: every request must carry the key."""
+        if not self.key:
+            return True
+        got = self.headers.get('Authorization', '')
+        got = got[7:].strip() if got.lower().startswith('bearer ') else ''
+        return bool(got) and hmac.compare_digest(got.encode(), self.key.encode())
+
+    def _deny(self):
+        return self._send(401, {'error': 'household key required', 'needKey': True})
+
+    def _proxy_ai(self, method, path, body=None):
+        """Pass one allowlisted Ollama call through, streaming the reply as it arrives."""
+        if (method, path) not in AI_ALLOWED:
+            return self._send(403, {'error': 'that AI call is not allowed through this server'})
+        if path == '/api/chat':
+            return self._proxy_chat(body)
+        req = urllib.request.Request(AI_UPSTREAM + path, data=body, method=method,
+                                     headers={'Content-Type': 'application/json'})
+        try:
+            upstream = urllib.request.urlopen(req, timeout=900)
+        except urllib.error.HTTPError as e:
+            return self._send(e.code, {'error': e.read().decode(errors='replace')[:300]})
+        except Exception as e:
+            return self._send(502, {'error': 'the AI server is not answering: %s' % e})
+        with upstream:
+            self.send_response(upstream.status)
+            self._cors()
+            self.send_header('Content-Type', upstream.headers.get('Content-Type') or 'application/json')
+            self.send_header('Cache-Control', 'no-store')
+            self.send_header('Transfer-Encoding', 'chunked')
+            self.end_headers()
+            read = getattr(upstream, 'read1', None) or upstream.read
+            try:
+                while True:
+                    chunk = read(65536)
+                    if not chunk:
+                        break
+                    self.wfile.write(b'%x\r\n%s\r\n' % (len(chunk), chunk))
+                    self.wfile.flush()
+                self.wfile.write(b'0\r\n\r\n')
+            except (BrokenPipeError, ConnectionResetError):
+                pass   # the phone went away mid-reply
+
+    def _proxy_chat(self, body):
+        """Chat, with a keep-alive while the model loads.
+
+        Ollama sends nothing - not even headers - until the model is loaded, and swapping out
+        the 96 GB GC_OS model took 98 s in testing. A phone drops a connection that is silent
+        for ~60 s, so answer at once and send a blank line every 5 s until the model speaks.
+        The app's stream reader already skips blank lines, and JSON.parse ignores leading
+        whitespace, so both streaming and one-shot replies read exactly as before.
+        """
+        req = urllib.request.Request(AI_UPSTREAM + '/api/chat', data=body, method='POST',
+                                     headers={'Content-Type': 'application/json'})
+        result, done = {}, threading.Event()
+
+        def call():
+            try:
+                result['resp'] = urllib.request.urlopen(req, timeout=900)
+            except urllib.error.HTTPError as e:
+                result['err'] = e.read().decode(errors='replace')[:300] or 'HTTP %d' % e.code
+            except Exception as e:
+                result['err'] = 'the AI server is not answering: %s' % e
+            done.set()
+        threading.Thread(target=call, daemon=True).start()
+
+        self.send_response(200)
+        self._cors()
+        self.send_header('Content-Type', 'application/x-ndjson')
+        self.send_header('Cache-Control', 'no-store')
+        self.send_header('Transfer-Encoding', 'chunked')
+        self.end_headers()
+
+        def write(b):
+            self.wfile.write(b'%x\r\n%s\r\n' % (len(b), b))
+            self.wfile.flush()
+        try:
+            while not done.wait(5):
+                write(b'\n')
+            if 'err' in result:
+                # already committed to 200: report the failure the way Ollama reports stream errors
+                write((json.dumps({'error': result['err']}) + '\n').encode())
+            else:
+                with result['resp'] as up:
+                    read = getattr(up, 'read1', None) or up.read
+                    while True:
+                        chunk = read(65536)
+                        if not chunk:
+                            break
+                        write(chunk)
+            self.wfile.write(b'0\r\n\r\n')
+        except (BrokenPipeError, ConnectionResetError):
+            pass   # the phone went away mid-reply
+
     def do_OPTIONS(self):
         self._send(204 if self._origin_ok() else 403)
 
@@ -410,11 +526,17 @@ class Handler(BaseHTTPRequestHandler):
         url = urllib.parse.urlparse(self.path)
         route = url.path.rstrip('/')
         if route in ('', '/health'):
+            if not self._authorized():   # public: prove it is alive, reveal nothing
+                return self._send(200, {'ok': True})
             st = self.store.state
             return self._send(200, {'ok': True, 'rev': st['rev'], 'entries': len(st['entries']),
-                                    'oura': self.oura.status()})
+                                    'oura': self.oura.status(), 'auth': bool(self.key)})
         if not self._origin_ok():
             return self._send(403, {'error': 'origin not allowed'})
+        if not self._authorized():
+            return self._deny()
+        if route.startswith('/ai/'):
+            return self._proxy_ai('GET', route[3:])
         if route == '/oura/config':
             return self._send(200, self.oura.status())
         if route == '/oura/data':
@@ -435,11 +557,15 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(403, {'error': 'origin not allowed'})
         url = urllib.parse.urlparse(self.path)
         route = url.path.rstrip('/')
-        if route not in ('/sync', '/apple', '/oura/exchange', '/oura/disconnect'):
-            return self._send(404, {'error': 'not found'})
+        if not self._authorized():
+            return self._deny()
         length = int(self.headers.get('Content-Length') or 0)
         if length > MAX_BODY:
             return self._send(413, {'error': 'too large'})
+        if route.startswith('/ai/'):
+            return self._proxy_ai('POST', route[3:], self.rfile.read(length))
+        if route not in ('/sync', '/apple', '/oura/exchange', '/oura/disconnect'):
+            return self._send(404, {'error': 'not found'})
         if route.startswith('/oura/'):
             try:
                 body = json.loads(self.rfile.read(int(self.headers.get('Content-Length') or 0)) or b'{}')
@@ -495,11 +621,13 @@ def main():
                         format='%(asctime)s %(message)s')
     Handler.store = Store(args.data)
     Handler.oura = Oura(args.data)
+    Handler.key = load_key(args.data)
     try:
         httpd = ThreadingHTTPServer(('127.0.0.1', args.port), Handler)
     except OSError:
         return  # already running
-    log.info('listening on 127.0.0.1:%d, rev=%d', args.port, Handler.store.state['rev'])
+    log.info('listening on 127.0.0.1:%d, rev=%d, household key %s', args.port,
+             Handler.store.state['rev'], 'REQUIRED' if Handler.key else 'off')
     httpd.serve_forever()
 
 
