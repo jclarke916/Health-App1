@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Centurion v27.2</title>
+<title>Centurion v27.3</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0a0a0c">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1825,7 +1825,7 @@ if(OURA.status===null)OURA.load().then(()=>{if(document.getElementById('set-quic
 const esc=v=>String(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
 const inp='width:100%;box-sizing:border-box;background:var(--panel-elevated);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:12px;font-size:0.8rem;outline:none;margin-top:6px';
 const lab='font-size:0.6rem;font-weight:800;letter-spacing:1px;color:var(--text-tertiary);margin-top:14px;display:block';
-let html=`<div style="padding:16px"><div style="font-size:0.55rem;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:6px">CENTURION v27.2</div><div style="font-size:0.7rem;color:var(--text-secondary);line-height:1.5">Stored on this device only. Nothing here is ever written into the app's code or sent anywhere except Oura and your own AI server.</div>`;
+let html=`<div style="padding:16px"><div style="font-size:0.55rem;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:6px">CENTURION v27.3</div><div style="font-size:0.7rem;color:var(--text-secondary);line-height:1.5">Stored on this device only. Nothing here is ever written into the app's code or sent anywhere except Oura and your own AI server.</div>`;
 const connected=SYNC.state==='ok';
 html+=`<div style="margin-top:16px;padding:14px;border:1px solid ${connected?'var(--success)':'var(--orange)'};border-radius:12px;background:var(--panel)"><div style="font-size:0.75rem;font-weight:800;color:${connected?'var(--success)':'var(--orange)'};letter-spacing:1px">${connected?'✓ CONNECTED TO YOUR HOME PC':SYNC.url()?'⚠ HOME PC NOT ANSWERING':'HOME SYNC IS OFF'}</div>
 <div style="font-size:0.65rem;color:var(--text-secondary);margin-top:6px;line-height:1.5">${connected?'Sync and the AI coach are using your home PC. Nothing to set up.':SYNC.url()?'The address is already built in — nothing to type. Check that <b>Tailscale is switched on</b> on this device and that the home PC is awake, then tap the button.':'Tap the button to connect this device to your home PC.'}</div>
@@ -3890,29 +3890,95 @@ STYLE: Be concise and direct. Lead with the key insight. Use the actual numbers 
     this.app.render()}
 
   async handleScanUpload(input){
-    const file=input.files[0];if(!file)return;
+    const file=input.files[0];if(!file)return;input.value='';
     const b64=await this.toB64(file);
     const wait=s=>{const el=document.getElementById('scanResult');if(el)el.innerHTML=`<div style="color:var(--cyan);font-size:0.75rem">🤖 Reading scan… ${s}s${s>15?' · loading the photo model, the first one is slow':''}</div>`};wait(0);
-    const prompt='This is an InBody body composition scan or medical lab document. Extract all numerical health values. Respond ONLY in JSON: {"weight":null,"bodyfat":null,"muscle":null,"fatmass":null,"bmr":null,"bmi":null,"inbodyscore":null,"trunklean":null,"trunkfat":null,"smi":null,"apob":null,"lpa":null,"ldl":null,"hdl":null,"trig":null,"hscrp":null,"glucose":null,"hba1c":null,"insulin":null,"creatinine":null,"egfr":null,"date":null}. Only include values clearly visible. Use null for missing fields.';
+    const prompt='This is an InBody body composition result (a screenshot of the InBody phone app, or a printed InBody sheet) or a medical lab report. Read the numbers exactly as printed. '
+      +'Respond ONLY in JSON: {"date":null,"weight":null,"muscle":null,"fatmass":null,"bodyfat":null,"bmi":null,"bmr":null,"inbodyscore":null,"smi":null,"trunklean":null,"trunkfat":null,"apob":null,"lpa":null,"ldl":null,"hdl":null,"trig":null,"hscrp":null,"glucose":null,"hba1c":null,"insulin":null,"creatinine":null,"egfr":null}. '
+      +'Meanings: date = the date the test was taken, as YYYY-MM-DD. weight = body weight. muscle = SKELETAL MUSCLE MASS (SMM), not lean body mass or fat-free mass. fatmass = body fat mass. bodyfat = percent body fat (PBF). bmr = basal metabolic rate in kcal. inbodyscore = the InBody score out of 100. smi = skeletal muscle index. trunklean/trunkfat = trunk segmental lean/fat. '
+      +'Weight, muscle and fat mass must be in POUNDS: if the image shows kg, multiply by 2.2046. Use null for anything not clearly visible. Numbers only, no units.';
     const raw=await this.callOllama([{role:'user',content:prompt}],[b64],{format:'json'},wait);
     this.showScanResult(this.parseJSON(raw))}
 
-  showScanResult(r){
-    if(!r){document.getElementById('scanResult').innerHTML=`<div style="color:var(--alert);font-size:0.75rem">${this.esc(this.lastError||'Could not read scan. Try a clearer photo.')}</div>`;return}
-    const fields=Object.entries(r).filter(([k,v])=>v!==null);
-    const safe=JSON.stringify(r).replace(/'/g,'&#39;');
-    let html=`<div style="background:var(--panel-elevated);border-radius:10px;padding:12px;margin-top:8px"><div style="font-size:0.65rem;color:var(--cyan);font-weight:700;margin-bottom:8px;letter-spacing:1px">EXTRACTED VALUES</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:10px">`;
-    fields.forEach(([k,v])=>{html+=`<div style="background:var(--panel);padding:6px 8px;border-radius:6px;display:flex;justify-content:space-between"><span style="font-size:0.6rem;color:var(--text-tertiary);text-transform:uppercase">${k}</span><span style="font-size:0.7rem;font-weight:700;color:var(--acid)">${v}</span></div>`});
-    html+=`</div><button onclick='centurionAI.saveScanToBio(${safe})' style="width:100%;padding:10px;background:linear-gradient(135deg,var(--acid),var(--cyan));color:#000;border:none;border-radius:8px;font-weight:800;font-size:0.75rem;cursor:pointer">✓ SAVE TO BIO HISTORY</button></div>`;
-    document.getElementById('scanResult').innerHTML=html}
+  // what a scan can contain, in the order the review screen shows it
+  static SCAN_FIELDS=[['weight','Weight','lb'],['muscle','Skeletal muscle','lb'],['fatmass','Fat mass','lb'],['bodyfat','Body fat','%'],
+    ['inbodyscore','InBody score',''],['bmr','BMR','kcal'],['bmi','BMI',''],['smi','SMI',''],['trunklean','Trunk lean','lb'],['trunkfat','Trunk fat','lb'],
+    ['apob','ApoB','mg/dL'],['lpa','Lp(a)','nmol/L'],['ldl','LDL','mg/dL'],['hdl','HDL','mg/dL'],['trig','Triglycerides','mg/dL'],['hscrp','hsCRP','mg/L'],
+    ['glucose','Glucose','mg/dL'],['hba1c','HbA1c','%'],['insulin','Insulin','μIU/mL'],['creatinine','Creatinine','mg/dL'],['egfr','eGFR','']];
+  // a jump bigger than this since the last scan is almost always a misread, not a real change
+  static SCAN_JUMP={weight:15,muscle:6,fatmass:12,bodyfat:5,inbodyscore:12,bmr:150};
+  static SCAN_RANGE={weight:[80,450],muscle:[20,160],fatmass:[3,250],bodyfat:[3,65],inbodyscore:[30,110],bmr:[800,3500]};
 
-  saveScanToBio(r){
-    const entry={date:r.date||this.app.currentDateStr};
-    Object.entries(r).forEach(([k,v])=>{if(v!==null)entry[k]=String(v)});
-    this.app.bioHistory.push(entry);
-    this.app.bioHistory.sort((a,b)=>a.date.localeCompare(b.date));
-    localStorage.setItem(`c_bioHist_${this.app.user}`,JSON.stringify(this.app.bioHistory));
-    document.getElementById('scanResult').innerHTML='<div style="color:var(--success);font-size:0.8rem;font-weight:700">✓ Saved to bio history!</div>';
+  scanDate(v){
+    const t=String(v||'').trim();let m;
+    if((m=t.match(/^(\d{4})[-./](\d{1,2})[-./](\d{1,2})/)))return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+    if((m=t.match(/^(\d{1,2})[-./](\d{1,2})[-./](\d{2,4})/)))return `${m[3].length===2?'20'+m[3]:m[3]}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`;
+    return ''}
+  bioHistOf(u){return u===this.app.user?this.app.bioHistory:(()=>{try{return JSON.parse(localStorage.getItem(`c_bioHist_${u}`)||'[]')||[]}catch(e){return[]}})()}
+
+  showScanResult(r){
+    const el=document.getElementById('scanResult');
+    if(!r){el.innerHTML=`<div style="color:var(--alert);font-size:0.75rem">${this.esc(this.lastError||'Could not read the scan. Try a screenshot from the InBody app, or a sharper photo.')}</div>`;return}
+    const vals={};
+    CenturionAI.SCAN_FIELDS.forEach(([k])=>{const n=parseFloat(String(r[k]??'').replace(/,/g,''));if(isFinite(n))vals[k]=n});
+    if(!Object.keys(vals).length){el.innerHTML=`<div style="color:var(--alert);font-size:0.75rem">No numbers found in that image. Try a screenshot of the InBody app's result screen.</div>`;return}
+    const today=new Date().toLocaleDateString('en-CA'),d=this.scanDate(r.date);
+    this.pendingScan={vals,date:d&&d<=today?d:today,dateRead:!!(d&&d<=today),user:this.app.user};
+    this.renderScanReview()}
+
+  // flags: impossible values, and big jumps since the person's previous scan
+  scanFlags(u,date,vals){
+    const prev=this.bioHistOf(u).filter(h=>h.date<date).sort((a,b)=>b.date.localeCompare(a.date));
+    const f={};
+    Object.entries(vals).forEach(([k,v])=>{
+      const rg=CenturionAI.SCAN_RANGE[k];if(rg&&(v<rg[0]||v>rg[1])){f[k]='looks impossible — check it';return}
+      const last=prev.find(h=>h[k]!=null&&h[k]!=='');const lim=CenturionAI.SCAN_JUMP[k];
+      if(last&&lim){const dv=v-parseFloat(last[k]);if(Math.abs(dv)>lim)f[k]=`${dv>0?'+':''}${Math.round(dv*10)/10} since ${last.date} — check it`}});
+    return f}
+
+  renderScanReview(){
+    const P=this.pendingScan,el=document.getElementById('scanResult');if(!P||!el)return;
+    const flags=this.scanFlags(P.user,P.date,P.vals);
+    const existing=this.bioHistOf(P.user).find(h=>h.date===P.date);
+    const inp='width:100%;box-sizing:border-box;background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 8px;font-size:0.8rem;font-weight:700';
+    const who=u=>`<button onclick="centurionAI.scanSetUser('${u}')" style="flex:1;padding:9px;border-radius:8px;font-weight:800;font-size:0.7rem;cursor:pointer;border:1px solid ${P.user===u?'var(--acid)':'var(--border)'};background:${P.user===u?'var(--acid)':'transparent'};color:${P.user===u?'#000':'var(--text-secondary)'}">${USERS[u].name.toUpperCase()}</button>`;
+    let html=`<div style="background:var(--panel-elevated);border-radius:10px;padding:12px;margin-top:8px">
+<div style="font-size:0.6rem;color:var(--cyan);font-weight:800;letter-spacing:1px">SAVING FOR</div>
+<div style="display:flex;gap:8px;margin:6px 0 10px">${who('jermaine')}${who('sophia')}</div>
+<label style="font-size:0.6rem;color:var(--cyan);font-weight:800;letter-spacing:1px">SCAN DATE ${P.dateRead?'<span style="color:var(--text-tertiary);font-weight:600">· read from the scan</span>':'<span style="color:var(--orange)">· not found on the scan — set it</span>'}</label>
+<input id="scan-date" type="date" value="${P.date}" max="${new Date().toLocaleDateString('en-CA')}" onchange="centurionAI.scanSetDate(this.value)" style="${inp};margin:4px 0 10px">
+<div style="font-size:0.6rem;color:var(--cyan);font-weight:800;letter-spacing:1px;margin-bottom:6px">CHECK THE NUMBERS <span style="color:var(--text-tertiary);font-weight:600">· tap any to fix</span></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">`;
+    CenturionAI.SCAN_FIELDS.filter(([k])=>k in P.vals).forEach(([k,label,unit])=>{
+      html+=`<label style="background:var(--panel);padding:6px 8px;border-radius:6px;border:1px solid ${flags[k]?'var(--orange)':'transparent'}">
+<span style="font-size:0.55rem;color:var(--text-tertiary);text-transform:uppercase;font-weight:700">${label}${unit?` (${unit})`:''}</span>
+<input id="scan-v-${k}" type="number" inputmode="decimal" step="any" value="${P.vals[k]}" onchange="centurionAI.scanSetVal('${k}',this.value)" style="${inp};margin-top:3px;${flags[k]?'color:var(--orange)':''}">
+${flags[k]?`<span style="font-size:0.55rem;color:var(--orange);line-height:1.3;display:block;margin-top:3px">${flags[k]}</span>`:''}</label>`});
+    html+=`</div>${existing?`<div style="font-size:0.62rem;color:var(--orange);margin-bottom:8px;line-height:1.4">${USERS[P.user].name} already has an entry on ${P.date} — saving updates it instead of adding a second one.</div>`:''}
+<button onclick="centurionAI.saveScan()" style="width:100%;padding:11px;background:linear-gradient(135deg,var(--acid),var(--cyan));color:#000;border:none;border-radius:8px;font-weight:800;font-size:0.75rem;cursor:pointer">✓ SAVE TO ${USERS[P.user].name.toUpperCase()}'S HISTORY</button></div>`;
+    el.innerHTML=html}
+
+  scanSetUser(u){if(this.pendingScan){this.pendingScan.user=u;this.renderScanReview()}}
+  scanSetDate(d){if(this.pendingScan&&/^\d{4}-\d{2}-\d{2}$/.test(d)){this.pendingScan.date=d;this.pendingScan.dateRead=true;this.renderScanReview()}}
+  scanSetVal(k,v){if(!this.pendingScan)return;const n=parseFloat(v);if(isFinite(n))this.pendingScan.vals[k]=n;else delete this.pendingScan.vals[k];this.renderScanReview()}
+
+  saveScan(){
+    const P=this.pendingScan;if(!P)return;
+    const u=P.user,entry={date:P.date};
+    Object.entries(P.vals).forEach(([k,v])=>entry[k]=String(v));
+    // one entry per person per day: a re-upload of the same scan updates it
+    const hist=this.bioHistOf(u).slice();
+    const i=hist.findIndex(h=>h.date===P.date);
+    if(i>=0)hist[i]={...hist[i],...entry};else hist.push(entry);
+    hist.sort((a,b)=>a.date.localeCompare(b.date));
+    // the newest scan also becomes the current value, so a later manual save can't stamp old numbers on a new date
+    const newest=hist[hist.length-1].date===P.date;
+    const bios=u===this.app.user?this.app.bios:(()=>{try{return JSON.parse(localStorage.getItem(`c_bios_${u}`)||'{}')||{}}catch(e){return{}}})();
+    if(newest)Object.entries(P.vals).forEach(([k,v])=>bios[k]=String(v));
+    if(u===this.app.user){this.app.bioHistory=hist;this.app.bios=bios;this.app.save()}
+    else{localStorage.setItem(`c_bioHist_${u}`,JSON.stringify(hist));localStorage.setItem(`c_bios_${u}`,JSON.stringify(bios))}
+    this.pendingScan=null;
+    document.getElementById('scanResult').innerHTML=`<div style="color:var(--success);font-size:0.8rem;font-weight:700">✓ Saved to ${USERS[u].name}'s history (${P.date})</div>`;
     setTimeout(()=>this.app.render(),500)}
 
   toggle(){
@@ -3995,10 +4061,10 @@ let app;window.onload=()=>{SYNC.consumeSetupLink();app=new CenturionApp();window
 
   <!-- SCAN TAB -->
   <div class="ai-tab-content" id="aiContent_scan">
-    <div style="font-size:0.7rem;color:var(--text-secondary);line-height:1.5">Upload an InBody scan, lab results, or any health document. The AI will extract your numbers and save them to your bio history.</div>
+    <div style="font-size:0.7rem;color:var(--text-secondary);line-height:1.5">After an InBody scan: open the InBody app, screenshot the result, and upload it here. The AI reads the numbers, you check them, then save. Lab reports work too.</div>
     <label class="ai-photo-btn">
-      📄 Upload InBody Scan or Lab Report
-      <input type="file" accept="image/*,application/pdf" style="display:none" onchange="centurionAI.handleScanUpload(this)">
+      📄 Upload InBody Screenshot or Lab Report
+      <input type="file" accept="image/*" style="display:none" onchange="centurionAI.handleScanUpload(this)">
     </label>
     <div id="scanResult"></div>
   </div>
