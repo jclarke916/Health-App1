@@ -34,6 +34,7 @@ Add **Get Contents of URL**:
 
 - URL: `SYNC-URL/apple?user=NAME`
 - Tap *Show More* → Method **POST** → Request Body **JSON**
+- **Headers** → add one: Key `Authorization`, Value `Bearer ` followed by your household key (the key is in `private/phone-setup-link.txt` on the home PC, or in Centurion → Settings after the setup link). Without it the server answers `{"error": "household key required"}`. It works from anywhere, no Tailscale needed.
 - Add one field per row above — Key = the name (`move`, `exercise`, `stand`, `steps`, `rhr`, `hrv`, …), Type **Text**, Value = the matching renamed variable.
 - Optional fixed field: Key `moveGoal`, Type Text, Value = your Move goal (e.g. `600`).
 
