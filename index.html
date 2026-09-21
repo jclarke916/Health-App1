@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Centurion v25</title>
+<title>Centurion v26</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0a0a0c">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -274,6 +274,8 @@ textarea.ai-text-input{resize:none;font-family:inherit;line-height:1.4;min-heigh
 </div>
 <div id="appleRings" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)"></div>
 </div>
+
+<div id="pactCard" style="margin:0 20px 16px"></div>
 
 <div id="scoreboardCard" onclick="app.showScoreboard()" style="margin:0 20px 16px;padding:14px 16px;background:var(--panel);border:1px solid var(--border);border-radius:16px;cursor:pointer"></div>
 
@@ -910,6 +912,48 @@ const r=window.centurionAI.parseJSON(raw);
 if(!r)throw new Error(window.centurionAI.lastError||'the AI could not estimate that');
 return{p:r.protein,f:r.fiber,o:r.omega3,cal:r.calories,poly:r.polyphenols,fat:r.fat,carbs:r.carbs}}
 
+// ── THE PACT ───────────────────────────────────────────────────────────────────
+// Accountability for two: each day you each commit to 3 things; the app checks what it
+// can against Oura / the watch / meals / water, you check in on the rest; you see each
+// other's commitments, results and reasons, and can nudge. Weekly: the TEAM wins if you
+// keep 80% of everything you both committed, and whoever kept the lower share owes the stake.
+//   c_commit_<user>  {date: {items:[{kind,param}], checks:{i:{kept,reason,at}}, setAt}}
+//   c_verify_<user>  {date: {st:[status], det:[text], kept, n, win, final}}   computed
+//   c_nudges         {id: {from,to,date,emoji,at}}
+//   c_pact           {weekStart: {stake, setBy, setAt}}
+// Statuses: kept | missed | pending (the data isn't in yet) | checkin (only you can say).
+const PACT={
+USERS:['jermaine','sophia'],
+EMOJI:[['💪','Keep going'],['🛏️','Go to bed'],['💧','Drink water'],['👏','Nice work']],
+STAKES:['Loser does the dishes','Winner picks date night','Loser cooks dinner','Loser gives a massage'],
+TEAM_TARGET:0.8,
+fmtTime(t){const[h,m]=String(t||'22:30').split(':').map(Number);return`${h%12||12}${m?':'+String(m).padStart(2,'0'):''}${h>=12?'pm':'am'}`},
+KINDS:{
+bedtime:{label:p=>`In bed by ${PACT.fmtTime(p)}`,def:'22:30',unit:'time',night:true,hint:'Checked against Oura bedtime'},
+sleep:{label:p=>`Sleep ${p}h+`,def:7.5,unit:'hours',night:true,hint:'Checked against Oura sleep'},
+zone2:{label:p=>`${p} min Zone 2`,def:30,unit:'min',hint:'Oura or watch exercise minutes'},
+workout:{label:()=>'Get a workout in',hint:'Any workout Oura or the watch records'},
+steps:{label:p=>`${Number(p).toLocaleString()} steps`,def:8000,unit:'steps',hint:'Oura or watch steps'},
+protein:{label:p=>`${p}g protein`,goal:'protein',unit:'g',hint:'From your meals'},
+fiber:{label:p=>`${p}g fiber`,goal:'fiber',unit:'g',hint:'From your meals'},
+water:{label:p=>`${p} oz water`,goal:'water',unit:'oz',hint:'From your water log'},
+omega3:{label:p=>`${p}mg omega-3`,goal:'omega3',unit:'mg',hint:'From your meals'},
+noalcohol:{label:()=>'No alcohol',self:true,hint:'You check in'},
+nosugar:{label:()=>'No added sugar',self:true,hint:'You check in'},
+custom:{label:p=>p||'Custom',self:true,unit:'text',hint:'You check in'}},
+label(it){const k=this.KINDS[it.kind];return k?k.label(it.param):String(it.param||it.kind)},
+read(key){try{return JSON.parse(localStorage.getItem(key)||'{}')||{}}catch(e){return{}}},
+write(key,obj){localStorage.setItem(key,JSON.stringify(obj))},
+commits(u){return this.read('c_commit_'+u)},
+verified(u){return this.read('c_verify_'+u)},
+partner(u){return u==='jermaine'?'sophia':'jermaine'},
+addDays(d,n){const x=new Date(d+'T12:00');x.setDate(x.getDate()+n);return x.toLocaleDateString('en-CA')},
+weekStart(d){const x=new Date(d+'T12:00');x.setDate(x.getDate()-((x.getDay()+6)%7));return x.toLocaleDateString('en-CA')},
+// two-thirds or better is a won day (2 of 3)
+winNeeded(n){return Math.max(1,Math.ceil(n*2/3))},
+firstDate(u){const k=Object.keys(this.commits(u)).filter(d=>(this.commits(u)[d].items||[]).length).sort();return k[0]||null}
+};
+
 class CenturionApp{
 dbg(msg){const p=document.getElementById('debugPanel');if(p)p.innerHTML+=msg+'<br>';console.log(msg)}
 constructor(){
@@ -1073,6 +1117,214 @@ document.getElementById('modalBody').innerHTML=html;
 document.getElementById('mainModal').classList.add('show');
 }
 
+// status of one commitment on one date, for the user currently shown (this.history is theirs)
+pactStatus(it,date,check){
+const K=PACT.KINDS[it.kind]||{},today=this.currentDateStrToday(),past=date<today;
+const hist=d=>this.history.find(h=>h.date===d);
+const g=USERS[this.user].goals;
+const byCheck=()=>check?{st:check.kept?'kept':'missed',det:check.kept?'you said yes':'you said no'}
+:{st:past?'missed':'checkin',det:past?'no check-in':'check in tonight'};
+if(K.self)return byCheck();
+if(K.night){
+// Oura files a night under the day you WAKE, so tonight's commitment is read from tomorrow's record
+const next=hist(PACT.addDays(date,1));
+const due=PACT.addDays(date,1)<=today;
+if(!due||!next)return{st:'pending',det:'after tonight'};
+if(it.kind==='bedtime'){
+if(!next.bedtime)return check?byCheck():{st:PACT.addDays(date,1)<today?'checkin':'pending',det:'no ring data'};
+const bt=new Date(next.bedtime),target=new Date(`${date}T${it.param||'22:30'}`);
+const shown=bt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}).replace(' ','').toLowerCase();
+return{st:bt<=target?'kept':'missed',det:shown}}
+if(!next.totalSec)return check?byCheck():{st:PACT.addDays(date,1)<today?'checkin':'pending',det:'no ring data'};
+const h=next.totalSec/3600;
+return{st:h>=parseFloat(it.param)?'kept':'missed',det:h.toFixed(1)+'h'}}
+const day=hist(date);
+const fin=(have,need,det)=>have>=need?{st:'kept',det}:{st:past?'missed':'pending',det};
+if(it.kind==='zone2'){const m=Math.round(Math.max(day?.med||0,day?.rings?.exercise||0));return fin(m,+it.param,`${m}/${it.param} min`)}
+if(it.kind==='workout'){const n=(day?.workouts||[]).length;return fin(n,1,n?(day.workouts[0].type||'workout'):'none yet')}
+if(it.kind==='steps'){const n=Math.max(day?.steps||0,day?.rings?.steps||0);return fin(n,+it.param,n.toLocaleString())}
+if(['protein','fiber','omega3'].includes(it.kind)){const mac=this.calculateMacrosForDate(date);const v=Math.round(mac[it.kind]||0);return fin(v,+it.param,`${v}/${it.param}${K.unit}`)}
+if(it.kind==='water'){const v=Math.round(this.water[date]||0);return fin(v,+it.param,`${v}/${it.param} oz`)}
+return byCheck();
+}
+// verify every recent day for the user shown; store results so the other phone can see them
+updatePact(){
+const u=this.user,commits=PACT.commits(u),stored=PACT.verified(u);
+const today=this.currentDateStrToday(),from=PACT.addDays(today,-15);
+let dirty=false;
+Object.keys(commits).filter(d=>d>=from&&d<=today).forEach(date=>{
+const c=commits[date],items=c.items||[];if(!items.length)return;
+const res=items.map((it,i)=>this.pactStatus(it,date,c.checks?.[i]));
+const st=res.map(r=>r.st),det=res.map(r=>r.det),kept=st.filter(x=>x==='kept').length;
+const final=!st.some(x=>x==='pending'||x==='checkin');
+const v={st,det,kept,n:items.length,win:kept>=PACT.winNeeded(items.length),final};
+const old=stored[date];
+// wearable data not loaded yet must never downgrade a result that was already settled
+if(old?.final&&!final)return;
+if(JSON.stringify(old)!==JSON.stringify(v)){stored[date]=v;dirty=true}});
+if(dirty)PACT.write('c_verify_'+u,stored);
+}
+// never miss twice: a single missed day is forgiven, two in a row breaks it
+pactStreak(u){
+const first=PACT.firstDate(u);if(!first)return 0;
+const v=PACT.verified(u),commits=PACT.commits(u),today=this.currentDateStrToday();
+let streak=v[today]?.win?1:0,prevMiss=false;
+for(let d=PACT.addDays(today,-1);d>=first;d=PACT.addDays(d,-1)){
+const r=v[d],committed=(commits[d]?.items||[]).length>0;
+if(r&&!r.final&&r.win!==true)continue;          // yesterday's sleep may still be coming in
+if(committed&&r?.win){streak++;prevMiss=false;continue}
+if(prevMiss)break;prevMiss=true;}
+return streak}
+calculateStreak(){this.streak=this.pactStreak(this.user)}
+pactWeek(start){
+const today=this.currentDateStrToday(),out={start,users:{},kept:0,n:0,final:PACT.addDays(start,7)<=today};
+PACT.USERS.forEach(u=>{const v=PACT.verified(u),c=PACT.commits(u);let k=0,n=0;
+for(let i=0;i<7;i++){const d=PACT.addDays(start,i);if(d>today)break;const cn=(c[d]?.items||[]).length;n+=cn;k+=v[d]?.kept||0}
+out.users[u]={kept:k,n,pct:n?k/n:0};out.kept+=k;out.n+=n});
+out.teamPct=out.n?out.kept/out.n:0;out.teamWon=out.n>0&&out.teamPct>=PACT.TEAM_TARGET;
+const[a,b]=PACT.USERS,ua=out.users[a],ub=out.users[b];
+out.leader=!ua.n&&!ub.n?null:ua.pct===ub.pct?(this.weekTotals(start).winner):ua.pct>ub.pct?a:b;
+out.stake=PACT.read('c_pact')[start]?.stake||'';
+return out}
+renderPactCard(){
+const el=document.getElementById('pactCard');if(!el)return;
+const date=this.currentDateStr,today=this.currentDateStrToday(),me=this.user,other=PACT.partner(me);
+const nudges=Object.values(PACT.read('c_nudges')).filter(x=>x.date===date);
+const ICON={kept:['✓','var(--success)'],missed:['✗','var(--alert)'],pending:['○','var(--text-tertiary)'],checkin:['?','var(--orange)']};
+const row=(u)=>{
+const c=PACT.commits(u)[date],items=c?.items||[],v=PACT.verified(u)[date]||{};
+const isMe=u===me,name=USERS[u].name.toUpperCase(),col=u==='jermaine'?'var(--cyan)':'var(--purple)';
+const got=nudges.filter(x=>x.to===u).map(x=>x.emoji).join(' ');
+let h=`<div style="margin-top:12px"><div style="display:flex;justify-content:space-between;align-items:baseline">
+<span style="font-size:0.62rem;font-weight:800;letter-spacing:1px;color:${col}">${name}${isMe?' · YOU':''}</span>
+<span style="font-size:0.62rem;color:var(--text-secondary)">${items.length?`${v.kept||0}/${items.length} kept${v.win?' ✓':''}`:''}${got?` <span title="nudges">${got}</span>`:''}</span></div>`;
+if(!items.length)h+=`<div style="font-size:0.7rem;color:var(--text-tertiary);margin-top:6px">${isMe?(date<today?'No commitments that day.':'Nothing committed yet.'):`${USERS[u].name} hasn't committed yet.`}</div>`;
+items.forEach((it,i)=>{const st=v.st?.[i]||'pending',[ic,icol]=ICON[st],why=c.checks?.[i]?.reason;
+h+=`<div style="display:flex;gap:8px;align-items:flex-start;margin-top:6px;font-size:0.76rem">
+<span style="color:${icol};font-weight:900;width:14px;flex-shrink:0">${ic}</span>
+<span style="flex:1;min-width:0;color:${st==='missed'?'var(--text-secondary)':'var(--text)'}">${PACT.label(it)}${why?`<div style="font-size:0.62rem;color:var(--text-tertiary);font-style:italic;margin-top:1px">“${why.replace(/</g,'&lt;')}”</div>`:''}</span>
+<span style="font-size:0.62rem;color:var(--text-tertiary);white-space:nowrap">${v.det?.[i]||''}</span></div>`});
+if(!isMe&&items.length&&date>=PACT.addDays(today,-1))h+=`<div style="display:flex;gap:6px;margin-top:8px">${PACT.EMOJI.map(([e,t])=>`<button onclick="app.sendNudge('${u}','${e}')" title="${t}" aria-label="${t}" style="flex:1;background:var(--panel-elevated);border:1px solid var(--border);border-radius:9px;padding:7px 0;font-size:1rem;cursor:pointer">${e}</button>`).join('')}</div>`;
+return h+'</div>'};
+const wk=this.pactWeek(PACT.weekStart(date)),last=this.pactWeek(PACT.addDays(PACT.weekStart(date),-7));
+const mine=PACT.commits(me)[date]?.items||[],needsCheck=(PACT.verified(me)[date]?.st||[]).some(x=>x==='checkin');
+const canCommit=date>=today;
+const lastLine=last.final&&last.n?`<div style="font-size:0.62rem;color:var(--text-secondary);margin-top:6px">Last week: team ${last.teamWon?'<b style="color:var(--success)">WON</b>':'<b style="color:var(--alert)">missed</b>'} ${Math.round(last.teamPct*100)}%${last.leader&&last.stake?` · <b>${USERS[PACT.partner(last.leader)].name}</b> owes: ${last.stake.replace(/</g,'&lt;')}`:''}</div>`:'';
+el.innerHTML=`<div style="padding:14px 16px;background:var(--panel);border:1px solid ${!mine.length&&canCommit?'var(--acid)':'var(--border)'};border-radius:16px">
+<div style="display:flex;justify-content:space-between;align-items:center">
+<div style="font-size:0.6rem;font-weight:800;letter-spacing:1.5px;color:var(--text-tertiary)">🤝 ${date===today?"TODAY'S":date>today?'UPCOMING':new Date(date+'T12:00').toLocaleDateString('en-US',{weekday:'short'}).toUpperCase()} PACT</div>
+<div style="font-size:0.65rem;font-weight:800;color:var(--acid)">🔥 ${this.pactStreak(me)}-day streak</div></div>
+${row(me)}${row(other)}
+<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
+<div style="display:flex;justify-content:space-between;font-size:0.62rem;color:var(--text-secondary)">
+<span>Team this week: <b style="color:var(--text)">${wk.kept}/${wk.n}</b> kept${wk.n?` · ${Math.round(wk.teamPct*100)}% of ${Math.round(PACT.TEAM_TARGET*100)}% needed`:''}</span></div>
+<div style="font-size:0.62rem;color:var(--text-secondary);margin-top:4px">Stake: ${wk.stake?`<b style="color:var(--text)">${wk.stake.replace(/</g,'&lt;')}</b>`:'none set'} <span onclick="app.openStake()" style="color:var(--cyan);font-weight:800;cursor:pointer">· ${wk.stake?'change':'set one'}</span></div>
+${lastLine}</div>
+<div style="display:flex;gap:8px;margin-top:12px">
+${canCommit?`<button onclick="app.openCommit()" style="flex:1;background:${mine.length?'var(--panel-elevated)':'var(--acid)'};color:${mine.length?'var(--text)':'#000'};border:${mine.length?'1px solid var(--border)':'none'};border-radius:10px;padding:11px;font-weight:800;font-size:0.7rem;cursor:pointer">${mine.length?'EDIT MY 3':'SET MY 3'}</button>`:''}
+${mine.length?`<button onclick="app.openCheckin()" style="flex:1;background:${needsCheck?'var(--orange)':'var(--panel-elevated)'};color:${needsCheck?'#000':'var(--text)'};border:${needsCheck?'none':'1px solid var(--border)'};border-radius:10px;padding:11px;font-weight:800;font-size:0.7rem;cursor:pointer">CHECK IN${needsCheck?' ●':''}</button>`:''}
+</div></div>`;
+}
+// suggestions come from the data, instantly - no model call needed
+pactSuggest(){
+const g=USERS[this.user].goals,day=this.history[0]||{},base=this.calculatedHrvBaseline||USERS[this.user].hrvBaseline;
+const out=[],add=(kind,param,why)=>{if(!out.some(o=>o.kind===kind))out.push({kind,param,why})};
+const lastNight=(this.history.find(h=>h.date===this.currentDateStrToday())?.totalSec||0)/3600;
+if(day.hrv&&day.hrv<base*0.85)add('bedtime','22:30',`HRV ${day.hrv} is below your ${base} baseline`);
+if(lastNight&&lastNight<g.sleepHours*0.9)add('bedtime','22:30',`only ${lastNight.toFixed(1)}h sleep last night`);
+if(day.hrv&&day.hrv<base*0.85)add('zone2',30,'recovery day: easy Zone 2, skip HIIT');
+const recent=[1,2,3].map(i=>this.calculateMacrosForDate(PACT.addDays(this.currentDateStrToday(),-i)));
+const avg=k=>recent.reduce((s,m)=>s+(m[k]||0),0)/recent.length;
+if(avg('protein')<g.protein*0.9)add('protein',g.protein,`averaging ${Math.round(avg('protein'))}g of your ${g.protein}g lately`);
+if(avg('fiber')<g.fiber*0.9)add('fiber',g.fiber,`averaging ${Math.round(avg('fiber'))}g of your ${g.fiber}g lately`);
+add('protein',g.protein,'your daily protein goal');add('zone2',30,'base-building cardio');add('bedtime','22:30','consistent sleep');
+return out}
+openCommit(){
+const date=this.currentDateStr,c=PACT.commits(this.user)[date],g=USERS[this.user].goals;
+this.pactDraft=(c?.items||[]).map(x=>({...x}));
+this.setText('modalTitle',date===this.currentDateStrToday()?'MY 3 FOR TODAY':'MY 3 FOR '+new Date(date+'T12:00').toLocaleDateString('en-US',{weekday:'long'}).toUpperCase());
+this.renderCommit();document.getElementById('mainModal').classList.add('show');document.getElementById('mainModal').scrollTop=0}
+renderCommit(){
+const g=USERS[this.user].goals,draft=this.pactDraft,sug=this.pactSuggest();
+const defFor=k=>{const K=PACT.KINDS[k];return K.goal?(K.goal==='omega3'?g.omega3:g[K.goal]):K.def};
+const chosen=k=>draft.findIndex(d=>d.kind===k);
+const pick=(k,why)=>{const i=chosen(k),on=i>=0,K=PACT.KINDS[k],val=on?draft[i].param:defFor(k);
+const input=K.unit==='time'?`<input type="time" value="${val}" onchange="app.pactParam('${k}',this.value)" onclick="event.stopPropagation()" style="background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:5px;font-size:0.75rem">`
+:K.unit&&K.unit!=='text'?`<input type="number" inputmode="decimal" value="${val}" onchange="app.pactParam('${k}',this.value)" onclick="event.stopPropagation()" style="width:74px;background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:5px;font-size:0.75rem"> <span style="font-size:0.6rem;color:var(--text-tertiary)">${K.unit}</span>`:'';
+return`<div onclick="app.pactToggle('${k}')" style="display:flex;gap:10px;align-items:center;padding:11px 12px;margin-top:7px;border-radius:10px;cursor:pointer;background:${on?'rgba(200,255,0,0.08)':'var(--panel)'};border:1px solid ${on?'var(--acid)':'var(--border)'}">
+<span style="width:20px;height:20px;border-radius:6px;border:2px solid ${on?'var(--acid)':'var(--border)'};background:${on?'var(--acid)':'transparent'};color:#000;font-weight:900;font-size:0.75rem;display:flex;align-items:center;justify-content:center;flex-shrink:0">${on?'✓':''}</span>
+<div style="flex:1;min-width:0"><div style="font-size:0.82rem;font-weight:700">${K.label(val)}</div><div style="font-size:0.6rem;color:${why?'var(--cyan)':'var(--text-tertiary)'};margin-top:2px">${why||K.hint}</div></div>${input}</div>`};
+const shown=new Set();
+let h=`<div style="padding:2px 0 30px"><div style="font-size:0.7rem;color:var(--text-secondary);line-height:1.5">Pick <b>3</b>. The app checks most of these for you from Oura, the watch and your logs; you check in on the rest. ${USERS[PACT.partner(this.user)].name} will see them.</div>
+<div style="font-size:0.72rem;font-weight:900;color:var(--acid);margin-top:14px">${draft.length}/3 CHOSEN</div>
+<div style="font-size:0.62rem;font-weight:800;letter-spacing:1px;color:var(--cyan);margin-top:14px">SUGGESTED FROM YOUR DATA</div>`;
+sug.slice(0,4).forEach(x=>{shown.add(x.kind);h+=pick(x.kind,x.why)});
+h+=`<div style="font-size:0.62rem;font-weight:800;letter-spacing:1px;color:var(--text-tertiary);margin-top:16px">EVERYTHING ELSE</div>`;
+Object.keys(PACT.KINDS).filter(k=>k!=='custom'&&!shown.has(k)).forEach(k=>{h+=pick(k)});
+const cust=draft.find(d=>d.kind==='custom');
+h+=`<div style="font-size:0.62rem;font-weight:800;letter-spacing:1px;color:var(--text-tertiary);margin-top:16px">YOUR OWN</div>
+<div style="display:flex;gap:8px;margin-top:7px"><input id="pactCustom" value="${(cust?.param||'').replace(/"/g,'&quot;')}" placeholder="e.g. 10 min stretching" style="flex:1;min-width:0;background:var(--panel-elevated);border:1px solid var(--border);color:var(--text);border-radius:9px;padding:11px;font-size:0.8rem;outline:none">
+<button onclick="app.pactCustom()" style="background:var(--panel-elevated);color:var(--acid);border:1px solid var(--acid);border-radius:9px;padding:0 14px;font-weight:800;font-size:0.7rem;cursor:pointer">${cust?'UPDATE':'ADD'}</button></div>
+<div id="pactMsg" style="font-size:0.65rem;color:var(--orange);margin-top:10px;min-height:1em"></div>
+<button onclick="app.saveCommit()" style="width:100%;margin-top:6px;background:linear-gradient(135deg,#c8ff00,#00d4ff);color:#000;border:none;border-radius:12px;padding:16px;font-weight:900;font-size:0.95rem;cursor:pointer">COMMIT</button></div>`;
+document.getElementById('modalBody').innerHTML=h}
+pactToggle(k){const i=this.pactDraft.findIndex(d=>d.kind===k),g=USERS[this.user].goals,K=PACT.KINDS[k];
+if(i>=0)this.pactDraft.splice(i,1);
+else{if(this.pactDraft.length>=3){const m=document.getElementById('pactMsg');if(m)m.textContent='Three is the limit - untick one first.';return}
+this.pactDraft.push({kind:k,param:K.goal?(K.goal==='omega3'?g.omega3:g[K.goal]):K.def})}
+const top=document.getElementById('mainModal').scrollTop;this.renderCommit();document.getElementById('mainModal').scrollTop=top}
+pactParam(k,v){const d=this.pactDraft.find(x=>x.kind===k);if(d)d.param=v;else{this.pactToggle(k);const n=this.pactDraft.find(x=>x.kind===k);if(n)n.param=v}}
+pactCustom(){const v=(document.getElementById('pactCustom').value||'').trim();const i=this.pactDraft.findIndex(d=>d.kind==='custom');
+if(!v){if(i>=0)this.pactDraft.splice(i,1)}else if(i>=0)this.pactDraft[i].param=v;
+else{if(this.pactDraft.length>=3){document.getElementById('pactMsg').textContent='Three is the limit - untick one first.';return}this.pactDraft.push({kind:'custom',param:v})}
+const top=document.getElementById('mainModal').scrollTop;this.renderCommit();document.getElementById('mainModal').scrollTop=top}
+saveCommit(){
+if(!this.pactDraft.length){document.getElementById('pactMsg').textContent='Pick at least one.';return}
+const date=this.currentDateStr,all=PACT.commits(this.user),old=all[date];
+// checks are tied to positions: keep a check only where the same commitment is still in that place
+const checks={};(old?.items||[]).forEach((it,i)=>{const j=this.pactDraft.findIndex(d=>d.kind===it.kind&&String(d.param)===String(it.param));if(j>=0&&old.checks?.[i])checks[j]=old.checks[i]});
+all[date]={items:this.pactDraft.map(d=>({kind:d.kind,param:d.param})),checks,setAt:old?.setAt||new Date().toISOString()};
+PACT.write('c_commit_'+this.user,all);
+this.closeModal();this.render()}
+openCheckin(){
+const u=this.user,today=this.currentDateStrToday();
+// today plus the last two days: late check-ins are allowed, commitments after the fact are not
+const days=[0,1,2].map(i=>PACT.addDays(today,-i)).filter(d=>(PACT.commits(u)[d]?.items||[]).length);
+this.setText('modalTitle','CHECK IN');
+const v=PACT.verified(u);
+let h=`<div style="padding:2px 0 30px"><div style="font-size:0.7rem;color:var(--text-secondary);line-height:1.5">Be straight about it. For anything the data already checked, you can add a reason — ${USERS[PACT.partner(u)].name} sees what you write.</div>`;
+days.forEach(d=>{const c=PACT.commits(u)[d];
+h+=`<div style="font-size:0.65rem;font-weight:800;letter-spacing:1px;color:var(--cyan);margin-top:16px">${d===today?'TODAY':new Date(d+'T12:00').toLocaleDateString('en-US',{weekday:'long'}).toUpperCase()}</div>`;
+c.items.forEach((it,i)=>{const self=PACT.KINDS[it.kind]?.self,st=v[d]?.st?.[i],ck=c.checks?.[i],canAnswer=self||st==='checkin'||(ck&&!('kept'in ck)===false&&self);
+const ans=ck&&'kept'in ck?ck.kept:null,id=`${d}_${i}`;
+h+=`<div style="margin-top:8px;padding:11px 12px;background:var(--panel);border:1px solid var(--border);border-radius:10px">
+<div style="font-size:0.8rem;font-weight:700">${PACT.label(it)}</div>
+${self||st==='checkin'?`<div style="display:flex;gap:8px;margin-top:8px">
+<button onclick="app.pactAnswer('${d}',${i},true)" style="flex:1;padding:9px;border-radius:8px;font-weight:800;font-size:0.7rem;cursor:pointer;background:${ans===true?'var(--success)':'var(--panel-elevated)'};color:${ans===true?'#000':'var(--text)'};border:1px solid ${ans===true?'var(--success)':'var(--border)'}">✓ KEPT IT</button>
+<button onclick="app.pactAnswer('${d}',${i},false)" style="flex:1;padding:9px;border-radius:8px;font-weight:800;font-size:0.7rem;cursor:pointer;background:${ans===false?'var(--alert)':'var(--panel-elevated)'};color:${ans===false?'#fff':'var(--text)'};border:1px solid ${ans===false?'var(--alert)':'var(--border)'}">✗ MISSED</button></div>`
+:`<div style="font-size:0.62rem;color:var(--text-tertiary);margin-top:4px">Checked from your data: <b style="color:${st==='kept'?'var(--success)':st==='missed'?'var(--alert)':'var(--text-secondary)'}">${st||'pending'}</b> ${v[d]?.det?.[i]?'· '+v[d].det[i]:''}</div>`}
+<input id="reason_${id}" value="${(ck?.reason||'').replace(/"/g,'&quot;')}" placeholder="${st==='kept'||ans===true?'Anything worth saying? (optional)':'What got in the way? (optional)'}" onchange="app.pactReason('${d}',${i},this.value)" style="width:100%;box-sizing:border-box;margin-top:8px;background:var(--panel-elevated);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px;font-size:0.75rem;outline:none"></div>`})});
+h+=`<button onclick="app.closeModal();app.render()" style="width:100%;margin-top:16px;background:linear-gradient(135deg,#c8ff00,#00d4ff);color:#000;border:none;border-radius:12px;padding:15px;font-weight:900;font-size:0.9rem;cursor:pointer">DONE</button></div>`;
+document.getElementById('modalBody').innerHTML=h;document.getElementById('mainModal').classList.add('show');document.getElementById('mainModal').scrollTop=0}
+pactAnswer(d,i,kept){const all=PACT.commits(this.user),c=all[d];if(!c)return;c.checks=c.checks||{};c.checks[i]={...(c.checks[i]||{}),kept,at:new Date().toISOString()};PACT.write('c_commit_'+this.user,all);this.updatePact();const top=document.getElementById('mainModal').scrollTop;this.openCheckin();document.getElementById('mainModal').scrollTop=top}
+pactReason(d,i,text){const all=PACT.commits(this.user),c=all[d];if(!c)return;c.checks=c.checks||{};const cur={...(c.checks[i]||{})};const t=String(text||'').trim().slice(0,140);if(t)cur.reason=t;else delete cur.reason;cur.at=new Date().toISOString();c.checks[i]=cur;PACT.write('c_commit_'+this.user,all)}
+sendNudge(to,emoji){const all=PACT.read('c_nudges'),id='n_'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+all[id]={from:this.user,to,date:this.currentDateStr,emoji,at:new Date().toISOString()};
+// keep the shared list short
+const keep=Object.entries(all).sort((a,b)=>b[1].at.localeCompare(a[1].at)).slice(0,200);PACT.write('c_nudges',Object.fromEntries(keep));
+this.renderPactCard()}
+openStake(){
+const start=PACT.weekStart(this.currentDateStr),cur=PACT.read('c_pact')[start]?.stake||'';
+this.setText('modalTitle',"THIS WEEK'S STAKE");
+document.getElementById('modalBody').innerHTML=`<div style="padding:2px 0 30px"><div style="font-size:0.7rem;color:var(--text-secondary);line-height:1.5">Whoever keeps the smaller share of their commitments this week owes it. The week runs Monday to Sunday.</div>
+${PACT.STAKES.map(x=>`<div onclick="app.saveStake(${JSON.stringify(x).replace(/"/g,'&quot;')})" style="padding:13px 14px;margin-top:8px;border-radius:10px;cursor:pointer;font-size:0.85rem;font-weight:700;background:${x===cur?'rgba(200,255,0,0.08)':'var(--panel)'};border:1px solid ${x===cur?'var(--acid)':'var(--border)'}">${x}</div>`).join('')}
+<div style="display:flex;gap:8px;margin-top:12px"><input id="stakeCustom" placeholder="Or write your own" value="${PACT.STAKES.includes(cur)?'':cur.replace(/"/g,'&quot;')}" style="flex:1;min-width:0;background:var(--panel-elevated);border:1px solid var(--border);color:var(--text);border-radius:9px;padding:11px;font-size:0.8rem;outline:none">
+<button onclick="app.saveStake(document.getElementById('stakeCustom').value)" style="background:var(--acid);color:#000;border:none;border-radius:9px;padding:0 14px;font-weight:900;font-size:0.7rem;cursor:pointer">SET</button></div></div>`;
+document.getElementById('mainModal').classList.add('show')}
+saveStake(text){const t=String(text||'').trim().slice(0,80);const all=PACT.read('c_pact'),start=PACT.weekStart(this.currentDateStr);
+if(t)all[start]={stake:t,setBy:this.user,setAt:new Date().toISOString()};else delete all[start];
+PACT.write('c_pact',all);this.closeModal();this.render()}
+
 loadUserData(){
 const u=this.user,get=(name,d)=>{try{return JSON.parse(localStorage.getItem(`c_${name}_${u}`)||'null')??d}catch(e){return d}};
 this.checked=get('chk',{});this.meals=get('meals',{});this.portions=get('portions',{});this.water=get('water',{});
@@ -1137,7 +1389,7 @@ this.dbg(`🫀 Sleep ${s.day} | type:${s.type} | avg_hr:${s.average_heart_rate} 
 // Actual HRV comes from sleep endpoint's average_hrv field — do not use daily_hrv as fallback
 (data.daily_readiness||[]).forEach(r=>{const d=g(r.day);d.readiness=r.score||null;if(r.contributors?.body_temperature!=null){const btScore=r.contributors.body_temperature;d.tempDev=btScore>=95?0:btScore>=85?0.1:btScore>=75?0.3:btScore>=60?0.5:btScore>=40?0.8:1.2;if(r.temperature_deviation!=null)d.tempDev=r.temperature_deviation}this.dbg(`📊 Readiness ${r.day} | score:${r.score} | rhr_contributor:${r.contributors?.resting_heart_rate}`)});
 (data.daily_sleep||[]).forEach(ds=>{const d=g(ds.day);this.dbg(`😴 DailySleep ${ds.day} | score:${ds.score} | rhr_contributor:${ds.contributors?.resting_heart_rate} | keys:${Object.keys(ds).join(',')}`)});
-(data.daily_activity||[]).forEach(a=>{const d=g(a.day);d.cal=a.active_calories||0;d.high=(a.high_activity_time||0)/60;d.med=(a.medium_activity_time||0)/60;d.met=a.met?.average||a.equivalent_walking_distance||0;this.dbg(`🏃 Activity ${a.day} | high:${a.high_activity_time} med:${a.medium_activity_time} cal:${a.active_calories} keys:${Object.keys(a).join(',')}`)});
+(data.daily_activity||[]).forEach(a=>{const d=g(a.day);d.cal=a.active_calories||0;d.steps=a.steps||0;d.high=(a.high_activity_time||0)/60;d.med=(a.medium_activity_time||0)/60;d.met=a.met?.average||a.equivalent_walking_distance||0;this.dbg(`🏃 Activity ${a.day} | high:${a.high_activity_time} med:${a.medium_activity_time} cal:${a.active_calories} keys:${Object.keys(a).join(',')}`)});
 (data.workout||[]).forEach(w=>{this.dbg(`💪 Workout ${w.day} | ${JSON.stringify(w).slice(0,250)}`);const wDay=w.start_datetime?w.start_datetime.slice(0,10):w.day;const d=g(wDay);
 const cal=w.calories||w.active_calories||0;const dur=w.duration?Math.round(w.duration/60):0;d.workouts.push({type:w.label||w.activity||w.sport||'workout',calories:cal||dur*8||300,duration:dur,start:w.start_datetime||null,time:w.start_datetime?new Date(w.start_datetime).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):''})});
 this.history=Array.from(m.values()).sort((a,b)=>b.date.localeCompare(a.date));
@@ -1571,7 +1823,7 @@ if(OURA.status===null)OURA.load().then(()=>{if(document.getElementById('set-quic
 const esc=v=>String(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
 const inp='width:100%;box-sizing:border-box;background:var(--panel-elevated);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:12px;font-size:0.8rem;outline:none;margin-top:6px';
 const lab='font-size:0.6rem;font-weight:800;letter-spacing:1px;color:var(--text-tertiary);margin-top:14px;display:block';
-let html=`<div style="padding:16px"><div style="font-size:0.55rem;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:6px">CENTURION v25</div><div style="font-size:0.7rem;color:var(--text-secondary);line-height:1.5">Stored on this device only. Nothing here is ever written into the app's code or sent anywhere except Oura and your own AI server.</div>`;
+let html=`<div style="padding:16px"><div style="font-size:0.55rem;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:6px">CENTURION v26</div><div style="font-size:0.7rem;color:var(--text-secondary);line-height:1.5">Stored on this device only. Nothing here is ever written into the app's code or sent anywhere except Oura and your own AI server.</div>`;
 const connected=SYNC.state==='ok';
 html+=`<div style="margin-top:16px;padding:14px;border:1px solid ${connected?'var(--success)':'var(--orange)'};border-radius:12px;background:var(--panel)"><div style="font-size:0.75rem;font-weight:800;color:${connected?'var(--success)':'var(--orange)'};letter-spacing:1px">${connected?'✓ CONNECTED TO YOUR HOME PC':SYNC.url()?'⚠ HOME PC NOT ANSWERING':'HOME SYNC IS OFF'}</div>
 <div style="font-size:0.65rem;color:var(--text-secondary);margin-top:6px;line-height:1.5">${connected?'Sync and the AI coach are using your home PC. Nothing to set up.':SYNC.url()?'The address is already built in — nothing to type. Check that <b>Tailscale is switched on</b> on this device and that the home PC is awake, then tap the button.':'Tap the button to connect this device to your home PC.'}</div>
@@ -2887,7 +3139,7 @@ return'ALL SYSTEMS OPTIMAL → PROTOCOL LOCKED';
 // ============================================================================
 // v21 STREAK CALCULATOR
 // ============================================================================
-calculateStreak(){
+calculateStreakOld(){
 let streak=0;
 for(let i=0;i<this.history.length;i++){
 const day=this.history[i];
@@ -3275,6 +3527,9 @@ const _aiM=JSON.parse(localStorage.getItem(`c_aiMeals_${this.user}`)||'{}');
 (_aiM[date]||[]).forEach(m=>{this.protocol.push({id:m.id,time:m.time,title:'🤖 '+m.title,desc:`P:${Math.round(m.macros.p||0)}g Fiber:${Math.round(m.macros.f||0)}g Cal:${Math.round(m.macros.cal||0)}`,macros:m.macros,tag:'AI LOGGED',cssClass:'ai-logged',aiLogged:true})});
 this.protocol.sort((a,b)=>{const pt=t=>{const m=t.match(/(\d+):(\d+)\s*(AM|PM)/i);if(!m)return 0;let h=parseInt(m[1]);if(m[3].toUpperCase()==='PM'&&h!==12)h+=12;if(m[3].toUpperCase()==='AM'&&h===12)h=0;return h*60+parseInt(m[2])};return pt(a.time)-pt(b.time)});
 
+// Pact
+try{this.updatePact();this.renderPactCard()}catch(e){console.error('Pact error:',e)}
+
 // Scoreboard
 try{this.updatePoints();this.renderScoreboardCard()}catch(e){console.error('Scoreboard error:',e)}
 
@@ -3405,6 +3660,7 @@ Resp rate: ${v(day.respRate,' br/min')} | Zone 2: ${Math.round(day.med||0)} min 
 Workouts: ${workouts}
 ${day.rings?`Apple Watch rings: Move ${v(day.rings.move,' cal')} | Exercise ${v(day.rings.exercise,' min')} | Stand ${v(day.rings.stand,' hr')} | Steps ${v(day.rings.steps)} | VO2max ${v(day.rings.vo2max)}\n`:''}Nutrition so far: Protein ${Math.round(mac.protein)}g${pct(mac.protein,goals.protein)} | Omega-3 ${Math.round(mac.omega3)}mg${pct(mac.omega3,goals.omega3)} | Fiber ${Math.round(mac.fiber)}g${pct(mac.fiber,goals.fiber)} | Polyphenols ${Math.round(mac.polyphenol||0)}mg | Calories ${Math.round(mac.calories)} | Water ${a.water[date]||0}oz
 AI-logged meals today: ${aiMeals}
+TODAY'S PACT (their own commitments): ${(()=>{const c=PACT.commits(u)[date],v=PACT.verified(u)[date];return c?.items?.length?c.items.map((it,i)=>`${PACT.label(it)} [${v?.st?.[i]||'pending'}]`).join('; '):'none set'})()}
 COUPLE SCOREBOARD (points/100 today): Jermaine ${a.pointsOf('jermaine')[date]?.total??'--'} vs Sophia ${a.pointsOf('sophia')[date]?.total??'--'}
 7-DAY AVERAGES: HRV ${avg('hrv',Math.round)} ms | Sleep ${avg('totalSec',x=>(x/3600).toFixed(1))} h | Readiness ${avg('readiness',Math.round)} | Sleep score ${avg('score',Math.round)}
 DAILY TARGETS: Protein ${goals.protein}g | Omega-3 ${goals.omega3}mg | Fiber ${goals.fiber}g | Polyphenols ${goals.poly}mg | Water ${goals.water}oz | Zone 2 ${goals.z2} min | Zone 5 ${goals.z5} min | Sleep ${goals.sleepHours}h | Goal weight ${goals.weightTarget} lbs
@@ -3555,7 +3811,8 @@ STYLE: Be concise and direct. Lead with the key insight. Use the actual numbers 
       totP+=m.macros.p||0;totF+=m.macros.fat||0;totCal+=m.macros.cal||0;
       return`<div style="background:var(--panel-elevated);border-radius:8px;padding:8px 10px;display:flex;justify-content:space-between;align-items:center">
         <div><div style="font-size:0.7rem;font-weight:700;color:var(--text)">${m.title||m.summary||m.foods?.join(', ')||'Meal'}</div>
-        <div style="font-size:0.6rem;color:var(--text-tertiary)">${m.time}${m.savedAsDish?' · <span style="color:var(--success)">★ saved</span>':` · <span onclick="centurionAI.saveAsDish(${i})" style="color:var(--cyan);font-weight:800;cursor:pointer">★ SAVE AS DISH</span>`}</div></div>
+        <div style="font-size:0.6rem;color:var(--text-tertiary)">${m.time}${m.savedAsDish?` · <span style="color:var(--success)">★ saved to ${m.savedAsDish===true?'dishes':m.savedAsDish}</span>`:` · <span onclick="centurionAI.saveAsDish(${i})" style="color:var(--cyan);font-weight:800;cursor:pointer">★ SAVE AS DISH</span>`}</div>
+        ${this.choosingDish===i?`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px">${DISHES.GROUPS.map(([g,l])=>`<span onclick="centurionAI.saveAsDish(${i},'${g}')" style="padding:4px 9px;border-radius:12px;font-size:0.6rem;font-weight:800;cursor:pointer;background:${g===this.guessGroup(m.time)?'var(--acid)':'var(--panel)'};color:${g===this.guessGroup(m.time)?'#000':'var(--text-secondary)'};border:1px solid ${g===this.guessGroup(m.time)?'var(--acid)':'var(--border)'}">${l}</span>`).join('')}</div>`:''}</div>
         <div style="text-align:right;font-size:0.65rem">
           <span style="color:var(--acid)">${m.macros.p||0}g P</span> · 
           <span style="color:var(--orange)">${m.macros.fat||0}g fat</span> · 
@@ -3571,17 +3828,21 @@ STYLE: Be concise and direct. Lead with the key insight. Use the actual numbers 
     box.innerHTML=html}
 
   // turn a one-off logged meal into a dish in My Dishes, filed by the time it was eaten
-  saveAsDish(i){
+  // Meals logged here are often snacks, so ask where it belongs instead of guessing from the clock.
+  guessGroup(t){
+    const m=String(t||'').match(/(\d+):(\d+)\s*(am|pm)?/i);if(!m)return'snack';
+    let h=parseInt(m[1],10)%12+(/pm/i.test(m[3]||'')?12:0);const mins=h*60+parseInt(m[2],10);
+    return mins<630?'breakfast':mins<690?'snack':mins<840?'lunch':mins<1050?'snack':mins<1260?'dinner':'snack'}
+  saveAsDish(i,group){
     const u=this.app.user,date=this.app.currentDateStr;
     const stored=JSON.parse(localStorage.getItem(`c_aiMeals_${u}`)||'{}');
     const m=(stored[date]||[])[i];if(!m)return;
-    const h=parseInt(String(m.time||'').split(':')[0],10),pm=/pm/i.test(m.time||'');
-    const hour=isNaN(h)?12:(h%12)+(pm?12:0);
-    const group=hour<11?'breakfast':hour<16?'lunch':'dinner';
+    if(!group){this.choosingDish=this.choosingDish===i?null:i;this.renderLoggedMeals();return}
     DISHES.put(DISHES.newId(),DISHES.normalise({title:m.title||(m.foods||[]).join(', ')||'Logged meal',group,
       ingredients:m.foods||[],macros:m.macros,createdBy:u}));
-    m.savedAsDish=true;localStorage.setItem(`c_aiMeals_${u}`,JSON.stringify(stored));
-    this.renderLoggedMeals();
+    m.savedAsDish=(DISHES.GROUPS.find(([g])=>g===group)||[,group])[1].toLowerCase();
+    localStorage.setItem(`c_aiMeals_${u}`,JSON.stringify(stored));
+    this.choosingDish=null;this.renderLoggedMeals();
   }
 
   logCustomMeal(r){

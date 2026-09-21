@@ -67,6 +67,19 @@ Every field is optional; later pushes for the same day update it, workouts de-du
 
 In the app Oura stays primary. The watch fills in missing sleep / RHR / HRV / respiratory rate, adds the rings row under the Recovery Battery, and adds workouts Oura did not already import (matched within 20 minutes).
 
+## The Pact (accountability)
+
+Each day each person commits to **3 things**; the app verifies what it can and the other person sees everything.
+
+- **Commit** — ⚙-free: the Pact card's **SET MY 3**. Suggestions come from the data (low HRV → earlier bedtime + easy Zone 2; short sleep → bedtime; protein/fiber averaging under goal). Catalog: bedtime, sleep hours, Zone 2, workout, steps, protein, fiber, water, omega-3, no alcohol, no added sugar, custom.
+- **Auto-verify** — bedtime/sleep against Oura, Zone 2/steps/workouts against Oura or the watch, food against logged meals, water against the water log. **Oura files a night under the day you wake**, so "in bed by 10:30 tonight" on day D is read from D+1's record, and bedtimes are compared as timestamps (a 12:40am bedtime is a miss, not "early").
+- **Check in** — yes/no on what the data can't see; optional reason on anything. Unanswered self-report items on a past day count as missed. Late check-in allowed for 2 days; commitments can only be set for today or later.
+- **Visibility** — the partner sees commitments, results and reasons, and can nudge (💪 🛏️ 💧 👏).
+- **Streak: never miss twice** — a day is won at 2 of 3 kept; one missed day is forgiven, two in a row breaks it. Replaces the old all-6-meals rule that could never grow.
+- **Week (Mon–Sun)** — the **team** wins if together you keep 80% of what you committed; whoever kept the smaller share owes the **stake** (ties fall back to the scoreboard).
+
+Storage (all synced): `c_commit_<user>` (items + check-ins), `c_verify_<user>` (computed results, written by whichever phone is showing that user, never downgrading a settled day), `c_nudges`, `c_pact` (stake per week). The AI coach's context includes the day's pact.
+
 ## My Dishes and added ingredients
 
 - **＋ New dish** at the top of every meal picker: name, meal, ingredients (one per line), and macros typed in or filled by **✨ Estimate with AI**. Saved to `c_dishes`, shared by both users and synced; listed under **★ My Dishes** above the built-in library, with ✎ Edit.
