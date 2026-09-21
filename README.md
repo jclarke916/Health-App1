@@ -67,6 +67,14 @@ Every field is optional; later pushes for the same day update it, workouts de-du
 
 In the app Oura stays primary. The watch fills in missing sleep / RHR / HRV / respiratory rate, adds the rings row under the Recovery Battery, and adds workouts Oura did not already import (matched within 20 minutes).
 
+## My Dishes and added ingredients
+
+- **＋ New dish** at the top of every meal picker: name, meal, ingredients (one per line), and macros typed in or filled by **✨ Estimate with AI**. Saved to `c_dishes`, shared by both users and synced; listed under **★ My Dishes** above the built-in library, with ✎ Edit.
+- **＋ Add an ingredient** in any dish: e.g. "1 tbsp olive oil" is AI-estimated and attached to that meal for that day. It rides the existing side-items mechanism (`sideItems`, `pool:'custom'`), so every total already counts it.
+- **★ Save as dish** on meals logged through the AI panel.
+
+A built-in dish is remembered by its **position** in `MEALS[slot]`; a custom one by a permanent id (`d_…`). Positions would shift when a dish is deleted and re-point past days at the wrong meal, so every lookup goes through `dishAt(slot, key)` and deleting only hides a dish — past days that used it still resolve. Macro keys follow the app convention: `p` protein g, **`f` fiber g**, `o` omega-3 mg, `cal`, `poly` mg (plus `fat`/`carbs` for display).
+
 ## Scoreboard
 
 Daily points out of 100, each person measured against **their own** goals: Sleep 20, Training 20 (10 for a logged workout + 10 for Zone 2 / exercise minutes), Protein 15, Protocol checklist 15, Fiber 10, Water 10, Omega-3 5, Recovery (sauna / cold) 5. A phone scores the profile it is showing (that is where that person's Oura / watch data is) and saves `c_points_<user>`, which sync shares; points already earned are never erased just because wearable data has not loaded.

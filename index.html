@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Centurion v24.9</title>
+<title>Centurion v25</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0a0a0c">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -872,6 +872,44 @@ addEventListener('appinstalled',()=>{this.deferred=null;localStorage.removeItem(
 this.render()}
 };
 
+// ── MY DISHES ─────────────────────────────────────────────────────────────────
+// Dishes the household adds itself, shared by both users and synced (c_dishes, one
+// entry per dish). A built-in dish is remembered by its POSITION in MEALS[slot]; a custom
+// one by a permanent id ("d_..."). Positions would shift when a dish is deleted and
+// silently re-point past days at the wrong meal, so custom dishes never use them.
+// Deleting only hides a dish from the pickers - past days that used it still resolve.
+// Macro keys follow the app: p protein g, f FIBER g, o omega-3 mg, cal kcal, poly mg.
+const DISHES={
+GROUPS:[['breakfast','Breakfast'],['lunch','Lunch'],['dinner','Dinner'],['snack','Snack'],['drink','Drink']],
+all(){try{return JSON.parse(localStorage.getItem('c_dishes')||'{}')||{}}catch(e){return{}}},
+groupOf(slot){return /^snack/.test(slot)?'snack':/^(juice|alcohol)/.test(slot)?'drink':slot},
+forSlot(slot){const g=this.groupOf(slot);
+return Object.entries(this.all()).filter(([,d])=>!d.deleted&&d.group===g)
+.map(([id,d])=>({...d,id})).sort((a,b)=>a.title.localeCompare(b.title))},
+put(id,dish){const all=this.all();all[id]=dish;localStorage.setItem('c_dishes',JSON.stringify(all))},
+newId(){return 'd_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)},
+// one shape for every custom dish, so the recipe view, portions and ingredient removal all work
+normalise(d){const ing=(d.ingredients||[]).map(x=>String(x).trim()).filter(Boolean);
+const n=v=>Math.max(0,Math.round((parseFloat(v)||0)*10)/10);
+return{title:String(d.title||'').trim(),group:d.group,servings:1,time:'Custom',
+ingredients:ing.length?ing:[String(d.title||'Dish').trim()],
+macros:{p:n(d.macros?.p),f:n(d.macros?.f),o:n(d.macros?.o),cal:n(d.macros?.cal),poly:n(d.macros?.poly),fat:n(d.macros?.fat),carbs:n(d.macros?.carbs)},
+createdBy:d.createdBy,createdAt:d.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString(),deleted:d.deleted||undefined}}
+};
+// every "which dish is this?" in the app goes through here
+function dishAt(slot,key){
+if(typeof key==='string'&&key.startsWith('d_')){const d=DISHES.all()[key];return d?{...d,id:key}:undefined}
+return MEALS[slot]?.[key]}
+// a dish key written into an onclick: custom ids are strings and need quotes
+function jsKey(k){return typeof k==='string'?`'${String(k).replace(/[^\w]/g,'')}'`:k}
+// one AI estimate used by both "new dish" and "add ingredient"
+async function estimateNutrition(description,onWait){
+const prompt=`Estimate the nutrition of: "${description}". Respond ONLY in JSON: {"protein":0,"fat":0,"carbs":0,"fiber":0,"calories":0,"omega3":0,"polyphenols":0}. Units: protein, fat, carbs and fiber in grams; omega3 in MILLIGRAMS of EPA+DHA; polyphenols in milligrams; calories in kcal. If an amount is not given, assume one typical serving.`;
+const raw=await window.centurionAI.callOllama([{role:'user',content:prompt}],null,{format:'json'},onWait);
+const r=window.centurionAI.parseJSON(raw);
+if(!r)throw new Error(window.centurionAI.lastError||'the AI could not estimate that');
+return{p:r.protein,f:r.fiber,o:r.omega3,cal:r.calories,poly:r.polyphenols,fat:r.fat,carbs:r.carbs}}
+
 class CenturionApp{
 dbg(msg){const p=document.getElementById('debugPanel');if(p)p.innerHTML+=msg+'<br>';console.log(msg)}
 constructor(){
@@ -1135,11 +1173,11 @@ toggleTask(id){const dk=this.currentDateStr;if(!this.checked[dk])this.checked[dk
 
 setText(id,txt){const el=document.getElementById(id);if(el)el.innerText=txt}
 
-calcMacros(){const sel=this.meals[this.currentDateStr]||{};const portions=this.portions[this.currentDateStr]||{};const chk=this.checked[this.currentDateStr]||[];const slotToId={};BASE.forEach(b=>{if(b.mealSlot)slotToId[b.mealSlot]=b.id});let t={protein:0,omega3:0,fiber:0,calories:0,polyphenol:0};Object.keys(sel).forEach(slot=>{const pid=slotToId[slot]||slot;if(!chk.includes(pid))return;const idx=sel[slot];const m=MEALS[slot]?.[idx];if(m){const p=portions[slot]||1;const removed=this.getRemovedSet(slot,idx);const adj=this.getAdjustedMacros(m,p,removed);t.protein+=adj.p;t.omega3+=adj.o;t.fiber+=adj.f;t.calories+=adj.cal;t.polyphenol+=adj.poly;
+calcMacros(){const sel=this.meals[this.currentDateStr]||{};const portions=this.portions[this.currentDateStr]||{};const chk=this.checked[this.currentDateStr]||[];const slotToId={};BASE.forEach(b=>{if(b.mealSlot)slotToId[b.mealSlot]=b.id});let t={protein:0,omega3:0,fiber:0,calories:0,polyphenol:0};Object.keys(sel).forEach(slot=>{const pid=slotToId[slot]||slot;if(!chk.includes(pid))return;const idx=sel[slot];const m=dishAt(slot,idx);if(m){const p=portions[slot]||1;const removed=this.getRemovedSet(slot,idx);const adj=this.getAdjustedMacros(m,p,removed);t.protein+=adj.p;t.omega3+=adj.o;t.fiber+=adj.f;t.calories+=adj.cal;t.polyphenol+=adj.poly;
 const sides=this.sideItems[`${this.currentDateStr}:${slot}`]||[];
 sides.forEach(s=>{t.protein+=(s.macros.p||0);t.omega3+=(s.macros.o||0);t.fiber+=(s.macros.f||0);t.calories+=(s.macros.cal||0);t.polyphenol+=(s.macros.poly||0)})}});const _aiMac=JSON.parse(localStorage.getItem(`c_aiMeals_${this.user}`)||'{}');(_aiMac[this.currentDateStr]||[]).forEach(m=>{t.protein+=(m.macros.p||0);t.omega3+=(m.macros.o||0);t.fiber+=(m.macros.f||0);t.calories+=(m.macros.cal||0);t.polyphenol+=(m.macros.poly||0)});return t}
 
-calcRainbow(){const sel=this.meals[this.currentDateStr]||{};const chk=this.checked[this.currentDateStr]||[];const slotToId={};BASE.forEach(b=>{if(b.mealSlot)slotToId[b.mealSlot]=b.id});let s=new Set();Object.keys(sel).forEach(slot=>{const pid=slotToId[slot]||slot;if(!chk.includes(pid))return;const m=MEALS[slot]?.[sel[slot]];if(m?.colors)m.colors.forEach(c=>s.add(c))});return s}
+calcRainbow(){const sel=this.meals[this.currentDateStr]||{};const chk=this.checked[this.currentDateStr]||[];const slotToId={};BASE.forEach(b=>{if(b.mealSlot)slotToId[b.mealSlot]=b.id});let s=new Set();Object.keys(sel).forEach(slot=>{const pid=slotToId[slot]||slot;if(!chk.includes(pid))return;const m=dishAt(slot,sel[slot]);if(m?.colors)m.colors.forEach(c=>s.add(c))});return s}
 
 addWater(){const d=this.currentDateStr;if(!this.water[d])this.water[d]=0;this.water[d]+=16.9;const target=USERS[this.user].goals.water;if(this.water[d]>target)this.water[d]=target;this.save();this.updateWater()}
 
@@ -1214,29 +1252,32 @@ document.getElementById('mainModal').classList.add('show');
 
 renderMealList(slot,all,sel,query){
 const q=query.toLowerCase().trim();
-const filtered=q?all.map((m,i)=>({m,i})).filter(({m})=>{
+const mine=DISHES.forSlot(slot).map(d=>({m:{...d,timeGroup:'★ MY DISHES'},i:d.id,mine:true}));
+const entries=[...mine,...all.map((m,i)=>({m:mine.length&&!m.timeGroup?{...m,timeGroup:'LIBRARY'}:m,i}))];
+const filtered=q?entries.filter(({m})=>{
 const searchStr=(m.title+' '+(m.ingredients||[]).join(' ')+' '+(m.why||'')).toLowerCase();
 return q.split(/\s+/).every(word=>searchStr.includes(word));
-}):all.map((m,i)=>({m,i}));
+}):entries;
 // On first render, build the full structure with search bar + results container
 if(!document.getElementById('mealResults')){
 let html=`<div style="position:sticky;top:0;z-index:10;background:var(--bg);padding:8px 0 12px">
 <input type="text" id="mealSearch" placeholder="Search meals, ingredients..." value="${query.replace(/"/g,'&quot;')}" oninput="app.filterMeals('${slot}')" style="width:100%;padding:12px 16px;background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:10px;font-size:0.95rem;outline:none;box-sizing:border-box">
-<div style="font-size:0.6rem;color:var(--text-tertiary);margin-top:6px;text-align:center" id="mealCount">${filtered.length} of ${all.length} items</div></div><div id="mealResults"></div>`;
+<div style="font-size:0.6rem;color:var(--text-tertiary);margin-top:6px;text-align:center" id="mealCount">${filtered.length} of ${entries.length} items</div>
+<button onclick="app.openDishEditor('${slot}')" style="width:100%;margin-top:10px;background:var(--panel);color:var(--acid);border:1px dashed var(--acid);border-radius:10px;padding:11px;font-weight:800;font-size:0.75rem;cursor:pointer">＋ NEW DISH</button></div><div id="mealResults"></div>`;
 document.getElementById('modalBody').innerHTML=html;
 }else{
 const countEl=document.getElementById('mealCount');
-if(countEl)countEl.textContent=`${filtered.length} of ${all.length} items`;
+if(countEl)countEl.textContent=`${filtered.length} of ${entries.length} items`;
 }
 // Only update results div, not the search input
 let items='';
 let lastGroup='';
-filtered.forEach(({m,i})=>{
+filtered.forEach(({m,i,mine})=>{
 if(m.timeGroup&&m.timeGroup!==lastGroup){
 lastGroup=m.timeGroup;
 items+=`<div style="padding:10px 4px 6px;font-size:0.6rem;font-weight:900;color:var(--cyan);letter-spacing:1.5px;border-bottom:1px solid var(--border);margin-top:${items?'12px':'0'}">${m.timeGroup}</div>`;
 }
-items+=`<div class="menu-item" ${sel===i?'style="border-color:var(--acid)"':''} onclick="app.showRecipe('${slot}',${i})"><div><div class="menu-name">${sel===i?'✓ ':''}${m.title}${m.servingSize?' <span style=\"font-size:0.65rem;color:var(--text-tertiary)\">'+m.servingSize+'</span>':''}</div><div class="menu-meta">P:${m.macros.p}g F:${m.macros.f}g Ω3:${m.macros.o}mg Cal:${m.macros.cal}</div></div><div class="menu-arrow">›</div></div>`;
+items+=`<div class="menu-item" ${sel===i?'style="border-color:var(--acid)"':''} onclick="app.showRecipe('${slot}',${jsKey(i)})"><div><div class="menu-name">${sel===i?'✓ ':''}${m.title}${mine?` <span onclick="event.stopPropagation();app.openDishEditor('${slot}',${jsKey(i)})" style="font-size:0.6rem;color:var(--cyan);font-weight:800;padding:2px 6px;border:1px solid var(--cyan);border-radius:6px;margin-left:4px">✎ EDIT</span>`:''}${m.servingSize?' <span style=\"font-size:0.65rem;color:var(--text-tertiary)\">'+m.servingSize+'</span>':''}</div><div class="menu-meta">P:${m.macros.p}g F:${m.macros.f}g Ω3:${m.macros.o}mg Cal:${m.macros.cal}</div></div><div class="menu-arrow">›</div></div>`;
 });
 if(filtered.length===0)items=`<div style="text-align:center;padding:30px;color:var(--text-tertiary)">No matches for "${q}"</div>`;
 document.getElementById('mealResults').innerHTML=items;
@@ -1251,7 +1292,7 @@ this.renderMealList(slot,all,sel,q);
 
 showRecipe(slot,idx){
 this.currentMealSlot=slot;this.currentMealIdx=idx;this.inRecipeView=true;
-const meal=MEALS[slot][idx];
+const meal=dishAt(slot,idx);
 const allowHalf=['breakfast','lunch','dinner','snack1','snack2','snack3','juice2','juice3','juice4'].includes(slot);
 // Suggested portions based on user caloric needs
 const portionGuide=meal.portions||null;
@@ -1283,7 +1324,7 @@ html+=`</div></div>`}
 html+=`<div class="macro-grid" id="recipeMacros"><div class="macro-stat"><div class="m-val">${Math.round(totalAdj.p)}g</div><div class="m-lbl">PROTEIN</div></div><div class="macro-stat"><div class="m-val">${Math.round(totalAdj.o)}mg</div><div class="m-lbl">OMEGA-3</div></div><div class="macro-stat"><div class="m-val">${Math.round(totalAdj.f)}g</div><div class="m-lbl">FIBER</div></div><div class="macro-stat"><div class="m-val">${Math.round(totalAdj.cal)}</div><div class="m-lbl">CALORIES</div></div></div>`;
 if(removed.size>0)html+=`<div style="text-align:center;margin:-15px 0 15px;font-size:0.6rem;color:var(--orange);font-weight:700">${removed.size} INGREDIENT${removed.size>1?'S':''} REMOVED — MACROS ADJUSTED</div>`;
 if(meal.why)html+=`<div class="synergy-box"><div class="syn-title">🧬 BIO HACK</div><div class="syn-text">${meal.why}</div></div>`;
-if(meal.ingredients){html+=`<div style="margin-bottom:20px"><div style="font-size:0.8rem;font-weight:900;color:var(--acid);margin-bottom:4px">INGREDIENTS</div><div class="ing-hint">Tap to remove ingredients you don't have</div>`;meal.ingredients.forEach((ing,i)=>{const isRemoved=removed.has(i);const swapDef=meal.swaps?.[i];const swapKey=`${slot}:${idx}:${i}`;const currentSwap=this.ingredientSwaps[swapKey];const displayIng=currentSwap||ing;if(swapDef){html+=`<div style="background:var(--panel);border:1px solid var(--cyan);border-radius:8px;padding:10px;margin-bottom:6px"><div style="display:flex;justify-content:space-between;align-items:center"><div style="font-size:0.55rem;font-weight:700;color:var(--cyan);letter-spacing:1px">🔄 ${swapDef.label.toUpperCase()} — TAP TO SWAP</div></div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">${swapDef.options.map(opt=>{const isActive=(currentSwap||ing)===opt;return`<button onclick="event.stopPropagation();app.swapIngredient('${slot}',${idx},${i},'${opt.replace(/'/g,"\\'")}')" style="padding:6px 10px;background:${isActive?'var(--cyan)':'var(--bg)'};color:${isActive?'#000':'var(--text)'};border:1px solid ${isActive?'var(--cyan)':'var(--border)'};border-radius:6px;font-size:0.6rem;font-weight:${isActive?'800':'600'};cursor:pointer">${opt}</button>`}).join('')}</div></div>`}else{html+=`<div class="ing-item ${isRemoved?'removed':''}" onclick="app.toggleIngredient('${slot}',${idx},${i})">${displayIng}</div>`}});html+=`</div>`}
+if(meal.ingredients){html+=`<div style="margin-bottom:20px"><div style="font-size:0.8rem;font-weight:900;color:var(--acid);margin-bottom:4px">INGREDIENTS</div><div class="ing-hint">Tap to remove ingredients you don't have</div>`;meal.ingredients.forEach((ing,i)=>{const isRemoved=removed.has(i);const swapDef=meal.swaps?.[i];const swapKey=`${slot}:${idx}:${i}`;const currentSwap=this.ingredientSwaps[swapKey];const displayIng=currentSwap||ing;if(swapDef){html+=`<div style="background:var(--panel);border:1px solid var(--cyan);border-radius:8px;padding:10px;margin-bottom:6px"><div style="display:flex;justify-content:space-between;align-items:center"><div style="font-size:0.55rem;font-weight:700;color:var(--cyan);letter-spacing:1px">🔄 ${swapDef.label.toUpperCase()} — TAP TO SWAP</div></div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">${swapDef.options.map(opt=>{const isActive=(currentSwap||ing)===opt;return`<button onclick="event.stopPropagation();app.swapIngredient('${slot}',${jsKey(idx)},${i},'${opt.replace(/'/g,"\\'")}')" style="padding:6px 10px;background:${isActive?'var(--cyan)':'var(--bg)'};color:${isActive?'#000':'var(--text)'};border:1px solid ${isActive?'var(--cyan)':'var(--border)'};border-radius:6px;font-size:0.6rem;font-weight:${isActive?'800':'600'};cursor:pointer">${opt}</button>`}).join('')}</div></div>`}else{html+=`<div class="ing-item ${isRemoved?'removed':''}" onclick="app.toggleIngredient('${slot}',${jsKey(idx)},${i})">${displayIng}</div>`}});html+=`</div>`}
 if(meal.steps){html+=`<div><div style="font-size:0.8rem;font-weight:900;color:var(--acid);margin-bottom:10px">PREPARATION</div>`;meal.steps.forEach((step,i)=>{html+=`<div class="step-item"><div style="font-weight:900;color:var(--cyan);font-size:1.2rem;min-width:30px">${i+1}</div><div>${step}</div></div>`});html+=`</div>`}
 // Beverage pairing (v21)
 if(meal.suggestedBeverage&&MEALS.juices){
@@ -1301,8 +1342,14 @@ html+=`<div style="display:flex;justify-content:space-between;align-items:center
 });
 html+=`</div>`;
 }
+html+=`<div style="margin-top:16px;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--panel)">
+<div style="font-size:0.7rem;font-weight:900;color:var(--acid);letter-spacing:0.5px">＋ ADD AN INGREDIENT</div>
+<div style="font-size:0.6rem;color:var(--text-tertiary);margin-top:3px">Anything not listed above — include the amount if you know it.</div>
+<div style="display:flex;gap:8px;margin-top:8px"><input id="addIngInput" placeholder="e.g. 1 tbsp olive oil" autocapitalize="off" onkeydown="if(event.key==='Enter')app.addIngredient('${slot}')" style="flex:1;min-width:0;background:var(--panel-elevated);border:1px solid var(--border);color:var(--text);border-radius:9px;padding:11px;font-size:0.85rem;outline:none">
+<button onclick="app.addIngredient('${slot}')" style="background:var(--acid);color:#000;border:none;border-radius:9px;padding:0 16px;font-weight:900;font-size:0.75rem;cursor:pointer">ADD</button></div>
+<div id="addIngMsg" style="font-size:0.65rem;margin-top:6px;color:var(--text-tertiary)"></div></div>`;
 html+=`<button onclick="app.addSide('${slot}')" style="width:100%;background:var(--panel);color:var(--cyan);padding:14px;margin-top:10px;border:1px solid var(--cyan);border-radius:10px;font-weight:800;font-size:0.9rem;cursor:pointer">+ ADD SIDE ITEM</button>`;
-html+=`<button onclick="app.selectMeal('${slot}',${idx});app.closeModal()" style="width:100%;background:linear-gradient(135deg,#c8ff00,#00d4ff);color:#000;padding:18px;margin-top:12px;border:none;border-radius:12px;font-weight:900;font-size:1.1rem;cursor:pointer">ADD TO PROTOCOL</button>`;
+html+=`<button onclick="app.selectMeal('${slot}',${jsKey(idx)});app.closeModal()" style="width:100%;background:linear-gradient(135deg,#c8ff00,#00d4ff);color:#000;padding:18px;margin-top:12px;border:none;border-radius:12px;font-weight:900;font-size:1.1rem;cursor:pointer">ADD TO PROTOCOL</button>`;
 document.getElementById('modalBody').innerHTML=html;
 this.setText('modalTitle',meal.title.toUpperCase());
 document.getElementById('mainModal').scrollTop=0;
@@ -1404,6 +1451,85 @@ const q=document.getElementById('sideSearch')?.value||'';
 this.renderSidePicker(q);
 }
 
+openDishEditor(slot,id){
+const d=id?DISHES.all()[id]:null;
+const group=d?.group||DISHES.groupOf(slot);
+const esc=v=>String(v??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+const inp='width:100%;box-sizing:border-box;background:var(--panel-elevated);border:1px solid var(--border);color:var(--text);border-radius:9px;padding:11px;font-size:0.85rem;outline:none;margin-top:5px';
+const lab='font-size:0.6rem;font-weight:800;letter-spacing:1px;color:var(--text-tertiary);margin-top:14px;display:block';
+const num=(key,label,unit)=>`<label style="flex:1;min-width:0"><span style="font-size:0.55rem;font-weight:800;letter-spacing:0.5px;color:var(--text-tertiary)">${label}</span><input id="dm-${key}" type="number" inputmode="decimal" min="0" step="any" value="${d?esc(d.macros?.[key]):''}" placeholder="0" style="${inp};padding:9px"><span style="font-size:0.5rem;color:var(--text-tertiary)">${unit}</span></label>`;
+this.setText('modalTitle',d?'EDIT DISH':'NEW DISH');
+this.inRecipeView=false;this.currentMealSlot=slot;
+document.getElementById('modalBody').innerHTML=`<div style="padding:4px 2px 30px">
+<label style="${lab};margin-top:0" for="dish-title">NAME</label><input id="dish-title" value="${esc(d?.title)}" placeholder="e.g. Salmon rice bowl" style="${inp}">
+<label style="${lab}" for="dish-group">MEAL</label><select id="dish-group" style="${inp}">${DISHES.GROUPS.map(([v,l])=>`<option value="${v}"${v===group?' selected':''}>${l}</option>`).join('')}</select>
+<label style="${lab}" for="dish-ing">INGREDIENTS <span style="text-transform:none;letter-spacing:0;font-weight:600">— one per line, with amounts</span></label>
+<textarea id="dish-ing" rows="5" placeholder="6 oz salmon&#10;1 cup brown rice&#10;1/2 avocado&#10;1 cup edamame" style="${inp};resize:vertical;font-family:inherit;line-height:1.5">${esc((d?.ingredients||[]).join('\n'))}</textarea>
+<button onclick="app.estimateDish()" style="width:100%;margin-top:10px;background:var(--panel);color:var(--purple);border:1px solid var(--purple);border-radius:9px;padding:11px;font-weight:800;font-size:0.75rem;cursor:pointer">✨ ESTIMATE MACROS WITH AI</button>
+<div id="dish-msg" style="font-size:0.65rem;margin-top:6px;color:var(--text-tertiary)">Or type them in yourself below.</div>
+<div style="display:flex;gap:8px;margin-top:10px">${num('p','PROTEIN','g')}${num('f','FIBER','g')}${num('cal','CALORIES','kcal')}</div>
+<div style="display:flex;gap:8px;margin-top:8px">${num('o','OMEGA-3','mg')}${num('fat','FAT','g')}${num('carbs','CARBS','g')}</div>
+<div style="display:flex;gap:8px;margin-top:8px">${num('poly','POLYPHENOLS','mg')}<span style="flex:2"></span></div>
+<div style="font-size:0.6rem;color:var(--text-tertiary);margin-top:10px;line-height:1.5">Macros are for one serving. Portion sizes still work as usual when you add it to a meal.</div>
+<button onclick="app.saveDish('${slot}',${id?jsKey(id):'null'})" style="width:100%;margin-top:16px;background:linear-gradient(135deg,#c8ff00,#00d4ff);color:#000;border:none;border-radius:12px;padding:16px;font-weight:900;font-size:0.95rem;cursor:pointer">SAVE DISH</button>
+${d?`<button id="dish-del" onclick="app.deleteDish('${slot}',${jsKey(id)})" style="width:100%;margin-top:10px;background:transparent;color:var(--alert);border:1px solid var(--border);border-radius:12px;padding:12px;font-weight:800;font-size:0.75rem;cursor:pointer">DELETE DISH</button>`:''}
+<button onclick="app.openMealPicker('${slot}')" style="width:100%;margin-top:10px;background:transparent;color:var(--text-tertiary);border:none;padding:8px;font-weight:700;font-size:0.7rem;cursor:pointer">‹ BACK TO ${slot.toUpperCase()}</button>
+</div>`;
+document.getElementById('mainModal').classList.add('show');
+document.getElementById('mainModal').scrollTop=0;
+}
+async estimateDish(){
+const title=document.getElementById('dish-title').value.trim();
+const ing=document.getElementById('dish-ing').value.split(/\n|,/).map(x=>x.trim()).filter(Boolean);
+const msg=document.getElementById('dish-msg');
+if(!title&&!ing.length){msg.style.color='var(--orange)';msg.textContent='Add a name or some ingredients first.';return}
+msg.style.color='var(--cyan)';msg.textContent='✨ Estimating…';
+try{
+const m=await estimateNutrition(`${title||'a dish'}${ing.length?' made with: '+ing.join('; '):''} (one serving)`,
+s=>{if(document.getElementById('dish-msg'))msg.textContent=`✨ Estimating… ${s}s`});
+if(!document.getElementById('dish-msg'))return;   // the user moved on
+['p','f','cal','o','fat','carbs','poly'].forEach(k=>{const el=document.getElementById('dm-'+k);if(el)el.value=Math.round((parseFloat(m[k])||0)*10)/10});
+msg.style.color='var(--success)';msg.textContent='✓ Estimated — adjust any number before saving.';
+}catch(e){msg.style.color='var(--orange)';msg.textContent=e.message}
+}
+saveDish(slot,id){
+const title=document.getElementById('dish-title').value.trim();
+const msg=document.getElementById('dish-msg');
+if(!title){msg.style.color='var(--orange)';msg.textContent='Give the dish a name.';document.getElementById('dish-title').focus();return}
+const macros={};['p','f','cal','o','fat','carbs','poly'].forEach(k=>macros[k]=document.getElementById('dm-'+k).value);
+const old=id?DISHES.all()[id]:null;
+const dish=DISHES.normalise({title,group:document.getElementById('dish-group').value,
+ingredients:document.getElementById('dish-ing').value.split(/\n|,/),macros,
+createdBy:old?.createdBy||this.user,createdAt:old?.createdAt});
+DISHES.put(id||DISHES.newId(),dish);
+// saved to a different meal than the one open? show that meal's list
+const target=dish.group===DISHES.groupOf(slot)?slot:({snack:'snack1',drink:'juice2'}[dish.group]||dish.group);
+this.openMealPicker(target);
+}
+deleteDish(slot,id){
+const btn=document.getElementById('dish-del');
+// two taps instead of confirm(): iOS silently drops confirm() in some web views
+if(btn&&!btn.dataset.armed){btn.dataset.armed='1';btn.textContent='TAP AGAIN TO DELETE';btn.style.background='var(--alert)';btn.style.color='#fff';return}
+const d=DISHES.all()[id];if(d){d.deleted=true;d.updatedAt=new Date().toISOString();DISHES.put(id,d)}
+this.openMealPicker(slot);
+}
+async addIngredient(slot){
+const input=document.getElementById('addIngInput'),msg=document.getElementById('addIngMsg');
+const text=(input?.value||'').trim();
+if(!text){msg.style.color='var(--orange)';msg.textContent='Type an ingredient first.';return}
+msg.style.color='var(--cyan)';msg.textContent='✨ Estimating…';input.disabled=true;
+try{
+const m=await estimateNutrition(text,s=>{if(document.getElementById('addIngMsg'))msg.textContent=`✨ Estimating… ${s}s`});
+const key=this.getSideKey(slot);
+if(!this.sideItems[key])this.sideItems[key]=[];
+const r=v=>Math.round((parseFloat(v)||0)*10)/10;
+// rides the sides machinery: its macros are copied here and every total already adds sides
+this.sideItems[key].push({pool:'custom',title:text,macros:{p:r(m.p),f:r(m.f),o:r(m.o),cal:r(m.cal),poly:r(m.poly)}});
+this.save();
+this.showRecipe(slot,this.currentMealIdx);
+}catch(e){if(document.getElementById('addIngMsg')){msg.style.color='var(--orange)';msg.textContent=e.message;input.disabled=false}}
+}
+
 selectSide(pool,idx){
 const slot=this.sidePickerSlot;
 const key=this.getSideKey(slot);
@@ -1445,7 +1571,7 @@ if(OURA.status===null)OURA.load().then(()=>{if(document.getElementById('set-quic
 const esc=v=>String(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
 const inp='width:100%;box-sizing:border-box;background:var(--panel-elevated);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:12px;font-size:0.8rem;outline:none;margin-top:6px';
 const lab='font-size:0.6rem;font-weight:800;letter-spacing:1px;color:var(--text-tertiary);margin-top:14px;display:block';
-let html=`<div style="padding:16px"><div style="font-size:0.55rem;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:6px">CENTURION v24.9</div><div style="font-size:0.7rem;color:var(--text-secondary);line-height:1.5">Stored on this device only. Nothing here is ever written into the app's code or sent anywhere except Oura and your own AI server.</div>`;
+let html=`<div style="padding:16px"><div style="font-size:0.55rem;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:6px">CENTURION v25</div><div style="font-size:0.7rem;color:var(--text-secondary);line-height:1.5">Stored on this device only. Nothing here is ever written into the app's code or sent anywhere except Oura and your own AI server.</div>`;
 const connected=SYNC.state==='ok';
 html+=`<div style="margin-top:16px;padding:14px;border:1px solid ${connected?'var(--success)':'var(--orange)'};border-radius:12px;background:var(--panel)"><div style="font-size:0.75rem;font-weight:800;color:${connected?'var(--success)':'var(--orange)'};letter-spacing:1px">${connected?'✓ CONNECTED TO YOUR HOME PC':SYNC.url()?'⚠ HOME PC NOT ANSWERING':'HOME SYNC IS OFF'}</div>
 <div style="font-size:0.65rem;color:var(--text-secondary);margin-top:6px;line-height:1.5">${connected?'Sync and the AI coach are using your home PC. Nothing to set up.':SYNC.url()?'The address is already built in — nothing to type. Check that <b>Tailscale is switched on</b> on this device and that the home PC is awake, then tap the button.':'Tap the button to connect this device to your home PC.'}</div>
@@ -1739,7 +1865,7 @@ let logged=0;
 slots.forEach(s=>{
 const hasMeal=otherMeals[s.id]!=null;
 const isChecked=otherChk.includes(slotToProto[s.id]||s.id);
-const meal=hasMeal?MEALS[s.id]?.[otherMeals[s.id]]:null;
+const meal=hasMeal?dishAt(s.id,otherMeals[s.id]):null;
 const bg=isChecked?'rgba(52,211,153,0.2)':hasMeal?'rgba(255,149,0,0.15)':'rgba(255,255,255,0.03)';
 const border=isChecked?'var(--success)':hasMeal?'var(--orange)':'var(--border)';
 const color=isChecked?'var(--success)':hasMeal?'var(--orange)':'var(--text-tertiary)';
@@ -1785,7 +1911,7 @@ html+=`<div style="text-align:center;margin-bottom:15px;font-size:0.6rem;color:v
 slots.forEach(s=>{
 const hasMeal=otherMeals[s.id]!=null;
 const isChecked=otherChk.includes(slotToProto[s.id]||s.id);
-const meal=hasMeal?MEALS[s.id]?.[otherMeals[s.id]]:null;
+const meal=hasMeal?dishAt(s.id,otherMeals[s.id]):null;
 const portion=otherPortions[s.id]||1;
 const sides=otherSides[`${date}:${s.id}`]||[];
 
@@ -2786,7 +2912,7 @@ Object.keys(sel).forEach(slot=>{
 const pid=slotToId[slot]||slot;
 if(!chk.includes(pid))return;
 const idx=sel[slot];
-const meal=MEALS[slot]?.[idx];
+const meal=dishAt(slot,idx);
 if(meal){
 const portion=['breakfast','lunch','dinner','snack1','snack2','snack3','juice2','juice3','juice4'].includes(slot)?(portions[slot]||1):1;
 const key=`${date}:${slot}:${idx}`;
@@ -3168,7 +3294,7 @@ else this.setText('vascularTrend','🔴 HIGH');
 
 // Apply meal selections (mark AI-filled ones)
 const userPickedSlots=this.meals[date]?Object.keys(this.meals[date]).filter(s=>chk.includes(this.protocol.find(p=>p.mealSlot===s)?.id)):[];
-this.protocol.forEach(t=>{if(t.mealSlot&&sel[t.mealSlot]!==undefined){const m=MEALS[t.mealSlot]?.[sel[t.mealSlot]];if(m){const portion=this.portions[date]?.[t.mealSlot]||1;const sides=this.sideItems[`${date}:${t.mealSlot}`]||[];const remKey=`${date}:${t.mealSlot}:${sel[t.mealSlot]}`;const removed=new Set(this.removedIngredients[remKey]||[]);const adj=this.getAdjustedMacros(m,portion,removed);const sideP=sides.reduce((s,x)=>s+(x.macros.p||0),0);const sideO=sides.reduce((s,x)=>s+(x.macros.o||0),0);const sideF=sides.reduce((s,x)=>s+(x.macros.f||0),0);const sideCal=sides.reduce((s,x)=>s+(x.macros.cal||0),0);t.title=m.title+(sides.length?` + ${sides.length}`:'')+(portion===0.5?' (HALF)':'');t.desc=`P:${Math.round(adj.p+sideP)}g F:${Math.round(adj.f+sideF)}g Ω3:${Math.round(adj.o+sideO)}mg Cal:${Math.round(adj.cal+sideCal)}`;t.macros={p:adj.p+sideP,o:adj.o+sideO,f:adj.f+sideF,cal:adj.cal+sideCal,poly:adj.poly};t.colors=m.colors;t.aiFilled=!chk.includes(t.id)}}});
+this.protocol.forEach(t=>{if(t.mealSlot&&sel[t.mealSlot]!==undefined){const m=dishAt(t.mealSlot,sel[t.mealSlot]);if(m){const portion=this.portions[date]?.[t.mealSlot]||1;const sides=this.sideItems[`${date}:${t.mealSlot}`]||[];const remKey=`${date}:${t.mealSlot}:${sel[t.mealSlot]}`;const removed=new Set(this.removedIngredients[remKey]||[]);const adj=this.getAdjustedMacros(m,portion,removed);const sideP=sides.reduce((s,x)=>s+(x.macros.p||0),0);const sideO=sides.reduce((s,x)=>s+(x.macros.o||0),0);const sideF=sides.reduce((s,x)=>s+(x.macros.f||0),0);const sideCal=sides.reduce((s,x)=>s+(x.macros.cal||0),0);t.title=m.title+(sides.length?` + ${sides.length}`:'')+(portion===0.5?' (HALF)':'');t.desc=`P:${Math.round(adj.p+sideP)}g F:${Math.round(adj.f+sideF)}g Ω3:${Math.round(adj.o+sideO)}mg Cal:${Math.round(adj.cal+sideCal)}`;t.macros={p:adj.p+sideP,o:adj.o+sideO,f:adj.f+sideF,cal:adj.cal+sideCal,poly:adj.poly};t.colors=m.colors;t.aiFilled=!chk.includes(t.id)}}});
 
 // Render timeline
 document.getElementById('timeline').innerHTML=this.protocol.map(t=>{
@@ -3429,7 +3555,7 @@ STYLE: Be concise and direct. Lead with the key insight. Use the actual numbers 
       totP+=m.macros.p||0;totF+=m.macros.fat||0;totCal+=m.macros.cal||0;
       return`<div style="background:var(--panel-elevated);border-radius:8px;padding:8px 10px;display:flex;justify-content:space-between;align-items:center">
         <div><div style="font-size:0.7rem;font-weight:700;color:var(--text)">${m.title||m.summary||m.foods?.join(', ')||'Meal'}</div>
-        <div style="font-size:0.6rem;color:var(--text-tertiary)">${m.time}</div></div>
+        <div style="font-size:0.6rem;color:var(--text-tertiary)">${m.time}${m.savedAsDish?' · <span style="color:var(--success)">★ saved</span>':` · <span onclick="centurionAI.saveAsDish(${i})" style="color:var(--cyan);font-weight:800;cursor:pointer">★ SAVE AS DISH</span>`}</div></div>
         <div style="text-align:right;font-size:0.65rem">
           <span style="color:var(--acid)">${m.macros.p||0}g P</span> · 
           <span style="color:var(--orange)">${m.macros.fat||0}g fat</span> · 
@@ -3443,6 +3569,20 @@ STYLE: Be concise and direct. Lead with the key insight. Use the actual numbers 
         <span style="color:var(--cyan)">${Math.round(totCal)} cal</span>
       </div></div>`;
     box.innerHTML=html}
+
+  // turn a one-off logged meal into a dish in My Dishes, filed by the time it was eaten
+  saveAsDish(i){
+    const u=this.app.user,date=this.app.currentDateStr;
+    const stored=JSON.parse(localStorage.getItem(`c_aiMeals_${u}`)||'{}');
+    const m=(stored[date]||[])[i];if(!m)return;
+    const h=parseInt(String(m.time||'').split(':')[0],10),pm=/pm/i.test(m.time||'');
+    const hour=isNaN(h)?12:(h%12)+(pm?12:0);
+    const group=hour<11?'breakfast':hour<16?'lunch':'dinner';
+    DISHES.put(DISHES.newId(),DISHES.normalise({title:m.title||(m.foods||[]).join(', ')||'Logged meal',group,
+      ingredients:m.foods||[],macros:m.macros,createdBy:u}));
+    m.savedAsDish=true;localStorage.setItem(`c_aiMeals_${u}`,JSON.stringify(stored));
+    this.renderLoggedMeals();
+  }
 
   logCustomMeal(r){
     const u=this.app.user,date=this.app.currentDateStr;
