@@ -433,6 +433,10 @@ class Handler(BaseHTTPRequestHandler):
         return bool(got) and hmac.compare_digest(got.encode(), self.key.encode())
 
     def _deny(self):
+        got = self.headers.get('Authorization', '')
+        why = 'no key sent' if not got else 'wrong key'
+        log.info('REFUSED %s %s: %s (from %s, origin %s, %s)', self.command, self.path.split('?')[0], why,
+                 self.client_address[0], self.headers.get('Origin', '-'), self.headers.get('User-Agent', '-')[:60])
         return self._send(401, {'error': 'household key required', 'needKey': True})
 
     def _proxy_ai(self, method, path, body=None):
