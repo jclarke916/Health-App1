@@ -57,7 +57,9 @@ def restart_task(name):
 
 def restart_ollama():
     # Ollama is the tray app plus a server child; a wedged one must go before relaunch
-    for image in ('ollama app.exe', 'ollama.exe'):
+    # 2026-09-26: llama-server.exe is the model runner (35-41 GB committed) and does not die with ollama.exe on
+    # Windows; killing the two app images alone orphaned three runners (108 GB) on 09-25 night. Stop it too.
+    for image in ('ollama app.exe', 'ollama.exe', 'llama-server.exe'):
         run('taskkill', '/F', '/IM', image)
     time.sleep(3)
     return run('schtasks', '/Run', '/TN', 'Centurion_Ollama').returncode == 0
