@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Centurion v27.7</title>
+<title>Centurion v27.8</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0a0a0c">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1711,16 +1711,17 @@ getSideKey(slot){return `${this.currentDateStr}:${slot}`}
 getSides(slot){return this.sideItems[this.getSideKey(slot)]||[]}
 
 addSide(slot){
-// Show a searchable picker of ALL meals/snacks as potential sides
+// Show a searchable picker of ALL meals/snacks AND your own custom dishes as potential sides
 this.sidePickerSlot=slot;
 const pools=[
+...Object.entries(DISHES.all()).filter(([,d])=>!d.deleted).map(([id,m])=>({m,pool:'dishes',i:id})),
 ...MEALS.breakfast.map((m,i)=>({m,pool:'breakfast',i})),
 ...MEALS.lunch.map((m,i)=>({m,pool:'lunch',i})),
 ...MEALS.dinner.map((m,i)=>({m,pool:'dinner',i})),
 ...(MEALS.snack1||[]).map((m,i)=>({m,pool:'snack1',i})),
 ...(MEALS.juices||[]).map((m,i)=>({m,pool:'juices',i}))
 ];
-// Deduplicate by title
+// Deduplicate by title — custom dishes win so your own version of something shows first
 const seen=new Set();
 this.sidePool=pools.filter(({m})=>{if(seen.has(m.title))return false;seen.add(m.title);return true});
 this.renderSidePicker('');
@@ -1743,7 +1744,7 @@ this.setText('modalTitle','ADD SIDE');
 const countEl=document.getElementById('sideCount');
 if(countEl)countEl.textContent=`${filtered.length} items`;
 }
-let items=filtered.slice(0,30).map(({m,pool,i})=>`<div class="menu-item" onclick="app.selectSide('${pool}',${i})"><div><div class="menu-name">${m.title}</div><div class="menu-meta">P:${m.macros.p}g F:${m.macros.f}g Ω3:${m.macros.o}mg Cal:${m.macros.cal}</div></div><div class="menu-arrow">+</div></div>`).join('');
+let items=filtered.slice(0,30).map(({m,pool,i})=>`<div class="menu-item" onclick="app.selectSide('${pool}',${jsKey(i)})"><div><div class="menu-name">${m.title}${pool==='dishes'?' <span style=\"color:var(--cyan);font-size:0.6rem;font-weight:800\">★ YOURS</span>':''}</div><div class="menu-meta">P:${m.macros.p}g F:${m.macros.f}g Ω3:${m.macros.o}mg Cal:${m.macros.cal}</div></div><div class="menu-arrow">+</div></div>`).join('');
 if(filtered.length>30)items+=`<div style="text-align:center;padding:15px;color:var(--text-tertiary);font-size:0.75rem">Showing first 30 — type to narrow results</div>`;
 items+=`<button onclick="app.showRecipe(app.currentMealSlot,app.currentMealIdx)" style="width:100%;background:var(--panel);color:var(--text);padding:15px;margin-top:15px;border:1px solid var(--border);border-radius:10px;font-weight:700;cursor:pointer">← BACK TO MEAL</button>`;
 document.getElementById('sideResults').innerHTML=items;
@@ -1837,7 +1838,8 @@ selectSide(pool,idx){
 const slot=this.sidePickerSlot;
 const key=this.getSideKey(slot);
 if(!this.sideItems[key])this.sideItems[key]=[];
-const meal=MEALS[pool][idx];
+const meal=pool==='dishes'?DISHES.all()[idx]:MEALS[pool][idx];
+if(!meal)return;
 this.sideItems[key].push({pool,idx,title:meal.title,macros:{...meal.macros}});
 this.save();
 this.showRecipe(this.currentMealSlot,this.currentMealIdx);
@@ -1875,7 +1877,7 @@ if(OURA.status===null)OURA.load().then(()=>{if(document.getElementById('set-quic
 const esc=v=>String(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
 const inp='width:100%;box-sizing:border-box;background:var(--panel-elevated);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:12px;font-size:0.8rem;outline:none;margin-top:6px';
 const lab='font-size:0.6rem;font-weight:800;letter-spacing:1px;color:var(--text-tertiary);margin-top:14px;display:block';
-let html=`<div style="padding:16px"><div style="font-size:0.55rem;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:6px">CENTURION v27.7</div><div style="font-size:0.7rem;color:var(--text-secondary);line-height:1.5">Stored on this device only. Nothing here is ever written into the app's code or sent anywhere except Oura and your own AI server.</div>`;
+let html=`<div style="padding:16px"><div style="font-size:0.55rem;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:6px">CENTURION v27.8</div><div style="font-size:0.7rem;color:var(--text-secondary);line-height:1.5">Stored on this device only. Nothing here is ever written into the app's code or sent anywhere except Oura and your own AI server.</div>`;
 const connected=SYNC.state==='ok';
 html+=`<div style="margin-top:16px;padding:14px;border:1px solid ${connected?'var(--success)':'var(--orange)'};border-radius:12px;background:var(--panel)"><div style="font-size:0.75rem;font-weight:800;color:${connected?'var(--success)':'var(--orange)'};letter-spacing:1px">${connected?'✓ CONNECTED TO YOUR HOME PC':SYNC.url()?'⚠ HOME PC NOT ANSWERING':'HOME SYNC IS OFF'}</div>
 <div style="font-size:0.65rem;color:var(--text-secondary);margin-top:6px;line-height:1.5">${connected?'Sync and the AI coach are using your home PC. Nothing to set up.':SYNC.url()?'The address is already built in — nothing to type. Check that <b>Tailscale is switched on</b> on this device and that the home PC is awake, then tap the button.':'Tap the button to connect this device to your home PC.'}</div>
