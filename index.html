@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Centurion v27.5</title>
+<title>Centurion v27.6</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0a0a0c">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -715,6 +715,32 @@ const BASE=[
 {id:'alcohol',time:'8:00 PM',title:'Alcohol (Optional)',desc:'Tap to select',macros:{p:0,o:0,f:0,cal:0,poly:0},colors:[],clickable:true,mealSlot:'alcohol',cssClass:'optional',tag:'ALCOHOL'}
 ];
 
+// Supplement stack. Facts are per FULL serving, read off the bottles. Items are grouped by when
+// they absorb best together: iron with vitamin C and away from zinc/magnesium/dairy, zinc with
+// food, the calming stack at bed. Log: c_supps_<user> {date: {item: 1 | 0.5}}.
+const SUPPS={
+multi:{short:'Multi',name:'Kirkland Adult Multivitamin Gummies',dose:'2 gummies',half:'1 gummy',facts:'Back label not captured yet',macros:{cal:0,o:0}},
+omega:{short:'Omega-3',name:'Nordic Naturals Ultimate Omega',dose:'2 soft gels',half:'1 soft gel',facts:'Omega-3 1,280 mg (EPA 650 · DHA 450) · 20 cal',macros:{cal:20,o:1280}},
+iodine:{short:'Iodine',name:'Trace Ionic Iodine',dose:'3 drops (0.2 ml)',half:'1–2 drops',facts:'Iodine 225 mcg (150% DV) · Magnesium 8 mg',note:'If thyroid antibodies (TPO) have ever come back positive, ask your doctor before taking iodine every day.',macros:{cal:0,o:0}},
+iron:{short:'Iron',name:'Trace Ionic Iron',dose:'1.2 ml (¼ tsp)',half:'0.6 ml',facts:'Iron 22 mg (122% DV) · Magnesium 20 mg',note:'Take daily iron only if labs show low iron or ferritin. Extra iron builds up, especially in men.',macros:{cal:0,o:0}},
+vitc:{short:'Emergen-C',name:'Emergen-C Super Orange',dose:'1 packet in 4–6 oz water',half:'½ packet',facts:'Vitamin C 1,000 mg · B6 10 mg · B12 25 mcg · Potassium 200 mg · 35 cal · 6 g added sugar',macros:{cal:35,o:0}},
+burdock:{short:'Burdock',name:'Sprouts Burdock Root tincture',dose:'30 drops (1 ml)',half:'15 drops',facts:'667 mg fresh burdock root equivalent',macros:{cal:0,o:0}},
+cayenne:{short:'Cayenne',name:'Sprouts Cayenne tincture',dose:'15 drops (0.5 ml)',half:'7–8 drops',facts:'100 mg cayenne equivalent',macros:{cal:0,o:0}},
+zinc:{short:'Zinc',name:'Trace Ionic Zinc',dose:'1.25 ml (25 drops)',half:'0.6 ml (12 drops)',facts:'Zinc 50 mg · Copper 2 mg · Magnesium 25 mg',note:'A full serving (50 mg) is over the 40 mg daily upper limit, so half is the default here.',defaultDose:0.5,macros:{cal:0,o:0}},
+lmntRasp:{short:'LMNT Raspberry',name:'LMNT Raspberry Salt',dose:'1 stick in 16–32 oz water',half:'½ stick',facts:'Sodium 1,000 mg · Potassium 200 mg · Magnesium 60 mg · 5 cal',macros:{cal:5,o:0}},
+lmntGrape:{short:'LMNT Grapefruit',name:'LMNT Grapefruit Salt',dose:'1 stick in 16–32 oz water',half:'½ stick',facts:'Sodium 1,000 mg · Potassium 200 mg · Magnesium 60 mg · 5 cal (same formula as every LMNT flavor)',macros:{cal:5,o:0}},
+pedialyte:{short:'Pedialyte pops',name:'Pedialyte Freezer Pops',dose:'2 pops',half:'1 pop',facts:'Sodium 130 mg · Potassium 100 mg · Chloride 160 mg · 15 cal',macros:{cal:15,o:0}},
+magnesium:{short:'Magnesium',name:'Thorne Magnesium Glycinate',dose:'1 capsule',half:'½ capsule',facts:'Magnesium 120 mg (29% DV)',macros:{cal:0,o:0}},
+sleep:{short:'OLLY Sleep',name:'OLLY Sleep (Blackberry Zen)',dose:'2 gummies',half:'1 gummy',facts:'Melatonin 3 mg · L-theanine 50 mg · chamomile, passionflower, lemon balm · 10 cal',macros:{cal:10,o:0}}
+};
+const SUPP_STACKS=[
+{id:'am',time:'7:45 AM',title:'💊 Morning Stack',items:['multi','omega','iodine'],why:"With breakfast. Fish oil and the multivitamin's fat-soluble vitamins (A, D, E, K) absorb with the fat in food, and fish oil repeats less on a full stomach. Iodine has no timing conflicts."},
+{id:'iron',time:'10:30 AM',title:'🍊 Iron + Vitamin C',items:['iron','vitc'],why:'Mix the iron into the Emergen-C. Vitamin C can more than double how much plant-type iron you absorb. Keep this 2 hours away from zinc, magnesium and dairy, and 1 hour away from coffee or tea, because they all block iron.'},
+{id:'lunch',time:'1:15 PM',title:'🌿 Herbs + Zinc with Lunch',items:['burdock','cayenne','zinc'],why:'With lunch, in a little water. Zinc on an empty stomach causes nausea, and cayenne is easier on the stomach with food. Burdock, cayenne and zinc have no conflicts with each other. The alcohol in the tinctures is under 1 ml, which is trivial.'},
+{id:'hydrate',time:'5:30 PM',title:'⚡ Electrolytes (training days)',items:['lmntRasp','lmntGrape','pedialyte'],pickOne:true,why:"For boxing, sauna or heavy-sweat days, not every day. Pick one: an LMNT stick is 1,000 mg sodium (about 43% of a day's limit), and the Pedialyte pops are the light option at 130 mg."},
+{id:'bed',time:'9:30 PM',title:'🌙 Sleep Stack',items:['magnesium','sleep'],why:"30 minutes before bed. Magnesium glycinate and L-theanine both calm the nervous system while melatonin sets the clock, so they work well together. Glycinate is the gentle form of magnesium and won't upset your stomach at night."}
+];
+
 // ============================================================================
 // MAIN APPLICATION - MERGED v21 Logic + v22 Oura Features
 // ============================================================================
@@ -1329,7 +1355,7 @@ PACT.write('c_pact',all);this.closeModal();this.render()}
 
 loadUserData(){
 const u=this.user,get=(name,d)=>{try{return JSON.parse(localStorage.getItem(`c_${name}_${u}`)||'null')??d}catch(e){return d}};
-this.checked=get('chk',{});this.meals=get('meals',{});this.portions=get('portions',{});this.water=get('water',{});
+this.checked=get('chk',{});this.supps=get('supps',{});this.meals=get('meals',{});this.portions=get('portions',{});this.water=get('water',{});
 this.bios=get('bios',{});this.bioHistory=get('bioHist',[]);
 this.removedIngredients=get('remIng',{});this.sideItems=get('sides',{});this.ingredientSwaps=get('swaps',{});
 }
@@ -1344,6 +1370,7 @@ window.centurionAI?.renderLoggedMeals();
 
 save(){
 localStorage.setItem(`c_chk_${this.user}`,JSON.stringify(this.checked));
+localStorage.setItem(`c_supps_${this.user}`,JSON.stringify(this.supps));
 localStorage.setItem(`c_meals_${this.user}`,JSON.stringify(this.meals));
 localStorage.setItem(`c_portions_${this.user}`,JSON.stringify(this.portions));
 localStorage.setItem(`c_water_${this.user}`,JSON.stringify(this.water));
@@ -1423,13 +1450,36 @@ changeDate(dir){const n=this.currentIndex-dir;if(n>=0&&n<this.history.length){th
 
 switchUser(u){if(u===this.user)return;this.user=u;localStorage.setItem('c_user',u);document.querySelectorAll('.user-switch button').forEach(b=>b.classList.remove('active'));document.getElementById(`btn-${u}`).classList.add('active');this.loadUserData();this.history=[];this.setPlaceholder();this.render();this.fetchOura();window.centurionAI?.onUserSwitch()}
 
+suppDesc(b,log){return b.items.map(i=>(log[i]===1?'✓ ':log[i]===0.5?'½ ':'')+SUPPS[i].short).join(' · ')}
+suppDone(id,date){const b=SUPP_STACKS.find(x=>x.id===id);const log=this.supps[date]||{};return b.pickOne?b.items.some(i=>log[i]):b.items.every(i=>log[i])}
+suppTouch(dk){if(!Object.keys(this.supps[dk]||{}).length)delete this.supps[dk];this.save();this.render();if(this.suppOpen)this.openSuppStack(this.suppOpen)}
+toggleSuppBlock(id){const dk=this.currentDateStr;const b=SUPP_STACKS.find(x=>x.id===id);const log=this.supps[dk]=this.supps[dk]||{};
+if(this.suppDone(id,dk))b.items.forEach(i=>delete log[i]);
+else if(b.pickOne)log[b.items[0]]=SUPPS[b.items[0]].defaultDose||1;
+else b.items.forEach(i=>{if(!log[i])log[i]=SUPPS[i].defaultDose||1});
+this.suppTouch(dk)}
+setSuppDose(item,dose){const dk=this.currentDateStr;const log=this.supps[dk]=this.supps[dk]||{};if(dose)log[item]=dose;else delete log[item];this.suppTouch(dk)}
+openSuppStack(id){const b=SUPP_STACKS.find(x=>x.id===id);if(!b)return;
+this.suppOpen=id;this.currentMealSlot=null;this.inRecipeView=false;
+const log=this.supps[this.currentDateStr]||{};
+const btn=(item,dose,label)=>{const on=(log[item]||0)===dose;return`<button onclick="app.setSuppDose('${item}',${dose})" style="flex:1;padding:9px 0;border-radius:8px;font-size:0.6rem;font-weight:800;cursor:pointer;border:1px solid ${on?'var(--acid)':'var(--border)'};background:${on?'var(--acid)':'var(--panel-elevated)'};color:${on?'#000':'var(--text-secondary)'}">${label}</button>`};
+let html=`<div class="synergy-box"><div class="syn-title">🧬 WHY THESE TOGETHER</div><div class="syn-text">${b.why}</div></div>`;
+html+=b.items.map(i=>{const x=SUPPS[i];return`<div style="background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px">
+<div style="font-weight:800;font-size:0.8rem">${x.name}</div>
+<div style="font-size:0.65rem;color:var(--text-secondary);margin:3px 0">Full: ${x.dose} · Half: ${x.half}</div>
+<div style="font-size:0.62rem;color:var(--text-tertiary);line-height:1.4">${x.facts}</div>
+${x.note?`<div style="font-size:0.62rem;color:var(--orange);margin-top:6px;line-height:1.4">⚠️ ${x.note}</div>`:''}
+<div style="display:flex;gap:6px;margin-top:10px">${btn(i,0,'SKIP')}${btn(i,0.5,'½ HALF')}${btn(i,1,'FULL')}</div></div>`}).join('');
+const done=this.suppDone(id,this.currentDateStr);
+html+=`<button onclick="app.toggleSuppBlock('${id}')" style="width:100%;margin-top:4px;padding:13px;border-radius:12px;font-weight:800;font-size:0.72rem;cursor:pointer;border:${done?'1px solid var(--border)':'none'};background:${done?'var(--panel)':'var(--acid)'};color:${done?'var(--text-secondary)':'#000'}">${done?'CLEAR THIS STACK':b.pickOne?'TAKE '+SUPPS[b.items[0]].short.toUpperCase():'TAKE ALL (DEFAULT DOSES)'}</button>`;
+this.setText('modalTitle',b.title.toUpperCase());document.getElementById('modalBody').innerHTML=html;document.getElementById('mainModal').classList.add('show')}
 toggleTask(id){const dk=this.currentDateStr;if(!this.checked[dk])this.checked[dk]=[];const i=this.checked[dk].indexOf(id);if(i===-1)this.checked[dk].push(id);else this.checked[dk].splice(i,1);this.save();this.render()}
 
 setText(id,txt){const el=document.getElementById(id);if(el)el.innerText=txt}
 
 calcMacros(){const sel=this.meals[this.currentDateStr]||{};const portions=this.portions[this.currentDateStr]||{};const chk=this.checked[this.currentDateStr]||[];const slotToId={};BASE.forEach(b=>{if(b.mealSlot)slotToId[b.mealSlot]=b.id});let t={protein:0,omega3:0,fiber:0,calories:0,polyphenol:0};Object.keys(sel).forEach(slot=>{const pid=slotToId[slot]||slot;if(!chk.includes(pid))return;const idx=sel[slot];const m=dishAt(slot,idx);if(m){const p=portions[slot]||1;const removed=this.getRemovedSet(slot,idx);const adj=this.getAdjustedMacros(m,p,removed);t.protein+=adj.p;t.omega3+=adj.o;t.fiber+=adj.f;t.calories+=adj.cal;t.polyphenol+=adj.poly;
 const sides=this.sideItems[`${this.currentDateStr}:${slot}`]||[];
-sides.forEach(s=>{t.protein+=(s.macros.p||0);t.omega3+=(s.macros.o||0);t.fiber+=(s.macros.f||0);t.calories+=(s.macros.cal||0);t.polyphenol+=(s.macros.poly||0)})}});const _aiMac=JSON.parse(localStorage.getItem(`c_aiMeals_${this.user}`)||'{}');(_aiMac[this.currentDateStr]||[]).forEach(m=>{t.protein+=(m.macros.p||0);t.omega3+=(m.macros.o||0);t.fiber+=(m.macros.f||0);t.calories+=(m.macros.cal||0);t.polyphenol+=(m.macros.poly||0)});return t}
+sides.forEach(s=>{t.protein+=(s.macros.p||0);t.omega3+=(s.macros.o||0);t.fiber+=(s.macros.f||0);t.calories+=(s.macros.cal||0);t.polyphenol+=(s.macros.poly||0)})}});const _aiMac=JSON.parse(localStorage.getItem(`c_aiMeals_${this.user}`)||'{}');(_aiMac[this.currentDateStr]||[]).forEach(m=>{t.protein+=(m.macros.p||0);t.omega3+=(m.macros.o||0);t.fiber+=(m.macros.f||0);t.calories+=(m.macros.cal||0);t.polyphenol+=(m.macros.poly||0)});Object.entries(this.supps?.[this.currentDateStr]||{}).forEach(([i,d])=>{const x=SUPPS[i];if(x){t.omega3+=(x.macros.o||0)*d;t.calories+=(x.macros.cal||0)*d}});return t}
 
 calcRainbow(){const sel=this.meals[this.currentDateStr]||{};const chk=this.checked[this.currentDateStr]||[];const slotToId={};BASE.forEach(b=>{if(b.mealSlot)slotToId[b.mealSlot]=b.id});let s=new Set();Object.keys(sel).forEach(slot=>{const pid=slotToId[slot]||slot;if(!chk.includes(pid))return;const m=dishAt(slot,sel[slot]);if(m?.colors)m.colors.forEach(c=>s.add(c))});return s}
 
@@ -1813,6 +1863,7 @@ this.save();this.closeModal();this.render();
 }
 
 closeModal(){
+this.suppOpen=null;
 if(this.inRecipeView&&this.currentMealSlot){this.inRecipeView=false;this.openMealPicker(this.currentMealSlot);return}
 this.currentMealSlot=null;this.inRecipeView=false;
 document.getElementById('mainModal').classList.remove('show');
@@ -1825,7 +1876,7 @@ if(OURA.status===null)OURA.load().then(()=>{if(document.getElementById('set-quic
 const esc=v=>String(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
 const inp='width:100%;box-sizing:border-box;background:var(--panel-elevated);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:12px;font-size:0.8rem;outline:none;margin-top:6px';
 const lab='font-size:0.6rem;font-weight:800;letter-spacing:1px;color:var(--text-tertiary);margin-top:14px;display:block';
-let html=`<div style="padding:16px"><div style="font-size:0.55rem;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:6px">CENTURION v27.5</div><div style="font-size:0.7rem;color:var(--text-secondary);line-height:1.5">Stored on this device only. Nothing here is ever written into the app's code or sent anywhere except Oura and your own AI server.</div>`;
+let html=`<div style="padding:16px"><div style="font-size:0.55rem;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:6px">CENTURION v27.6</div><div style="font-size:0.7rem;color:var(--text-secondary);line-height:1.5">Stored on this device only. Nothing here is ever written into the app's code or sent anywhere except Oura and your own AI server.</div>`;
 const connected=SYNC.state==='ok';
 html+=`<div style="margin-top:16px;padding:14px;border:1px solid ${connected?'var(--success)':'var(--orange)'};border-radius:12px;background:var(--panel)"><div style="font-size:0.75rem;font-weight:800;color:${connected?'var(--success)':'var(--orange)'};letter-spacing:1px">${connected?'✓ CONNECTED TO YOUR HOME PC':SYNC.url()?'⚠ HOME PC NOT ANSWERING':'HOME SYNC IS OFF'}</div>
 <div style="font-size:0.65rem;color:var(--text-secondary);margin-top:6px;line-height:1.5">${connected?'Sync and the AI coach are using your home PC. Nothing to set up.':SYNC.url()?'The address is already built in — nothing to type. Check that <b>Tailscale is switched on</b> on this device and that the home PC is awake, then tap the button.':'Tap the button to connect this device to your home PC.'}</div>
@@ -3527,6 +3578,8 @@ if(hrvLow)this.protocol.push({id:'hrv_rec',time:'ALL DAY',title:'⚠️ LOW HRV 
 
 // Sort by time
 this.protocol.sort((a,b)=>{const pt=t=>{const m=t.match(/(\d+):(\d+)\s*(AM|PM)/i);if(!m)return 0;let h=parseInt(m[1]);if(m[3].toUpperCase()==='PM'&&h!==12)h+=12;if(m[3].toUpperCase()==='AM'&&h===12)h=0;return h*60+parseInt(m[2])};return pt(a.time)-pt(b.time)});
+// Supplement stack blocks
+{const log=this.supps[date]||{};SUPP_STACKS.forEach(b=>this.protocol.push({id:'supp_'+b.id,time:b.time,title:b.title,desc:this.suppDesc(b,log),tag:'SUPPLEMENT',suppBlock:b.id,cssClass:b.pickOne?'optional':''}))}
 // Inject AI-logged meals into timeline
 const _aiM=JSON.parse(localStorage.getItem(`c_aiMeals_${this.user}`)||'{}');
 (_aiM[date]||[]).forEach(m=>{this.protocol.push({id:m.id,time:m.time,title:'🤖 '+m.title,desc:`P:${Math.round(m.macros.p||0)}g Fiber:${Math.round(m.macros.f||0)}g Cal:${Math.round(m.macros.cal||0)}`,macros:m.macros,tag:'AI LOGGED',cssClass:'ai-logged',aiLogged:true})});
@@ -3558,18 +3611,19 @@ this.protocol.forEach(t=>{if(t.mealSlot&&sel[t.mealSlot]!==undefined){const m=di
 
 // Render timeline
 document.getElementById('timeline').innerHTML=this.protocol.map(t=>{
-const isC=chk.includes(t.id);
+const isC=t.suppBlock?this.suppDone(t.suppBlock,date):chk.includes(t.id);
 const isAiFilled=t.mealSlot&&t.aiFilled&&!isC;
 const cc=`task-card ${isC?'checked':''} ${t.autoDetected?'auto-detected':''} ${t.hrvAdjusted?'hrv-adjusted':''} ${isAiFilled?'ai-filled':''} ${t.cssClass||''}`;
 let ca='';
 if(t.clickable&&t.type&&PROTOCOLS[t.type])ca=`onclick="app.showProtocolDetails('${t.type}')"`;
 else if(t.mealSlot)ca=`onclick="app.openMealPicker('${t.mealSlot}')"`;
+else if(t.suppBlock)ca=`onclick="app.openSuppStack('${t.suppBlock}')"`;
 const isThermal=t.id&&t.id.startsWith('thermal_');
 const thermalType=isThermal?t.id.replace('thermal_',''):'';
-const checkAction=isThermal?`app.logThermal('${thermalType}')`:`app.toggleTask('${t.id}')`;
-const tagColors={BREAKFAST:'#c8ff00',LUNCH:'#c8ff00',DINNER:'#c8ff00',SNACK:'#00d4ff',BEVERAGE:'#a855f7',ALCOHOL:'#ff6b6b','AI LOGGED':'#a855f7'};
+const checkAction=isThermal?`app.logThermal('${thermalType}')`:t.suppBlock?`app.toggleSuppBlock('${t.suppBlock}')`:`app.toggleTask('${t.id}')`;
+const tagColors={BREAKFAST:'#c8ff00',LUNCH:'#c8ff00',DINNER:'#c8ff00',SNACK:'#00d4ff',BEVERAGE:'#a855f7',ALCOHOL:'#ff6b6b','AI LOGGED':'#a855f7',SUPPLEMENT:'#34d399'};
 const tagHtml=t.tag?`<div style="font-size:0.45rem;font-weight:900;color:${tagColors[t.tag]||'var(--text-tertiary)'};letter-spacing:1.5px;margin-bottom:2px">${t.tag}</div>`:'';
-return `<div class="task"><div class="task-time">${t.time}</div><div class="${cc}" ${ca}><div class="task-info">${tagHtml}<div class="task-title">${t.title}</div><div class="task-desc">${t.desc||'Tap to select'}</div></div>${(t.mealSlot||t.clickable)?'<div class="chevron">›</div>':''}${!t.autoDetected&&!t.hrvAdjusted?`<div class="check-btn" onclick="event.stopPropagation();${checkAction}"><div class="check-circle">${isC?'✓':''}</div></div>`:''}</div></div>`;
+return `<div class="task"><div class="task-time">${t.time}</div><div class="${cc}" ${ca}><div class="task-info">${tagHtml}<div class="task-title">${t.title}</div><div class="task-desc">${t.desc||'Tap to select'}</div></div>${(t.mealSlot||t.clickable||t.suppBlock)?'<div class="chevron">›</div>':''}${!t.autoDetected&&!t.hrvAdjusted?`<div class="check-btn" onclick="event.stopPropagation();${checkAction}"><div class="check-circle">${isC?'✓':''}</div></div>`:''}</div></div>`;
 }).join('');
 // Update collapsed section summaries
 this.updateSectionSummaries();
